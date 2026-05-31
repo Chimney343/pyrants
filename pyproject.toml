@@ -1,0 +1,25 @@
+[project]
+name = "pyrants"
+version = "0.1.0"
+description = "Data-driven Tyrants of the Underdark engine"
+requires-python = ">=3.12"
+dependencies = [
+    "pydantic>=2.7,<3.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0,<9.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+ignore = ["E501"]

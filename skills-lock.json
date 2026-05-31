@@ -1,0 +1,54 @@
+{
+  "version": 1,
+  "skills": {
+    "caveman": {
+      "source": "juliusbrussee/caveman",
+      "sourceType": "github",
+      "computedHash": "ac5fb2168c653fa5d660b5f510a4688d210717c7e10eb8fd91ef0d9b59f4e96e"
+    },
+    "grug-brain-development": {
+      "source": "supersterling/grug-brain-dev",
+      "sourceType": "github",
+      "skillPath": "skills/grug-brain-development/SKILL.md",
+      "computedHash": "1e677d16befaa0ad9f6b67d03ee8393b5f9016b728c10f4d1393f9fbf366be4d"
+    },
+    "impeccable": {
+      "source": "pbakaus/impeccable",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/impeccable/SKILL.md",
+      "computedHash": "e79e353cebf42112c8a1431be100399219866d62467172b5be232cf8d0ac4091"
+    },
+    "karpathy-guidelines": {
+      "source": "forrestchang/andrej-karpathy-skills",
+      "sourceType": "github",
+      "skillPath": "skills/karpathy-guidelines/SKILL.md",
+      "computedHash": "0ec1641120accbb458780e0bd19a50a4182f2b97863e90851b91307f29802c9f"
+    },
+    "make-interfaces-feel-better": {
+      "source": "jakubkrehel/make-interfaces-feel-better",
+      "sourceType": "github",
+      "skillPath": "skills/make-interfaces-feel-better/SKILL.md",
+      "computedHash": "2c3576e63d8c39d75ed327f1dcf6aab7aec0edf293a55f6cb3f7b8571974a01c"
+    },
+    "python-code-style": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "c375dffa8d94962e10193079af1527b149f43b68d60043830d89cbce1228cec7"
+    },
+    "python-design-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "8646a52fb34f1b88954aa84c86d5de04fbda1f415e509045c7f3ffff5886ded4"
+    },
+    "python-testing-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "a16a6d7d7e0a5154a5058fd9aacf8e675368b2a4a0dc5edf0fee775169c6abe0"
+    },
+    "writing-clearly-and-concisely": {
+      "source": "softaworks/agent-toolkit",
+      "sourceType": "github",
+      "computedHash": "8941c21d5127d6f7d87cefd9b5175b96c9e0dec0c20c663d68b9cb4331847d0a"
+    }
+  }
+}

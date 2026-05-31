@@ -216,3 +216,14 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# repowise API keys (local)
+.repowise/.env
+.repowise/
+
+# Local AI/editor state
+.augment/
+.roo/
+.serena/memories/
+.vscode/
+.kilo/agent-manager.json
