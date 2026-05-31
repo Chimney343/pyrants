@@ -1,0 +1,2429 @@
+{
+  "total_runs": 125,
+  "status_counts": {
+    "ok": 104,
+    "stuck": 0,
+    "blocked": 21,
+    "error": 0,
+    "max_steps": 0
+  },
+  "results": [
+    {
+      "card_id": "aboleth",
+      "seed": 7,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 7,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:aboleth",
+        "resolve_generic_choice",
+        "resolve_generic_choice",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "ambassador",
+      "seed": 8,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 5,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:ambassador",
+        "end_main_phase",
+        "skip_promote",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "beholder",
+      "seed": 9,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 4,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:beholder",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "brainwashed_slave",
+      "seed": 10,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 6,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:brainwashed_slave",
+        "resolve_generic_choice",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "chuul",
+      "seed": 11,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 6,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:chuul",
+        "resolve_generic_choice",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "cloaker",
+      "seed": 12,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 6,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:cloaker",
+        "resolve_generic_choice",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "cranium_rats",
+      "seed": 13,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 6,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:cranium_rats",
+        "resolve_generic_choice",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "death_tyrant",
+      "seed": 14,
+      "status": "blocked",
+      "stopped_reason": "engine_not_implemented",
+      "step_count": 0,
+      "phase": "main",
+      "current_player_id": "p1",
+      "prompts": [
+        "p1 is acting in main."
+      ],
+      "trace": [],
+      "error": "generic_card custom_effect is not implemented yet for card 'death_tyrant'"
+    },
+    {
+      "card_id": "elder_brain",
+      "seed": 15,
+      "status": "blocked",
+      "stopped_reason": "engine_not_implemented",
+      "step_count": 2,
+      "phase": "main",
+      "current_player_id": "p1",
+      "prompts": [
+        "Resolve the next step for Elder Brain."
+      ],
+      "trace": [
+        "play_card:elder_brain",
+        "resolve_generic_choice",
+        "resolve_generic_choice"
+      ],
+      "error": "play_card currently supports only nested cards that resolve without further player choices"
+    },
+    {
+      "card_id": "gauth",
+      "seed": 16,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 5,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:gauth",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "grimlock",
+      "seed": 17,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 5,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:grimlock",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "intellect_devourer",
+      "seed": 18,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 5,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:intellect_devourer",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "mindwitness",
+      "seed": 19,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 5,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:mindwitness",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "neogi",
+      "seed": 20,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 6,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:neogi",
+        "resolve_generic_choice",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "nothic",
+      "seed": 21,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 6,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:nothic",
+        "resolve_generic_choice",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "puppeteer",
+      "seed": 22,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 5,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:puppeteer",
+        "end_main_phase",
+        "promote_card",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "quaggoth",
+      "seed": 23,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 4,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:quaggoth",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "spectator",
+      "seed": 24,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 4,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:spectator",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "ulitharid",
+      "seed": 25,
+      "status": "blocked",
+      "stopped_reason": "engine_not_implemented",
+      "step_count": 0,
+      "phase": "main",
+      "current_player_id": "p1",
+      "prompts": [
+        "p1 is acting in main."
+      ],
+      "trace": [],
+      "error": "generic_card play_card source_fragment 'play' is not implemented yet for card 'ulitharid'"
+    },
+    {
+      "card_id": "umber_hulk",
+      "seed": 26,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 6,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:umber_hulk",
+        "resolve_generic_choice",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "black_dragon",
+      "seed": 27,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 4,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:black_dragon",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "black_wyrmling",
+      "seed": 28,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 4,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:black_wyrmling",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "blue_dragon",
+      "seed": 29,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 6,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:blue_dragon",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "skip_promote",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "blue_wyrmling",
+      "seed": 30,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 5,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:blue_wyrmling",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "cleric_of_laogzed",
+      "seed": 31,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 6,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:cleric_of_laogzed",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "promote_card",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "cult_fanatic",
+      "seed": 32,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 5,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:cult_fanatic",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "dragon_cultist",
+      "seed": 33,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 5,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:dragon_cultist",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "dragonclaw",
+      "seed": 34,
+      "status": "blocked",
+      "stopped_reason": "engine_not_implemented",
+      "step_count": 0,
+      "phase": "main",
+      "current_player_id": "p1",
+      "prompts": [
+        "p1 is acting in main."
+      ],
+      "trace": [],
+      "error": "generic_card conditional_bonus is not implemented yet for card 'dragonclaw'"
+    },
+    {
+      "card_id": "enchanter_of_thay",
+      "seed": 35,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 6,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:enchanter_of_thay",
+        "resolve_generic_choice",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "green_dragon",
+      "seed": 36,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 6,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:green_dragon",
+        "resolve_generic_choice",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "green_wyrmling",
+      "seed": 37,
+      "status": "blocked",
+      "stopped_reason": "engine_not_implemented",
+      "step_count": 1,
+      "phase": "main",
+      "current_player_id": "p1",
+      "prompts": [
+        "Resolve the next step for Green Wyrmling."
+      ],
+      "trace": [
+        "play_card:green_wyrmling",
+        "resolve_generic_choice"
+      ],
+      "error": "generic_card conditional_bonus is not implemented yet for card 'green_wyrmling'"
+    },
+    {
+      "card_id": "kobold",
+      "seed": 38,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 6,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:kobold",
+        "resolve_generic_choice",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "rather_modar",
+      "seed": 39,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 5,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:rather_modar",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "red_dragon",
+      "seed": 40,
+      "status": "blocked",
+      "stopped_reason": "engine_not_implemented",
+      "step_count": 0,
+      "phase": "main",
+      "current_player_id": "p1",
+      "prompts": [
+        "p1 is acting in main."
+      ],
+      "trace": [],
+      "error": "generic_card custom_effect is not implemented yet for card 'red_dragon'"
+    },
+    {
+      "card_id": "red_wyrmling",
+      "seed": 41,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 4,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:red_wyrmling",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "severin_silrajin",
+      "seed": 42,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 4,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:severin_silrajin",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "watcher_of_thay",
+      "seed": 43,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 6,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:watcher_of_thay",
+        "resolve_generic_choice",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "white_dragon",
+      "seed": 44,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 5,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:white_dragon",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "white_wyrmling",
+      "seed": 45,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 6,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:white_wyrmling",
+        "resolve_generic_choice",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "wyrmspeaker",
+      "seed": 46,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 5,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:wyrmspeaker",
+        "end_main_phase",
+        "promote_card",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "advance_scout",
+      "seed": 47,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 4,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:advance_scout",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "advocate",
+      "seed": 48,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 5,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:advocate",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "blackguard",
+      "seed": 49,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 5,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:blackguard",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "bounty_hunter",
+      "seed": 50,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 4,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:bounty_hunter",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "chosen_of_lolth",
+      "seed": 51,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 6,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:chosen_of_lolth",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "promote_card",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "council_member",
+      "seed": 52,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 6,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:council_member",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "promote_card",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "deathblade",
+      "seed": 53,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 4,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:deathblade",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "doppelganger",
+      "seed": 54,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 4,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:doppelganger",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "drow_negotiator",
+      "seed": 55,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 6,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:drow_negotiator",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "skip_promote",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "infiltrator",
+      "seed": 56,
+      "status": "blocked",
+      "stopped_reason": "engine_not_implemented",
+      "step_count": 1,
+      "phase": "main",
+      "current_player_id": "p1",
+      "prompts": [
+        "Resolve the next step for Infiltrator."
+      ],
+      "trace": [
+        "play_card:infiltrator",
+        "resolve_generic_choice"
+      ],
+      "error": "generic_card custom_effect is not implemented yet for card 'infiltrator'"
+    },
+    {
+      "card_id": "information_broker",
+      "seed": 57,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 6,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:information_broker",
+        "resolve_generic_choice",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "inquisitor",
+      "seed": 58,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 5,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:inquisitor",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "master_of_melee_magthere",
+      "seed": 59,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 6,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:master_of_melee_magthere",
+        "resolve_generic_choice",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "masters_of_sorcere",
+      "seed": 60,
+      "status": "blocked",
+      "stopped_reason": "engine_not_implemented",
+      "step_count": 1,
+      "phase": "main",
+      "current_player_id": "p1",
+      "prompts": [
+        "Choose an option for Masters of Sorcere."
+      ],
+      "trace": [
+        "play_card:masters_of_sorcere",
+        "resolve_generic_choice"
+      ],
+      "error": "generic_card custom_effect is not implemented yet for card 'masters_of_sorcere'"
+    },
+    {
+      "card_id": "matron_mother",
+      "seed": 61,
+      "status": "blocked",
+      "stopped_reason": "engine_not_implemented",
+      "step_count": 0,
+      "phase": "main",
+      "current_player_id": "p1",
+      "prompts": [
+        "p1 is acting in main."
+      ],
+      "trace": [],
+      "error": "generic_card custom_effect is not implemented yet for card 'matron_mother'"
+    },
+    {
+      "card_id": "mercenary_squad",
+      "seed": 62,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 5,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:mercenary_squad",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "spellspinner",
+      "seed": 63,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 6,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:spellspinner",
+        "resolve_generic_choice",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "spy_master",
+      "seed": 64,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 5,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:spy_master",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "underdark_ranger",
+      "seed": 65,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 4,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:underdark_ranger",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "weaponmaster",
+      "seed": 66,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 6,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:weaponmaster",
+        "resolve_generic_choice",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "aerisi_kalinoth",
+      "seed": 67,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 5,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:aerisi_kalinoth",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "air_elemental",
+      "seed": 68,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 6,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:air_elemental",
+        "resolve_generic_choice",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "air_elemental_myrmidon",
+      "seed": 69,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 6,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:air_elemental_myrmidon",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "skip_promote",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "black_earth_cultist",
+      "seed": 70,
+      "status": "blocked",
+      "stopped_reason": "engine_not_implemented",
+      "step_count": 0,
+      "phase": "main",
+      "current_player_id": "p1",
+      "prompts": [
+        "p1 is acting in main."
+      ],
+      "trace": [],
+      "error": "generic_card conditional_bonus is not implemented yet for card 'black_earth_cultist'"
+    },
+    {
+      "card_id": "crushing_wave_cultist",
+      "seed": 71,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 5,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:crushing_wave_cultist",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "earth_elemental",
+      "seed": 72,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 5,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:earth_elemental",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "earth_elemental_myrmidon",
+      "seed": 73,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 5,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:earth_elemental_myrmidon",
+        "end_main_phase",
+        "promote_card",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "eternal_flame_cultist",
+      "seed": 74,
+      "status": "blocked",
+      "stopped_reason": "engine_not_implemented",
+      "step_count": 0,
+      "phase": "main",
+      "current_player_id": "p1",
+      "prompts": [
+        "p1 is acting in main."
+      ],
+      "trace": [],
+      "error": "generic_card conditional_bonus is not implemented yet for card 'eternal_flame_cultist'"
+    },
+    {
+      "card_id": "fire_elemental",
+      "seed": 75,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 5,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:fire_elemental",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "fire_elemental_myrmidon",
+      "seed": 76,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 5,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:fire_elemental_myrmidon",
+        "end_main_phase",
+        "skip_promote",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "gar_shatterkeel",
+      "seed": 77,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 6,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:gar_shatterkeel",
+        "resolve_generic_choice",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "howling_hatred_cultist",
+      "seed": 78,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 6,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:howling_hatred_cultist",
+        "resolve_generic_choice",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "imix",
+      "seed": 79,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 4,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:imix",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "marlos_urnrayle",
+      "seed": 80,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 6,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:marlos_urnrayle",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "promote_card",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "ogremoch",
+      "seed": 81,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 5,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:ogremoch",
+        "end_main_phase",
+        "promote_card",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "olhydra",
+      "seed": 82,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 5,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:olhydra",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "vanifer",
+      "seed": 83,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 5,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:vanifer",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "water_elemental",
+      "seed": 84,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 5,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:water_elemental",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "water_elemental_myrmidon",
+      "seed": 85,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 5,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:water_elemental_myrmidon",
+        "end_main_phase",
+        "skip_promote",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "yan_c_bin",
+      "seed": 86,
+      "status": "blocked",
+      "stopped_reason": "engine_not_implemented",
+      "step_count": 2,
+      "phase": "main",
+      "current_player_id": "p1",
+      "prompts": [
+        "Resolve the next step for Yan-C-Bin."
+      ],
+      "trace": [
+        "play_card:yan_c_bin",
+        "resolve_generic_choice",
+        "resolve_generic_choice"
+      ],
+      "error": "generic_card conditional_bonus is not implemented yet for card 'yan_c_bin'"
+    },
+    {
+      "card_id": "balor",
+      "seed": 87,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 5,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:balor",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "demogorgon",
+      "seed": 88,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 5,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:demogorgon",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "derro",
+      "seed": 89,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 5,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:derro",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "ettin",
+      "seed": 90,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 6,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:ettin",
+        "resolve_generic_choice",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "ghoul",
+      "seed": 91,
+      "status": "blocked",
+      "stopped_reason": "engine_not_implemented",
+      "step_count": 0,
+      "phase": "main",
+      "current_player_id": "p1",
+      "prompts": [
+        "p1 is acting in main."
+      ],
+      "trace": [],
+      "error": "generic_card custom_effect is not implemented yet for card 'ghoul'"
+    },
+    {
+      "card_id": "gibbering_mouther",
+      "seed": 92,
+      "status": "blocked",
+      "stopped_reason": "engine_not_implemented",
+      "step_count": 1,
+      "phase": "main",
+      "current_player_id": "p1",
+      "prompts": [
+        "Resolve the next step for Gibbering Mouther."
+      ],
+      "trace": [
+        "play_card:gibbering_mouther",
+        "resolve_generic_choice"
+      ],
+      "error": "generic_card conditional_bonus is not implemented yet for card 'gibbering_mouther'"
+    },
+    {
+      "card_id": "glabrezu",
+      "seed": 93,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 4,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:glabrezu",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "grazzt",
+      "seed": 94,
+      "status": "blocked",
+      "stopped_reason": "engine_not_implemented",
+      "step_count": 1,
+      "phase": "main",
+      "current_player_id": "p1",
+      "prompts": [
+        "Choose an option for Graz'zt."
+      ],
+      "trace": [
+        "play_card:grazzt",
+        "resolve_generic_choice"
+      ],
+      "error": "generic_card custom_effect is not implemented yet for card 'grazzt'"
+    },
+    {
+      "card_id": "hezrou",
+      "seed": 95,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 5,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:hezrou",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "jackalwere",
+      "seed": 96,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 6,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:jackalwere",
+        "resolve_generic_choice",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "marilith",
+      "seed": 97,
+      "status": "blocked",
+      "stopped_reason": "engine_not_implemented",
+      "step_count": 0,
+      "phase": "main",
+      "current_player_id": "p1",
+      "prompts": [
+        "p1 is acting in main."
+      ],
+      "trace": [],
+      "error": "generic_card custom_effect is not implemented yet for card 'marilith'"
+    },
+    {
+      "card_id": "mind_flayer",
+      "seed": 98,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 4,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:mind_flayer",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "myconid_adult",
+      "seed": 99,
+      "status": "blocked",
+      "stopped_reason": "engine_not_implemented",
+      "step_count": 0,
+      "phase": "main",
+      "current_player_id": "p1",
+      "prompts": [
+        "p1 is acting in main."
+      ],
+      "trace": [],
+      "error": "generic_card custom_effect is not implemented yet for card 'myconid_adult'"
+    },
+    {
+      "card_id": "myconid_sovereign",
+      "seed": 100,
+      "status": "blocked",
+      "stopped_reason": "engine_not_implemented",
+      "step_count": 0,
+      "phase": "main",
+      "current_player_id": "p1",
+      "prompts": [
+        "p1 is acting in main."
+      ],
+      "trace": [],
+      "error": "generic_card custom_effect is not implemented yet for card 'myconid_sovereign'"
+    },
+    {
+      "card_id": "nalfeshnee",
+      "seed": 101,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 4,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:nalfeshnee",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "night_hag",
+      "seed": 102,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 6,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:night_hag",
+        "resolve_generic_choice",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "orcus",
+      "seed": 103,
+      "status": "blocked",
+      "stopped_reason": "engine_not_implemented",
+      "step_count": 0,
+      "phase": "main",
+      "current_player_id": "p1",
+      "prompts": [
+        "p1 is acting in main."
+      ],
+      "trace": [],
+      "error": "generic_card custom_effect is not implemented yet for card 'orcus'"
+    },
+    {
+      "card_id": "succubus",
+      "seed": 104,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 6,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:succubus",
+        "resolve_generic_choice",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "vrock",
+      "seed": 105,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 6,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:vrock",
+        "resolve_generic_choice",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "zuggtmoy",
+      "seed": 106,
+      "status": "blocked",
+      "stopped_reason": "engine_not_implemented",
+      "step_count": 0,
+      "phase": "main",
+      "current_player_id": "p1",
+      "prompts": [
+        "p1 is acting in main."
+      ],
+      "trace": [],
+      "error": "generic_card custom_effect is not implemented yet for card 'zuggtmoy'"
+    },
+    {
+      "card_id": "banshee",
+      "seed": 107,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 5,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:banshee",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "carrion_crawler",
+      "seed": 108,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 5,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:carrion_crawler",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "conjurer",
+      "seed": 109,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 6,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:conjurer",
+        "resolve_generic_choice",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "cultist_of_myrkul",
+      "seed": 110,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 5,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:cultist_of_myrkul",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "death_knight",
+      "seed": 111,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 4,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:death_knight",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "flesh_golem",
+      "seed": 112,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 5,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:flesh_golem",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "ghost",
+      "seed": 113,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 6,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:ghost",
+        "resolve_generic_choice",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "high_priest_of_myrkul",
+      "seed": 114,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 6,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:high_priest_of_myrkul",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "promote_card",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "lich",
+      "seed": 115,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 6,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:lich",
+        "resolve_generic_choice",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "minotaur_skeleton",
+      "seed": 116,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 6,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:minotaur_skeleton",
+        "resolve_generic_choice",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "mummy_lord",
+      "seed": 117,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 6,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:mummy_lord",
+        "resolve_generic_choice",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "necromancer",
+      "seed": 118,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 5,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:necromancer",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "ogre_zombie",
+      "seed": 119,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 4,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:ogre_zombie",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "ravenous_zombies",
+      "seed": 120,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 4,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:ravenous_zombies",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "revenant",
+      "seed": 121,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 5,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:revenant",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "skeletal_horde",
+      "seed": 122,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 7,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:skeletal_horde",
+        "resolve_generic_choice",
+        "resolve_generic_choice",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "vampire",
+      "seed": 123,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 5,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:vampire",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "vampire_spawn",
+      "seed": 124,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 5,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:vampire_spawn",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "wight",
+      "seed": 125,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 5,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:wight",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "wraith",
+      "seed": 126,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 7,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:wraith",
+        "resolve_generic_choice",
+        "resolve_generic_choice",
+        "resolve_generic_choice",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "noble",
+      "seed": 127,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 4,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:noble",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "soldier",
+      "seed": 128,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 4,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:soldier",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "house_guard",
+      "seed": 129,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 4,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:house_guard",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    },
+    {
+      "card_id": "insane_outcast",
+      "seed": 130,
+      "status": "blocked",
+      "stopped_reason": "engine_not_implemented",
+      "step_count": 0,
+      "phase": "main",
+      "current_player_id": "p1",
+      "prompts": [
+        "p1 is acting in main."
+      ],
+      "trace": [],
+      "error": "generic_card custom_effect is not implemented yet for card 'insane_outcast'"
+    },
+    {
+      "card_id": "priestess_of_lolth",
+      "seed": 131,
+      "status": "ok",
+      "stopped_reason": "turn_completed",
+      "step_count": 4,
+      "phase": "main",
+      "current_player_id": "p2",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "trace": [
+        "play_card:priestess_of_lolth",
+        "end_main_phase",
+        "resolve_end_of_turn",
+        "resolve_cleanup"
+      ],
+      "error": null
+    }
+  ]
+}

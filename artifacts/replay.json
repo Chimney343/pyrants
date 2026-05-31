@@ -1,0 +1,36 @@
+{
+  "stopped_reason": "max_steps",
+  "step_count": 1,
+  "is_terminal": false,
+  "winner_id": null,
+  "final_scores": null,
+  "replay_log": [
+    {
+      "step_index": 0,
+      "player_id": "p1",
+      "round_number": 1,
+      "phase": "main",
+      "prompts": [
+        "p1 is acting in main."
+      ],
+      "move_type": "play_card",
+      "label": "Play Starter Power (starter_power)",
+      "payload": {
+        "player_id": "p1",
+        "move_type": "play_card",
+        "card_id": "starter_power",
+        "hand_index": 0
+      }
+    }
+  ],
+  "replay_context": {
+    "board_path": "data\\boards\\base_game.json",
+    "card_path": "data\\cards\\catalog.json",
+    "setup_path": "data\\decks\\base_setup.json",
+    "player_ids": [
+      "p1",
+      "p2"
+    ],
+    "seed": 1
+  }
+}
