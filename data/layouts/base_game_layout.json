@@ -1,0 +1,170 @@
+{
+  "layout_id": "base_underdark_layout",
+  "board_id": "base_underdark",
+  "canvas": {
+    "width": 4711,
+    "height": 4711,
+    "background_image": "C:/Users/mkkom/pyrants/assets/httpiimgurcomKcYGWf2jpg.png"
+  },
+  "nodes": [
+    {
+      "node_id": "site_a",
+      "label": "Menzoberranzan",
+      "kind": "site",
+      "center": {
+        "x": 2325.0,
+        "y": 741.6666666666666
+      },
+      "bounds": {
+        "x": 2254.9999999999995,
+        "y": 691.6666666666666,
+        "width": 140.0,
+        "height": 100.0
+      },
+      "troop_slots": [
+        {
+          "x": 2285.0,
+          "y": 733.6666666666666
+        },
+        {
+          "x": 2325.0,
+          "y": 733.6666666666666
+        },
+        {
+          "x": 2365.0,
+          "y": 733.6666666666666
+        }
+      ]
+    },
+    {
+      "node_id": "route_ab",
+      "label": "1",
+      "kind": "route",
+      "center": {
+        "x": 1948.333333333333,
+        "y": 816.6666666666667
+      },
+      "bounds": null,
+      "troop_slots": []
+    },
+    {
+      "node_id": "site_blingdenfire",
+      "label": "Blingdenfire",
+      "kind": "site",
+      "center": {
+        "x": 2099.166666666666,
+        "y": 1146.6666666666665
+      },
+      "bounds": {
+        "x": 1928.333333333333,
+        "y": 1038.3333333333333,
+        "width": 341.6666666666665,
+        "height": 216.66666666666652
+      },
+      "troop_slots": [
+        {
+          "x": 2149.9999999999995,
+          "y": 1164.9999999999998
+        },
+        {
+          "x": 1994.9999999999998,
+          "y": 1178.3333333333333
+        }
+      ]
+    },
+    {
+      "node_id": "route_2",
+      "label": "2",
+      "kind": "route",
+      "center": {
+        "x": 2388.333333333333,
+        "y": 1103.3333333333333
+      },
+      "bounds": null,
+      "troop_slots": []
+    },
+    {
+      "node_id": "route_3",
+      "label": "3",
+      "kind": "route",
+      "center": {
+        "x": 2389.9999999999995,
+        "y": 1408.333333333333
+      },
+      "bounds": null,
+      "troop_slots": []
+    },
+    {
+      "node_id": "route_4",
+      "label": "4",
+      "kind": "route",
+      "center": {
+        "x": 2764.9999999999995,
+        "y": 611.6666666666666
+      },
+      "bounds": null,
+      "troop_slots": []
+    },
+    {
+      "node_id": "route_5",
+      "label": "5",
+      "kind": "route",
+      "center": {
+        "x": 2878.333333333333,
+        "y": 881.6666666666665
+      },
+      "bounds": null,
+      "troop_slots": []
+    },
+    {
+      "node_id": "site_chasmleap_bridge",
+      "label": "Chasmleap Bridge",
+      "kind": "site",
+      "center": {
+        "x": 2509.166666666666,
+        "y": 1779.1666666666665
+      },
+      "bounds": {
+        "x": 2351.6666666666665,
+        "y": 1609.9999999999998,
+        "width": 314.99999999999955,
+        "height": 338.33333333333326
+      },
+      "troop_slots": [
+        {
+          "x": 2466.6666666666665,
+          "y": 1846.6666666666663
+        }
+      ]
+    },
+    {
+      "node_id": "site_everfire",
+      "label": "Everfire",
+      "kind": "site",
+      "center": {
+        "x": 3112.4999999999995,
+        "y": 1181.6666666666665
+      },
+      "bounds": {
+        "x": 2849.9999999999995,
+        "y": 1046.6666666666665,
+        "width": 525.0,
+        "height": 270.0
+      },
+      "troop_slots": [
+        {
+          "x": 2953.333333333333,
+          "y": 1209.9999999999998
+        },
+        {
+          "x": 3079.9999999999995,
+          "y": 1208.3333333333333
+        },
+        {
+          "x": 3199.9999999999995,
+          "y": 1208.3333333333333
+        }
+      ]
+    }
+  ]
+}
