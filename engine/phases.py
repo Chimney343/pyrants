@@ -1,0 +1,55 @@
+"""Turn-phase transition helpers for the game state machine."""
+
+from __future__ import annotations
+
+from engine.errors import RuleViolationError
+from engine.state import GameState, ResourcePool, TurnPhase
+
+
+def next_player_id(turn_order: list[str], current_player_id: str) -> str:
+    """Return the player id that acts after the current player."""
+
+    if current_player_id not in turn_order:
+        raise RuleViolationError("Current player is not part of turn order")
+
+    current_index = turn_order.index(current_player_id)
+    return turn_order[(current_index + 1) % len(turn_order)]
+
+
+def advance_phase(state: GameState) -> GameState:
+    """Advance to the next phase in the fixed runtime phase order."""
+
+    updated = state.model_copy(deep=True)
+
+    if updated.phase == TurnPhase.MAIN:
+        updated.phase = TurnPhase.END_OF_TURN
+        updated.resource_pool = ResourcePool()
+        return updated
+
+    if updated.phase == TurnPhase.END_OF_TURN:
+        updated.phase = TurnPhase.CLEANUP
+        updated.resource_pool = ResourcePool()
+        return updated
+
+    if updated.phase == TurnPhase.CLEANUP:
+        next_player = next_player_id(updated.turn_order, updated.current_player_id)
+        wrapped_round = next_player == updated.turn_order[0]
+
+        updated.phase = TurnPhase.MAIN
+        updated.current_player_id = next_player
+        updated.resource_pool = ResourcePool()
+        if wrapped_round:
+            updated.round_number += 1
+        return updated
+
+    raise RuleViolationError(f"Cannot advance phase from '{updated.phase}'")
+
+
+def set_game_over(state: GameState, final_scores: dict[str, int]) -> GameState:
+    """Return a copy of state marked as terminal with frozen final scores."""
+
+    updated = state.model_copy(deep=True)
+    updated.phase = TurnPhase.GAME_OVER
+    updated.final_scores = dict(final_scores)
+    updated.resource_pool = ResourcePool()
+    return updated

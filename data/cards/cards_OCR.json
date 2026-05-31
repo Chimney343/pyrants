@@ -1,0 +1,1333 @@
+[
+  {
+    "set": "Image1_Aberrations_Undead",
+    "cards": [
+      {
+        "name": "Elder Brain",
+        "cost": 7,
+        "faction": "Ambition",
+        "type": "Aberration",
+        "ability": "Promote the top card of your deck. Play a card in the market that costs 4 or less as if it was in your hand, then return it to your inner-circle.",
+        "flavor": "It eagerly feasts on the brains of its illithid subjugates who desire to achieve 'oneness' with their master.",
+        "stats": { "left": 4, "right": 9 },
+        "count": "40/40"
+      },
+      {
+        "name": "Ulitharid",
+        "cost": 6,
+        "faction": "Ambition",
+        "type": "Aberration",
+        "ability": "Play a card in the market that costs 4 or less as if it was in your hand, then devour that card.",
+        "flavor": "A new illithid whose power and ambition rivals an elder brain.",
+        "stats": { "left": 3, "right": 6 },
+        "count": "29/40"
+      },
+      {
+        "name": "Puppeteer",
+        "cost": 5,
+        "faction": "Ambition",
+        "type": "Illithid",
+        "ability": "•●● At end of turn, promote another card played this turn.",
+        "flavor": "Sometimes you don't want to see who's pulling the strings.",
+        "stats": { "left": 2, "right": 6 },
+        "count": "30/40"
+      },
+      {
+        "name": "Intellect Devourer",
+        "cost": 4,
+        "faction": "Ambition",
+        "type": "Aberration",
+        "ability": "Choose one: • ●●●● Return up to two troops or spies.",
+        "flavor": "Why fight your enemies, when you can so easily change their mind?",
+        "stats": { "left": 1, "right": 3 },
+        "count": "30/40"
+      },
+      {
+        "name": "Ambassador",
+        "cost": 3,
+        "faction": "Guile",
+        "type": "Illithid",
+        "ability": "At end of turn, promote another card played this turn. If an opponent causes you to discard this, you may promote it instead.",
+        "flavor": "It is important to forge new alliances, no matter how tenuous.",
+        "stats": { "left": 1, "right": 3 },
+        "count": "34/40"
+      },
+      {
+        "name": "Aboleth",
+        "cost": 7,
+        "faction": "Ambition",
+        "type": "Aberration",
+        "ability": "Choose one: • Place 2 spies. • Draw a card for each spy you have on the board.",
+        "flavor": "Ancient and unknowable, these creatures will only accept complete submission.",
+        "stats": { "left": 4, "right": 7 },
+        "count": "40/40"
+      },
+      {
+        "name": "Chuul",
+        "cost": 3,
+        "faction": "Guile",
+        "type": "Aberration",
+        "ability": "Place a spy. Each opponent who has a troop at that spy's site and more than 3 cards, must discard a card.",
+        "flavor": "They follow the ingrained directives of their creator, as they have done since the dawn of time.",
+        "stats": { "left": 1, "right": 4 },
+        "count": "40/40"
+      },
+      {
+        "name": "Brainwashed Slave",
+        "cost": 4,
+        "faction": "Guile",
+        "type": "Guile",
+        "ability": "Choose one: • Place a spy. • Return one of your spies ► ●●●● discard a card.",
+        "flavor": "Something terrifying.",
+        "stats": { "left": 2, "right": 3 },
+        "count": "37/40"
+      },
+      {
+        "name": "Nothic",
+        "cost": 3,
+        "faction": "Guile",
+        "type": "Aberration",
+        "ability": "Choose one: • Place a spy. • Return one of your spies ► Draw a card. Each opponent with more than 3 cards must discard a card.",
+        "flavor": "'You know something good. Something secret. I can see it, yes, yesss...'",
+        "stats": { "left": 1, "right": 3 },
+        "count": "39/40"
+      },
+      {
+        "name": "Cloaker",
+        "cost": 2,
+        "faction": "Ambition",
+        "type": "Aberration",
+        "ability": "Choose one: • Place a spy. • Return one of your spies ► Assassinate a troop at that spy's site.",
+        "flavor": "'If you see a leather cape on the ground, stab it. That me.' —Brawlvin Chalminter",
+        "stats": { "left": 1, "right": 3 },
+        "count": "40/40"
+      },
+      {
+        "name": "Neogi",
+        "cost": 7,
+        "faction": "Conquest",
+        "type": "Aberration",
+        "ability": "Deploy 4 troops. As end of turn, each opponent must discard a card.",
+        "flavor": "Controlling creatures from another plane that seek to enslave everything, even their own kind.",
+        "stats": { "left": 4, "right": 8 },
+        "count": "40/40"
+      },
+      {
+        "name": "Quaggoth",
+        "cost": 5,
+        "faction": "Conquest",
+        "type": "Quaggoth",
+        "ability": "Assassinate one white troop for each site you control.",
+        "flavor": "They maul their foes in a frenzy, becoming ever more murderous in the face of death.",
+        "stats": { "left": 2, "right": 4 },
+        "count": "40/40"
+      },
+      {
+        "name": "Grimlock",
+        "cost": 1,
+        "faction": "Conquest",
+        "type": "Grimlock",
+        "ability": "Deploy a troop. If an opponent causes you to discard this, they draw 2 cards.",
+        "flavor": "Destined to be born, live their lives, and then die in service to higher beings.",
+        "stats": { "left": 0, "right": 1 },
+        "count": "17/40"
+      },
+      {
+        "name": "Death Tyrant",
+        "cost": 7,
+        "faction": "Ambition",
+        "type": "Aberration",
+        "ability": "Assassinate up to 3 troops at a single site. For each, draw the associated gain ●.",
+        "flavor": "Nothing is worse than a beholder having nightmares about its mortality.",
+        "stats": { "left": 3, "right": 6 },
+        "count": "40/40"
+      },
+      {
+        "name": "Cranium Rats",
+        "cost": 2,
+        "faction": "Conquest",
+        "type": "Beast",
+        "ability": "Deploy 2 troops. Choose one opponent with more than 3 cards to discard a card.",
+        "flavor": "A nest of malevolent intellect lurking in each rat, waiting for them to gather together.",
+        "stats": { "left": 1, "right": 3 },
+        "count": "11/40"
+      },
+      {
+        "name": "Beholder",
+        "cost": 5,
+        "faction": "Malice",
+        "type": "Aberration",
+        "ability": "Assassinate a troop. Gain ● for every 3 troops in your trophy hall.",
+        "flavor": "'Negotiating with a beholder is a task as second only to spying on a Maroon Mother.' —Jurlatik Baerne",
+        "stats": { "left": 3, "right": 6 },
+        "count": "40/40"
+      },
+      {
+        "name": "Mindwitness",
+        "cost": 3,
+        "faction": "Ambition",
+        "type": "Aberration",
+        "ability": "Assassinate a troop. If that troop belonged to another player and they have more than 3 cards, they must discard a card.",
+        "flavor": "'A beholder enslaved by mind flayers. Can you imagine the horrors that could be unleashed?' —Elimster Aumar",
+        "stats": { "left": 1, "right": 3 },
+        "count": "40/40"
+      },
+      {
+        "name": "Gauth",
+        "cost": 3,
+        "faction": "Malice",
+        "type": "Aberration",
+        "ability": "Choose one: • Draw a card. Choose one opponent with more than 3 cards to discard a card.",
+        "flavor": "If you value something, don't let a gauth see it.",
+        "stats": { "left": 2, "right": 3 },
+        "count": "40/40"
+      },
+      {
+        "name": "Spectator",
+        "cost": 4,
+        "faction": "Malice",
+        "type": "Aberration",
+        "ability": "Choose one: • Draw a card. Choose one opponent with more than 3 cards to discard a card.",
+        "flavor": "'If you value something, don't let a gauth see it.' —Vislakhamp Gollanin",
+        "stats": { "left": 2, "right": 3 },
+        "count": "5/40"
+      },
+      {
+        "name": "Banshee",
+        "cost": 4,
+        "faction": "Guile",
+        "type": "Undead",
+        "ability": "•●●● Place a spy. If another player's spy is at that site, gain ●●. Known for their ravenous hunger for blood, no mortal soul is welcome.",
+        "flavor": "Where a banshee makes her home, no mortal soul is welcome.",
+        "stats": { "left": 2, "right": 4 },
+        "count": "40/40"
+      },
+      {
+        "name": "Vampire Spawn",
+        "cost": 2,
+        "faction": "Ambition",
+        "type": "Undead",
+        "ability": "• ● Return another player's troop or spy. At end of turn, willingly share the dark with a vampire's spawn.",
+        "flavor": "Fiends would balk, seeing no reason to bargain when they can simply take what they want.",
+        "stats": { "left": 1, "right": 3 },
+        "count": "40/40"
+      },
+      {
+        "name": "Death Knight",
+        "cost": 6,
+        "faction": "Malice",
+        "type": "Undead",
+        "ability": "Supplant a troop. Gain 1 VP for every 5 player troops in your trophy hall.",
+        "flavor": "Either flee me, or join me. To choose to fight, is to choose to die.",
+        "stats": { "left": 3, "right": 7 },
+        "count": "10/40"
+      },
+      {
+        "name": "Conjurer",
+        "cost": 5,
+        "faction": "Guile",
+        "type": "Human",
+        "ability": "Choose one: • Place a spy. • Return one of your spies ► Recruit up to 2 cards that each costs 3 or less without paying its cost.",
+        "flavor": "Plenty more where that came from.",
+        "stats": { "left": 2, "right": 3 },
+        "count": "40/40"
+      },
+      {
+        "name": "Ghost",
+        "cost": 3,
+        "faction": "Guile",
+        "type": "Human",
+        "ability": "Choose one: • Place a spy. • Return one of your spies ► For the rest of your turn treat the top card of the devoured deck as if it was in the market.",
+        "flavor": "Sometimes, killing your enemies isn't as final as it seems.",
+        "stats": { "left": 1, "right": 3 },
+        "count": "40/40"
+      },
+      {
+        "name": "Wight",
+        "cost": 3,
+        "faction": "Malice",
+        "type": "Undead",
+        "ability": "Choose one: • Devour a card in your hand ► Supplant a troop.",
+        "flavor": "Sometimes, killing your enemies isn't as final as it seems. In return for waging eternal war upon the living, these mortals are granted undeath.",
+        "stats": { "left": 1, "right": 3 },
+        "count": "40/40"
+      },
+      {
+        "name": "Mummy Lord",
+        "cost": 6,
+        "faction": "Conquest",
+        "type": "Undead",
+        "ability": "Choose 2 times: • Assassinate a white troop. • Take a white troop from any trophy hall and deploy it anywhere on the board.",
+        "flavor": "His empire will rise again.",
+        "stats": { "left": 3, "right": 6 },
+        "count": "35/40"
+      },
+      {
+        "name": "Ravenous Zombies",
+        "cost": 3,
+        "faction": "Conquest",
+        "type": "Undead",
+        "ability": "• ●● Assassinate a white troop.",
+        "flavor": "Their will has been torn away and all that remains is their insatiable hunger.",
+        "stats": { "left": 1, "right": 2 },
+        "count": "40/40"
+      },
+      {
+        "name": "Cultist of Myrkul",
+        "cost": 2,
+        "faction": "Ambition",
+        "type": "Human",
+        "ability": "Choose one: • ●● Devour this card ► at end of turn, promote up to 2 other cards played this turn.",
+        "flavor": "'Obedience is only the beginning.'",
+        "stats": { "left": 1, "right": 2 },
+        "count": "40/40"
+      },
+      {
+        "name": "Vampire",
+        "cost": 7,
+        "faction": "Ambition",
+        "type": "Undead",
+        "ability": "Choose one: • Supplant a troop. • Deploy 3 troops at a single site. Choose one: • Deploy the vampire card from your discard pile, then gain 1 VP for every 3 cards in your inner circle.",
+        "flavor": "'Give to me, and you shall live forever by my side.'",
+        "stats": { "left": 4, "right": 7 },
+        "count": "40/40"
+      },
+      {
+        "name": "Skeletal Horde",
+        "cost": 2,
+        "faction": "Conquest",
+        "type": "Conquest",
+        "ability": "Deploy 2 troops. Devour this card ► Assassinate a troop at that site. Deploy 3 troops.",
+        "flavor": "They heed the summons of spellcasters who call them from their stony tombs and ancient battlefields, or rise of their own accord in places they haunted with death and loss.",
+        "stats": { "left": 1, "right": 2 },
+        "count": "40/40"
+      },
+      {
+        "name": "Wraith",
+        "cost": 2,
+        "faction": "Guile",
+        "type": "Guile",
+        "ability": "Place a spy. Devour this card ► Assassinate a troop at that spy's site. Only their hatred still binds them to this plane. They may direct it upon you.",
+        "flavor": "Only their hatred still binds them to this plane. They may direct it upon you.",
+        "stats": { "left": 0, "right": 1 },
+        "count": "40/40"
+      },
+      {
+        "name": "Ogre Zombie",
+        "cost": 4,
+        "faction": "Conquest",
+        "type": "Undead",
+        "ability": "Supplant a white troop anywhere on the board.",
+        "flavor": "'The enemy may be strong, but soon that strength will be ours to command.' —Attribute Shadowmantis",
+        "stats": { "left": 2, "right": 4 },
+        "count": "40/40"
+      },
+      {
+        "name": "Lich",
+        "cost": 7,
+        "faction": "Guile",
+        "type": "Undead",
+        "ability": "Place a spy. If another player's troop is at that site, take 2 troops from their trophy hall and deploy them.",
+        "flavor": "Every graveyard is his barracks, and every defeat a temporary setback.",
+        "stats": { "left": 4, "right": 7 },
+        "count": "40/40"
+      },
+      {
+        "name": "High Priest of Myrkul",
+        "cost": 6,
+        "faction": "Ambition",
+        "type": "Human",
+        "ability": "• ●●●● Devour this card ► Assassinate a white troop. At end of turn, you may promote any number of Undead cards played this turn.",
+        "flavor": "'Obedience is only the beginning.'",
+        "stats": { "left": 3, "right": 6 },
+        "count": "40/40"
+      },
+      {
+        "name": "Necromancer",
+        "cost": 5,
+        "faction": "Ambition",
+        "type": "Human",
+        "ability": "Choose one: • ●● Return another player's troop or spy. • Deploy a troop. At end of turn, promote another card played this turn.",
+        "flavor": "'Kill me, then I'll only come back stronger.'",
+        "stats": { "left": 1, "right": 4 },
+        "count": "40/40"
+      },
+      {
+        "name": "Minotaur Skeleton",
+        "cost": 3,
+        "faction": "Conquest",
+        "type": "Undead",
+        "ability": "Choose three troops. • Devour this card ► Assassinate up to three white troops at a single site.",
+        "flavor": "'Any bones will do. The bigger the better.' —Hommel Shur",
+        "stats": { "left": 1, "right": 3 },
+        "count": "11/40"
+      },
+      {
+        "name": "Flesh Golem",
+        "cost": 3,
+        "faction": "Malice",
+        "type": "Construct",
+        "ability": "• ●●●●●● Devour this card ► Assassinate a troop. An earth spirit bound by half flesh and bone, no wonder its existence is fury.",
+        "flavor": "An earth spirit bound by half flesh and bone, no wonder its existence is fury.",
+        "stats": { "left": 1, "right": 3 },
+        "count": "40/40"
+      },
+      {
+        "name": "Carrion Crawler",
+        "cost": 2,
+        "faction": "Malice",
+        "type": "Monstrosity",
+        "ability": "• ●●●●● Devour a card in the market. Instead of replacing it with the top card from the market deck, replace it with this card.",
+        "flavor": "I love the big grubbers: they eat the dead and they're easy to satiate. —Lippo, demi sage",
+        "stats": { "left": 0, "right": 2 },
+        "count": "6/40"
+      },
+      {
+        "name": "Revenant",
+        "cost": 4,
+        "faction": "Malice",
+        "type": "Undead",
+        "ability": "Assassinate two troops. Then, if you have 8 or more troops in your trophy hall, promote this card.",
+        "flavor": "They have one year to either taste sweet vengeance or crumble to dust.",
+        "stats": { "left": 1, "right": 4 },
+        "count": "40/40"
+      },
+      {
+        "name": "Umber Hulk",
+        "cost": 4,
+        "faction": "Conquest",
+        "type": "Monstrosity",
+        "ability": "Deploy 3 troops. If an opponent causes you to discard this, they may miscard a card.",
+        "flavor": "Those lucky enough to survive an umber hulk attack often remember little of the incident, thanks to the umber hulk's mind-scrambling gaze.",
+        "stats": { "left": 2, "right": 4 },
+        "count": "40/40"
+      }
+    ]
+  },
+  {
+    "set": "Image2_Elementals",
+    "cards": [
+      {
+        "name": "Aerisi Kalinoth",
+        "cost": 5,
+        "faction": "Guile",
+        "type": "Elf",
+        "ability": "• ●● Place a spy. Recruit a Guile card that costs 4 or less without paying its cost.",
+        "flavor": "It's hard to remain humble when everyone is beneath you. —Vanifer",
+        "stats": { "left": 2, "right": 5 },
+        "count": "25/40"
+      },
+      {
+        "name": "Air Elemental",
+        "cost": 3,
+        "faction": "Guile",
+        "type": "Elemental",
+        "ability": "Choose one: • Place a spy. • Return one of your spies ► Deploy 3 troops. • Guile Focus ► Draw a card.",
+        "flavor": "Living tempests, the embodiment of chaos.",
+        "stats": { "left": 1, "right": 2 },
+        "count": "21/40",
+        "copies": 4
+      },
+      {
+        "name": "Air Elemental Myrmidon",
+        "cost": 4,
+        "faction": "Guile",
+        "type": "Elemental",
+        "ability": "Place a spy. At end of turn, promote an Obedience card played this turn.",
+        "flavor": "'We'll give armor fight just to mock the earth.' —Aerisi Kalinoth",
+        "stats": { "left": 1, "right": 2 },
+        "count": "36/40",
+        "copies": 2
+      },
+      {
+        "name": "Black Earth Cultist",
+        "cost": 2,
+        "faction": "Ambition",
+        "type": "Human",
+        "ability": "At end of turn, promote another card played this turn. Ambition Focus ► ●●. Devotion to Ogrémoch gives them an uncanny ability to hold their ground.",
+        "flavor": "Devotion to Ogrémoch gives them an uncanny ability to hold their ground.",
+        "stats": { "left": 1, "right": 2 },
+        "count": "31/40",
+        "copies": 3
+      },
+      {
+        "name": "Crushing Wave Cultist",
+        "cost": 3,
+        "faction": "Conquest",
+        "type": "Human",
+        "ability": "Assassinate a white troop. Conquest Focus ► Deploy 2 troops. Cultists sworn to the service of Olhydra, Princess of Elemental Water.",
+        "flavor": "Cultists sworn to the service of Olhydra, Princess of Elemental Water.",
+        "stats": { "left": 1, "right": 2 },
+        "count": "40/40",
+        "copies": 3
+      },
+      {
+        "name": "Earth Elemental",
+        "cost": 3,
+        "faction": "Ambition",
+        "type": "Elemental",
+        "ability": "• ●● Return another player's troop or spy. Ambition Focus ► Draw a card.",
+        "flavor": "Who can stand against the might of the earth?",
+        "stats": { "left": 1, "right": 3 },
+        "count": "40/40",
+        "copies": 2
+      },
+      {
+        "name": "Earth Elemental Myrmidon",
+        "cost": 4,
+        "faction": "Ambition",
+        "type": "Elemental",
+        "ability": "• ●● At end of turn, promote another card played this turn. Ambition Focus ► Draw a card.",
+        "flavor": "'How can you claim this land is yours when the very land itself rises to fight you?' —Marlos",
+        "stats": { "left": 2, "right": 4 },
+        "count": "40/40",
+        "copies": 2
+      },
+      {
+        "name": "Eternal Flame Cultist",
+        "cost": 4,
+        "faction": "Malice",
+        "type": "Human",
+        "ability": "Assassinate a troop. Malice Focus ► ●●. 'His embrace will call the weak and warm the strong.' —Vanifer",
+        "flavor": "'His embrace will call the weak and warm the strong.' —Vanifer",
+        "stats": { "left": 2, "right": 4 },
+        "count": "1/40",
+        "copies": 2
+      },
+      {
+        "name": "Fire Elemental",
+        "cost": 3,
+        "faction": "Malice",
+        "type": "Elemental",
+        "ability": "Choose one: • ●● Malice Focus ► Draw a card. • ●● Malice Focus ► Draw a card.",
+        "flavor": "A force of capricious devastation.",
+        "stats": { "left": 1, "right": 3 },
+        "count": "4/40",
+        "copies": 2
+      },
+      {
+        "name": "Fire Elemental Myrmidon",
+        "cost": 4,
+        "faction": "Malice",
+        "type": "Elemental",
+        "ability": "• ●●●● At end of turn, promote an Obedience card played this turn.",
+        "flavor": "'What if we put the fire INSIDE the armor?' —Elizar Dryflagon",
+        "stats": { "left": 1, "right": 3 },
+        "count": "8/40",
+        "copies": 2
+      },
+      {
+        "name": "Gar Shatterkeel",
+        "cost": 5,
+        "faction": "Conquest",
+        "type": "Human",
+        "ability": "Deploy 3 troops. Recruit a Conquest card that costs 4 or less without paying its cost.",
+        "flavor": "Time to blow the candle out.",
+        "stats": { "left": 2, "right": 5 },
+        "count": "15/40"
+      },
+      {
+        "name": "Howling Hatred Cultist",
+        "cost": 3,
+        "faction": "Guile",
+        "type": "Human",
+        "ability": "Choose one: • Place a spy. • Return one of your spies ► ●●●●. Guile Focus ► ●●. Howling Hatred cultists sustain themselves on nothing more than air and fanatical devotion.",
+        "flavor": "Howling Hatred cultists sustain themselves on nothing more than air and fanatical devotion.",
+        "stats": { "left": 1, "right": 3 },
+        "count": "25/40",
+        "copies": 2
+      },
+      {
+        "name": "Imix",
+        "cost": 6,
+        "faction": "Malice",
+        "type": "Elemental Prince",
+        "ability": "• ●●●●●● Return one of your spies ► ●●●●●●●●.",
+        "flavor": "'Your world was made for me to consume.'",
+        "stats": { "left": 3, "right": 6 },
+        "count": "46/40"
+      },
+      {
+        "name": "Marlos Urnrayle",
+        "cost": 5,
+        "faction": "Ambition",
+        "type": "Medusa",
+        "ability": "• ●● At end of turn, promote another card played this turn. Recruit an Ambition card that costs 4 or less without paying its cost.",
+        "flavor": "I blame the gods. How they envied me!",
+        "stats": { "left": 2, "right": 5 },
+        "count": "40/40"
+      },
+      {
+        "name": "Ogremoch",
+        "cost": 6,
+        "faction": "Ambition",
+        "type": "Elemental Prince",
+        "ability": "• ●●●● At end of turn, promote another card played this turn. Ambition Focus ► ●●. At end of turn, promote another card played this turn.",
+        "flavor": "What he can't crush, he endures and outlasts.",
+        "stats": { "left": 3, "right": 7 },
+        "count": "40/40"
+      },
+      {
+        "name": "Olhydra",
+        "cost": 6,
+        "faction": "Conquest",
+        "type": "Elemental Prince",
+        "ability": "Supplant a white troop anywhere on the board. Conquest Focus ► Deploy 2 troops.",
+        "flavor": "Relentless as the threatening from adversity only to rush back in stronger than before.",
+        "stats": { "left": 3, "right": 6 },
+        "count": "26/40"
+      },
+      {
+        "name": "Vanifer",
+        "cost": 5,
+        "faction": "Malice",
+        "type": "Tiefling",
+        "ability": "Assassinate a troop. Recruit a Malice card that costs 4 or less without paying its cost.",
+        "flavor": "'Time to blow the candle out.'",
+        "stats": { "left": 2, "right": 5 },
+        "count": "9/40"
+      },
+      {
+        "name": "Water Elemental",
+        "cost": 2,
+        "faction": "Conquest",
+        "type": "Elemental",
+        "ability": "Deploy 2 troops. Conquest Focus ► Draw a card.",
+        "flavor": "Living water, ready to drown and crush its foes.",
+        "stats": { "left": 1, "right": 2 },
+        "count": "15/40",
+        "copies": 3
+      },
+      {
+        "name": "Water Elemental Myrmidon",
+        "cost": 4,
+        "faction": "Conquest",
+        "type": "Elemental",
+        "ability": "Assassinate a white troop. At end of turn, promote an Obedience card played this turn.",
+        "flavor": "They said only to follow the commands of their creator.",
+        "stats": { "left": 2, "right": 4 },
+        "count": "31/40",
+        "copies": 2
+      },
+      {
+        "name": "Yan-C-Bin",
+        "cost": 6,
+        "faction": "Guile",
+        "type": "Elemental Prince",
+        "ability": "Place a spy, then assassinate a troop at that spy's site. Guile Focus ► Place a spy.",
+        "flavor": "Subtler than the other elemental princes, Yan-C-Bin operates unseen.",
+        "stats": { "left": 3, "right": 6 },
+        "count": "46/40"
+      }
+    ]
+  },
+  {
+    "set": "Image3_Dragons",
+    "cards": [
+      {
+        "name": "Black Dragon",
+        "cost": 7,
+        "faction": "Conquest",
+        "type": "Dragon",
+        "ability": "Supplant a white troop anywhere on the board. Gain 1 VP for every 3 white troops in your trophy hall.",
+        "flavor": "Those who achieve its dark majesty fall to their knees in worship.",
+        "stats": { "left": 3, "right": 7 },
+        "count": "31/40"
+      },
+      {
+        "name": "Black Wyrmling",
+        "cost": 3,
+        "faction": "Conquest",
+        "type": "Dragon",
+        "ability": "Assassinate a white troop.",
+        "flavor": "'Move, below. It matters not. Dragonkind will rule all.'",
+        "stats": { "left": 1, "right": 4 },
+        "count": "11/40",
+        "copies": 2
+      },
+      {
+        "name": "Blue Dragon",
+        "cost": 8,
+        "faction": "Ambition",
+        "type": "Dragon",
+        "ability": "At end of turn, promote up to 2 other cards played this turn, then gain 1 VP for every 3 cards in your inner circle.",
+        "flavor": "A blue wyrmling will not tolerate insubordination to its kind.",
+        "stats": { "left": 4, "right": 8 },
+        "count": "46/40"
+      },
+      {
+        "name": "Blue Wyrmling",
+        "cost": 5,
+        "faction": "Ambition",
+        "type": "Dragon",
+        "ability": "• ●●●● Return another player's troop or spy.",
+        "flavor": "A blue wyrmling will not tolerate insubordination to its kind.",
+        "stats": { "left": 2, "right": 4 },
+        "count": "81/40",
+        "copies": 2
+      },
+      {
+        "name": "Cleric of Laogzed",
+        "cost": 4,
+        "faction": "Ambition",
+        "type": "Troglodyte",
+        "ability": "Move an enemy troop. At end of turn, promote another card played this turn.",
+        "flavor": "Its stench is exceeded only by its hunger for fresh meat.",
+        "stats": { "left": 2, "right": 4 },
+        "count": "56/40",
+        "copies": 2
+      },
+      {
+        "name": "Cult Fanatic",
+        "cost": 3,
+        "faction": "Ambition",
+        "type": "Half-Dragon",
+        "ability": "You may devour a card in the market.",
+        "flavor": "To feel the blood of dragons in your veins is to feel invincible!",
+        "stats": { "left": 1, "right": 4 },
+        "count": "52/40",
+        "copies": 2
+      },
+      {
+        "name": "Dragon Cultist",
+        "cost": 3,
+        "faction": "Malice",
+        "type": "Human",
+        "ability": "Choose one: • ●●●●",
+        "flavor": "Devoted to bringing an age of draconic rule.",
+        "stats": { "left": 1, "right": 4 },
+        "count": "5/40",
+        "copies": 4
+      },
+      {
+        "name": "Dragonclaw",
+        "cost": 4,
+        "faction": "Malice",
+        "type": "Human",
+        "ability": "Assassinate a troop. Then, if you have 5 or more player troops in your trophy hall, gain ●●.",
+        "flavor": "The colors of their tattoos are based on the dragons they revere.",
+        "stats": { "left": 1, "right": 3 },
+        "count": "40/40",
+        "copies": 2
+      },
+      {
+        "name": "Enchanter of Thay",
+        "cost": 4,
+        "faction": "Guile",
+        "type": "Human",
+        "ability": "Choose one: • Place a spy. • Return one of your spies ► ●●●●●●. • Return one of your spies ► ●●●● Supplant a troop at that spy's site.",
+        "flavor": "'Willing or unwilling, it matters not; your services are required.'",
+        "stats": { "left": 1, "right": 3 },
+        "count": "40/40",
+        "copies": 3
+      },
+      {
+        "name": "Green Dragon",
+        "cost": 7,
+        "faction": "Guile",
+        "type": "Dragon",
+        "ability": "Choose one: • Place a spy, then supplant a troop at that spy's site. • Return one of your spies ► Supplant a troop at that spy's site.",
+        "flavor": "Green dragons treasure plans in centuries.",
+        "stats": { "left": 3, "right": 7 },
+        "count": "40/40"
+      },
+      {
+        "name": "Green Wyrmling",
+        "cost": 4,
+        "faction": "Guile",
+        "type": "Dragon",
+        "ability": "Place a spy. If another player's troop is at that site, gain ●●.",
+        "flavor": "Fresh out of the egg, a wyrmling's poison can dissolve bone and eat through steel.",
+        "stats": { "left": 2, "right": 4 },
+        "count": "21/40",
+        "copies": 2
+      },
+      {
+        "name": "Kobold",
+        "cost": 1,
+        "faction": "Conquest",
+        "type": "Kobold",
+        "ability": "Choose one: • Deploy a troop. • Assassinate a white troop. Most perish before they reach a few decades.",
+        "flavor": "Most perish before they reach a few decades.",
+        "stats": { "left": 1, "right": 2 },
+        "count": "31/40",
+        "copies": 3
+      },
+      {
+        "name": "Rath Modar",
+        "cost": 6,
+        "faction": "Guile",
+        "type": "Human",
+        "ability": "Draw 2 cards. Place a spy. You may draw 1 more spy. Gain 1 VP for every tile under your total control.",
+        "flavor": "'If you ever see one of these, run.' —Blacksoul, the Charred",
+        "stats": { "left": 4, "right": 8 },
+        "count": "29/40"
+      },
+      {
+        "name": "Red Dragon",
+        "cost": 8,
+        "faction": "Malice",
+        "type": "Dragon",
+        "ability": "Supplant a troop. Return one of your spies ► Gain 1 VP for every tile under your total control.",
+        "flavor": "The first thing a red wyrmling develops is its profound sense of arrogance.",
+        "stats": { "left": 4, "right": 8 },
+        "count": "5/40"
+      },
+      {
+        "name": "Red Wyrmling",
+        "cost": 5,
+        "faction": "Malice",
+        "type": "Dragon",
+        "ability": "• ●●●●●",
+        "flavor": "The first thing a red wyrmling develops is its profound sense of arrogance.",
+        "stats": { "left": 3, "right": 5 },
+        "count": "6/40"
+      },
+      {
+        "name": "Severin Silrajin",
+        "cost": 7,
+        "faction": "Malice",
+        "type": "Human",
+        "ability": "• ●●●●●●●●",
+        "flavor": "'I have been given insight into a destiny far greater than I could have hoped.'",
+        "stats": { "left": 4, "right": 8 },
+        "count": "40/40"
+      },
+      {
+        "name": "Watcher of Thay",
+        "cost": 3,
+        "faction": "Guile",
+        "type": "Human",
+        "ability": "Choose one: • Place a spy. • Return one of your spies ► ●●●●.",
+        "flavor": "'What you seek can be bought only with blood.'",
+        "stats": { "left": 2, "right": 3 },
+        "count": "21/40",
+        "copies": 3
+      },
+      {
+        "name": "White Dragon",
+        "cost": 6,
+        "faction": "Conquest",
+        "type": "Dragon",
+        "ability": "Deploy 3 troops. Gain 1 VP for every 2 sites you control.",
+        "flavor": "While they can live to be more than a century, most perish before they reach a few decades.",
+        "stats": { "left": 2, "right": 5 },
+        "count": "10/40"
+      },
+      {
+        "name": "White Wyrmling",
+        "cost": 2,
+        "faction": "Conquest",
+        "type": "Dragon",
+        "ability": "Deploy 2 troops. You may devour a card in the market.",
+        "flavor": "White wyrmlings are born with two basic urges: hunger and greed.",
+        "stats": { "left": 1, "right": 3 },
+        "count": "40/40",
+        "copies": 3
+      },
+      {
+        "name": "Wyrmspeaker",
+        "cost": 3,
+        "faction": "Ambition",
+        "type": "Dwarf",
+        "ability": "At end of turn, promote another card played this turn.",
+        "flavor": "Fanatics gifted with the ability to convince dragons to join their cause.",
+        "stats": { "left": 1, "right": 3 },
+        "count": "31/40",
+        "copies": 3
+      }
+    ]
+  },
+  {
+    "set": "Image4_Drow",
+    "cards": [
+      {
+        "name": "Advance Scout",
+        "cost": 3,
+        "faction": "Conquest",
+        "type": "Drow",
+        "ability": "Supplant a white troop. They infiltrate the web of drow society without disturbing a single strand.",
+        "flavor": "They infiltrate the web of drow society without disturbing a single strand.",
+        "stats": { "left": 1, "right": 3 },
+        "count": "12/40",
+        "copies": 3
+      },
+      {
+        "name": "Advocate",
+        "cost": 2,
+        "faction": "Ambition",
+        "type": "Drow",
+        "ability": "Choose one: • ●●●● At end of turn, promote another card played this turn.",
+        "flavor": "'Greed, avarice, and power: three languages I understand well.'",
+        "stats": { "left": 1, "right": 2 },
+        "count": "31/40",
+        "copies": 4
+      },
+      {
+        "name": "Blackguard",
+        "cost": 3,
+        "faction": "Malice",
+        "type": "Drow",
+        "ability": "Choose one: • ●● • Assassinate a troop.",
+        "flavor": "They patrol the Underdark, culling the lost, the unaware, and the foolhardy.",
+        "stats": { "left": 1, "right": 3 },
+        "count": "4/40",
+        "copies": 4
+      },
+      {
+        "name": "Bounty Hunter",
+        "cost": 4,
+        "faction": "Malice",
+        "type": "Drow",
+        "ability": "• ●●●● • Assassinate a troop. Every life has a price.",
+        "flavor": "Every life has a price.",
+        "stats": { "left": 2, "right": 4 },
+        "count": "2/40",
+        "copies": 2
+      },
+      {
+        "name": "Chosen of Lolth",
+        "cost": 4,
+        "faction": "Ambition",
+        "type": "Drow",
+        "ability": "Return another player's troop or spy. At end of turn, promote another card played this turn.",
+        "flavor": "'Do not think to disobey. The Spider Queen wills it!'",
+        "stats": { "left": 2, "right": 4 },
+        "count": "5/40",
+        "copies": 2
+      },
+      {
+        "name": "Council Member",
+        "cost": 6,
+        "faction": "Malice",
+        "type": "Drow",
+        "ability": "Move up to 2 enemy troops. At end of turn, promote another card played this turn.",
+        "flavor": "In the drow council chambers, scheming is an art form.",
+        "stats": { "left": 3, "right": 6 },
+        "count": "40/40"
+      },
+      {
+        "name": "Deathblade",
+        "cost": 6,
+        "faction": "Malice",
+        "type": "Drow",
+        "ability": "Assassinate 2 troops. The hallmark of the Deathblades be upon you.' —Drow saying",
+        "flavor": "'The hallmark of the Deathblades be upon you.' —Drow saying",
+        "stats": { "left": 3, "right": 6 },
+        "count": "40/40"
+      },
+      {
+        "name": "Doppelganger",
+        "cost": 5,
+        "faction": "Malice",
+        "type": "Doppelganger",
+        "ability": "Supplant a troop.",
+        "flavor": "'Nice life. I think I'll take it.'",
+        "stats": { "left": 3, "right": 6 },
+        "count": "40/40",
+        "copies": 2
+      },
+      {
+        "name": "Drow Negotiator",
+        "cost": 3,
+        "faction": "Ambition",
+        "type": "Drow",
+        "ability": "If there are 4 or more cards in your inner circle, gain ●●●●. At end of turn, promote another card played this turn.",
+        "flavor": "'I can open doors that are locked to all but the Matron Mothers.'",
+        "stats": { "left": 1, "right": 3 },
+        "count": "40/40",
+        "copies": 2
+      },
+      {
+        "name": "Infiltrator",
+        "cost": 3,
+        "faction": "Guile",
+        "type": "Drow",
+        "ability": "Place a spy. If another player's troop is at that site, gain ●●.",
+        "flavor": "'Perfection can only be achieved when the price of failure is death.'",
+        "stats": { "left": 2, "right": 5 },
+        "count": "40/40",
+        "copies": 2
+      },
+      {
+        "name": "Information Broker",
+        "cost": 5,
+        "faction": "Guile",
+        "type": "Drow",
+        "ability": "Choose one: • Return one of your spies ► Draw 3 cards. • Return one of your spies ► Draw 3 cards.",
+        "flavor": "'Why write spells and deal when mere words can bring down a house?'",
+        "stats": { "left": 2, "right": 5 },
+        "count": "26/40",
+        "copies": 2
+      },
+      {
+        "name": "Inquisitor",
+        "cost": 3,
+        "faction": "Malice",
+        "type": "Drow",
+        "ability": "Choose one: • Deploy 4 troops. • Assassinate a troop. Can please the Goddess and bring honor to their house.",
+        "flavor": "Can please the Goddess and bring honor to their house.",
+        "stats": { "left": 2, "right": 4 },
+        "count": "40/40"
+      },
+      {
+        "name": "Master of Melee-Magthere",
+        "cost": 5,
+        "faction": "Conquest",
+        "type": "Drow",
+        "ability": "Choose one: • Deploy 4 troops. • Supplant a white troop anywhere on the board.",
+        "flavor": "The instructors at Melee-Magthere are among the greatest warriors in Menzoberranzan.",
+        "stats": { "left": 2, "right": 5 },
+        "count": "18/40",
+        "copies": 2
+      },
+      {
+        "name": "Masters of Sorcere",
+        "cost": 5,
+        "faction": "Guile",
+        "type": "Drow",
+        "ability": "Choose one: • Deploy 4 troops. • Supplant a white troop anywhere on the board.",
+        "flavor": "The Masters of Sorcere write two purposes: to teach the students and to ensure loyalty to Lolth.",
+        "stats": { "left": 2, "right": 5 },
+        "count": "14/40"
+      },
+      {
+        "name": "Matron Mother",
+        "cost": 6,
+        "faction": "Ambition",
+        "type": "Drow",
+        "ability": "Put your deck into your discard pile. Then: • Return one of your spies ► ●●●● At end of turn, promote a unit from your discard.",
+        "flavor": "The will of the Matron Mother is absolute.",
+        "stats": { "left": 3, "right": 6 },
+        "count": "65/40"
+      },
+      {
+        "name": "Mercenary Squad",
+        "cost": 3,
+        "faction": "Conquest",
+        "type": "Drow",
+        "ability": "Deploy 3 troops. The only other option for those without a house.",
+        "flavor": "The only other option for those without a house.",
+        "stats": { "left": 1, "right": 4 },
+        "count": "40/40",
+        "copies": 2
+      },
+      {
+        "name": "Spellspinner",
+        "cost": 3,
+        "faction": "Guile",
+        "type": "Drow",
+        "ability": "Choose one: • Return one of your spies ► Supplant a troop at that spy's site.",
+        "flavor": "You'll never know your mind is not your own.",
+        "stats": { "left": 1, "right": 3 },
+        "count": "40/40",
+        "copies": 3
+      },
+      {
+        "name": "Spy Master",
+        "cost": 2,
+        "faction": "Guile",
+        "type": "Drow",
+        "ability": "Place a spy. 'I can get you past the gates and the guards. What you do after that is up to you.'",
+        "flavor": "'I can get you past the gates and the guards. What you do after that is up to you.'",
+        "stats": { "left": 1, "right": 2 },
+        "count": "40/40",
+        "copies": 2
+      },
+      {
+        "name": "Underdark Ranger",
+        "cost": 4,
+        "faction": "Conquest",
+        "type": "Drow",
+        "ability": "Assassinate 2 white troops. The knowledge of the Underdark is unparalleled; no place is beyond the reach of their swords.",
+        "flavor": "The knowledge of the Underdark is unparalleled; no place is beyond the reach of their swords.",
+        "stats": { "left": 2, "right": 4 },
+        "count": "40/40",
+        "copies": 2
+      },
+      {
+        "name": "Weaponmaster",
+        "cost": 6,
+        "faction": "Conquest",
+        "type": "Drow",
+        "ability": "Choose three times: • Assassinate a white troop. 'The outcome is up to you.' —Shoor Vandree",
+        "flavor": "'The outcome is up to you.' —Shoor Vandree",
+        "stats": { "left": 3, "right": 6 },
+        "count": "40/40"
+      },
+      {
+        "name": "House Guard",
+        "cost": "-",
+        "faction": "Obedience",
+        "type": "Drow",
+        "ability": "+ House guards represent the few drow who receive training.",
+        "flavor": null,
+        "stats": { "left": 1, "right": 3 },
+        "count": "CORE",
+        "card_class": "STARTER"
+      },
+      {
+        "name": "Insane Outcast",
+        "cost": "-",
+        "faction": "Obedience",
+        "type": "Drow",
+        "ability": "Discard a card from your hand ► Return Insane Outcast to the supply instead. If Insane Outcast would be devoured or promoted, return it to the supply instead. The presence of the demon lords on the Material Plane has broken the minds of many.",
+        "flavor": null,
+        "stats": { "left": 1, "right": 0 },
+        "count": "CORE",
+        "card_class": "CORE"
+      },
+      {
+        "name": "Noble",
+        "cost": "-",
+        "faction": "Obedience",
+        "type": "Drow",
+        "ability": "The voice of a drow from a noble house carries the weight of a thousand commands.",
+        "flavor": null,
+        "stats": { "left": 0, "right": 1 },
+        "count": "CORE",
+        "card_class": "CORE"
+      },
+      {
+        "name": "Priestess of Lolth",
+        "cost": "-",
+        "faction": "Obedience",
+        "type": "Drow",
+        "ability": "Having been chosen for their devotion to Lolth, they now execute her will.",
+        "flavor": null,
+        "stats": { "left": 1, "right": 2 },
+        "count": "CORE",
+        "card_class": "CORE"
+      },
+      {
+        "name": "Soldier",
+        "cost": "-",
+        "faction": "Obedience",
+        "type": "Drow",
+        "ability": "Soldiers defend their superiors against all enemies.",
+        "flavor": null,
+        "stats": { "left": 0, "right": 1 },
+        "count": "CORE",
+        "card_class": "STARTER"
+      }
+    ]
+  },
+  {
+    "set": "Image5_Fiends",
+    "cards": [
+      {
+        "name": "Balor",
+        "cost": 6,
+        "faction": "Malice",
+        "type": "Fiend",
+        "ability": "Devour a card in your hand ► Supplant a white troop anywhere on the board. Then deploy a troop.",
+        "flavor": "The thunder of its whip is enough to desire the resolve of the most hardened warriors.",
+        "stats": { "left": 3, "right": 6 },
+        "count": "15/40"
+      },
+      {
+        "name": "Demogorgon",
+        "cost": 8,
+        "faction": "Conquest",
+        "type": "Fiend",
+        "ability": "Devour a card in your hand ► Supplant 2 white troops. Each opponent recruits 2 Insane Outcasts.",
+        "flavor": "Madness and rage fueled by mindless evil.",
+        "stats": { "left": 5, "right": 10 },
+        "count": "50/40"
+      },
+      {
+        "name": "Derro",
+        "cost": 3,
+        "faction": "Conquest",
+        "type": "Derro",
+        "ability": "Supplant a white troop anywhere on the board. You recruit an Insane Outcast.",
+        "flavor": "'I've got a shiny, sharpe, steely stick ready to poke a hole in your nice, nibbly noggin.'",
+        "stats": { "left": 1, "right": 4 },
+        "count": "40/40",
+        "copies": 2
+      },
+      {
+        "name": "Ettin",
+        "cost": 4,
+        "faction": "Conquest",
+        "type": "Giant",
+        "ability": "Choose one: • Deploy 3 troops. • Assassinate 2 white troops.",
+        "flavor": "Mug was partial to off meat. Tug liked dwarf when he could get it, but off, not so much.",
+        "stats": { "left": 1, "right": 2 },
+        "count": "40/40",
+        "copies": 3
+      },
+      {
+        "name": "Ghoul",
+        "cost": 4,
+        "faction": "Malice",
+        "type": "Undead",
+        "ability": "Each opponent recruits an Insane Outcast. A favored minion of the Prince of Undeath.",
+        "flavor": "A favored minion of the Prince of Undeath.",
+        "stats": { "left": 2, "right": 4 },
+        "count": "40/40",
+        "copies": 3
+      },
+      {
+        "name": "Gibbering Mouther",
+        "cost": 2,
+        "faction": "Conquest",
+        "type": "Aberration",
+        "ability": "Deploy 2 troops, then choose an opponent with a troop adjacent to at least 1 of them. He or she recruits an Insane Outcast.",
+        "flavor": "'If you're trying to make sense of what they're saying, you're already mad.' —Lippo, demi sage",
+        "stats": { "left": 2, "right": 3 },
+        "count": "40/40",
+        "copies": 3
+      },
+      {
+        "name": "Glabrezu",
+        "cost": 5,
+        "faction": "Guile",
+        "type": "Fiend",
+        "ability": "Devour a card in your hand ► Choose one: • Place 2 spies. • Return any number of your spies ► Supplant a troop at each of the returned spies' sites.",
+        "flavor": "Only when they behold a glabrezu's true form do mortals realize the folly of succumbing to its whispers of power.",
+        "stats": { "left": 2, "right": 3 },
+        "count": "40/40"
+      },
+      {
+        "name": "Graz'zt",
+        "cost": 6,
+        "faction": "Guile",
+        "type": "Fiend",
+        "ability": "Promote the top card of your deck. Return any number of your spies ► Supplant a troop at each of the returned spies' sites.",
+        "flavor": "His beauty hides a heart of blackest evil.",
+        "stats": { "left": 2, "right": 3 },
+        "count": "40/40"
+      },
+      {
+        "name": "Hezrou",
+        "cost": 4,
+        "faction": "Ambition",
+        "type": "Fiend",
+        "ability": "Promote the top card of your deck.",
+        "flavor": null,
+        "stats": { "left": 1, "right": 3 },
+        "count": "40/40",
+        "copies": 2
+      },
+      {
+        "name": "Jackalwere",
+        "cost": 2,
+        "faction": "Guile",
+        "type": "Shapechanger",
+        "ability": "Choose one: • Place a spy. • Return any number of your spies ► ●●●●●●●●. They capture victims for their lamia masters, who mercilessly condemn those victims to slavery or death.",
+        "flavor": "They capture victims for their lamia masters, who mercilessly condemn those victims to slavery or death.",
+        "stats": { "left": 2, "right": 4 },
+        "count": "20/40",
+        "copies": 3
+      },
+      {
+        "name": "Marilith",
+        "cost": 6,
+        "faction": "Malice",
+        "type": "Fiend",
+        "ability": "Devour a card in your hand ► ●●●●●●●●. They sing an Abyssal hymn as they lead the demonic hordes to battle.",
+        "flavor": "They sing an Abyssal hymn as they lead the demonic hordes to battle.",
+        "stats": { "left": 2, "right": 5 },
+        "count": "5/40",
+        "copies": 2
+      },
+      {
+        "name": "Mind Flayer",
+        "cost": 3,
+        "faction": "Malice",
+        "type": "Illithid",
+        "ability": "Devour a card in your hand ► Choose one: • ●●●●●●●● • Assassinate a troop.",
+        "flavor": "'You know what goes on in their minds? Filthy, stinking evil. That's what.' —Hlik, rogue extraordinaire",
+        "stats": { "left": 1, "right": 3 },
+        "count": "40/40",
+        "copies": 3
+      },
+      {
+        "name": "Myconid Adult",
+        "cost": 3,
+        "faction": "Ambition",
+        "type": "Myconid",
+        "ability": "Choose an opponent. He or she recruits an Insane Outcast.",
+        "flavor": "'Rejoice in the true union that will meld us all!'",
+        "stats": { "left": 1, "right": 3 },
+        "count": "31/40",
+        "copies": 3
+      },
+      {
+        "name": "Myconid Sovereign",
+        "cost": 4,
+        "faction": "Ambition",
+        "type": "Myconid",
+        "ability": "Choose an opponent. He or she recruits an Insane Outcast. At end of turn, promote another card played this turn.",
+        "flavor": "'Rejoice in the true union that will meld us all!'",
+        "stats": { "left": 2, "right": 5 },
+        "count": "40/40",
+        "copies": 2
+      },
+      {
+        "name": "Nalfeshnee",
+        "cost": 5,
+        "faction": "Ambition",
+        "type": "Fiend",
+        "ability": "• ●●●● Promote the top card of your deck.",
+        "flavor": "'There is always room at our table for ambitious souls.'",
+        "stats": { "left": 2, "right": 5 },
+        "count": "5/40",
+        "copies": 2
+      },
+      {
+        "name": "Night Hag",
+        "cost": 3,
+        "faction": "Guile",
+        "type": "Fiend",
+        "ability": "Choose one: • Place a spy. • Return one of your spies ► Draw 2 cards.",
+        "flavor": "Singing a merry song, she sows the seeds of misery.",
+        "stats": { "left": 1, "right": 3 },
+        "count": "22/42",
+        "copies": 3
+      },
+      {
+        "name": "Orcus",
+        "cost": 8,
+        "faction": "Malice",
+        "type": "Fiend",
+        "ability": "Devour a card in your hand ► Assassinate 2 troops. Then you may take up to 2 troops from any trophy halls and deploy them anywhere on the board.",
+        "flavor": "Death is only the beginning of his depravity.",
+        "stats": { "left": 5, "right": 10 },
+        "count": "40/40"
+      },
+      {
+        "name": "Succubus",
+        "cost": 5,
+        "faction": "Guile",
+        "type": "Fiend",
+        "ability": "Devour a card in your hand ► Place a spy, then assassinate a troop at that spy's site.",
+        "flavor": "Seducers and corruptors, they have found easy prey in the world of mortals.",
+        "stats": { "left": 2, "right": 5 },
+        "count": "27/40",
+        "copies": 2
+      },
+      {
+        "name": "Vrock",
+        "cost": 5,
+        "faction": "Guile",
+        "type": "Fiend",
+        "ability": "• Return one of your spies ► ●●●●●●●●.",
+        "flavor": "Fiends would balk, seeing no reason to bargain when they can simply take what they want.",
+        "stats": { "left": 1, "right": 2 },
+        "count": "40/40"
+      },
+      {
+        "name": "Zuggtmoy",
+        "cost": 6,
+        "faction": "Ambition",
+        "type": "Fiend",
+        "ability": "Devour a card in your inner circle ► ●●●●●●. At end of turn, promote up to 3 cards this turn.",
+        "flavor": "'I have come for my betrothed.' —Zuggtmoy, referring to Araumycos",
+        "stats": { "left": 3, "right": 6 },
+        "count": "29/40"
+      }
+    ]
+  }
+]

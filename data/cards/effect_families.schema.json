@@ -1,0 +1,245 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pyrants.local/schemas/effect_families.schema.json",
+  "title": "First Deck Effect Families Registry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "registry_id",
+    "source",
+    "card_count",
+    "family_count",
+    "families"
+  ],
+  "properties": {
+    "registry_id": { "type": "string", "minLength": 1 },
+    "source": { "type": "string", "minLength": 1 },
+    "card_count": { "type": "integer", "minimum": 1 },
+    "family_count": { "type": "integer", "minimum": 1 },
+    "families": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/family" }
+    }
+  },
+  "$defs": {
+    "family": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["family_id", "canonical_description", "machine", "cards"],
+      "properties": {
+        "family_id": { "type": "string", "minLength": 1 },
+        "canonical_description": { "type": "string", "minLength": 1 },
+        "machine": { "$ref": "#/$defs/machine" },
+        "cards": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/card_ref" }
+        }
+      }
+    },
+    "card_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["card_id", "name"],
+      "properties": {
+        "card_id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 }
+      }
+    },
+    "machine": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "execution_model",
+        "actions",
+        "global_conditions",
+        "state_contract",
+        "parameter_schema"
+      ],
+      "properties": {
+        "schema_version": { "type": "string", "const": "2.0" },
+        "execution_model": {
+          "oneOf": [
+            { "$ref": "#/$defs/execution_sequence" },
+            { "$ref": "#/$defs/execution_modal" },
+            { "$ref": "#/$defs/execution_repeat_choice" }
+          ]
+        },
+        "actions": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/action" }
+        },
+        "global_conditions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/global_condition" }
+        },
+        "state_contract": { "$ref": "#/$defs/state_contract" },
+        "parameter_schema": { "$ref": "#/$defs/parameter_schema" }
+      }
+    },
+    "execution_sequence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "actions"],
+      "properties": {
+        "kind": { "const": "sequence" },
+        "actions": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/action" }
+        }
+      }
+    },
+    "execution_modal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "selection", "options"],
+      "properties": {
+        "kind": { "const": "modal_choice" },
+        "selection": { "enum": ["exactly_one"] },
+        "options": {
+          "type": "array",
+          "minItems": 2,
+          "items": { "$ref": "#/$defs/option" }
+        }
+      }
+    },
+    "execution_repeat_choice": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "repeat_count", "allow_repeat", "options"],
+      "properties": {
+        "kind": { "const": "repeat_choice" },
+        "repeat_count": { "type": "integer", "minimum": 1 },
+        "allow_repeat": { "type": "boolean" },
+        "options": {
+          "type": "array",
+          "minItems": 2,
+          "items": { "$ref": "#/$defs/option" }
+        }
+      }
+    },
+    "option": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["option_id", "actions"],
+      "properties": {
+        "option_id": { "type": "string", "minLength": 1 },
+        "actions": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/action" }
+        }
+      }
+    },
+    "action": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "action_id",
+        "op",
+        "target_scope",
+        "timing",
+        "optional",
+        "quantity",
+        "filters",
+        "source_fragment",
+        "metadata"
+      ],
+      "properties": {
+        "action_id": { "type": "string", "minLength": 1 },
+        "op": {
+          "enum": [
+            "gain_resource",
+            "deploy_troops",
+            "assassinate_troop",
+            "supplant_troop",
+            "place_spy",
+            "return_spy",
+            "return_unit",
+            "draw_cards",
+            "promote_card",
+            "recruit_card",
+            "devour_cost",
+            "force_discard",
+            "move_troop",
+            "transfer_trophy",
+            "play_card",
+            "grant_vp",
+            "conditional_bonus",
+            "custom_effect"
+          ]
+        },
+        "target_scope": { "type": "string", "minLength": 1 },
+        "timing": { "enum": ["immediate", "end_of_turn"] },
+        "optional": { "type": "boolean" },
+        "quantity": { "$ref": "#/$defs/quantity" },
+        "filters": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "source_fragment": { "type": "string", "minLength": 1 },
+        "metadata": { "type": "object" }
+      }
+    },
+    "quantity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "value"],
+      "properties": {
+        "kind": {
+          "enum": ["fixed", "up_to", "variable_repeat", "unspecified"]
+        },
+        "value": {
+          "oneOf": [
+            { "type": "integer", "minimum": 0 },
+            { "type": "null" }
+          ]
+        }
+      }
+    },
+    "global_condition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["condition_type", "description"],
+      "properties": {
+        "condition_type": {
+          "enum": ["focus_check", "conditional_gate", "timing_trigger"]
+        },
+        "description": { "type": "string", "minLength": 1 }
+      }
+    },
+    "state_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reads", "writes"],
+      "properties": {
+        "reads": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "writes": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        }
+      }
+    },
+    "parameter_schema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["numeric_values", "targets", "thresholds", "filters", "timing"],
+      "properties": {
+        "numeric_values": { "enum": ["optional", "required"] },
+        "targets": { "enum": ["optional", "required"] },
+        "thresholds": { "enum": ["optional", "required"] },
+        "filters": { "enum": ["optional", "required"] },
+        "timing": { "enum": ["optional", "required"] }
+      }
+    }
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "setup_id": "base_setup",
+  "starter_deck": {
+    "deck_id": "starter_deck",
+    "entries": [
+      {
+        "card_id": "noble",
+        "count": 7
+      },
+      {
+        "card_id": "soldier",
+        "count": 3
+      }
+    ]
+  },
+  "market_deck": {
+    "deck_id": "market_deck",
+    "entries": [
+      {
+        "card_id": "priestess_of_lolth",
+        "count": 10
+      }
+    ]
+  },
+  "market_row_size": 6
+}
