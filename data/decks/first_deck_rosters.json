@@ -1,0 +1,592 @@
+{
+  "deck_roster_id": "first_deck_rosters",
+  "source": {
+    "catalog": "data/cards/catalog.json",
+    "review_log": "docs/first_deck_review.md",
+    "review_workbook": "data/cards/first_deck_review.xlsx"
+  },
+  "normalizations": [],
+  "decks": [
+    {
+      "deck_id": "aberrations",
+      "name": "Aberrations",
+      "kind": "full_deck",
+      "total_cards": 40,
+      "entries": [
+        {
+          "card_id": "aboleth",
+          "count": 1
+        },
+        {
+          "card_id": "ambassador",
+          "count": 4
+        },
+        {
+          "card_id": "beholder",
+          "count": 1
+        },
+        {
+          "card_id": "brainwashed_slave",
+          "count": 2
+        },
+        {
+          "card_id": "chuul",
+          "count": 2
+        },
+        {
+          "card_id": "cloaker",
+          "count": 3
+        },
+        {
+          "card_id": "cranium_rats",
+          "count": 3
+        },
+        {
+          "card_id": "death_tyrant",
+          "count": 1
+        },
+        {
+          "card_id": "elder_brain",
+          "count": 1
+        },
+        {
+          "card_id": "gauth",
+          "count": 2
+        },
+        {
+          "card_id": "grimlock",
+          "count": 2
+        },
+        {
+          "card_id": "intellect_devourer",
+          "count": 2
+        },
+        {
+          "card_id": "mindwitness",
+          "count": 3
+        },
+        {
+          "card_id": "neogi",
+          "count": 1
+        },
+        {
+          "card_id": "nothic",
+          "count": 2
+        },
+        {
+          "card_id": "puppeteer",
+          "count": 2
+        },
+        {
+          "card_id": "quaggoth",
+          "count": 2
+        },
+        {
+          "card_id": "spectator",
+          "count": 3
+        },
+        {
+          "card_id": "ulitharid",
+          "count": 1
+        },
+        {
+          "card_id": "umber_hulk",
+          "count": 2
+        }
+      ]
+    },
+    {
+      "deck_id": "dragon",
+      "name": "Dragon",
+      "kind": "full_deck",
+      "total_cards": 40,
+      "entries": [
+        {
+          "card_id": "black_dragon",
+          "count": 1
+        },
+        {
+          "card_id": "black_wyrmling",
+          "count": 2
+        },
+        {
+          "card_id": "blue_dragon",
+          "count": 1
+        },
+        {
+          "card_id": "blue_wyrmling",
+          "count": 2
+        },
+        {
+          "card_id": "cleric_of_laogzed",
+          "count": 2
+        },
+        {
+          "card_id": "cult_fanatic",
+          "count": 2
+        },
+        {
+          "card_id": "dragon_cultist",
+          "count": 4
+        },
+        {
+          "card_id": "dragonclaw",
+          "count": 2
+        },
+        {
+          "card_id": "enchanter_of_thay",
+          "count": 3
+        },
+        {
+          "card_id": "green_dragon",
+          "count": 1
+        },
+        {
+          "card_id": "green_wyrmling",
+          "count": 2
+        },
+        {
+          "card_id": "kobold",
+          "count": 3
+        },
+        {
+          "card_id": "rather_modar",
+          "count": 1
+        },
+        {
+          "card_id": "red_dragon",
+          "count": 1
+        },
+        {
+          "card_id": "red_wyrmling",
+          "count": 2
+        },
+        {
+          "card_id": "severin_silrajin",
+          "count": 1
+        },
+        {
+          "card_id": "watcher_of_thay",
+          "count": 3
+        },
+        {
+          "card_id": "white_dragon",
+          "count": 1
+        },
+        {
+          "card_id": "white_wyrmling",
+          "count": 3
+        },
+        {
+          "card_id": "wyrmspeaker",
+          "count": 3
+        }
+      ]
+    },
+    {
+      "deck_id": "drow",
+      "name": "Drow",
+      "kind": "full_deck",
+      "total_cards": 40,
+      "entries": [
+        {
+          "card_id": "advance_scout",
+          "count": 3
+        },
+        {
+          "card_id": "advocate",
+          "count": 4
+        },
+        {
+          "card_id": "blackguard",
+          "count": 4
+        },
+        {
+          "card_id": "bounty_hunter",
+          "count": 2
+        },
+        {
+          "card_id": "chosen_of_lolth",
+          "count": 2
+        },
+        {
+          "card_id": "council_member",
+          "count": 1
+        },
+        {
+          "card_id": "deathblade",
+          "count": 1
+        },
+        {
+          "card_id": "doppelganger",
+          "count": 2
+        },
+        {
+          "card_id": "drow_negotiator",
+          "count": 2
+        },
+        {
+          "card_id": "infiltrator",
+          "count": 2
+        },
+        {
+          "card_id": "information_broker",
+          "count": 2
+        },
+        {
+          "card_id": "inquisitor",
+          "count": 1
+        },
+        {
+          "card_id": "master_of_melee_magthere",
+          "count": 2
+        },
+        {
+          "card_id": "masters_of_sorcere",
+          "count": 1
+        },
+        {
+          "card_id": "matron_mother",
+          "count": 1
+        },
+        {
+          "card_id": "mercenary_squad",
+          "count": 2
+        },
+        {
+          "card_id": "spellspinner",
+          "count": 3
+        },
+        {
+          "card_id": "spy_master",
+          "count": 2
+        },
+        {
+          "card_id": "underdark_ranger",
+          "count": 2
+        },
+        {
+          "card_id": "weaponmaster",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "deck_id": "elementals",
+      "name": "Elementals",
+      "kind": "full_deck",
+      "total_cards": 40,
+      "entries": [
+        {
+          "card_id": "aerisi_kalinoth",
+          "count": 1
+        },
+        {
+          "card_id": "air_elemental",
+          "count": 4
+        },
+        {
+          "card_id": "air_elemental_myrmidon",
+          "count": 2
+        },
+        {
+          "card_id": "black_earth_cultist",
+          "count": 4
+        },
+        {
+          "card_id": "crushing_wave_cultist",
+          "count": 3
+        },
+        {
+          "card_id": "earth_elemental",
+          "count": 2
+        },
+        {
+          "card_id": "earth_elemental_myrmidon",
+          "count": 2
+        },
+        {
+          "card_id": "eternal_flame_cultist",
+          "count": 3
+        },
+        {
+          "card_id": "fire_elemental",
+          "count": 3
+        },
+        {
+          "card_id": "fire_elemental_myrmidon",
+          "count": 2
+        },
+        {
+          "card_id": "gar_shatterkeel",
+          "count": 1
+        },
+        {
+          "card_id": "howling_hatred_cultist",
+          "count": 2
+        },
+        {
+          "card_id": "imix",
+          "count": 1
+        },
+        {
+          "card_id": "marlos_urnrayle",
+          "count": 1
+        },
+        {
+          "card_id": "ogremoch",
+          "count": 1
+        },
+        {
+          "card_id": "olhydra",
+          "count": 1
+        },
+        {
+          "card_id": "vanifer",
+          "count": 1
+        },
+        {
+          "card_id": "water_elemental",
+          "count": 3
+        },
+        {
+          "card_id": "water_elemental_myrmidon",
+          "count": 2
+        },
+        {
+          "card_id": "yan_c_bin",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "deck_id": "fungus",
+      "name": "Fungus",
+      "kind": "full_deck",
+      "total_cards": 40,
+      "entries": [
+        {
+          "card_id": "balor",
+          "count": 1
+        },
+        {
+          "card_id": "demogorgon",
+          "count": 1
+        },
+        {
+          "card_id": "derro",
+          "count": 2
+        },
+        {
+          "card_id": "ettin",
+          "count": 3
+        },
+        {
+          "card_id": "ghoul",
+          "count": 3
+        },
+        {
+          "card_id": "gibbering_mouther",
+          "count": 3
+        },
+        {
+          "card_id": "glabrezu",
+          "count": 1
+        },
+        {
+          "card_id": "grazzt",
+          "count": 1
+        },
+        {
+          "card_id": "hezrou",
+          "count": 2
+        },
+        {
+          "card_id": "jackalwere",
+          "count": 3
+        },
+        {
+          "card_id": "marilith",
+          "count": 2
+        },
+        {
+          "card_id": "mind_flayer",
+          "count": 3
+        },
+        {
+          "card_id": "myconid_adult",
+          "count": 3
+        },
+        {
+          "card_id": "myconid_sovereign",
+          "count": 2
+        },
+        {
+          "card_id": "nalfeshnee",
+          "count": 2
+        },
+        {
+          "card_id": "night_hag",
+          "count": 3
+        },
+        {
+          "card_id": "orcus",
+          "count": 1
+        },
+        {
+          "card_id": "succubus",
+          "count": 2
+        },
+        {
+          "card_id": "vrock",
+          "count": 1
+        },
+        {
+          "card_id": "zuggtmoy",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "deck_id": "undead",
+      "name": "Undead",
+      "kind": "full_deck",
+      "total_cards": 40,
+      "entries": [
+        {
+          "card_id": "banshee",
+          "count": 2
+        },
+        {
+          "card_id": "carrion_crawler",
+          "count": 2
+        },
+        {
+          "card_id": "conjurer",
+          "count": 3
+        },
+        {
+          "card_id": "cultist_of_myrkul",
+          "count": 3
+        },
+        {
+          "card_id": "death_knight",
+          "count": 1
+        },
+        {
+          "card_id": "flesh_golem",
+          "count": 2
+        },
+        {
+          "card_id": "ghost",
+          "count": 2
+        },
+        {
+          "card_id": "high_priest_of_myrkul",
+          "count": 1
+        },
+        {
+          "card_id": "lich",
+          "count": 1
+        },
+        {
+          "card_id": "minotaur_skeleton",
+          "count": 2
+        },
+        {
+          "card_id": "mummy_lord",
+          "count": 1
+        },
+        {
+          "card_id": "necromancer",
+          "count": 2
+        },
+        {
+          "card_id": "ogre_zombie",
+          "count": 2
+        },
+        {
+          "card_id": "ravenous_zombies",
+          "count": 2
+        },
+        {
+          "card_id": "revenant",
+          "count": 1
+        },
+        {
+          "card_id": "skeletal_horde",
+          "count": 3
+        },
+        {
+          "card_id": "vampire",
+          "count": 1
+        },
+        {
+          "card_id": "vampire_spawn",
+          "count": 3
+        },
+        {
+          "card_id": "wight",
+          "count": 4
+        },
+        {
+          "card_id": "wraith",
+          "count": 2
+        }
+      ]
+    },
+    {
+      "deck_id": "starter_deck",
+      "name": "Starter Deck",
+      "kind": "starter_deck",
+      "total_cards": 10,
+      "per_player": true,
+      "entries": [
+        {
+          "card_id": "noble",
+          "count": 7
+        },
+        {
+          "card_id": "soldier",
+          "count": 3
+        }
+      ]
+    },
+    {
+      "deck_id": "house_guard",
+      "name": "House Guard",
+      "kind": "single_card_stack",
+      "total_cards": 15,
+      "entries": [
+        {
+          "card_id": "house_guard",
+          "count": 15
+        }
+      ]
+    },
+    {
+      "deck_id": "insane_outcast",
+      "name": "Insane Outcast",
+      "kind": "single_card_stack",
+      "total_cards": 30,
+      "entries": [
+        {
+          "card_id": "insane_outcast",
+          "count": 30
+        }
+      ]
+    },
+    {
+      "deck_id": "priestess_of_lolth",
+      "name": "Priestess of Lolth",
+      "kind": "single_card_stack",
+      "total_cards": 15,
+      "entries": [
+        {
+          "card_id": "priestess_of_lolth",
+          "count": 15
+        }
+      ]
+    }
+  ]
+}

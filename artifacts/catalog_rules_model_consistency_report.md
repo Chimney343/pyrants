@@ -1,0 +1,184 @@
+# DEPRECATED
+
+This legacy report is retained for history but is no longer canonical.
+
+- Canonical audit: `docs/catalog_execution_audit.md`
+- Final dated sweep: `docs/final_catalog_sweep_2026-05-31.md`
+
+The legacy report uses older fixed-sum heuristics and can over-report inconsistencies for dynamic card models.
+
+# Catalog Rules vs Execution Model Consistency Report
+
+Total cards: 125
+Consistent: 86
+Inconsistent: 39
+
+## Inconsistent Cards
+
+- gibbering_mouther (Gibbering Mouther): deploy_troops_expected_2_but_no_fixed_quantity
+- glabrezu (Glabrezu): assassinate_troop_expected_2_but_no_fixed_quantity
+- grazzt (Graz'zt): place_spy_expected_2_but_action_missing
+- green_wyrmling (Green Wyrmling): gain_influence_expected_2_fixed_sum_0
+- grimlock (Grimlock): draw_cards_expected_2_but_no_fixed_quantity
+- howling_hatred_cultist (Howling Hatred Cultist): gain_influence_expected_3_fixed_sum_0, gain_power_expected_1_fixed_sum_0
+- imix (Imix): gain_power_expected_6_fixed_sum_2
+- infiltrator (Infiltrator): gain_power_expected_1_fixed_sum_0
+- information_broker (Information Broker): draw_cards_expected_3_but_action_missing
+- intellect_devourer (intellect Devourer): gain_influence_expected_3_fixed_sum_2
+- jackalwere (Jackalwere): gain_power_expected_2_fixed_sum_0
+- marilith (Marilith): gain_power_expected_5_fixed_sum_0
+- marlos_urnrayle (Marlos Urnrayle): gain_influence_expected_1_fixed_sum_2
+- master_of_melee_magthere (Master of Melee-Magthere): deploy_troops_expected_4_but_no_fixed_quantity
+- masters_of_sorcere (Masters of Sorcere): place_spy_expected_2_but_no_fixed_quantity
+- mind_flayer (Mind Flayer): gain_influence_expected_3_fixed_sum_0, modal_text_but_execution_kind_sequence
+- minotaur_skeleton (Minotaur Skeleton): deploy_troops_expected_3_but_no_fixed_quantity
+- nalfeshnee (nalfeshnee): gain_influence_expected_3_fixed_sum_2
+- necromancer (Necromancer): gain_influence_expected_3_fixed_sum_2
+- neogi (Neogi): deploy_troops_expected_4_but_no_fixed_quantity, end_of_turn_text_but_no_end_of_turn_action
+- night_hag (Night Hag): draw_cards_expected_2_but_action_missing
+- noble (Noble): gain_influence_expected_1_fixed_sum_0
+- olhydra (Olhydra): deploy_troops_expected_2_but_no_fixed_quantity
+- orcus (Orcus): assassinate_troop_expected_2_but_no_fixed_quantity
+- rather_modar (Rather Modar): draw_cards_expected_2_but_no_fixed_quantity
+- ravenous_zombies (Ravenous Zombies): gain_power_expected_1_fixed_sum_2
+- revenant (Revenant): assassinate_troop_expected_2_but_no_fixed_quantity
+- severin_silrajin (Severin Silrajin): gain_power_expected_5_fixed_sum_2
+- skeletal_horde (Skeletal Horde): deploy_troops_expected_2_but_no_fixed_quantity
+- soldier (Soldier): gain_power_expected_1_fixed_sum_0
+- umber_hulk (Umber Hulk): deploy_troops_expected_3_but_no_fixed_quantity
+- underdark_ranger (Underdark Ranger): assassinate_troop_expected_2_but_no_fixed_quantity
+- vampire_spawn (Vampie Spawn): gain_influence_expected_1_fixed_sum_2
+- vrock (Vrock): gain_power_expected_5_fixed_sum_0, modal_text_but_execution_kind_sequence
+- watcher_of_thay (Watcher of Thay): gain_influence_expected_3_fixed_sum_0
+- water_elemental (Water Elemental): deploy_troops_expected_2_but_no_fixed_quantity
+- white_dragon (White Dragon): deploy_troops_expected_3_but_no_fixed_quantity
+- wyrmspeaker (Wyrmspeaker): gain_influence_expected_1_fixed_sum_2
+- zuggtmoy (Zuggtmoy): gain_influence_expected_3_fixed_sum_0
+
+## All Cards
+
+- aboleth: consistent (none)
+- advance_scout: consistent (none)
+- advocate: consistent (none)
+- aerisi_kalinoth: consistent (none)
+- air_elemental: consistent (none)
+- air_elemental_myrmidon: consistent (none)
+- ambassador: consistent (none)
+- balor: consistent (none)
+- banshee: consistent (none)
+- beholder: consistent (none)
+- black_dragon: consistent (none)
+- black_earth_cultist: consistent (none)
+- black_wyrmling: consistent (none)
+- blackguard: consistent (none)
+- blue_dragon: consistent (none)
+- blue_wyrmling: consistent (none)
+- bounty_hunter: consistent (none)
+- brainwashed_slave: consistent (none)
+- carrion_crawler: consistent (none)
+- chosen_of_lolth: consistent (none)
+- chuul: consistent (none)
+- cleric_of_laogzed: consistent (none)
+- cloaker: consistent (none)
+- conjurer: consistent (none)
+- council_member: consistent (none)
+- cranium_rats: consistent (none)
+- crushing_wave_cultist: consistent (none)
+- cult_fanatic: consistent (none)
+- cultist_of_myrkul: consistent (none)
+- death_knight: consistent (none)
+- death_tyrant: consistent (none)
+- deathblade: consistent (none)
+- demogorgon: consistent (none)
+- derro: consistent (none)
+- doppelganger: consistent (none)
+- dragon_cultist: consistent (none)
+- dragonclaw: consistent (none)
+- drow_negotiator: consistent (none)
+- earth_elemental: consistent (none)
+- earth_elemental_myrmidon: consistent (none)
+- elder_brain: consistent (none)
+- enchanter_of_thay: consistent (none)
+- eternal_flame_cultist: consistent (none)
+- ettin: consistent (none)
+- fire_elemental: consistent (none)
+- fire_elemental_myrmidon: consistent (none)
+- flesh_golem: consistent (none)
+- gar_shatterkeel: consistent (none)
+- gauth: consistent (none)
+- ghost: consistent (none)
+- ghoul: consistent (none)
+- gibbering_mouther: inconsistent (deploy_troops_expected_2_but_no_fixed_quantity)
+- glabrezu: inconsistent (assassinate_troop_expected_2_but_no_fixed_quantity)
+- grazzt: inconsistent (place_spy_expected_2_but_action_missing)
+- green_dragon: consistent (none)
+- green_wyrmling: inconsistent (gain_influence_expected_2_fixed_sum_0)
+- grimlock: inconsistent (draw_cards_expected_2_but_no_fixed_quantity)
+- hezrou: consistent (none)
+- high_priest_of_myrkul: consistent (none)
+- house_guard: consistent (none)
+- howling_hatred_cultist: inconsistent (gain_influence_expected_3_fixed_sum_0, gain_power_expected_1_fixed_sum_0)
+- imix: inconsistent (gain_power_expected_6_fixed_sum_2)
+- infiltrator: inconsistent (gain_power_expected_1_fixed_sum_0)
+- information_broker: inconsistent (draw_cards_expected_3_but_action_missing)
+- inquisitor: consistent (none)
+- insane_outcast: consistent (none)
+- intellect_devourer: inconsistent (gain_influence_expected_3_fixed_sum_2)
+- jackalwere: inconsistent (gain_power_expected_2_fixed_sum_0)
+- kobold: consistent (none)
+- lich: consistent (none)
+- marilith: inconsistent (gain_power_expected_5_fixed_sum_0)
+- marlos_urnrayle: inconsistent (gain_influence_expected_1_fixed_sum_2)
+- master_of_melee_magthere: inconsistent (deploy_troops_expected_4_but_no_fixed_quantity)
+- masters_of_sorcere: inconsistent (place_spy_expected_2_but_no_fixed_quantity)
+- matron_mother: consistent (none)
+- mercenary_squad: consistent (none)
+- mind_flayer: inconsistent (gain_influence_expected_3_fixed_sum_0, modal_text_but_execution_kind_sequence)
+- mindwitness: consistent (none)
+- minotaur_skeleton: inconsistent (deploy_troops_expected_3_but_no_fixed_quantity)
+- mummy_lord: consistent (none)
+- myconid_adult: consistent (none)
+- myconid_sovereign: consistent (none)
+- nalfeshnee: inconsistent (gain_influence_expected_3_fixed_sum_2)
+- necromancer: inconsistent (gain_influence_expected_3_fixed_sum_2)
+- neogi: inconsistent (deploy_troops_expected_4_but_no_fixed_quantity, end_of_turn_text_but_no_end_of_turn_action)
+- night_hag: inconsistent (draw_cards_expected_2_but_action_missing)
+- noble: inconsistent (gain_influence_expected_1_fixed_sum_0)
+- nothic: consistent (none)
+- ogre_zombie: consistent (none)
+- ogremoch: consistent (none)
+- olhydra: inconsistent (deploy_troops_expected_2_but_no_fixed_quantity)
+- orcus: inconsistent (assassinate_troop_expected_2_but_no_fixed_quantity)
+- priestess_of_lolth: consistent (none)
+- puppeteer: consistent (none)
+- quaggoth: consistent (none)
+- rather_modar: inconsistent (draw_cards_expected_2_but_no_fixed_quantity)
+- ravenous_zombies: inconsistent (gain_power_expected_1_fixed_sum_2)
+- red_dragon: consistent (none)
+- red_wyrmling: consistent (none)
+- revenant: inconsistent (assassinate_troop_expected_2_but_no_fixed_quantity)
+- severin_silrajin: inconsistent (gain_power_expected_5_fixed_sum_2)
+- skeletal_horde: inconsistent (deploy_troops_expected_2_but_no_fixed_quantity)
+- soldier: inconsistent (gain_power_expected_1_fixed_sum_0)
+- spectator: consistent (none)
+- spellspinner: consistent (none)
+- spy_master: consistent (none)
+- succubus: consistent (none)
+- ulitharid: consistent (none)
+- umber_hulk: inconsistent (deploy_troops_expected_3_but_no_fixed_quantity)
+- underdark_ranger: inconsistent (assassinate_troop_expected_2_but_no_fixed_quantity)
+- vampire: consistent (none)
+- vampire_spawn: inconsistent (gain_influence_expected_1_fixed_sum_2)
+- vanifer: consistent (none)
+- vrock: inconsistent (gain_power_expected_5_fixed_sum_0, modal_text_but_execution_kind_sequence)
+- watcher_of_thay: inconsistent (gain_influence_expected_3_fixed_sum_0)
+- water_elemental: inconsistent (deploy_troops_expected_2_but_no_fixed_quantity)
+- water_elemental_myrmidon: consistent (none)
+- weaponmaster: consistent (none)
+- white_dragon: inconsistent (deploy_troops_expected_3_but_no_fixed_quantity)
+- white_wyrmling: consistent (none)
+- wight: consistent (none)
+- wraith: consistent (none)
+- wyrmspeaker: inconsistent (gain_influence_expected_1_fixed_sum_2)
+- yan_c_bin: consistent (none)
+- zuggtmoy: inconsistent (gain_influence_expected_3_fixed_sum_0)
