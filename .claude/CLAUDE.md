@@ -11,27 +11,23 @@
 > (documentation, ownership, history, decisions). **Always verify against
 > actual source files before making changes** — the index may be stale.
 
-Last indexed: 2026-05-31 (commit d7bb1bd). Confidence: 100%.
+Last indexed: 2026-05-31 (commit dfe7732). Confidence: 100%.
 ### Architecture
-This repository implements the Kilo board game engine: it ingests game configuration data (card catalogs, board layouts, rule sets) through game_setup/loaders.py and board_package.py, transforms game state via the engine/ modules (state.py, moves.py, rules.py, scoring.py, phases.py), and produces rendered game views (interface/game_renderer.py, board_renderer.py), simulation outputs (game_simulation.py), and audit reports (scripts/) as its primary artifacts. | Layer | Technologies | Rationale |
-|-------|--------------|-----------|
-| **Core engine** | Python (15.4% of codebase) | Game logic, state machine, rules, scoring, simulation |
-| **Frontend / UI** | TypeScript (.kilo package), JavaScript (12.5%) | Game view rendering, interactive board display |
-| **Configuration & Data** | YAML (1.8%), TOML (0.3%), JSON (8.9%) | Card catalogs, board layouts, rule definitions, artifact reports |
-| **Documentation** | Markdown (60.8%) | Rules, guides, architecture docs, auto‑generated reports |
+Repo is a board game engine that ingests game package definitions (rules, boards, components), orchestrates turn-based game sessions by validating and applying player moves against the game state, and produces rendered board views and simulation traces for interactive play. The pipeline from input to output proceeds through three stages: (1) game setup — loaders parse game‐package files (e.g., JSON, TOML, YAML) into structured objects; (2) engine execution — the core engine (engine/) manages state transitions, move validation, scoring, and turn phases; (3) output — the interface layer (interface/) converts the internal game state into human‑readable board renderings, while simulation scripts produce offline logs. This architecture decouples the abstract rule system from concrete presentation and testing, allowing multiple frontends (e.g., CLI, web UI) to consume the same engine. | Layer | Technology |
+|-------|------------|
+| **Core game engine** | Python – high signal in engine/, game_setup/ |
+| **Configuration & data** | JSON (12.2%), YAML (1.7%), TOML (0.6%) – used for game definitions and package metadata |
+| **Documentation** | Markdown (46.5%) – includes game manuals and developer guides |
+| **User interface** | JavaScript (8.1%) – hints at a web rendering layer |
+| **Frontend tooling** | .kilo package (TypeScript) – likely a build/packaging tool for the web UI |
+| **Scripts & automation** | Python – utility scripts for auditing, simulation, and state checks |
 
-*No external frameworks are declared in the provided metadata; the engine uses standard Python libraries for parsing and simulation.*
-
-
-
-Based on file centrality and naming conventions, the primary entry points are:
-
-- **game_session.py** — Main orchestration of a game session (top PageRank 0.0094). Likely the command‑line or server entry point for playing a full game. - **game_simulation.py** (PageRank 0.0048) — Headless simulation for testing or AI training.
+The language distribution (Python 30%, Markdown 47%) confirms that the repo is primarily a documented Python engine with auxiliary web/code assets.
 ### Key Modules
 | Module | Purpose | Owner |
 |--------|---------|-------|
 | `community-1` | The **tests** module is the **quality-assurance subsystem** of repowise’s card-g | — |
-| `community-0` | The skills/impeccable module is the **variant-preview and live-reload subsystem* | — |
+| `community-0` | The skills/impeccable module is the **skill lifecycle and injection subsystem**  | — |
 | `community-3` | The interface module is the graphical presentation and authoring subsystem of th | — |
 | `community-2` | The skills/impeccable (6) module is the **transport adapter** of the Impeccable  | — |
 | `community-248` | The **tests** module is the verification subsystem of repowise — it consumes gen | — |
@@ -75,19 +71,23 @@ Based on file centrality and naming conventions, the primary entry points are:
 ### Hotspots (High Churn)
 | File | Churn | 90d Commits | Owner |
 |------|-------|-------------|-------|
-| `artifacts/card_stuck_report.json` | 100.0th %ile | 1 | Chimney343 |
-| `artifacts/catalog_rules_model_consistency_report.json` | 91.7th %ile | 1 | Chimney343 |
-| `data/decks/first_deck_rosters.json` | 83.3th %ile | 1 | Chimney343 |
-| `data/cards/catalog.json` | 75.0th %ile | 1 | Chimney343 |
+| `.agents/skills/grug-brain-development/SKILL.md` | 100.0th %ile | 1 | Chimney343 |
+| `.agents/skills/grug-brain-development/examples/03-locality-of-behavior.md` | 99.0th %ile | 1 | Chimney343 |
+| `.agents/skills/grug-brain-development/examples/04-grug-speak-reviews.md` | 98.1th %ile | 1 | Chimney343 |
+| `.agents/skills/grug-brain-development/references/grugbrain-full.md` | 97.1th %ile | 1 | Chimney343 |
+| `.agents/skills/grug-brain-development/references/complexity-patterns.md` | 96.2th %ile | 1 | Chimney343 |
 
 ## Code health
-Hotspot health: 10.0/10 (stable) ·
-Average: 7.41/10 ·
-Worst: 5.3/10 (`.agents/skills/impeccable/scripts/design-parser.mjs`)
+Hotspot health: 7.63/10 (stable) ·
+Average: 7.45/10 ·
+Worst: 5.3/10 (`.augment/skills/impeccable/scripts/design-parser.mjs`)
 
 ### Critical biomarkers
-- `engine/rules.py` — brain method (_apply_generic_action) — impact −0.4
-- `engine/rules.py` — brain method (_legal_generic_target_selection_moves) — impact −0.4
+- `.agents/skills/impeccable/scripts/live-browser.js` — large method (<anonymous>) — impact −1.1
+- `.agents/skills/impeccable/scripts/live-server.mjs` — complex method (createRequestHandler) — impact −0.5
+- `.agents/skills/impeccable/scripts/live-server.mjs` — complex method (validateEvent) — impact −0.5
+- `.agents/skills/impeccable/scripts/live-server.mjs` — large method (createRequestHandler) — impact −0.5
+- `engine/rules.py` — brain method (_apply_generic_action) — impact −0.3
 
 ### Repowise MCP Tools
 
