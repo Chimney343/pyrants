@@ -2,8 +2,8 @@
 
 This legacy report is retained for history but is no longer canonical.
 
-- Canonical audit: `docs/catalog_execution_audit.md`
-- Final dated sweep: `docs/final_catalog_sweep_2026-05-31.md`
+- Canonical audit: `docs/generated/catalog_execution_audit.md`
+- Current status summary: `docs/cards-status.md`
 
 The legacy report uses older fixed-sum heuristics and can over-report inconsistencies for dynamic card models.
 

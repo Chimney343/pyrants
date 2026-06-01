@@ -1,6 +1,6 @@
 # Engine Action Gap Report
 
-Source review log: docs/first_deck_review.md
+Source review log: docs/source/first_deck_review.md
 
 ## Summary
 

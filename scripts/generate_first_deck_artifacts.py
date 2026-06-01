@@ -1,6 +1,6 @@
 """Generate first-deck family registry, normalized catalog, and engine coverage report.
 
-This script treats docs/first_deck_review.md as the source of truth.
+This script treats docs/source/first_deck_review.md as the source of truth.
 """
 
 from __future__ import annotations
@@ -14,10 +14,10 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
-REVIEW_PATH = ROOT / "docs" / "first_deck_review.md"
+REVIEW_PATH = ROOT / "docs" / "source" / "first_deck_review.md"
 WORKBOOK_CATALOG_PATH = ROOT / "data" / "cards" / "catalog.json"
 DECK_ROSTER_PATH = ROOT / "data" / "decks" / "first_deck_rosters.json"
-GAP_REPORT_PATH = ROOT / "docs" / "engine_action_gap_report.md"
+GAP_REPORT_PATH = ROOT / "docs" / "generated" / "engine_action_gap_report.md"
 
 FULL_DECK_SPECS: dict[str, dict[str, Any]] = {
     "Aberrations": {"deck_id": "aberrations", "name": "Aberrations", "kind": "full_deck", "total_cards": 40},
@@ -536,7 +536,7 @@ def _build_effect_families(cards: list[ReviewedCard]) -> dict[str, Any]:
 
     return {
         "registry_id": "first_deck_effect_families",
-        "source": "docs/first_deck_review.md",
+        "source": "docs/source/first_deck_review.md",
         "card_count": len(cards),
         "family_count": len(families),
         "families": families,
@@ -2370,7 +2370,7 @@ def _build_deck_rosters(cards: list[ReviewedCard], workbook_rows: dict[str, dict
         "deck_roster_id": "first_deck_rosters",
         "source": {
             "catalog": "data/cards/catalog.json",
-            "review_log": "docs/first_deck_review.md",
+            "review_log": "docs/source/first_deck_review.md",
             "review_workbook": "data/cards/first_deck_review.xlsx",
         },
         "normalizations": normalizations,
@@ -2433,7 +2433,7 @@ def _build_gap_report(cards: list[ReviewedCard]) -> str:
     lines = [
         "# Engine Action Gap Report",
         "",
-        "Source review log: docs/first_deck_review.md",
+        "Source review log: docs/source/first_deck_review.md",
         "",
         "## Summary",
         "",

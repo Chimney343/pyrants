@@ -1,4 +1,4 @@
-"""Generate docs/catalog_execution_audit.md from catalog and probe artifacts."""
+"""Generate docs/generated/catalog_execution_audit.md from catalog and probe artifacts."""
 
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ from scripts.catalog_audit import (  # noqa: E402
     render_markdown_report,
 )
 
-DEFAULT_DOC_PATH = ROOT_DIR / "docs" / "catalog_execution_audit.md"
+DEFAULT_DOC_PATH = ROOT_DIR / "docs" / "generated" / "catalog_execution_audit.md"
 
 
 def _args() -> argparse.Namespace:

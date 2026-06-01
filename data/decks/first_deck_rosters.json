@@ -2,7 +2,7 @@
   "deck_roster_id": "first_deck_rosters",
   "source": {
     "catalog": "data/cards/catalog.json",
-    "review_log": "docs/first_deck_review.md",
+    "review_log": "docs/source/first_deck_review.md",
     "review_workbook": "data/cards/first_deck_review.xlsx"
   },
   "normalizations": [],

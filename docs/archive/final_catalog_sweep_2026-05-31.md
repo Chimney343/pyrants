@@ -22,7 +22,7 @@ Applied your requested mismatch direction:
 - Noble -> gain influence
 - Soldier -> gain power
 
-Source-of-truth updates were made in `docs/first_deck_review.md`, then catalog artifacts were regenerated.
+Source-of-truth updates were made in `../source/first_deck_review.md`, then catalog artifacts were regenerated.
 
 ## Verification Run
 
@@ -37,7 +37,7 @@ Commands run:
 
 ## Post-Change Results
 
-From `docs/catalog_execution_audit.md` and `artifacts/card_stuck_report.json`:
+From `../generated/catalog_execution_audit.md` and `artifacts/card_stuck_report.json`:
 
 - Total cards audited: 125
 - Clean cards: 125
@@ -115,5 +115,5 @@ The following files are retained for history but marked deprecated:
 
 Canonical current sources:
 
-- `docs/catalog_execution_audit.md`
-- `docs/final_catalog_sweep_2026-05-31.md`
+- `../generated/catalog_execution_audit.md`
+- `../cards-status.md`

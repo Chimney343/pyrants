@@ -1,5 +1,5 @@
 {
-  "deprecated_notice": "Legacy heuristic report retained for history. Use docs/catalog_execution_audit.md and docs/final_catalog_sweep_2026-05-31.md as canonical sources.",
+  "deprecated_notice": "Legacy heuristic report retained for history. Use docs/generated/catalog_execution_audit.md and docs/cards-status.md as the current sources.",
   "summary": {
     "total_cards": 125,
     "consistent_cards": 86,

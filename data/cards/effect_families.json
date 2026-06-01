@@ -1,6 +1,6 @@
 {
   "registry_id": "first_deck_effect_families",
-  "source": "docs/first_deck_review.md",
+  "source": "docs/source/first_deck_review.md",
   "card_count": 125,
   "family_count": 113,
   "families": [

@@ -8,7 +8,7 @@ Date: 2026-04-27
 
 1. Cleanup reshuffle is deterministic instead of shuffled.
 - Evidence: [engine/rules.py](engine/rules.py#L187), [engine/rules.py](engine/rules.py#L197), [engine/rules.py](engine/rules.py#L199)
-- Source requirement: [docs/tyrants_of_the_underdark_logic.md](docs/tyrants_of_the_underdark_logic.md#L31)
+- Source requirement: [tyrants_of_the_underdark_logic.md](tyrants_of_the_underdark_logic.md#L31)
 - Impact: Draw order becomes predictable after first deck exhaustion, which conflicts with required shuffle behavior and can materially change outcomes.
 - Recommendation: Inject a shuffle dependency (rng or shuffler callable) into cleanup transition logic and add deterministic-seed tests.
 
@@ -40,5 +40,5 @@ The implementation is structurally sound and test-green, but two high-risk rules
 
 ## Follow-Up Plan
 
-- Actionable next steps for both user inputs and implementation work are documented in [docs/next_steps.md](docs/next_steps.md).
-- A tracked revisit checklist is in [docs/revisit_later.md](docs/revisit_later.md).
+- Actionable next steps for both user inputs and implementation work are documented in [next_steps.md](next_steps.md).
+- A tracked revisit checklist is in [revisit_later.md](revisit_later.md).

@@ -31,6 +31,6 @@ Purpose: Park pending decisions and implementation tasks so we can resume quickl
 - Current limitation: one setup profile per game run (no in-session deck switching UI yet).
 
 References:
-- [docs/next_steps.md](docs/next_steps.md)
-- [docs/rule_gaps.md](docs/rule_gaps.md)
-- [docs/phase6_final_review.md](docs/phase6_final_review.md)
+- [next_steps.md](next_steps.md)
+- [rule_gaps.md](rule_gaps.md)
+- [phase6_final_review.md](phase6_final_review.md)
