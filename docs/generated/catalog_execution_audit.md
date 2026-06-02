@@ -123,7 +123,7 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Execution model: `sequence`
 - Rules text: Devour a card from your hand to supplant a white troop anywhere on the board, then deploy 1 troop.
 - Actions:
-  - action_1 -> devour_cost [hand] timing=immediate quantity=unspecified source_fragment=hand_devour
+  - action_1 -> devour [hand] timing=immediate quantity=unspecified source_fragment=hand_devour
   - action_2 -> supplant_troop [board_site] timing=immediate quantity=unspecified source_fragment=supplant_white_troop_anywhere
   - action_3 -> deploy_troops [board_site] timing=immediate quantity=fixed:1 source_fragment=deploy_troop
 - Findings: none
@@ -269,7 +269,7 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Rules text: Gain 3 power. Devour a card in the market and replace it with this one.
 - Actions:
   - action_1 -> gain_resource [self] timing=immediate quantity=fixed:3 source_fragment=gain_power
-  - action_2 -> devour_cost [market] timing=immediate quantity=unspecified source_fragment=devour_market_card_and_self_replace
+  - action_2 -> devour [market] timing=immediate quantity=unspecified source_fragment=devour_market_card_and_self_replace
 - Findings: none
 
 ### Chosen of Lolth (`chosen_of_lolth`)
@@ -387,7 +387,7 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Rules text: Gain 2 influence. You may devour a market card.
 - Actions:
   - action_1 -> gain_resource [self] timing=immediate quantity=fixed:2 source_fragment=gain_influence
-  - action_2 -> devour_cost [market] timing=immediate quantity=unspecified source_fragment=optional_devour_market_card
+  - action_2 -> devour [market] timing=immediate quantity=unspecified source_fragment=optional_devour_market_card
 - Findings: none
 
 ### Cultist of Myrkul (`cultist_of_myrkul`)
@@ -400,7 +400,7 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Rules text: Choose exactly one mode. Either gain 2 influence, or devour this card so that at end of turn you promote up to 2 other cards you played this turn.
 - Actions:
   - option_1_action_1 -> gain_resource [self] timing=immediate quantity=fixed:2 source_fragment=gain_influence
-  - option_2_action_1 -> devour_cost [played_self] timing=immediate quantity=unspecified source_fragment=self_devour
+  - option_2_action_1 -> devour [played_self] timing=immediate quantity=unspecified source_fragment=self_devour
   - option_2_action_2 -> promote_card [self] timing=end_of_turn quantity=variable_repeat source_fragment=triggered_multi_promote
 - Findings: none
 
@@ -454,7 +454,7 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Execution model: `sequence`
 - Rules text: Devour a card from your hand to supplant a white troop anywhere on the board. Then supplant 2 more white troops. Then each opponent recruits 2 Insane Outcasts.
 - Actions:
-  - action_1 -> devour_cost [hand] timing=immediate quantity=unspecified source_fragment=hand_devour
+  - action_1 -> devour [hand] timing=immediate quantity=unspecified source_fragment=hand_devour
   - action_2 -> supplant_troop [board_site] timing=immediate quantity=variable_repeat source_fragment=mass_supplant_white
   - action_3 -> recruit_card [market] timing=immediate quantity=variable_repeat source_fragment=mass_negative_recruit
 - Findings: none
@@ -642,7 +642,7 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Rules text: Gain 2 power. You may devour this card to assassinate a troop.
 - Actions:
   - action_1 -> gain_resource [self] timing=immediate quantity=fixed:2 source_fragment=gain_power
-  - action_2 -> devour_cost [played_self] timing=immediate quantity=unspecified source_fragment=optional_self_devour
+  - action_2 -> devour [played_self] timing=immediate quantity=unspecified source_fragment=optional_self_devour
   - action_3 -> assassinate_troop [board_site] timing=immediate quantity=unspecified source_fragment=assassinate
 - Findings: none
 
@@ -683,8 +683,8 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Rules text: Choose exactly one mode. Either place a spy, or return one of your spies and take the top card from the devour pile into your discard pile for free.
 - Actions:
   - option_1_action_1 -> place_spy [board_site] timing=immediate quantity=unspecified source_fragment=spy
-  - option_2_action_1 -> devour_cost [unknown] timing=immediate quantity=unspecified source_fragment=return_spy
-  - option_2_action_2 -> devour_cost [market] timing=immediate quantity=unspecified source_fragment=play_top_devoured_as_market
+  - option_2_action_1 -> devour [unknown] timing=immediate quantity=unspecified source_fragment=return_spy
+  - option_2_action_2 -> devour [market] timing=immediate quantity=unspecified source_fragment=play_top_devoured_as_market
 - Findings: none
 
 ### Ghoul (`ghoul`)
@@ -722,7 +722,7 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Execution model: `sequence`
 - Rules text: Devour a card from your hand to assassinate 2 troops.
 - Actions:
-  - action_1 -> devour_cost [hand] timing=immediate quantity=unspecified source_fragment=hand_devour
+  - action_1 -> devour [hand] timing=immediate quantity=unspecified source_fragment=hand_devour
   - action_2 -> assassinate_troop [board_site] timing=immediate quantity=fixed:1 source_fragment=assassinate_step_1
   - action_3 -> assassinate_troop [board_site] timing=immediate quantity=fixed:1 source_fragment=assassinate_step_2
 - Findings: none
@@ -965,7 +965,7 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Execution model: `sequence`
 - Rules text: Devour a card from your hand to gain 5 power.
 - Actions:
-  - action_1 -> devour_cost [hand] timing=immediate quantity=unspecified source_fragment=hand_devour
+  - action_1 -> devour [hand] timing=immediate quantity=unspecified source_fragment=hand_devour
   - action_2 -> gain_resource [self] timing=immediate quantity=fixed:5 source_fragment=gain_power
 - Findings: none
 
@@ -1045,9 +1045,9 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Execution model: `modal_choice`
 - Rules text: Devour a card from your hand, then choose exactly one mode: either gain 3 influence, or assassinate a troop.
 - Actions:
-  - option_1_action_1 -> devour_cost [hand] timing=immediate quantity=unspecified source_fragment=hand_devour
+  - option_1_action_1 -> devour [hand] timing=immediate quantity=unspecified source_fragment=hand_devour
   - option_1_action_2 -> gain_resource [self] timing=immediate quantity=fixed:3 source_fragment=gain_influence
-  - option_2_action_1 -> devour_cost [hand] timing=immediate quantity=unspecified source_fragment=hand_devour
+  - option_2_action_1 -> devour [hand] timing=immediate quantity=unspecified source_fragment=hand_devour
   - option_2_action_2 -> assassinate_troop [board_site] timing=immediate quantity=unspecified source_fragment=assassinate
 - Findings: none
 
@@ -1245,7 +1245,7 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Execution model: `sequence`
 - Rules text: Devour a card from your hand for 5 power. Assassinate 2 troops. Take up to 2 troops from any trophy halls and deploy them anywhere on the board.
 - Actions:
-  - action_1 -> devour_cost [hand] timing=immediate quantity=unspecified source_fragment=hand_devour
+  - action_1 -> devour [hand] timing=immediate quantity=unspecified source_fragment=hand_devour
   - action_2 -> gain_resource [self] timing=immediate quantity=fixed:5 source_fragment=gain_power_from_devour
   - action_3 -> assassinate_troop [board_site] timing=immediate quantity=fixed:1 source_fragment=assassinate_step_1
   - action_4 -> assassinate_troop [board_site] timing=immediate quantity=fixed:1 source_fragment=assassinate_step_2
@@ -1378,7 +1378,7 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Rules text: Deploy 2 troops. You can devour this card to deploy 3 more troops.
 - Actions:
   - action_1 -> deploy_troops [board_site] timing=immediate quantity=fixed:2 source_fragment=deploy_troops
-  - action_2 -> devour_cost [played_self] timing=immediate quantity=unspecified source_fragment=optional_self_devour
+  - action_2 -> devour [played_self] timing=immediate quantity=unspecified source_fragment=optional_self_devour
   - action_3 -> deploy_troops [board_site] timing=immediate quantity=unspecified source_fragment=extra_deploy
 - Findings: none
 
@@ -1442,7 +1442,7 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Execution model: `sequence`
 - Rules text: Devour a card from your hand to place a spy and assassinate a troop there.
 - Actions:
-  - action_1 -> devour_cost [hand] timing=immediate quantity=unspecified source_fragment=hand_devour
+  - action_1 -> devour [hand] timing=immediate quantity=unspecified source_fragment=hand_devour
   - action_2 -> place_spy [board_site] timing=immediate quantity=unspecified source_fragment=spy
   - action_3 -> assassinate_troop [board_site] timing=immediate quantity=unspecified source_fragment=assassinate
 - Findings: none
@@ -1457,7 +1457,7 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Rules text: Choose a market card that costs 4 or less. Play it immediately by resolving its instructions without recruiting it. After its full effect finishes, devour that card. While it is being played this way, it does not count for aspect checks or end-of-turn effects.
 - Actions:
   - action_1 -> play_card [inner_circle_or_market] timing=immediate quantity=unspecified source_fragment=play
-  - action_2 -> devour_cost [unknown] timing=immediate quantity=unspecified source_fragment=devour
+  - action_2 -> devour [unknown] timing=immediate quantity=unspecified source_fragment=devour
 - Findings: none
 
 ### Umber Hulk (`umber_hulk`)
@@ -1615,7 +1615,7 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Rules text: Deploy 2 troops. You may devour a card in the market.
 - Actions:
   - action_1 -> deploy_troops [board_site] timing=immediate quantity=fixed:2 source_fragment=deploy_troops
-  - action_2 -> devour_cost [market] timing=immediate quantity=unspecified source_fragment=optional_market_devour
+  - action_2 -> devour [market] timing=immediate quantity=unspecified source_fragment=optional_market_devour
 - Findings: none
 
 ### Wight (`wight`)
@@ -1628,7 +1628,7 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Rules text: Choose exactly one mode. Either gain 2 power, or devour a card from your hand to supplant a troop.
 - Actions:
   - option_1_action_1 -> gain_resource [self] timing=immediate quantity=fixed:2 source_fragment=gain_power
-  - option_2_action_1 -> devour_cost [hand] timing=immediate quantity=unspecified source_fragment=devour_from_hand
+  - option_2_action_1 -> devour [hand] timing=immediate quantity=unspecified source_fragment=devour_from_hand
   - option_2_action_2 -> supplant_troop [board_site] timing=immediate quantity=unspecified source_fragment=supplant
 - Findings: none
 
@@ -1642,7 +1642,7 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Rules text: Place a spy. You may devour this card to assassinate a troop there.
 - Actions:
   - action_1 -> place_spy [board_site] timing=immediate quantity=unspecified source_fragment=spy
-  - action_2 -> devour_cost [played_self] timing=immediate quantity=unspecified source_fragment=optional_self_devour
+  - action_2 -> devour [played_self] timing=immediate quantity=unspecified source_fragment=optional_self_devour
   - action_3 -> assassinate_troop [board_site] timing=immediate quantity=unspecified source_fragment=assassinate_there
 - Findings: none
 
@@ -1682,7 +1682,7 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Execution model: `sequence`
 - Rules text: Devour a card in your inner circle to gain 3 influence and at end of turn promote up to 2 other played cards.
 - Actions:
-  - action_1 -> devour_cost [inner_circle] timing=immediate quantity=unspecified source_fragment=inner_circle_devour
+  - action_1 -> devour [inner_circle] timing=immediate quantity=unspecified source_fragment=inner_circle_devour
   - action_2 -> gain_resource [self] timing=immediate quantity=fixed:3 source_fragment=gain_influence
   - action_3 -> promote_card [self] timing=end_of_turn quantity=variable_repeat source_fragment=triggered_multi_promote
 - Findings: none

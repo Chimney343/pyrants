@@ -141,8 +141,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "Ancient and unknowable, these creatures will only accept complete submission."
+      "effect_payload": {}
     },
     {
       "card_id": "advance_scout",
@@ -207,8 +206,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "They infiltrate the web of drow society without disturbing a single strand."
+      "effect_payload": {}
     },
     {
       "card_id": "advocate",
@@ -326,8 +324,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "'Greed, avarice, and power: three languages I understand well.'"
+      "effect_payload": {}
     },
     {
       "card_id": "aerisi_kalinoth",
@@ -461,8 +458,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "It's hard to remain humble when everyone is beneath you. —Vanifer"
+      "effect_payload": {}
     },
     {
       "card_id": "air_elemental",
@@ -697,8 +693,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "Living tempests, the embodiment of chaos."
+      "effect_payload": {}
     },
     {
       "card_id": "air_elemental_myrmidon",
@@ -803,8 +798,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "'We'll give armor fight just to mock the earth.' —Aerisi Kalinoth"
+      "effect_payload": {}
     },
     {
       "card_id": "ambassador",
@@ -881,8 +875,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "It is important to forge new alliances, no matter how tenuous."
+      "effect_payload": {}
     },
     {
       "card_id": "balor",
@@ -1021,8 +1014,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "The thunder of its whip is enough to desire the resolve of the most hardened warriors."
+      "effect_payload": {}
     },
     {
       "card_id": "banshee",
@@ -1128,8 +1120,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "Where a banshee makes her home, no mortal soul is welcome."
+      "effect_payload": {}
     },
     {
       "card_id": "beholder",
@@ -1230,8 +1221,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "'Negotiating with a beholder is a task as second only to spying on a Maroon Mother.' —Jurlatik Baerne"
+      "effect_payload": {}
     },
     {
       "card_id": "black_dragon",
@@ -1338,8 +1328,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "Those who achieve its dark majesty fall to their knees in worship."
+      "effect_payload": {}
     },
     {
       "card_id": "black_earth_cultist",
@@ -1456,8 +1445,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "Devotion to Ogrémoch gives them an uncanny ability to hold their ground."
+      "effect_payload": {}
     },
     {
       "card_id": "black_wyrmling",
@@ -1556,8 +1544,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "'Move, below. It matters not. Dragonkind will rule all.'"
+      "effect_payload": {}
     },
     {
       "card_id": "blackguard",
@@ -1663,8 +1650,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "They patrol the Underdark, culling the lost, the unaware, and the foolhardy."
+      "effect_payload": {}
     },
     {
       "card_id": "blue_dragon",
@@ -1773,8 +1759,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "A blue wyrmling will not tolerate insubordination to its kind."
+      "effect_payload": {}
     },
     {
       "card_id": "blue_wyrmling",
@@ -1870,8 +1855,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "A blue wyrmling will not tolerate insubordination to its kind."
+      "effect_payload": {}
     },
     {
       "card_id": "bounty_hunter",
@@ -1934,8 +1918,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "Every life has a price."
+      "effect_payload": {}
     },
     {
       "card_id": "brainwashed_slave",
@@ -2100,8 +2083,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "Something terrifying."
+      "effect_payload": {}
     },
     {
       "card_id": "carrion_crawler",
@@ -2202,8 +2184,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "I love the big grubbers: they eat the dead and they're easy to satiate. —Lippo, demi sage"
+      "effect_payload": {}
     },
     {
       "card_id": "chosen_of_lolth",
@@ -2305,8 +2286,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "'Do not think to disobey. The Spider Queen wills it!'"
+      "effect_payload": {}
     },
     {
       "card_id": "chuul",
@@ -2399,8 +2379,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "They follow the ingrained directives of their creator, as they have done since the dawn of time."
+      "effect_payload": {}
     },
     {
       "card_id": "cleric_of_laogzed",
@@ -2500,8 +2479,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "Its stench is exceeded only by its hunger for fresh meat."
+      "effect_payload": {}
     },
     {
       "card_id": "cloaker",
@@ -2634,8 +2612,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "'If you see a leather cape on the ground, stab it. That me.' —Brawlvin Chalminter"
+      "effect_payload": {}
     },
     {
       "card_id": "conjurer",
@@ -2736,8 +2713,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "Plenty more where that came from."
+      "effect_payload": {}
     },
     {
       "card_id": "council_member",
@@ -2837,8 +2813,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "In the drow council chambers, scheming is an art form."
+      "effect_payload": {}
     },
     {
       "card_id": "cranium_rats",
@@ -2931,8 +2906,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "A nest of malevolent intellect lurking in each rat, waiting for them to gather together."
+      "effect_payload": {}
     },
     {
       "card_id": "crushing_wave_cultist",
@@ -3040,8 +3014,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "Cultists sworn to the service of Olhydra, Princess of Elemental Water."
+      "effect_payload": {}
     },
     {
       "card_id": "cult_fanatic",
@@ -3076,43 +3049,43 @@
           },
           {
             "action_id": "action_2",
-             "op": "devour",
-             "target_scope": "market",
-             "timing": "immediate",
-             "optional": true,
-             "quantity": {
-               "kind": "unspecified",
-               "value": null
-             },
-             "filters": [],
-             "source_fragment": "optional_devour_market_card",
-             "metadata": {
-               "source_zone": "market",
-               "self_replace": false
-             }
-           }
-         ]
-       },
-       "actions": [
-         {
-           "action_id": "action_1",
-           "op": "gain_resource",
-           "target_scope": "self",
-           "timing": "immediate",
-           "optional": false,
-           "quantity": {
-             "kind": "fixed",
-             "value": 2
-           },
-           "filters": [],
-           "source_fragment": "gain_influence",
-           "metadata": {
-             "resource": "influence"
-           }
-         },
-         {
-           "action_id": "action_2",
-           "op": "devour",
+            "op": "devour",
+            "target_scope": "market",
+            "timing": "immediate",
+            "optional": true,
+            "quantity": {
+              "kind": "unspecified",
+              "value": null
+            },
+            "filters": [],
+            "source_fragment": "optional_devour_market_card",
+            "metadata": {
+              "source_zone": "market",
+              "self_replace": false
+            }
+          }
+        ]
+      },
+      "actions": [
+        {
+          "action_id": "action_1",
+          "op": "gain_resource",
+          "target_scope": "self",
+          "timing": "immediate",
+          "optional": false,
+          "quantity": {
+            "kind": "fixed",
+            "value": 2
+          },
+          "filters": [],
+          "source_fragment": "gain_influence",
+          "metadata": {
+            "resource": "influence"
+          }
+        },
+        {
+          "action_id": "action_2",
+          "op": "devour",
           "target_scope": "market",
           "timing": "immediate",
           "optional": true,
@@ -3142,8 +3115,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "To feel the blood of dragons in your veins is to feel invincible!"
+      "effect_payload": {}
     },
     {
       "card_id": "cultist_of_myrkul",
@@ -3295,8 +3267,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "'Obedience is only the beginning.'"
+      "effect_payload": {}
     },
     {
       "card_id": "death_knight",
@@ -3393,8 +3364,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "Either flee me, or join me. To choose to fight, is to choose to die."
+      "effect_payload": {}
     },
     {
       "card_id": "death_tyrant",
@@ -3547,8 +3517,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "Nothing is worse than a beholder having nightmares about its mortality."
+      "effect_payload": {}
     },
     {
       "card_id": "deathblade",
@@ -3637,8 +3606,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "'The hallmark of the Deathblades be upon you.' —Drow saying"
+      "effect_payload": {}
     },
     {
       "card_id": "demogorgon",
@@ -3774,8 +3742,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "Madness and rage fueled by mindless evil."
+      "effect_payload": {}
     },
     {
       "card_id": "derro",
@@ -3879,8 +3846,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "'I've got a shiny, sharpe, steely stick ready to poke a hole in your nice, nibbly noggin.'"
+      "effect_payload": {}
     },
     {
       "card_id": "doppelganger",
@@ -3941,8 +3907,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "'Nice life. I think I'll take it.'"
+      "effect_payload": {}
     },
     {
       "card_id": "dragon_cultist",
@@ -4050,8 +4015,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "Devoted to bringing an age of draconic rule."
+      "effect_payload": {}
     },
     {
       "card_id": "dragonclaw",
@@ -4157,8 +4121,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "The colors of their tattoos are based on the dragons they revere."
+      "effect_payload": {}
     },
     {
       "card_id": "drow_negotiator",
@@ -4273,8 +4236,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "'I can open doors that are locked to all but the Matron Mothers.'"
+      "effect_payload": {}
     },
     {
       "card_id": "earth_elemental",
@@ -4418,8 +4380,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "Who can stand against the might of the earth?"
+      "effect_payload": {}
     },
     {
       "card_id": "earth_elemental_myrmidon",
@@ -4522,8 +4483,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "'How can you claim this land is yours when the very land itself rises to fight you?' —Marlos"
+      "effect_payload": {}
     },
     {
       "card_id": "elder_brain",
@@ -4622,8 +4582,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "It eagerly feasts on the brains of its illithid subjugates who desire to achieve 'oneness' with their master."
+      "effect_payload": {}
     },
     {
       "card_id": "enchanter_of_thay",
@@ -4761,8 +4720,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "'Willing or unwilling, it matters not; your services are required.'"
+      "effect_payload": {}
     },
     {
       "card_id": "eternal_flame_cultist",
@@ -4872,8 +4830,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "'His embrace will call the weak and warm the strong.' —Vanifer"
+      "effect_payload": {}
     },
     {
       "card_id": "ettin",
@@ -5011,8 +4968,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "Mug was partial to off meat. Tug liked dwarf when he could get it, but off, not so much."
+      "effect_payload": {}
     },
     {
       "card_id": "fire_elemental",
@@ -5200,8 +5156,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "A force of capricious devastation."
+      "effect_payload": {}
     },
     {
       "card_id": "fire_elemental_myrmidon",
@@ -5304,8 +5259,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "'What if we put the fire INSIDE the armor?' —Elizar Dryflagon"
+      "effect_payload": {}
     },
     {
       "card_id": "flesh_golem",
@@ -5438,8 +5392,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "An earth spirit bound by half flesh and bone, no wonder its existence is fury."
+      "effect_payload": {}
     },
     {
       "card_id": "gar_shatterkeel",
@@ -5539,8 +5492,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "Time to blow the candle out."
+      "effect_payload": {}
     },
     {
       "card_id": "gauth",
@@ -5677,8 +5629,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "If you value something, don't let a gauth see it."
+      "effect_payload": {}
     },
     {
       "card_id": "ghost",
@@ -5822,8 +5773,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "Sometimes, killing your enemies isn't as final as it seems."
+      "effect_payload": {}
     },
     {
       "card_id": "ghoul",
@@ -5920,8 +5870,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "A favored minion of the Prince of Undeath."
+      "effect_payload": {}
     },
     {
       "card_id": "gibbering_mouther",
@@ -6021,8 +5970,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "'If you're trying to make sense of what they're saying, you're already mad.' —Lippo, demi sage"
+      "effect_payload": {}
     },
     {
       "card_id": "glabrezu",
@@ -6149,8 +6097,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "Only when they behold a glabrezu's true form do mortals realize the folly of succumbing to its whispers of power."
+      "effect_payload": {}
     },
     {
       "card_id": "grazzt",
@@ -6320,8 +6267,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "His beauty hides a heart of blackest evil."
+      "effect_payload": {}
     },
     {
       "card_id": "green_dragon",
@@ -6490,8 +6436,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "Green dragons treasure plans in centuries."
+      "effect_payload": {}
     },
     {
       "card_id": "green_wyrmling",
@@ -6595,8 +6540,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "Fresh out of the egg, a wyrmling's poison can dissolve bone and eat through steel."
+      "effect_payload": {}
     },
     {
       "card_id": "grimlock",
@@ -6695,8 +6639,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "Destined to be born, live their lives, and then die in service to higher beings."
+      "effect_payload": {}
     },
     {
       "card_id": "hezrou",
@@ -6796,8 +6739,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": null
+      "effect_payload": {}
     },
     {
       "card_id": "high_priest_of_myrkul",
@@ -6905,8 +6847,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "'Obedience is only the beginning.'"
+      "effect_payload": {}
     },
     {
       "card_id": "house_guard",
@@ -6969,8 +6910,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": null
+      "effect_payload": {}
     },
     {
       "card_id": "howling_hatred_cultist",
@@ -7150,8 +7090,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "Howling Hatred cultists sustain themselves on nothing more than air and fanatical devotion."
+      "effect_payload": {}
     },
     {
       "card_id": "imix",
@@ -7261,8 +7200,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "'Your world was made for me to consume.'"
+      "effect_payload": {}
     },
     {
       "card_id": "infiltrator",
@@ -7366,8 +7304,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "'Perfection can only be achieved when the price of failure is death.'"
+      "effect_payload": {}
     },
     {
       "card_id": "information_broker",
@@ -7500,8 +7437,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "'Why write spells and deal when mere words can bring down a house?'"
+      "effect_payload": {}
     },
     {
       "card_id": "inquisitor",
@@ -7607,8 +7543,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "Can please the Goddess and bring honor to their house."
+      "effect_payload": {}
     },
     {
       "card_id": "insane_outcast",
@@ -7676,8 +7611,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": null
+      "effect_payload": {}
     },
     {
       "card_id": "intellect_devourer",
@@ -7812,8 +7746,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "Why fight your enemies, when you can so easily change their mind?"
+      "effect_payload": {}
     },
     {
       "card_id": "jackalwere",
@@ -7982,8 +7915,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "They capture victims for their lamia masters, who mercilessly condemn those victims to slavery or death."
+      "effect_payload": {}
     },
     {
       "card_id": "kobold",
@@ -8089,8 +8021,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "Most perish before they reach a few decades."
+      "effect_payload": {}
     },
     {
       "card_id": "lich",
@@ -8188,8 +8119,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "Every graveyard is his barracks, and every defeat a temporary setback."
+      "effect_payload": {}
     },
     {
       "card_id": "marilith",
@@ -8290,8 +8220,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "They sing an Abyssal hymn as they lead the demonic hordes to battle."
+      "effect_payload": {}
     },
     {
       "card_id": "marlos_urnrayle",
@@ -8438,8 +8367,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "I blame the gods. How they envied me!"
+      "effect_payload": {}
     },
     {
       "card_id": "master_of_melee_magthere",
@@ -8551,8 +8479,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "The instructors at Melee-Magthere are among the greatest warriors in Menzoberranzan."
+      "effect_payload": {}
     },
     {
       "card_id": "masters_of_sorcere",
@@ -8719,8 +8646,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "The Masters of Sorcere write two purposes: to teach the students and to ensure loyalty to Lolth."
+      "effect_payload": {}
     },
     {
       "card_id": "matron_mother",
@@ -8818,8 +8744,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "The will of the Matron Mother is absolute."
+      "effect_payload": {}
     },
     {
       "card_id": "mercenary_squad",
@@ -8880,8 +8805,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "The only other option for those without a house."
+      "effect_payload": {}
     },
     {
       "card_id": "mind_flayer",
@@ -9059,8 +8983,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "'You know what goes on in their minds? Filthy, stinking evil. That's what.' —Hlik, rogue extraordinaire"
+      "effect_payload": {}
     },
     {
       "card_id": "mindwitness",
@@ -9158,8 +9081,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "'A beholder enslaved by mind flayers. Can you imagine the horrors that could be unleashed?' —Elimster Aumar"
+      "effect_payload": {}
     },
     {
       "card_id": "minotaur_skeleton",
@@ -9337,8 +9259,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "'Any bones will do. The bigger the better.' —Hommel Shur"
+      "effect_payload": {}
     },
     {
       "card_id": "mummy_lord",
@@ -9449,8 +9370,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "His empire will rise again."
+      "effect_payload": {}
     },
     {
       "card_id": "myconid_adult",
@@ -9547,8 +9467,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "'Rejoice in the true union that will meld us all!'"
+      "effect_payload": {}
     },
     {
       "card_id": "myconid_sovereign",
@@ -9651,8 +9570,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "'Rejoice in the true union that will meld us all!'"
+      "effect_payload": {}
     },
     {
       "card_id": "nalfeshnee",
@@ -9755,8 +9673,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "'There is always room at our table for ambitious souls.'"
+      "effect_payload": {}
     },
     {
       "card_id": "necromancer",
@@ -9865,8 +9782,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "'Kill me, then I'll only come back stronger.'"
+      "effect_payload": {}
     },
     {
       "card_id": "neogi",
@@ -9964,8 +9880,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "Controlling creatures from another plane that seek to enslave everything, even their own kind."
+      "effect_payload": {}
     },
     {
       "card_id": "night_hag",
@@ -10098,8 +10013,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "Singing a merry song, she sows the seeds of misery."
+      "effect_payload": {}
     },
     {
       "card_id": "noble",
@@ -10162,8 +10076,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": null
+      "effect_payload": {}
     },
     {
       "card_id": "nothic",
@@ -10296,8 +10209,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "'You know something good. Something secret. I can see it, yes, yesss...'"
+      "effect_payload": {}
     },
     {
       "card_id": "ogre_zombie",
@@ -10368,8 +10280,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "'The enemy may be strong, but soon that strength will be ours to command.' —Attribute Shadowmantis"
+      "effect_payload": {}
     },
     {
       "card_id": "ogremoch",
@@ -10516,8 +10427,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "What he can't crush, he endures and outlasts."
+      "effect_payload": {}
     },
     {
       "card_id": "olhydra",
@@ -10633,8 +10543,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "Relentless as the threatening from adversity only to rush back in stronger than before."
+      "effect_payload": {}
     },
     {
       "card_id": "orcus",
@@ -10825,8 +10734,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "Death is only the beginning of his depravity."
+      "effect_payload": {}
     },
     {
       "card_id": "priestess_of_lolth",
@@ -10889,8 +10797,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": null
+      "effect_payload": {}
     },
     {
       "card_id": "puppeteer",
@@ -10993,8 +10900,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "Sometimes you don't want to see who's pulling the strings."
+      "effect_payload": {}
     },
     {
       "card_id": "quaggoth",
@@ -11059,8 +10965,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "They maul their foes in a frenzy, becoming ever more murderous in the face of death."
+      "effect_payload": {}
     },
     {
       "card_id": "rather_modar",
@@ -11154,8 +11059,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": null
+      "effect_payload": {}
     },
     {
       "card_id": "ravenous_zombies",
@@ -11254,8 +11158,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "Their will has been torn away and all that remains is their insatiable hunger."
+      "effect_payload": {}
     },
     {
       "card_id": "red_dragon",
@@ -11388,8 +11291,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "The first thing a red wyrmling develops is its profound sense of arrogance."
+      "effect_payload": {}
     },
     {
       "card_id": "red_wyrmling",
@@ -11484,8 +11386,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "The first thing a red wyrmling develops is its profound sense of arrogance."
+      "effect_payload": {}
     },
     {
       "card_id": "revenant",
@@ -11620,8 +11521,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "They have one year to either taste sweet vengeance or crumble to dust."
+      "effect_payload": {}
     },
     {
       "card_id": "severin_silrajin",
@@ -11684,8 +11584,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "'I have been given insight into a destiny far greater than I could have hoped.'"
+      "effect_payload": {}
     },
     {
       "card_id": "skeletal_horde",
@@ -11812,8 +11711,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "They heed the summons of spellcasters who call them from their stony tombs and ancient battlefields, or rise of their own accord in places they haunted with death and loss."
+      "effect_payload": {}
     },
     {
       "card_id": "soldier",
@@ -11876,8 +11774,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": null
+      "effect_payload": {}
     },
     {
       "card_id": "spectator",
@@ -11972,8 +11869,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "'If you value something, don't let a gauth see it.' —Vislakhamp Gollanin"
+      "effect_payload": {}
     },
     {
       "card_id": "spellspinner",
@@ -12106,8 +12002,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "You'll never know your mind is not your own."
+      "effect_payload": {}
     },
     {
       "card_id": "spy_master",
@@ -12168,8 +12063,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "'I can get you past the gates and the guards. What you do after that is up to you.'"
+      "effect_payload": {}
     },
     {
       "card_id": "succubus",
@@ -12300,8 +12194,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "Seducers and corruptors, they have found easy prey in the world of mortals."
+      "effect_payload": {}
     },
     {
       "card_id": "ulitharid",
@@ -12407,8 +12300,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "A new illithid whose power and ambition rivals an elder brain."
+      "effect_payload": {}
     },
     {
       "card_id": "umber_hulk",
@@ -12506,8 +12398,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "Those lucky enough to survive an umber hulk attack often remember little of the incident, thanks to the umber hulk's mind-scrambling gaze."
+      "effect_payload": {}
     },
     {
       "card_id": "underdark_ranger",
@@ -12604,8 +12495,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "The knowledge of the Underdark is unparalleled; no place is beyond the reach of their swords."
+      "effect_payload": {}
     },
     {
       "card_id": "vampire",
@@ -12748,8 +12638,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "'Give to me, and you shall live forever by my side.'"
+      "effect_payload": {}
     },
     {
       "card_id": "vampire_spawn",
@@ -12845,8 +12734,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": null
+      "effect_payload": {}
     },
     {
       "card_id": "vanifer",
@@ -12940,8 +12828,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "'Time to blow the candle out.'"
+      "effect_payload": {}
     },
     {
       "card_id": "vrock",
@@ -13080,8 +12967,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "Fiends would balk, seeing no reason to bargain when they can simply take what they want."
+      "effect_payload": {}
     },
     {
       "card_id": "watcher_of_thay",
@@ -13218,8 +13104,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "'What you seek can be bought only with blood.'"
+      "effect_payload": {}
     },
     {
       "card_id": "water_elemental",
@@ -13289,8 +13174,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "Living water, ready to drown and crush its foes."
+      "effect_payload": {}
     },
     {
       "card_id": "water_elemental_myrmidon",
@@ -13395,8 +13279,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "They said only to follow the commands of their creator."
+      "effect_payload": {}
     },
     {
       "card_id": "weaponmaster",
@@ -13502,8 +13385,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "'The outcome is up to you.' —Shoor Vandree"
+      "effect_payload": {}
     },
     {
       "card_id": "white_dragon",
@@ -13600,8 +13482,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "While they can live to be more than a century, most perish before they reach a few decades."
+      "effect_payload": {}
     },
     {
       "card_id": "white_wyrmling",
@@ -13700,8 +13581,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "White wyrmlings are born with two basic urges: hunger and greed."
+      "effect_payload": {}
     },
     {
       "card_id": "wight",
@@ -13845,8 +13725,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "Sometimes, killing your enemies isn't as final as it seems. In return for waging eternal war upon the living, these mortals are granted undeath."
+      "effect_payload": {}
     },
     {
       "card_id": "wraith",
@@ -13977,8 +13856,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "Only their hatred still binds them to this plane. They may direct it upon you."
+      "effect_payload": {}
     },
     {
       "card_id": "wyrmspeaker",
@@ -14081,8 +13959,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "Fanatics gifted with the ability to convince dragons to join their cause."
+      "effect_payload": {}
     },
     {
       "card_id": "yan_c_bin",
@@ -14220,8 +14097,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "Subtler than the other elemental princes, Yan-C-Bin operates unseen."
+      "effect_payload": {}
     },
     {
       "card_id": "zuggtmoy",
@@ -14362,8 +14238,7 @@
         ]
       },
       "effect_key": "generic_card",
-      "effect_payload": {},
-      "flavor": "'I have come for my betrothed.' —Zuggtmoy, referring to Araumycos"
+      "effect_payload": {}
     }
   ]
 }
