@@ -120,8 +120,7 @@ def _state_for_cards(cards: list[dict[str, object]], starter_entries: list[dict[
                 "kind": "site",
                 "adjacent_to": ["site_b"],
                 "troop_capacity": 2,
-                "vp_value": 0,
-                "initial_control_marker": None,
+                "control_vp": 0,
                 "initial_vp_tokens": 0,
             },
             {
@@ -129,8 +128,7 @@ def _state_for_cards(cards: list[dict[str, object]], starter_entries: list[dict[
                 "kind": "site",
                 "adjacent_to": ["site_a"],
                 "troop_capacity": 2,
-                "vp_value": 0,
-                "initial_control_marker": None,
+                "control_vp": 0,
                 "initial_vp_tokens": 0,
             },
         ],
@@ -249,7 +247,7 @@ def test_generic_devour_moves_card_to_devour_pile() -> None:
         [
             _action(
                 "devour",
-                "devour_cost",
+                "devour",
                 target_scope="hand",
                 source_fragment="devour_hand",
                 metadata={"source_zone": "hand", "self_replace": False},
