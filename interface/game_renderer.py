@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Any
 
 import tkinter as tk
@@ -10,6 +9,18 @@ import tkinter as tk
 from engine.state import NodeKind
 from game_setup.board_package import BoardPackageDefinition
 from game_view import GameView
+from interface.board_view import BoardNodeView, build_node_views_from_package
+from interface.shared_board_renderer import (
+    DEFAULT_ROUTE_FILL,
+    DEFAULT_ROUTE_OUTLINE,
+    DEFAULT_SITE_FILL,
+    DEFAULT_SITE_OUTLINE,
+    ROUTE_RADIUS,
+    TROOP_SLOT_RADIUS,
+    draw_edges,
+    draw_route_base,
+    draw_site_base,
+)
 
 PLAYER_COLORS = {
     "p1": "#2f72c4",
@@ -19,26 +30,41 @@ PLAYER_COLORS = {
     "white": "#9ca3af",
 }
 
+EMPTY_ROUTE_FILL = DEFAULT_ROUTE_FILL
+WHITE_ROUTE_FILL = PLAYER_COLORS["white"]
 
-@dataclass(frozen=True)
-class LayoutNodeView:
-    """Merged board topology + layout metadata for one node."""
 
-    node_id: str
-    label: str
-    kind: NodeKind
-    center_x: float
-    center_y: float
-    bounds: tuple[float, float, float, float] | None
-    troop_slot_points: tuple[tuple[float, float], ...]
-    adjacent_to: tuple[str, ...]
+def _total_control_owner(
+    troop_slots: tuple[str | None, ...], spies: tuple[str, ...]
+) -> str | None:
+    non_empty = [s for s in troop_slots if s is not None]
+    if not non_empty or len(non_empty) != len(troop_slots):
+        return None
+    if non_empty[0] == "white":
+        return None
+    if any(s != non_empty[0] for s in non_empty):
+        return None
+    if any(s != non_empty[0] for s in spies):
+        return None
+    return non_empty[0]
+
+
+def _derive_control_owner(
+    troop_slots: tuple[str | None, ...]
+) -> str | None:
+    counts: dict[str, int] = {}
+    for occupant in troop_slots:
+        if occupant is not None:
+            counts[occupant] = counts.get(occupant, 0) + 1
+    if not counts:
+        return None
+    max_count = max(counts.values())
+    leaders = [owner for owner, count in counts.items() if count == max_count]
+    return leaders[0] if len(leaders) == 1 and leaders[0] != "white" else None
 
 
 class GameBoardRenderer:
     """Render board geometry and occupancy overlays for read-only gameplay views."""
-
-    def __init__(self) -> None:
-        self._edge_width = 3
 
     def redraw(
         self,
@@ -47,134 +73,136 @@ class GameBoardRenderer:
         view: GameView,
         *,
         highlighted_node_id: str | None = None,
+        scale: float = 1.0,
     ) -> None:
         """Render the board package and game-state overlays into a canvas."""
 
         canvas.delete("all")
-        layout_index = self._layout_nodes(package)
+        node_views = build_node_views_from_package(package)
         occupancy_by_id = view.board_nodes_by_id
+        node_order = [node.node_id for node in package.layout.nodes]
 
-        drawn_edges: set[tuple[str, str]] = set()
-        for node in layout_index.values():
-            for adjacent_id in node.adjacent_to:
-                if adjacent_id not in layout_index:
-                    continue
-                edge = tuple(sorted((node.node_id, adjacent_id)))
-                if edge in drawn_edges:
-                    continue
-                drawn_edges.add(edge)
-                other = layout_index[adjacent_id]
-                kinds = {node.kind, other.kind}
-                fill = "#9c6a2e" if NodeKind.SITE in kinds else "#777f8f"
-                canvas.create_line(
-                    node.center_x,
-                    node.center_y,
-                    other.center_x,
-                    other.center_y,
-                    fill=fill,
-                    width=self._edge_width,
-                )
+        to_screen = lambda x, y: (x * scale, y * scale)  # noqa: E731
+        scaled = lambda d: d * scale  # noqa: E731
+        draw_edges(canvas, node_views, node_order, to_screen=to_screen, scaled=scaled)
 
-        for node in layout_index.values():
+        for node_id in node_order:
+            node = node_views[node_id]
             occupancy = occupancy_by_id[node.node_id]
             is_highlighted = node.node_id == highlighted_node_id
+
             if node.kind == NodeKind.SITE and node.bounds is not None:
-                left, top, width, height = node.bounds
-                canvas.create_rectangle(
-                    left,
-                    top,
-                    left + width,
-                    top + height,
-                    fill="#f4f1ea",
-                    outline="#1e62c7" if is_highlighted else "#2f3643",
-                    width=3 if is_highlighted else 2,
-                )
-                canvas.create_text(
-                    node.center_x,
-                    node.center_y,
-                    text=node.label,
-                    font=("Segoe UI", 10, "bold"),
-                    fill="#1b2533",
-                )
+                self._draw_site(canvas, node, occupancy, is_highlighted, scale)
             else:
-                radius = 14
-                canvas.create_oval(
-                    node.center_x - radius,
-                    node.center_y - radius,
-                    node.center_x + radius,
-                    node.center_y + radius,
-                    fill="#ece6d6",
-                    outline="#1e62c7" if is_highlighted else "#4a5565",
-                    width=3 if is_highlighted else 2,
-                )
-                canvas.create_text(
-                    node.center_x,
-                    node.center_y,
-                    text=node.label,
-                    font=("Segoe UI", 9, "bold"),
-                    fill="#1b2533",
-                )
+                self._draw_route(canvas, node, occupancy, is_highlighted, scale)
 
-            self._draw_troops(canvas, node, occupancy)
-            self._draw_spy_badges(canvas, node, occupancy)
-            self._draw_node_footer(canvas, node, occupancy)
+    def _draw_site(
+        self,
+        canvas: tk.Canvas,
+        node: BoardNodeView,
+        occupancy: Any,
+        is_highlighted: bool,
+        scale: float,
+    ) -> None:
+        total_owner = _total_control_owner(occupancy.troop_slots, occupancy.spies)
+        if total_owner is not None:
+            outline = PLAYER_COLORS.get(total_owner, DEFAULT_SITE_OUTLINE)
+        elif is_highlighted:
+            outline = "#1e62c7"
+        else:
+            outline = DEFAULT_SITE_OUTLINE
 
-    def _draw_troops(self, canvas: tk.Canvas, node: LayoutNodeView, occupancy: Any) -> None:
-        slot_points = list(node.troop_slot_points)
-        if not slot_points:
-            slot_points = [(node.center_x, node.center_y + 24)]
-        for index, owner_id in enumerate(occupancy.troop_slots):
-            if index >= len(slot_points):
-                break
-            slot_x, slot_y = slot_points[index]
-            fill = PLAYER_COLORS.get(owner_id or "", "#d8dde5") if owner_id is not None else "#d8dde5"
-            outline = "#2b3340" if owner_id is not None else "#8893a5"
-            canvas.create_oval(slot_x - 9, slot_y - 9, slot_x + 9, slot_y + 9, fill=fill, outline=outline, width=1)
-
-    def _draw_spy_badges(self, canvas: tk.Canvas, node: LayoutNodeView, occupancy: Any) -> None:
-        if not occupancy.spies:
-            return
-        badge = " ".join(occupancy.spies)
-        canvas.create_text(
-            node.center_x,
-            node.center_y - 22,
-            text=f"Spies: {badge}",
-            font=("Segoe UI", 8),
-            fill="#4f5b6c",
+        ow = 3 if (is_highlighted or total_owner is not None) else None
+        draw_site_base(
+            canvas, node,
+            to_screen=lambda x, y: (x * scale, y * scale),
+            scaled=lambda d: d * scale,
+            fill=DEFAULT_SITE_FILL, outline=outline, outline_width=ow,
         )
 
-    def _draw_node_footer(self, canvas: tk.Canvas, node: LayoutNodeView, occupancy: Any) -> None:
-        footer_y = node.center_y + 30 if node.kind == NodeKind.ROUTE else node.center_y + 36
-        control = occupancy.control_marker or "none"
+        slot_radius = max(4, int(round(TROOP_SLOT_RADIUS * scale)))
+        troop_row_y = node.center_y * scale
+
+        owner = _derive_control_owner(occupancy.troop_slots) or "none"
+        site_text = f"Owner: {owner}  Control VP: {occupancy.control_vp}"
         canvas.create_text(
-            node.center_x,
-            footer_y,
-            text=f"Ctrl: {control}  VP: {occupancy.vp_tokens}",
-            font=("Segoe UI", 8),
-            fill="#4f5b6c",
+            node.center_x * scale,
+            troop_row_y + slot_radius + max(10, int(round(12 * scale))),
+            text=site_text,
+            font=("Segoe UI", 9),
+            fill="#1b2533",
         )
 
-    def _layout_nodes(self, package: BoardPackageDefinition) -> dict[str, LayoutNodeView]:
-        board_index = {node.node_id: node for node in package.board.nodes}
-        nodes: dict[str, LayoutNodeView] = {}
-        for layout_node in package.layout.nodes:
-            board_node = board_index[layout_node.node_id]
-            bounds = None
-            if layout_node.bounds is not None:
-                bounds = (
-                    layout_node.bounds.x,
-                    layout_node.bounds.y,
-                    layout_node.bounds.width,
-                    layout_node.bounds.height,
-                )
-            nodes[layout_node.node_id] = LayoutNodeView(
-                node_id=layout_node.node_id,
-                label=layout_node.label,
-                kind=layout_node.kind,
-                center_x=layout_node.center.x,
-                center_y=layout_node.center.y,
-                bounds=bounds,
-                troop_slot_points=tuple((slot.x, slot.y) for slot in layout_node.troop_slots),
-                adjacent_to=tuple(board_node.adjacent_to),
+        if occupancy.spies:
+            badge = " ".join(occupancy.spies)
+            sx1 = (node.bounds[0] if node.bounds else 0) * scale  # type: ignore[index]
+            canvas.create_text(
+                node.center_x * scale,
+                sx1 - max(10, int(round(32 * scale))),
+                text=f"Spies: {badge}",
+                font=("Segoe UI", 8),
+                fill="#4f5b6c",
             )
-        return nodes
+
+        for index, owner_id in enumerate(occupancy.troop_slots):
+            if index >= len(node.troop_slot_points):
+                break
+            slot_x, slot_y = node.troop_slot_points[index]
+            slot_sx = slot_x * scale
+            slot_sy = slot_y * scale
+            fill = PLAYER_COLORS.get(owner_id or "", "#d8dde5") if owner_id is not None else "#d8dde5"
+            slot_outline = "#2b3340" if owner_id is not None else "#8893a5"
+            canvas.create_oval(
+                slot_sx - slot_radius,
+                slot_sy - slot_radius,
+                slot_sx + slot_radius,
+                slot_sy + slot_radius,
+                fill=fill,
+                outline=slot_outline,
+                width=1,
+            )
+
+    def _draw_route(
+        self,
+        canvas: tk.Canvas,
+        node: BoardNodeView,
+        occupancy: Any,
+        is_highlighted: bool,
+        scale: float,
+    ) -> None:
+        route_owner = occupancy.troop_slots[0] if occupancy.troop_slots else None
+
+        if route_owner is None:
+            fill = EMPTY_ROUTE_FILL
+            outline_color = DEFAULT_ROUTE_OUTLINE
+        elif route_owner == "white":
+            fill = WHITE_ROUTE_FILL
+            outline_color = DEFAULT_ROUTE_OUTLINE
+        else:
+            fill = PLAYER_COLORS.get(route_owner, DEFAULT_ROUTE_FILL)
+            outline_color = PLAYER_COLORS.get(route_owner, DEFAULT_ROUTE_OUTLINE)
+
+        if is_highlighted:
+            outline_color = "#1e62c7"
+
+        draw_route_base(
+            canvas, node,
+            to_screen=lambda x, y: (x * scale, y * scale),
+            scaled=lambda d: d * scale,
+            fill=fill, outline=outline_color,
+            outline_width=3 if is_highlighted else None,
+        )
+
+        if occupancy.spies:
+            badge = " ".join(occupancy.spies)
+            center_sy = node.center_y * scale
+            route_radius = max(4, int(round(ROUTE_RADIUS * scale)))
+            canvas.create_text(
+                node.center_x * scale,
+                center_sy - (route_radius + 12 * scale),
+                text=f"Spies: {badge}",
+                font=("Segoe UI", 8),
+                fill="#4f5b6c",
+            )
+
+

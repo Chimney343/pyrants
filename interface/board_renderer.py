@@ -6,6 +6,16 @@ from typing import Any
 import tkinter as tk
 
 from engine.state import NodeKind
+from interface.board_view import build_node_views_from_editor
+from interface.shared_board_renderer import (
+    DEFAULT_ROUTE_FILL,
+    DEFAULT_ROUTE_OUTLINE,
+    DEFAULT_SITE_OUTLINE,
+    TROOP_SLOT_RADIUS,
+    draw_edges,
+    draw_route_base,
+    draw_site_base,
+)
 
 
 def _interaction_view(app: Any) -> Any:
@@ -74,104 +84,66 @@ class BoardRenderer:
 
         self.draw_grid(app)
 
-        drawn_edges: set[tuple[str, str]] = set()
+        node_views = build_node_views_from_editor(app.nodes)
+        to_screen = app._to_screen
+        scaled = app._scaled
+        draw_edges(app.canvas, node_views, app.node_order, to_screen=to_screen, scaled=scaled)
 
         for node_id in app.node_order:
             node = app.nodes[node_id]
-            for adjacent_id in sorted(node.adjacent_to):
-                if adjacent_id not in app.nodes:
-                    continue
-
-                edge = tuple(sorted((node_id, adjacent_id)))
-                if edge in drawn_edges:
-                    continue
-                drawn_edges.add(edge)
-
-                other = app.nodes[adjacent_id]
-                kinds = {node.kind, other.kind}
-                fill = "#b6792c" if NodeKind.SITE in kinds else "#6f7483"
-                self.draw_world_line(
-                    app,
-                    [(node.center_x, node.center_y), (other.center_x, other.center_y)],
-                    fill=fill,
-                    width=2,
-                )
-
-        for node_id in app.node_order:
-            node = app.nodes[node_id]
+            node_view = node_views[node_id]
             is_selected = node_id == interaction.selected_node_id
             is_connect_anchor = node_id == interaction.connect_start_node_id
 
             if node.kind == NodeKind.SITE and node.bounds is not None:
-                left, top, width, height = node.bounds
-                right = left + width
-                bottom = top + height
-
-                sx1, sy1 = app._to_screen(left, top)
-                sx2, sy2 = app._to_screen(right, bottom)
-
-                outline = "#0f172a"
+                outline = DEFAULT_SITE_OUTLINE
                 if is_connect_anchor:
                     outline = "#20803d"
                 elif is_selected:
                     outline = "#1756cc"
 
-                app.canvas.create_rectangle(
-                    sx1,
-                    sy1,
-                    sx2,
-                    sy2,
-                    fill="",
-                    outline=outline,
-                    width=max(1, int(round(app._scaled(2 if not (is_selected or is_connect_anchor) else 3)))),
+                ow = 3 if (is_selected or is_connect_anchor) else None
+                draw_site_base(
+                    app.canvas, node_view,
+                    to_screen=to_screen, scaled=scaled,
+                    fill="", outline=outline, outline_width=ow,
                 )
 
-                center_sx, center_sy = app._to_screen(node.center_x, node.center_y)
-                app.canvas.create_text(
-                    center_sx,
-                    center_sy,
-                    text=node.label,
-                    font=("Segoe UI", 10, "bold"),
-                    fill="#1f2937",
-                )
-
-                slot_radius = max(4, int(round(app._scaled(self.route_radius))))
-                for slot_x, slot_y in node.troop_slots:
+                slot_radius = max(4, int(round(scaled(TROOP_SLOT_RADIUS))))
+                white_slots: set[int] = getattr(node, "white_troop_slot_indices", set())
+                for index, (slot_x, slot_y) in enumerate(node.troop_slots):
                     slot_sx, slot_sy = app._to_screen(slot_x, slot_y)
+                    if index in white_slots:
+                        fill = "#9ca3af"
+                        outline = "#2b3340"
+                    else:
+                        fill = "#d8dde5"
+                        outline = "#8893a5"
                     app.canvas.create_oval(
                         slot_sx - slot_radius,
                         slot_sy - slot_radius,
                         slot_sx + slot_radius,
                         slot_sy + slot_radius,
-                        fill="#8a1c1c",
-                        outline="#5d1010",
+                        fill=fill,
+                        outline=outline,
                     )
 
             if node.kind == NodeKind.ROUTE:
-                fill = "#fce8c9"
-                outline = "#7a5f2e"
+                outline = DEFAULT_ROUTE_OUTLINE
                 if is_connect_anchor:
                     outline = "#20803d"
                 elif is_selected:
                     outline = "#1756cc"
 
-                center_sx, center_sy = app._to_screen(node.center_x, node.center_y)
-                route_radius = max(4, int(round(app._scaled(self.route_radius))))
-                app.canvas.create_oval(
-                    center_sx - route_radius,
-                    center_sy - route_radius,
-                    center_sx + route_radius,
-                    center_sy + route_radius,
-                    fill=fill,
-                    outline=outline,
-                    width=max(1, int(round(app._scaled(2 if not (is_selected or is_connect_anchor) else 3)))),
-                )
-                app.canvas.create_text(
-                    center_sx,
-                    center_sy,
-                    text=node.label,
-                    font=("Segoe UI", 9, "bold"),
-                    fill="#1f2937",
+                white_slots: set[int] = getattr(node, "white_troop_slot_indices", set())
+                route_fill = "#9ca3af" if white_slots else DEFAULT_ROUTE_FILL
+
+                ow = 3 if (is_selected or is_connect_anchor) else None
+                draw_route_base(
+                    app.canvas, node_view,
+                    to_screen=to_screen, scaled=scaled,
+                    fill=route_fill, outline=outline, outline_width=ow,
+                    route_radius=self.route_radius,
                 )
 
         connect_start = getattr(interaction, "connect_start_node_id", None)
@@ -191,15 +163,4 @@ class BoardRenderer:
                 width=3.5,
             )
 
-        pending_slot_node_id = getattr(interaction, "pending_slot_node_id", None)
-        if pending_slot_node_id is not None:
-            pending = app.nodes[pending_slot_node_id]
-            remaining = pending.troop_capacity - len(pending.troop_slots)
-            app.canvas.create_text(
-                12,
-                12,
-                anchor=tk.NW,
-                text=f"Click {remaining} troop slot positions inside '{pending.label}'",
-                font=("Segoe UI", 10, "bold"),
-                fill="#9c1c1c",
-            )
+
