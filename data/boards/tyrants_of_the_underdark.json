@@ -1,0 +1,1394 @@
+{
+  "board_id": "Tyrants of the Underdark",
+  "nodes": [
+    {
+      "node_id": "site_gauntlgrym",
+      "kind": "site",
+      "adjacent_to": [
+        "route_1",
+        "route_2"
+      ],
+      "troop_capacity": 3,
+      "control_vp": 2,
+      "initial_troop_slots": [
+        "white",
+        "white",
+        null
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "route_1",
+      "kind": "route",
+      "adjacent_to": [
+        "site_gauntlgrym",
+        "site_the_wormwrithings"
+      ],
+      "troop_capacity": 1,
+      "control_vp": 0,
+      "initial_troop_slots": [
+        null
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "route_2",
+      "kind": "route",
+      "adjacent_to": [
+        "site_gauntlgrym",
+        "site_jhachalkhyn"
+      ],
+      "troop_capacity": 1,
+      "control_vp": 0,
+      "initial_troop_slots": [
+        null
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "route_3",
+      "kind": "route",
+      "adjacent_to": [
+        "site_mantol_derith",
+        "site_the_wormwrithings"
+      ],
+      "troop_capacity": 1,
+      "control_vp": 0,
+      "initial_troop_slots": [
+        null
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "route_4",
+      "kind": "route",
+      "adjacent_to": [
+        "site_blingdenstone",
+        "site_mantol_derith"
+      ],
+      "troop_capacity": 1,
+      "control_vp": 0,
+      "initial_troop_slots": [
+        "white"
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "route_5",
+      "kind": "route",
+      "adjacent_to": [
+        "site_gracklstugh",
+        "site_mantol_derith"
+      ],
+      "troop_capacity": 1,
+      "control_vp": 0,
+      "initial_troop_slots": [
+        null
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "route_6",
+      "kind": "route",
+      "adjacent_to": [
+        "site_blingdenfire",
+        "site_mantol_derith"
+      ],
+      "troop_capacity": 1,
+      "control_vp": 0,
+      "initial_troop_slots": [
+        null
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "route_7",
+      "kind": "route",
+      "adjacent_to": [
+        "site_blingdenfire",
+        "site_menzoberranzan"
+      ],
+      "troop_capacity": 1,
+      "control_vp": 0,
+      "initial_troop_slots": [
+        null
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "route_8",
+      "kind": "route",
+      "adjacent_to": [
+        "route_9",
+        "site_menzoberranzan"
+      ],
+      "troop_capacity": 1,
+      "control_vp": 0,
+      "initial_troop_slots": [
+        null
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "route_9",
+      "kind": "route",
+      "adjacent_to": [
+        "route_8",
+        "site_chasmleap_bridge"
+      ],
+      "troop_capacity": 1,
+      "control_vp": 0,
+      "initial_troop_slots": [
+        null
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "route_10",
+      "kind": "route",
+      "adjacent_to": [
+        "route_11",
+        "site_chasmleap_bridge"
+      ],
+      "troop_capacity": 1,
+      "control_vp": 0,
+      "initial_troop_slots": [
+        null
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "route_11",
+      "kind": "route",
+      "adjacent_to": [
+        "route_10",
+        "site_gracklstugh"
+      ],
+      "troop_capacity": 1,
+      "control_vp": 0,
+      "initial_troop_slots": [
+        null
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "route_12",
+      "kind": "route",
+      "adjacent_to": [
+        "site_gracklstugh",
+        "site_jhachalkhyn"
+      ],
+      "troop_capacity": 1,
+      "control_vp": 0,
+      "initial_troop_slots": [
+        null
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "site_jhachalkhyn",
+      "kind": "site",
+      "adjacent_to": [
+        "route_12",
+        "route_13",
+        "route_2"
+      ],
+      "troop_capacity": 4,
+      "control_vp": 4,
+      "initial_troop_slots": [
+        null,
+        null,
+        null,
+        null
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "site_gracklstugh",
+      "kind": "site",
+      "adjacent_to": [
+        "route_11",
+        "route_12",
+        "route_30",
+        "route_5"
+      ],
+      "troop_capacity": 4,
+      "control_vp": 3,
+      "initial_troop_slots": [
+        "white",
+        "white",
+        null,
+        null
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "site_chasmleap_bridge",
+      "kind": "site",
+      "adjacent_to": [
+        "route_10",
+        "route_25",
+        "route_32",
+        "route_9"
+      ],
+      "troop_capacity": 1,
+      "control_vp": 1,
+      "initial_troop_slots": [
+        null
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "site_blingdenfire",
+      "kind": "site",
+      "adjacent_to": [
+        "route_6",
+        "route_7"
+      ],
+      "troop_capacity": 2,
+      "control_vp": 2,
+      "initial_troop_slots": [
+        null,
+        null
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "site_mantol_derith",
+      "kind": "site",
+      "adjacent_to": [
+        "route_3",
+        "route_4",
+        "route_5",
+        "route_6"
+      ],
+      "troop_capacity": 5,
+      "control_vp": 4,
+      "initial_troop_slots": [
+        "white",
+        "white",
+        null,
+        null,
+        null
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "site_menzoberranzan",
+      "kind": "site",
+      "adjacent_to": [
+        "route_52",
+        "route_7",
+        "route_8"
+      ],
+      "troop_capacity": 6,
+      "control_vp": 5,
+      "initial_troop_slots": [
+        "white",
+        "white",
+        "white",
+        null,
+        null,
+        null
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 1,
+      "total_control_vp_per_turn": 1
+    },
+    {
+      "node_id": "site_blingdenstone",
+      "kind": "site",
+      "adjacent_to": [
+        "route_4"
+      ],
+      "troop_capacity": 2,
+      "control_vp": 4,
+      "initial_troop_slots": [
+        "white",
+        "white"
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "site_the_wormwrithings",
+      "kind": "site",
+      "adjacent_to": [
+        "route_1",
+        "route_3"
+      ],
+      "troop_capacity": 3,
+      "control_vp": 3,
+      "initial_troop_slots": [
+        null,
+        null,
+        null
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "site_buiyrandyn",
+      "kind": "site",
+      "adjacent_to": [
+        "route_13",
+        "route_14",
+        "route_15"
+      ],
+      "troop_capacity": 3,
+      "control_vp": 3,
+      "initial_troop_slots": [
+        "white",
+        null,
+        null
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "site_stoneshaft_clanhold",
+      "kind": "site",
+      "adjacent_to": [
+        "route_14",
+        "route_16",
+        "route_17"
+      ],
+      "troop_capacity": 2,
+      "control_vp": 4,
+      "initial_troop_slots": [
+        "white",
+        null
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "site_ch_chitl",
+      "kind": "site",
+      "adjacent_to": [
+        "route_16",
+        "route_18"
+      ],
+      "troop_capacity": 3,
+      "control_vp": 2,
+      "initial_troop_slots": [
+        "white",
+        "white",
+        null
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "site_kanaglym",
+      "kind": "site",
+      "adjacent_to": [
+        "route_18",
+        "route_19",
+        "route_20",
+        "route_21"
+      ],
+      "troop_capacity": 3,
+      "control_vp": 3,
+      "initial_troop_slots": [
+        null,
+        null,
+        null
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "site_skullport",
+      "kind": "site",
+      "adjacent_to": [
+        "route_17",
+        "route_19",
+        "route_28"
+      ],
+      "troop_capacity": 5,
+      "control_vp": 4,
+      "initial_troop_slots": [
+        "white",
+        "white",
+        null,
+        null,
+        null
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "site_eryndlyn",
+      "kind": "site",
+      "adjacent_to": [
+        "route_20",
+        "route_22",
+        "route_38"
+      ],
+      "troop_capacity": 3,
+      "control_vp": 3,
+      "initial_troop_slots": [
+        null,
+        null,
+        null
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "site_tsenvilyq",
+      "kind": "site",
+      "adjacent_to": [
+        "route_21",
+        "route_37"
+      ],
+      "troop_capacity": 3,
+      "control_vp": 4,
+      "initial_troop_slots": [
+        "white",
+        "white",
+        "white"
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "site_the_labirynth",
+      "kind": "site",
+      "adjacent_to": [
+        "route_15",
+        "route_29",
+        "route_30",
+        "route_31"
+      ],
+      "troop_capacity": 3,
+      "control_vp": 3,
+      "initial_troop_slots": [
+        "white",
+        null,
+        null
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "site_araumycos",
+      "kind": "site",
+      "adjacent_to": [
+        "route_22",
+        "route_23",
+        "route_24",
+        "route_25"
+      ],
+      "troop_capacity": 4,
+      "control_vp": 3,
+      "initial_troop_slots": [
+        "white",
+        "white",
+        "white",
+        "white"
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "site_llacerellyn",
+      "kind": "site",
+      "adjacent_to": [
+        "route_37",
+        "route_38",
+        "route_39",
+        "route_41"
+      ],
+      "troop_capacity": 2,
+      "control_vp": 2,
+      "initial_troop_slots": [
+        null,
+        null
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "site_ss_zuraass_nee",
+      "kind": "site",
+      "adjacent_to": [
+        "route_42",
+        "route_43"
+      ],
+      "troop_capacity": 3,
+      "control_vp": 2,
+      "initial_troop_slots": [
+        "white",
+        "white",
+        null
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "site_ruins_of_dekanter",
+      "kind": "site",
+      "adjacent_to": [
+        "route_43",
+        "route_44",
+        "route_45"
+      ],
+      "troop_capacity": 6,
+      "control_vp": 5,
+      "initial_troop_slots": [
+        "white",
+        "white",
+        null,
+        null,
+        null,
+        null
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "site_old_yathchol",
+      "kind": "site",
+      "adjacent_to": [
+        "route_26",
+        "route_45",
+        "route_46"
+      ],
+      "troop_capacity": 3,
+      "control_vp": 3,
+      "initial_troop_slots": [
+        "white",
+        null,
+        null
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "site_ched_nasad",
+      "kind": "site",
+      "adjacent_to": [
+        "route_23",
+        "route_32",
+        "route_33",
+        "route_35",
+        "route_40",
+        "route_44"
+      ],
+      "troop_capacity": 4,
+      "control_vp": 3,
+      "initial_troop_slots": [
+        null,
+        null,
+        null,
+        null
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "site_halls_of_the_scoured_legion",
+      "kind": "site",
+      "adjacent_to": [
+        "route_34",
+        "route_36",
+        "route_50"
+      ],
+      "troop_capacity": 2,
+      "control_vp": 3,
+      "initial_troop_slots": [
+        "white",
+        null
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "site_everfire",
+      "kind": "site",
+      "adjacent_to": [
+        "route_48",
+        "route_50",
+        "route_51",
+        "route_53"
+      ],
+      "troop_capacity": 3,
+      "control_vp": 3,
+      "initial_troop_slots": [
+        null,
+        null,
+        null
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "site_the_phaerlin",
+      "kind": "site",
+      "adjacent_to": [
+        "route_27",
+        "route_46",
+        "route_47",
+        "route_48"
+      ],
+      "troop_capacity": 3,
+      "control_vp": 2,
+      "initial_troop_slots": [
+        "white",
+        "white",
+        null
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "site_yathchol",
+      "kind": "site",
+      "adjacent_to": [
+        "route_26",
+        "route_35",
+        "route_36",
+        "route_47"
+      ],
+      "troop_capacity": 2,
+      "control_vp": 4,
+      "initial_troop_slots": [
+        "white",
+        "white"
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "site_chaulssin",
+      "kind": "site",
+      "adjacent_to": [
+        "route_27",
+        "route_53"
+      ],
+      "troop_capacity": 5,
+      "control_vp": 4,
+      "initial_troop_slots": [
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "route_13",
+      "kind": "route",
+      "adjacent_to": [
+        "site_buiyrandyn",
+        "site_jhachalkhyn"
+      ],
+      "troop_capacity": 1,
+      "control_vp": 0,
+      "initial_troop_slots": [
+        null
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "route_14",
+      "kind": "route",
+      "adjacent_to": [
+        "site_buiyrandyn",
+        "site_stoneshaft_clanhold"
+      ],
+      "troop_capacity": 1,
+      "control_vp": 0,
+      "initial_troop_slots": [
+        null
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "route_15",
+      "kind": "route",
+      "adjacent_to": [
+        "site_buiyrandyn",
+        "site_the_labirynth"
+      ],
+      "troop_capacity": 1,
+      "control_vp": 0,
+      "initial_troop_slots": [
+        null
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "route_16",
+      "kind": "route",
+      "adjacent_to": [
+        "site_ch_chitl",
+        "site_stoneshaft_clanhold"
+      ],
+      "troop_capacity": 1,
+      "control_vp": 0,
+      "initial_troop_slots": [
+        null
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "route_17",
+      "kind": "route",
+      "adjacent_to": [
+        "site_skullport",
+        "site_stoneshaft_clanhold"
+      ],
+      "troop_capacity": 1,
+      "control_vp": 0,
+      "initial_troop_slots": [
+        null
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "route_18",
+      "kind": "route",
+      "adjacent_to": [
+        "site_ch_chitl",
+        "site_kanaglym"
+      ],
+      "troop_capacity": 1,
+      "control_vp": 0,
+      "initial_troop_slots": [
+        null
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "route_19",
+      "kind": "route",
+      "adjacent_to": [
+        "site_kanaglym",
+        "site_skullport"
+      ],
+      "troop_capacity": 1,
+      "control_vp": 0,
+      "initial_troop_slots": [
+        null
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "route_20",
+      "kind": "route",
+      "adjacent_to": [
+        "site_eryndlyn",
+        "site_kanaglym"
+      ],
+      "troop_capacity": 1,
+      "control_vp": 0,
+      "initial_troop_slots": [
+        null
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "route_21",
+      "kind": "route",
+      "adjacent_to": [
+        "site_kanaglym",
+        "site_tsenvilyq"
+      ],
+      "troop_capacity": 1,
+      "control_vp": 0,
+      "initial_troop_slots": [
+        null
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "route_22",
+      "kind": "route",
+      "adjacent_to": [
+        "site_araumycos",
+        "site_eryndlyn"
+      ],
+      "troop_capacity": 1,
+      "control_vp": 0,
+      "initial_troop_slots": [
+        "white"
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "route_23",
+      "kind": "route",
+      "adjacent_to": [
+        "site_araumycos",
+        "site_ched_nasad"
+      ],
+      "troop_capacity": 1,
+      "control_vp": 0,
+      "initial_troop_slots": [
+        "white"
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "route_24",
+      "kind": "route",
+      "adjacent_to": [
+        "route_31",
+        "site_araumycos"
+      ],
+      "troop_capacity": 1,
+      "control_vp": 0,
+      "initial_troop_slots": [
+        "white"
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "route_25",
+      "kind": "route",
+      "adjacent_to": [
+        "site_araumycos",
+        "site_chasmleap_bridge"
+      ],
+      "troop_capacity": 1,
+      "control_vp": 0,
+      "initial_troop_slots": [
+        "white"
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "route_26",
+      "kind": "route",
+      "adjacent_to": [
+        "site_old_yathchol",
+        "site_yathchol"
+      ],
+      "troop_capacity": 1,
+      "control_vp": 0,
+      "initial_troop_slots": [
+        "white"
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "route_27",
+      "kind": "route",
+      "adjacent_to": [
+        "site_chaulssin",
+        "site_the_phaerlin"
+      ],
+      "troop_capacity": 1,
+      "control_vp": 0,
+      "initial_troop_slots": [
+        "white"
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "route_28",
+      "kind": "route",
+      "adjacent_to": [
+        "route_29",
+        "site_skullport"
+      ],
+      "troop_capacity": 1,
+      "control_vp": 0,
+      "initial_troop_slots": [
+        null
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "route_29",
+      "kind": "route",
+      "adjacent_to": [
+        "route_28",
+        "site_the_labirynth"
+      ],
+      "troop_capacity": 1,
+      "control_vp": 0,
+      "initial_troop_slots": [
+        null
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "route_30",
+      "kind": "route",
+      "adjacent_to": [
+        "site_gracklstugh",
+        "site_the_labirynth"
+      ],
+      "troop_capacity": 1,
+      "control_vp": 0,
+      "initial_troop_slots": [
+        null
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "route_31",
+      "kind": "route",
+      "adjacent_to": [
+        "route_24",
+        "site_the_labirynth"
+      ],
+      "troop_capacity": 1,
+      "control_vp": 0,
+      "initial_troop_slots": [
+        null
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "route_32",
+      "kind": "route",
+      "adjacent_to": [
+        "site_chasmleap_bridge",
+        "site_ched_nasad"
+      ],
+      "troop_capacity": 1,
+      "control_vp": 0,
+      "initial_troop_slots": [
+        null
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "route_33",
+      "kind": "route",
+      "adjacent_to": [
+        "route_34",
+        "site_ched_nasad"
+      ],
+      "troop_capacity": 1,
+      "control_vp": 0,
+      "initial_troop_slots": [
+        null
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "route_34",
+      "kind": "route",
+      "adjacent_to": [
+        "route_33",
+        "site_halls_of_the_scoured_legion"
+      ],
+      "troop_capacity": 1,
+      "control_vp": 0,
+      "initial_troop_slots": [
+        null
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "route_35",
+      "kind": "route",
+      "adjacent_to": [
+        "site_ched_nasad",
+        "site_yathchol"
+      ],
+      "troop_capacity": 1,
+      "control_vp": 0,
+      "initial_troop_slots": [
+        null
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "route_36",
+      "kind": "route",
+      "adjacent_to": [
+        "site_halls_of_the_scoured_legion",
+        "site_yathchol"
+      ],
+      "troop_capacity": 1,
+      "control_vp": 0,
+      "initial_troop_slots": [
+        null
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "route_37",
+      "kind": "route",
+      "adjacent_to": [
+        "site_llacerellyn",
+        "site_tsenvilyq"
+      ],
+      "troop_capacity": 1,
+      "control_vp": 0,
+      "initial_troop_slots": [
+        null
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "route_38",
+      "kind": "route",
+      "adjacent_to": [
+        "site_eryndlyn",
+        "site_llacerellyn"
+      ],
+      "troop_capacity": 1,
+      "control_vp": 0,
+      "initial_troop_slots": [
+        null
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "route_39",
+      "kind": "route",
+      "adjacent_to": [
+        "route_40",
+        "site_llacerellyn"
+      ],
+      "troop_capacity": 1,
+      "control_vp": 0,
+      "initial_troop_slots": [
+        null
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "route_40",
+      "kind": "route",
+      "adjacent_to": [
+        "route_39",
+        "site_ched_nasad"
+      ],
+      "troop_capacity": 1,
+      "control_vp": 0,
+      "initial_troop_slots": [
+        null
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "route_41",
+      "kind": "route",
+      "adjacent_to": [
+        "route_42",
+        "site_llacerellyn"
+      ],
+      "troop_capacity": 1,
+      "control_vp": 0,
+      "initial_troop_slots": [
+        null
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "route_42",
+      "kind": "route",
+      "adjacent_to": [
+        "route_41",
+        "site_ss_zuraass_nee"
+      ],
+      "troop_capacity": 1,
+      "control_vp": 0,
+      "initial_troop_slots": [
+        null
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "route_43",
+      "kind": "route",
+      "adjacent_to": [
+        "site_ruins_of_dekanter",
+        "site_ss_zuraass_nee"
+      ],
+      "troop_capacity": 1,
+      "control_vp": 0,
+      "initial_troop_slots": [
+        null
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "route_44",
+      "kind": "route",
+      "adjacent_to": [
+        "site_ched_nasad",
+        "site_ruins_of_dekanter"
+      ],
+      "troop_capacity": 1,
+      "control_vp": 0,
+      "initial_troop_slots": [
+        null
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "route_45",
+      "kind": "route",
+      "adjacent_to": [
+        "site_old_yathchol",
+        "site_ruins_of_dekanter"
+      ],
+      "troop_capacity": 1,
+      "control_vp": 0,
+      "initial_troop_slots": [
+        null
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "route_46",
+      "kind": "route",
+      "adjacent_to": [
+        "site_old_yathchol",
+        "site_the_phaerlin"
+      ],
+      "troop_capacity": 1,
+      "control_vp": 0,
+      "initial_troop_slots": [
+        null
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "route_47",
+      "kind": "route",
+      "adjacent_to": [
+        "site_the_phaerlin",
+        "site_yathchol"
+      ],
+      "troop_capacity": 1,
+      "control_vp": 0,
+      "initial_troop_slots": [
+        null
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "route_48",
+      "kind": "route",
+      "adjacent_to": [
+        "site_everfire",
+        "site_the_phaerlin"
+      ],
+      "troop_capacity": 1,
+      "control_vp": 0,
+      "initial_troop_slots": [
+        null
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "route_49",
+      "kind": "route",
+      "adjacent_to": [],
+      "troop_capacity": 1,
+      "control_vp": 0,
+      "initial_troop_slots": [
+        null
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "route_50",
+      "kind": "route",
+      "adjacent_to": [
+        "site_everfire",
+        "site_halls_of_the_scoured_legion"
+      ],
+      "troop_capacity": 1,
+      "control_vp": 0,
+      "initial_troop_slots": [
+        null
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "route_51",
+      "kind": "route",
+      "adjacent_to": [
+        "route_52",
+        "site_everfire"
+      ],
+      "troop_capacity": 1,
+      "control_vp": 0,
+      "initial_troop_slots": [
+        null
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "route_52",
+      "kind": "route",
+      "adjacent_to": [
+        "route_51",
+        "site_menzoberranzan"
+      ],
+      "troop_capacity": 1,
+      "control_vp": 0,
+      "initial_troop_slots": [
+        null
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    },
+    {
+      "node_id": "route_53",
+      "kind": "route",
+      "adjacent_to": [
+        "site_chaulssin",
+        "site_everfire"
+      ],
+      "troop_capacity": 1,
+      "control_vp": 0,
+      "initial_troop_slots": [
+        null
+      ],
+      "initial_vp_tokens": 0,
+      "influence_income": 0,
+      "total_control_vp_per_turn": 0
+    }
+  ]
+}

@@ -14,8 +14,8 @@ from game_setup.loaders import build_board_package_from_files
 from interface.game_renderer import GameBoardRenderer
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
-DEFAULT_LAYOUT_PATH = ROOT_DIR / "data" / "layouts" / "base_game_layout.json"
-DEFAULT_BOARD_PATH = ROOT_DIR / "data" / "boards" / "base_game.json"
+DEFAULT_LAYOUT_PATH = ROOT_DIR / "data" / "layouts" / "tyrants_of_the_underdark_layout.json"
+DEFAULT_BOARD_PATH = ROOT_DIR / "data" / "boards" / "tyrants_of_the_underdark.json"
 DEFAULT_CARD_PATH = ROOT_DIR / "data" / "cards" / "catalog.json"
 DEFAULT_SETUP_PATH = ROOT_DIR / "data" / "decks" / "base_setup.json"
 

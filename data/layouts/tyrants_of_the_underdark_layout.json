@@ -1,0 +1,1438 @@
+{
+  "layout_id": "Tyrants of the Underdark_layout",
+  "board_id": "Tyrants of the Underdark",
+  "canvas": {
+    "width": 1178,
+    "height": 1178,
+    "background_image": "C:/Users/mkkom/pyrants/assets/httpiimgurcomKcYGWf2jpg.png"
+  },
+  "nodes": [
+    {
+      "node_id": "site_gauntlgrym",
+      "label": "Gauntlgrym",
+      "kind": "site",
+      "center": {
+        "x": 72.68574000472587,
+        "y": 172.68313407939507
+      },
+      "bounds": {
+        "x": 9.342155009451798,
+        "y": 146.81806399999994,
+        "width": 126.68716999054814,
+        "height": 51.73014015879028
+      },
+      "troop_slots": [
+        {
+          "x": 41.01394750708883,
+          "y": 172.68313407939507
+        },
+        {
+          "x": 72.68574000472587,
+          "y": 172.68313407939507
+        },
+        {
+          "x": 104.35753250236291,
+          "y": 172.68313407939507
+        }
+      ]
+    },
+    {
+      "node_id": "route_1",
+      "label": "1",
+      "kind": "route",
+      "center": {
+        "x": 167.79968115942026,
+        "y": 156.55663768115943
+      },
+      "bounds": null,
+      "troop_slots": []
+    },
+    {
+      "node_id": "route_2",
+      "label": "2",
+      "kind": "route",
+      "center": {
+        "x": 61.25776811594203,
+        "y": 263.1446666666666
+      },
+      "bounds": null,
+      "troop_slots": []
+    },
+    {
+      "node_id": "route_3",
+      "label": "3",
+      "kind": "route",
+      "center": {
+        "x": 255.77023188405803,
+        "y": 245.95356521739126
+      },
+      "bounds": null,
+      "troop_slots": []
+    },
+    {
+      "node_id": "route_4",
+      "label": "4",
+      "kind": "route",
+      "center": {
+        "x": 402.7018550724637,
+        "y": 178.67968840579704
+      },
+      "bounds": null,
+      "troop_slots": []
+    },
+    {
+      "node_id": "route_5",
+      "label": "5",
+      "kind": "route",
+      "center": {
+        "x": 344.3968623188405,
+        "y": 371.54381884057966
+      },
+      "bounds": null,
+      "troop_slots": []
+    },
+    {
+      "node_id": "route_6",
+      "label": "6",
+      "kind": "route",
+      "center": {
+        "x": 492.65433333333317,
+        "y": 368.4013115942028
+      },
+      "bounds": null,
+      "troop_slots": []
+    },
+    {
+      "node_id": "route_7",
+      "label": "7",
+      "kind": "route",
+      "center": {
+        "x": 488.3351739130434,
+        "y": 203.64023913043474
+      },
+      "bounds": null,
+      "troop_slots": []
+    },
+    {
+      "node_id": "route_8",
+      "label": "8",
+      "kind": "route",
+      "center": {
+        "x": 597.6809782608696,
+        "y": 278.08577536231877
+      },
+      "bounds": null,
+      "troop_slots": []
+    },
+    {
+      "node_id": "route_9",
+      "label": "9",
+      "kind": "route",
+      "center": {
+        "x": 598.4070942028985,
+        "y": 351.53936956521727
+      },
+      "bounds": null,
+      "troop_slots": []
+    },
+    {
+      "node_id": "route_10",
+      "label": "10",
+      "kind": "route",
+      "center": {
+        "x": 522.9535,
+        "y": 437.61686231884056
+      },
+      "bounds": null,
+      "troop_slots": []
+    },
+    {
+      "node_id": "route_11",
+      "label": "11",
+      "kind": "route",
+      "center": {
+        "x": 438.446572463768,
+        "y": 458.2807318840579
+      },
+      "bounds": null,
+      "troop_slots": []
+    },
+    {
+      "node_id": "route_12",
+      "label": "12",
+      "kind": "route",
+      "center": {
+        "x": 186.2888478260869,
+        "y": 397.7682318840579
+      },
+      "bounds": null,
+      "troop_slots": []
+    },
+    {
+      "node_id": "site_jhachalkhyn",
+      "label": "Jhachalkhyn",
+      "kind": "site",
+      "center": {
+        "x": 68.44749999999999,
+        "y": 368.29999999999995
+      },
+      "bounds": {
+        "x": 9.816666666666665,
+        "y": 314.07749999999993,
+        "width": 117.26166666666666,
+        "height": 108.445
+      },
+      "troop_slots": [
+        {
+          "x": 33.269,
+          "y": 368.29999999999995
+        },
+        {
+          "x": 56.72133333333333,
+          "y": 368.29999999999995
+        },
+        {
+          "x": 80.17366666666666,
+          "y": 368.29999999999995
+        },
+        {
+          "x": 103.62599999999999,
+          "y": 368.29999999999995
+        }
+      ]
+    },
+    {
+      "node_id": "site_gracklstugh",
+      "label": "Gracklstugh",
+      "kind": "site",
+      "center": {
+        "x": 318.3295108695652,
+        "y": 450.97644565217377
+      },
+      "bounds": {
+        "x": 268.7357608695652,
+        "y": 404.46852898550713,
+        "width": 99.1875,
+        "height": 93.01583333333332
+      },
+      "troop_slots": [
+        {
+          "x": 288.57326086956516,
+          "y": 450.97644565217377
+        },
+        {
+          "x": 308.4107608695652,
+          "y": 450.97644565217377
+        },
+        {
+          "x": 328.2482608695652,
+          "y": 450.97644565217377
+        },
+        {
+          "x": 348.08576086956515,
+          "y": 450.97644565217377
+        }
+      ]
+    },
+    {
+      "node_id": "site_chasmleap_bridge",
+      "label": "Chasmleap Bridge",
+      "kind": "site",
+      "center": {
+        "x": 631.414297101449,
+        "y": 444.397822463768
+      },
+      "bounds": {
+        "x": 589.0942971014491,
+        "y": 405.384072463768,
+        "width": 84.63999999999999,
+        "height": 78.02750000000003
+      },
+      "troop_slots": [
+        {
+          "x": 631.414297101449,
+          "y": 444.397822463768
+        }
+      ]
+    },
+    {
+      "node_id": "site_blingdenfire",
+      "label": "Blingdenfire",
+      "kind": "site",
+      "center": {
+        "x": 520.1833333333333,
+        "y": 285.65999999999997
+      },
+      "bounds": {
+        "x": 470.3691666666666,
+        "y": 250.83416666666662,
+        "width": 99.62833333333333,
+        "height": 69.65166666666667
+      },
+      "troop_slots": [
+        {
+          "x": 503.57861111111106,
+          "y": 285.65999999999997
+        },
+        {
+          "x": 536.7880555555555,
+          "y": 285.65999999999997
+        }
+      ]
+    },
+    {
+      "node_id": "site_mantol_derith",
+      "label": "Mantol-Derith",
+      "kind": "site",
+      "center": {
+        "x": 380.4391666666666,
+        "y": 292.49291666666664
+      },
+      "bounds": {
+        "x": 309.02416666666664,
+        "y": 241.1358333333333,
+        "width": 142.82999999999993,
+        "height": 102.71416666666667
+      },
+      "troop_slots": [
+        {
+          "x": 332.82916666666665,
+          "y": 292.49291666666664
+        },
+        {
+          "x": 356.6341666666666,
+          "y": 292.49291666666664
+        },
+        {
+          "x": 380.4391666666666,
+          "y": 292.49291666666664
+        },
+        {
+          "x": 404.2441666666666,
+          "y": 292.49291666666664
+        },
+        {
+          "x": 428.04916666666657,
+          "y": 292.49291666666664
+        }
+      ]
+    },
+    {
+      "node_id": "site_menzoberranzan",
+      "label": "Menzoberranzan",
+      "kind": "site",
+      "center": {
+        "x": 584.4464094202897,
+        "y": 183.28413043478258
+      },
+      "bounds": {
+        "x": 520.745992753623,
+        "y": 145.81329710144928,
+        "width": 127.40083333333337,
+        "height": 74.94166666666666
+      },
+      "troop_slots": [
+        {
+          "x": 538.9461118012421,
+          "y": 183.28413043478258
+        },
+        {
+          "x": 557.1462308488611,
+          "y": 183.28413043478258
+        },
+        {
+          "x": 575.3463498964801,
+          "y": 183.28413043478258
+        },
+        {
+          "x": 593.5464689440992,
+          "y": 183.28413043478258
+        },
+        {
+          "x": 611.7465879917182,
+          "y": 183.28413043478258
+        },
+        {
+          "x": 629.9467070393373,
+          "y": 183.28413043478258
+        }
+      ]
+    },
+    {
+      "node_id": "site_blingdenstone",
+      "label": "Blingdenstone",
+      "kind": "site",
+      "center": {
+        "x": 411.73833333333323,
+        "y": 95.66083333333333
+      },
+      "bounds": {
+        "x": 358.3974999999999,
+        "y": 60.394166666666656,
+        "width": 106.68166666666667,
+        "height": 70.53333333333333
+      },
+      "troop_slots": [
+        {
+          "x": 393.95805555555546,
+          "y": 95.66083333333333
+        },
+        {
+          "x": 429.51861111111106,
+          "y": 95.66083333333333
+        }
+      ]
+    },
+    {
+      "node_id": "site_the_wormwrithings",
+      "label": "The Wormwrithings",
+      "kind": "site",
+      "center": {
+        "x": 266.8852173913043,
+        "y": 139.54924999999997
+      },
+      "bounds": {
+        "x": 202.08271739130433,
+        "y": 105.82549999999998,
+        "width": 129.605,
+        "height": 67.44749999999999
+      },
+      "troop_slots": [
+        {
+          "x": 234.48396739130433,
+          "y": 139.54924999999997
+        },
+        {
+          "x": 266.8852173913043,
+          "y": 139.54924999999997
+        },
+        {
+          "x": 299.2864673913043,
+          "y": 139.54924999999997
+        }
+      ]
+    },
+    {
+      "node_id": "site_buiyrandyn",
+      "label": "Buiyrandyn",
+      "kind": "site",
+      "center": {
+        "x": 76.0,
+        "y": 565.0
+      },
+      "bounds": {
+        "x": 3.0,
+        "y": 522.0,
+        "width": 146.0,
+        "height": 86.0
+      },
+      "troop_slots": [
+        {
+          "x": 39.5,
+          "y": 565.0
+        },
+        {
+          "x": 76.0,
+          "y": 565.0
+        },
+        {
+          "x": 112.5,
+          "y": 565.0
+        }
+      ]
+    },
+    {
+      "node_id": "site_stoneshaft_clanhold",
+      "label": "Stoneshaft Clanhold",
+      "kind": "site",
+      "center": {
+        "x": 63.0,
+        "y": 756.5
+      },
+      "bounds": {
+        "x": 14.0,
+        "y": 714.0,
+        "width": 98.0,
+        "height": 85.0
+      },
+      "troop_slots": [
+        {
+          "x": 46.666666666666664,
+          "y": 756.5
+        },
+        {
+          "x": 79.33333333333333,
+          "y": 756.5
+        }
+      ]
+    },
+    {
+      "node_id": "site_ch_chitl",
+      "label": "Ch'chitl",
+      "kind": "site",
+      "center": {
+        "x": 73.0,
+        "y": 1114.5
+      },
+      "bounds": {
+        "x": 10.0,
+        "y": 1091.0,
+        "width": 126.0,
+        "height": 47.0
+      },
+      "troop_slots": [
+        {
+          "x": 41.5,
+          "y": 1114.5
+        },
+        {
+          "x": 73.0,
+          "y": 1114.5
+        },
+        {
+          "x": 104.5,
+          "y": 1114.5
+        }
+      ]
+    },
+    {
+      "node_id": "site_kanaglym",
+      "label": "Kanaglym",
+      "kind": "site",
+      "center": {
+        "x": 337.0,
+        "y": 1098.0
+      },
+      "bounds": {
+        "x": 274.0,
+        "y": 1064.0,
+        "width": 126.0,
+        "height": 68.0
+      },
+      "troop_slots": [
+        {
+          "x": 305.5,
+          "y": 1098.0
+        },
+        {
+          "x": 337.0,
+          "y": 1098.0
+        },
+        {
+          "x": 368.5,
+          "y": 1098.0
+        }
+      ]
+    },
+    {
+      "node_id": "site_skullport",
+      "label": "Skullport",
+      "kind": "site",
+      "center": {
+        "x": 325.5,
+        "y": 844.0
+      },
+      "bounds": {
+        "x": 254.0,
+        "y": 789.0,
+        "width": 143.0,
+        "height": 110.0
+      },
+      "troop_slots": [
+        {
+          "x": 277.8333333333333,
+          "y": 844.0
+        },
+        {
+          "x": 301.6666666666667,
+          "y": 844.0
+        },
+        {
+          "x": 325.5,
+          "y": 844.0
+        },
+        {
+          "x": 349.3333333333333,
+          "y": 844.0
+        },
+        {
+          "x": 373.16666666666663,
+          "y": 844.0
+        }
+      ]
+    },
+    {
+      "node_id": "site_eryndlyn",
+      "label": "Eryndlyn",
+      "kind": "site",
+      "center": {
+        "x": 555.0,
+        "y": 903.5
+      },
+      "bounds": {
+        "x": 482.0,
+        "y": 864.0,
+        "width": 146.0,
+        "height": 79.0
+      },
+      "troop_slots": [
+        {
+          "x": 518.5,
+          "y": 903.5
+        },
+        {
+          "x": 555.0,
+          "y": 903.5
+        },
+        {
+          "x": 591.5,
+          "y": 903.5
+        }
+      ]
+    },
+    {
+      "node_id": "site_tsenvilyq",
+      "label": "Tsenvilyq",
+      "kind": "site",
+      "center": {
+        "x": 617.5,
+        "y": 1151.0
+      },
+      "bounds": {
+        "x": 552.0,
+        "y": 1132.0,
+        "width": 131.0,
+        "height": 38.0
+      },
+      "troop_slots": [
+        {
+          "x": 584.75,
+          "y": 1151.0
+        },
+        {
+          "x": 617.5,
+          "y": 1151.0
+        },
+        {
+          "x": 650.25,
+          "y": 1151.0
+        }
+      ]
+    },
+    {
+      "node_id": "site_the_labirynth",
+      "label": "The Labirynth",
+      "kind": "site",
+      "center": {
+        "x": 331.5,
+        "y": 606.5
+      },
+      "bounds": {
+        "x": 266.0,
+        "y": 569.0,
+        "width": 131.0,
+        "height": 75.0
+      },
+      "troop_slots": [
+        {
+          "x": 298.75,
+          "y": 606.5
+        },
+        {
+          "x": 331.5,
+          "y": 606.5
+        },
+        {
+          "x": 364.25,
+          "y": 606.5
+        }
+      ]
+    },
+    {
+      "node_id": "site_araumycos",
+      "label": "Araumycos",
+      "kind": "site",
+      "center": {
+        "x": 601.0,
+        "y": 755.0
+      },
+      "bounds": {
+        "x": 551.0,
+        "y": 718.0,
+        "width": 100.0,
+        "height": 74.0
+      },
+      "troop_slots": [
+        {
+          "x": 571.0,
+          "y": 755.0
+        },
+        {
+          "x": 591.0,
+          "y": 755.0
+        },
+        {
+          "x": 611.0,
+          "y": 755.0
+        },
+        {
+          "x": 631.0,
+          "y": 755.0
+        }
+      ]
+    },
+    {
+      "node_id": "site_llacerellyn",
+      "label": "Llacerellyn",
+      "kind": "site",
+      "center": {
+        "x": 788.0,
+        "y": 887.5
+      },
+      "bounds": {
+        "x": 736.0,
+        "y": 852.0,
+        "width": 104.0,
+        "height": 71.0
+      },
+      "troop_slots": [
+        {
+          "x": 770.6666666666666,
+          "y": 887.5
+        },
+        {
+          "x": 805.3333333333334,
+          "y": 887.5
+        }
+      ]
+    },
+    {
+      "node_id": "site_ss_zuraass_nee",
+      "label": "Ss'Zuraass'nee",
+      "kind": "site",
+      "center": {
+        "x": 1030.0,
+        "y": 1137.5
+      },
+      "bounds": {
+        "x": 965.0,
+        "y": 1112.0,
+        "width": 130.0,
+        "height": 51.0
+      },
+      "troop_slots": [
+        {
+          "x": 997.5,
+          "y": 1137.5
+        },
+        {
+          "x": 1030.0,
+          "y": 1137.5
+        },
+        {
+          "x": 1062.5,
+          "y": 1137.5
+        }
+      ]
+    },
+    {
+      "node_id": "site_ruins_of_dekanter",
+      "label": "Ruins of Dekanter",
+      "kind": "site",
+      "center": {
+        "x": 1067.0,
+        "y": 764.5
+      },
+      "bounds": {
+        "x": 999.0,
+        "y": 715.0,
+        "width": 136.0,
+        "height": 99.0
+      },
+      "troop_slots": [
+        {
+          "x": 1018.4285714285714,
+          "y": 764.5
+        },
+        {
+          "x": 1037.857142857143,
+          "y": 764.5
+        },
+        {
+          "x": 1057.2857142857142,
+          "y": 764.5
+        },
+        {
+          "x": 1076.7142857142858,
+          "y": 764.5
+        },
+        {
+          "x": 1096.142857142857,
+          "y": 764.5
+        },
+        {
+          "x": 1115.5714285714284,
+          "y": 764.5
+        }
+      ]
+    },
+    {
+      "node_id": "site_old_yathchol",
+      "label": "Old Yathchol",
+      "kind": "site",
+      "center": {
+        "x": 1098.5,
+        "y": 604.5
+      },
+      "bounds": {
+        "x": 1033.0,
+        "y": 572.0,
+        "width": 131.0,
+        "height": 65.0
+      },
+      "troop_slots": [
+        {
+          "x": 1065.75,
+          "y": 604.5
+        },
+        {
+          "x": 1098.5,
+          "y": 604.5
+        },
+        {
+          "x": 1131.25,
+          "y": 604.5
+        }
+      ]
+    },
+    {
+      "node_id": "site_ched_nasad",
+      "label": "Ched Nasad",
+      "kind": "site",
+      "center": {
+        "x": 850.5,
+        "y": 684.0
+      },
+      "bounds": {
+        "x": 793.0,
+        "y": 631.0,
+        "width": 115.0,
+        "height": 106.0
+      },
+      "troop_slots": [
+        {
+          "x": 816.0,
+          "y": 684.0
+        },
+        {
+          "x": 839.0,
+          "y": 684.0
+        },
+        {
+          "x": 862.0,
+          "y": 684.0
+        },
+        {
+          "x": 885.0,
+          "y": 684.0
+        }
+      ]
+    },
+    {
+      "node_id": "site_halls_of_the_scoured_legion",
+      "label": "Halls of the Scoured Legion",
+      "kind": "site",
+      "center": {
+        "x": 810.0,
+        "y": 430.5
+      },
+      "bounds": {
+        "x": 756.0,
+        "y": 388.0,
+        "width": 108.0,
+        "height": 85.0
+      },
+      "troop_slots": [
+        {
+          "x": 792.0,
+          "y": 430.5
+        },
+        {
+          "x": 828.0,
+          "y": 430.5
+        }
+      ]
+    },
+    {
+      "node_id": "site_everfire",
+      "label": "Everfire",
+      "kind": "site",
+      "center": {
+        "x": 778.5,
+        "y": 295.5
+      },
+      "bounds": {
+        "x": 711.0,
+        "y": 260.0,
+        "width": 135.0,
+        "height": 71.0
+      },
+      "troop_slots": [
+        {
+          "x": 744.75,
+          "y": 295.5
+        },
+        {
+          "x": 778.5,
+          "y": 295.5
+        },
+        {
+          "x": 812.25,
+          "y": 295.5
+        }
+      ]
+    },
+    {
+      "node_id": "site_the_phaerlin",
+      "label": "The Phaerlin",
+      "kind": "site",
+      "center": {
+        "x": 1072.5,
+        "y": 308.0
+      },
+      "bounds": {
+        "x": 1007.0,
+        "y": 287.0,
+        "width": 131.0,
+        "height": 42.0
+      },
+      "troop_slots": [
+        {
+          "x": 1039.75,
+          "y": 308.0
+        },
+        {
+          "x": 1072.5,
+          "y": 308.0
+        },
+        {
+          "x": 1105.25,
+          "y": 308.0
+        }
+      ]
+    },
+    {
+      "node_id": "site_yathchol",
+      "label": "Yathchol",
+      "kind": "site",
+      "center": {
+        "x": 998.0,
+        "y": 508.0
+      },
+      "bounds": {
+        "x": 945.0,
+        "y": 473.0,
+        "width": 106.0,
+        "height": 70.0
+      },
+      "troop_slots": [
+        {
+          "x": 980.3333333333334,
+          "y": 508.0
+        },
+        {
+          "x": 1015.6666666666666,
+          "y": 508.0
+        }
+      ]
+    },
+    {
+      "node_id": "site_chaulssin",
+      "label": "Chaulssin",
+      "kind": "site",
+      "center": {
+        "x": 913.0,
+        "y": 110.0
+      },
+      "bounds": {
+        "x": 839.0,
+        "y": 56.0,
+        "width": 148.0,
+        "height": 108.0
+      },
+      "troop_slots": [
+        {
+          "x": 863.6666666666666,
+          "y": 110.0
+        },
+        {
+          "x": 888.3333333333334,
+          "y": 110.0
+        },
+        {
+          "x": 913.0,
+          "y": 110.0
+        },
+        {
+          "x": 937.6666666666666,
+          "y": 110.0
+        },
+        {
+          "x": 962.3333333333334,
+          "y": 110.0
+        }
+      ]
+    },
+    {
+      "node_id": "route_13",
+      "label": "13",
+      "kind": "route",
+      "center": {
+        "x": 69.0,
+        "y": 472.0
+      },
+      "bounds": null,
+      "troop_slots": []
+    },
+    {
+      "node_id": "route_14",
+      "label": "14",
+      "kind": "route",
+      "center": {
+        "x": 66.0,
+        "y": 656.0
+      },
+      "bounds": null,
+      "troop_slots": []
+    },
+    {
+      "node_id": "route_15",
+      "label": "15",
+      "kind": "route",
+      "center": {
+        "x": 178.0,
+        "y": 580.0
+      },
+      "bounds": null,
+      "troop_slots": []
+    },
+    {
+      "node_id": "route_16",
+      "label": "16",
+      "kind": "route",
+      "center": {
+        "x": 72.0,
+        "y": 860.0
+      },
+      "bounds": null,
+      "troop_slots": []
+    },
+    {
+      "node_id": "route_17",
+      "label": "17",
+      "kind": "route",
+      "center": {
+        "x": 192.0,
+        "y": 811.0
+      },
+      "bounds": null,
+      "troop_slots": []
+    },
+    {
+      "node_id": "route_18",
+      "label": "18",
+      "kind": "route",
+      "center": {
+        "x": 208.0,
+        "y": 1103.0
+      },
+      "bounds": null,
+      "troop_slots": []
+    },
+    {
+      "node_id": "route_19",
+      "label": "19",
+      "kind": "route",
+      "center": {
+        "x": 314.0,
+        "y": 987.0
+      },
+      "bounds": null,
+      "troop_slots": []
+    },
+    {
+      "node_id": "route_20",
+      "label": "20",
+      "kind": "route",
+      "center": {
+        "x": 394.0,
+        "y": 1002.0
+      },
+      "bounds": null,
+      "troop_slots": []
+    },
+    {
+      "node_id": "route_21",
+      "label": "21",
+      "kind": "route",
+      "center": {
+        "x": 494.0,
+        "y": 1093.0
+      },
+      "bounds": null,
+      "troop_slots": []
+    },
+    {
+      "node_id": "route_22",
+      "label": "22",
+      "kind": "route",
+      "center": {
+        "x": 575.0,
+        "y": 825.0
+      },
+      "bounds": null,
+      "troop_slots": []
+    },
+    {
+      "node_id": "route_23",
+      "label": "23",
+      "kind": "route",
+      "center": {
+        "x": 723.0,
+        "y": 721.0
+      },
+      "bounds": null,
+      "troop_slots": []
+    },
+    {
+      "node_id": "route_24",
+      "label": "24",
+      "kind": "route",
+      "center": {
+        "x": 479.0,
+        "y": 657.0
+      },
+      "bounds": null,
+      "troop_slots": []
+    },
+    {
+      "node_id": "route_25",
+      "label": "25",
+      "kind": "route",
+      "center": {
+        "x": 623.0,
+        "y": 537.0
+      },
+      "bounds": null,
+      "troop_slots": []
+    },
+    {
+      "node_id": "route_26",
+      "label": "26",
+      "kind": "route",
+      "center": {
+        "x": 1005.0,
+        "y": 583.0
+      },
+      "bounds": null,
+      "troop_slots": []
+    },
+    {
+      "node_id": "route_27",
+      "label": "27",
+      "kind": "route",
+      "center": {
+        "x": 911.0,
+        "y": 208.0
+      },
+      "bounds": null,
+      "troop_slots": []
+    },
+    {
+      "node_id": "route_28",
+      "label": "28",
+      "kind": "route",
+      "center": {
+        "x": 329.0,
+        "y": 750.0
+      },
+      "bounds": null,
+      "troop_slots": []
+    },
+    {
+      "node_id": "route_29",
+      "label": "29",
+      "kind": "route",
+      "center": {
+        "x": 312.0,
+        "y": 678.0
+      },
+      "bounds": null,
+      "troop_slots": []
+    },
+    {
+      "node_id": "route_30",
+      "label": "30",
+      "kind": "route",
+      "center": {
+        "x": 332.0,
+        "y": 532.0
+      },
+      "bounds": null,
+      "troop_slots": []
+    },
+    {
+      "node_id": "route_31",
+      "label": "31",
+      "kind": "route",
+      "center": {
+        "x": 433.0,
+        "y": 605.0
+      },
+      "bounds": null,
+      "troop_slots": []
+    },
+    {
+      "node_id": "route_32",
+      "label": "32",
+      "kind": "route",
+      "center": {
+        "x": 726.0,
+        "y": 604.0
+      },
+      "bounds": null,
+      "troop_slots": []
+    },
+    {
+      "node_id": "route_33",
+      "label": "33",
+      "kind": "route",
+      "center": {
+        "x": 797.0,
+        "y": 582.0
+      },
+      "bounds": null,
+      "troop_slots": []
+    },
+    {
+      "node_id": "route_34",
+      "label": "34",
+      "kind": "route",
+      "center": {
+        "x": 782.0,
+        "y": 514.0
+      },
+      "bounds": null,
+      "troop_slots": []
+    },
+    {
+      "node_id": "route_35",
+      "label": "35",
+      "kind": "route",
+      "center": {
+        "x": 936.0,
+        "y": 594.0
+      },
+      "bounds": null,
+      "troop_slots": []
+    },
+    {
+      "node_id": "route_36",
+      "label": "36",
+      "kind": "route",
+      "center": {
+        "x": 896.0,
+        "y": 520.0
+      },
+      "bounds": null,
+      "troop_slots": []
+    },
+    {
+      "node_id": "route_37",
+      "label": "37",
+      "kind": "route",
+      "center": {
+        "x": 745.0,
+        "y": 976.0
+      },
+      "bounds": null,
+      "troop_slots": []
+    },
+    {
+      "node_id": "route_38",
+      "label": "38",
+      "kind": "route",
+      "center": {
+        "x": 683.0,
+        "y": 894.0
+      },
+      "bounds": null,
+      "troop_slots": []
+    },
+    {
+      "node_id": "route_39",
+      "label": "39",
+      "kind": "route",
+      "center": {
+        "x": 774.0,
+        "y": 811.0
+      },
+      "bounds": null,
+      "troop_slots": []
+    },
+    {
+      "node_id": "route_40",
+      "label": "40",
+      "kind": "route",
+      "center": {
+        "x": 812.0,
+        "y": 768.0
+      },
+      "bounds": null,
+      "troop_slots": []
+    },
+    {
+      "node_id": "route_41",
+      "label": "41",
+      "kind": "route",
+      "center": {
+        "x": 893.0,
+        "y": 941.0
+      },
+      "bounds": null,
+      "troop_slots": []
+    },
+    {
+      "node_id": "route_42",
+      "label": "42",
+      "kind": "route",
+      "center": {
+        "x": 921.0,
+        "y": 1000.0
+      },
+      "bounds": null,
+      "troop_slots": []
+    },
+    {
+      "node_id": "route_43",
+      "label": "43",
+      "kind": "route",
+      "center": {
+        "x": 1068.0,
+        "y": 897.0
+      },
+      "bounds": null,
+      "troop_slots": []
+    },
+    {
+      "node_id": "route_44",
+      "label": "44",
+      "kind": "route",
+      "center": {
+        "x": 951.0,
+        "y": 777.0
+      },
+      "bounds": null,
+      "troop_slots": []
+    },
+    {
+      "node_id": "route_45",
+      "label": "45",
+      "kind": "route",
+      "center": {
+        "x": 1105.0,
+        "y": 676.0
+      },
+      "bounds": null,
+      "troop_slots": []
+    },
+    {
+      "node_id": "route_46",
+      "label": "46",
+      "kind": "route",
+      "center": {
+        "x": 1122.0,
+        "y": 516.0
+      },
+      "bounds": null,
+      "troop_slots": []
+    },
+    {
+      "node_id": "route_47",
+      "label": "47",
+      "kind": "route",
+      "center": {
+        "x": 1012.0,
+        "y": 399.0
+      },
+      "bounds": null,
+      "troop_slots": []
+    },
+    {
+      "node_id": "route_48",
+      "label": "48",
+      "kind": "route",
+      "center": {
+        "x": 923.0,
+        "y": 293.0
+      },
+      "bounds": null,
+      "troop_slots": []
+    },
+    {
+      "node_id": "route_49",
+      "label": "49",
+      "kind": "route",
+      "center": {
+        "x": 730.0,
+        "y": 381.0
+      },
+      "bounds": null,
+      "troop_slots": []
+    },
+    {
+      "node_id": "route_50",
+      "label": "50",
+      "kind": "route",
+      "center": {
+        "x": 827.0,
+        "y": 354.0
+      },
+      "bounds": null,
+      "troop_slots": []
+    },
+    {
+      "node_id": "route_51",
+      "label": "51",
+      "kind": "route",
+      "center": {
+        "x": 723.0,
+        "y": 221.0
+      },
+      "bounds": null,
+      "troop_slots": []
+    },
+    {
+      "node_id": "route_52",
+      "label": "52",
+      "kind": "route",
+      "center": {
+        "x": 690.0,
+        "y": 152.0
+      },
+      "bounds": null,
+      "troop_slots": []
+    },
+    {
+      "node_id": "route_53",
+      "label": "53",
+      "kind": "route",
+      "center": {
+        "x": 818.0,
+        "y": 164.0
+      },
+      "bounds": null,
+      "troop_slots": []
+    }
+  ]
+}
