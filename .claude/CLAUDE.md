@@ -11,22 +11,13 @@
 > (documentation, ownership, history, decisions). **Always verify against
 > actual source files before making changes** — the index may be stale.
 
-Last indexed: 2026-05-31 (commit dfe7732). Confidence: 100%.
+Last indexed: 2026-06-02 (commit ae077f9). Confidence: 100%.
 ### Architecture
-Repo is a board game engine that ingests game package definitions (rules, boards, components), orchestrates turn-based game sessions by validating and applying player moves against the game state, and produces rendered board views and simulation traces for interactive play. The pipeline from input to output proceeds through three stages: (1) game setup — loaders parse game‐package files (e.g., JSON, TOML, YAML) into structured objects; (2) engine execution — the core engine (engine/) manages state transitions, move validation, scoring, and turn phases; (3) output — the interface layer (interface/) converts the internal game state into human‑readable board renderings, while simulation scripts produce offline logs. This architecture decouples the abstract rule system from concrete presentation and testing, allowing multiple frontends (e.g., CLI, web UI) to consume the same engine. | Layer | Technology |
-|-------|------------|
-| **Core game engine** | Python – high signal in engine/, game_setup/ |
-| **Configuration & data** | JSON (12.2%), YAML (1.7%), TOML (0.6%) – used for game definitions and package metadata |
-| **Documentation** | Markdown (46.5%) – includes game manuals and developer guides |
-| **User interface** | JavaScript (8.1%) – hints at a web rendering layer |
-| **Frontend tooling** | .kilo package (TypeScript) – likely a build/packaging tool for the web UI |
-| **Scripts & automation** | Python – utility scripts for auditing, simulation, and state checks |
-
-The language distribution (Python 30%, Markdown 47%) confirms that the repo is primarily a documented Python engine with auxiliary web/code assets.
+This repository is a digital board game engine for a card-based strategy game: it ingests game configuration and card effects from JSON/YAML data files, transforms them through a Python-based state-machine engine (game state, moves, rules, scoring, phases), and outputs interactive rendered board views via a TypeScript interface layer, with additional support for headless simulation and catalog auditing. - **Python** (31.2%) – Core game engine: state management, move validation, rule enforcement, scoring, phase progression. - **TypeScript** (via .kilo package) – Frontend rendering: board views, camera controls, shared renderers. - **JSON** (13.0%) – Game definitions, card effect families, and configuration.
 ### Key Modules
 | Module | Purpose | Owner |
 |--------|---------|-------|
-| `community-1` | The **tests** module is the **quality-assurance subsystem** of repowise’s card-g | — |
+| `community-1` | The **tests** module is the verification subsystem of the game engine — it valid | — |
 | `community-0` | The skills/impeccable module is the **skill lifecycle and injection subsystem**  | — |
 | `community-3` | The interface module is the graphical presentation and authoring subsystem of th | — |
 | `community-2` | The skills/impeccable (6) module is the **transport adapter** of the Impeccable  | — |
@@ -71,23 +62,23 @@ The language distribution (Python 30%, Markdown 47%) confirms that the repo is p
 ### Hotspots (High Churn)
 | File | Churn | 90d Commits | Owner |
 |------|-------|-------------|-------|
-| `.agents/skills/grug-brain-development/SKILL.md` | 100.0th %ile | 1 | Chimney343 |
-| `.agents/skills/grug-brain-development/examples/03-locality-of-behavior.md` | 99.0th %ile | 1 | Chimney343 |
-| `.agents/skills/grug-brain-development/examples/04-grug-speak-reviews.md` | 98.1th %ile | 1 | Chimney343 |
-| `.agents/skills/grug-brain-development/references/grugbrain-full.md` | 97.1th %ile | 1 | Chimney343 |
-| `.agents/skills/grug-brain-development/references/complexity-patterns.md` | 96.2th %ile | 1 | Chimney343 |
+| `data/cards/effect_families.json` | 100.0th %ile | 3 | Chimney343 |
+| `scripts/generate_first_deck_artifacts.py` | 99.5th %ile | 3 | Chimney343 |
+| `tests/test_generic_interpreter.py` | 98.9th %ile | 2 | Chimney343 |
+| `artifacts/catalog_rules_model_consistency_report.json` | 98.4th %ile | 2 | Chimney343 |
+| `data/decks/first_deck_rosters.json` | 97.9th %ile | 2 | Chimney343 |
 
 ## Code health
-Hotspot health: 7.63/10 (stable) ·
+Hotspot health: 7.31/10 (stable) ·
 Average: 7.45/10 ·
 Worst: 5.3/10 (`.augment/skills/impeccable/scripts/design-parser.mjs`)
 
 ### Critical biomarkers
+- `engine/state.py` — untested hotspot — impact −2.0
 - `.agents/skills/impeccable/scripts/live-browser.js` — large method (<anonymous>) — impact −1.1
+- `interface/parser.py` — complex method (parse_command) — impact −0.9
 - `.agents/skills/impeccable/scripts/live-server.mjs` — complex method (createRequestHandler) — impact −0.5
 - `.agents/skills/impeccable/scripts/live-server.mjs` — complex method (validateEvent) — impact −0.5
-- `.agents/skills/impeccable/scripts/live-server.mjs` — large method (createRequestHandler) — impact −0.5
-- `engine/rules.py` — brain method (_apply_generic_action) — impact −0.3
 
 ### Repowise MCP Tools
 
