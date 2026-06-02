@@ -2,9 +2,33 @@
 
 from __future__ import annotations
 
-from fractions import Fraction
+import math
 from pathlib import Path
 import tkinter as tk
+
+_MAX_SOURCE_DIM = 1200
+_MAX_INTERMEDIATE_DIM = 60000
+
+
+def _best_zoom_factors(zoom_level: float, source_w: int) -> tuple[int, int]:
+    """Return (numerator, denominator) for the best rational approximation of
+    *zoom_level* whose numerator keeps the intermediate PhotoImage under
+    *_MAX_INTERMEDIATE_DIM*.
+    """
+    max_n = _MAX_INTERMEDIATE_DIM // max(1, source_w)
+    best_n, best_d = 1, 1
+    best_error: float = 1000.0
+    for d in range(1, min(max_n, 100) + 1):
+        n = max(1, round(zoom_level * d))
+        if n > max_n:
+            break
+        error = abs(n / d - zoom_level)
+        if error < best_error - 1e-12:
+            best_error = error
+            best_n, best_d = n, d
+            if error < 1e-12:
+                break
+    return best_n, best_d
 
 
 class BackgroundImageManager:
@@ -30,6 +54,13 @@ class BackgroundImageManager:
         except tk.TclError as error:
             raise ValueError("Unsupported image format") from error
 
+        w = source_photo.width()
+        h = source_photo.height()
+        over = max(w, h) / _MAX_SOURCE_DIM
+        if over > 1:
+            factor = max(1, math.ceil(over))
+            source_photo = source_photo.subsample(factor, factor)
+
         self.image_path = image_path.resolve()
         self.source_photo = source_photo
 
@@ -43,9 +74,12 @@ class BackgroundImageManager:
             self.photo = None
             return
 
-        zoom_fraction = Fraction(str(zoom_level)).limit_denominator(6)
-        numerator = max(1, zoom_fraction.numerator)
-        denominator = max(1, zoom_fraction.denominator)
+        if zoom_level == 1.0:
+            self.photo = self.source_photo
+            return
+
+        source_w = self.source_photo.width()
+        numerator, denominator = _best_zoom_factors(zoom_level, source_w)
 
         scaled = self.source_photo.zoom(numerator, numerator)
         if denominator > 1:

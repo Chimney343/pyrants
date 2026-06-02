@@ -13,16 +13,20 @@ from tkinter import filedialog, messagebox, simpledialog, ttk
 
 from engine.state import NodeKind
 from game_setup.board_package import BoardPackageDefinition
+from game_setup.loaders import _read_json, _write_json
 from interface.background_manager import BackgroundImageManager
 from interface.board_renderer import BoardRenderer
+from interface._canvas_scroll import bind_canvas_scrolling
+from interface.camera import compute_fit_zoom
 from interface.dialogs import TabularInputDialog
 from interface.interaction_state import EditorInteractionState
 from interface.package_manager import BoardPackageManager
 from interface.state_history import EditorStateHistory
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
-DEFAULT_BOARD_PATH = ROOT_DIR / "data" / "boards" / "base_game.json"
-DEFAULT_LAYOUT_PATH = ROOT_DIR / "data" / "layouts" / "base_game_layout.json"
+DEFAULT_BOARD_PATH = ROOT_DIR / "data" / "boards" / "tyrants_of_the_underdark.json"
+DEFAULT_LAYOUT_PATH = ROOT_DIR / "data" / "layouts" / "tyrants_of_the_underdark_layout.json"
+LAST_PATHS_FILE = ROOT_DIR / "artifacts" / "board_creator_last.json"
 
 ROUTE_RADIUS = 14
 
@@ -34,6 +38,7 @@ class EditorMode(str, Enum):
     ADD_SITE = "add_site"
     ADD_ROUTE = "add_route"
     CONNECT = "connect"
+    RESIZE = "resize"
 
 
 @dataclass
@@ -48,9 +53,11 @@ class EditableNode:
     bounds: tuple[float, float, float, float] | None
     troop_slots: list[tuple[float, float]]
     troop_capacity: int
-    vp_value: int
-    initial_control_marker: str | None
+    control_vp: int
+    total_control_vp_per_turn: int
     initial_vp_tokens: int
+    influence_income: int
+    white_troop_slot_indices: set[int] = field(default_factory=set)
     adjacent_to: set[str] = field(default_factory=set)
 
 
@@ -60,18 +67,22 @@ class SiteMetadata:
 
     label: str
     troop_capacity: int
-    vp_value: int
-    initial_control_marker: str | None
+    control_vp: int
+    total_control_vp_per_turn: int
     initial_vp_tokens: int
+    influence_income: int
+    white_troop_count: int
 
 
 @dataclass(frozen=True)
 class RouteMetadata:
     """User-supplied metadata captured when creating a route."""
 
-    vp_value: int
-    initial_control_marker: str | None
+    control_vp: int
+    total_control_vp_per_turn: int
     initial_vp_tokens: int
+    influence_income: int
+    has_white_troop: int
 
 
 class BoardCreatorApp:
@@ -114,6 +125,7 @@ class BoardCreatorApp:
         self.min_zoom = 0.4
         self.max_zoom = 3.0
         self.zoom_step = 0.2
+        self.zoom_factor = 1.15
 
         self.interaction = EditorInteractionState()
 
@@ -209,6 +221,13 @@ class BoardCreatorApp:
             value=EditorMode.CONNECT.value,
             command=self._on_mode_changed,
         ).pack(side=tk.LEFT)
+        ttk.Radiobutton(
+            toolbar,
+            text="Resize",
+            variable=self.mode_var,
+            value=EditorMode.RESIZE.value,
+            command=self._on_mode_changed,
+        ).pack(side=tk.LEFT)
 
         ttk.Separator(toolbar, orient=tk.VERTICAL).pack(side=tk.LEFT, fill=tk.Y, padx=8)
 
@@ -259,11 +278,10 @@ class BoardCreatorApp:
         self.canvas.bind("<ButtonPress-1>", self._on_canvas_press)
         self.canvas.bind("<B1-Motion>", self._on_canvas_drag)
         self.canvas.bind("<ButtonRelease-1>", self._on_canvas_release)
+        self.canvas.bind("<Double-Button-1>", self._on_canvas_double_click)
 
         self.canvas.bind("<ButtonPress-3>", self._on_canvas_right_press)
-        self.canvas.bind("<ButtonPress-2>", self._on_pan_start)
-        self.canvas.bind("<B2-Motion>", self._on_pan_drag)
-        self.canvas.bind("<Control-MouseWheel>", self._on_ctrl_mousewheel)
+        bind_canvas_scrolling(self.canvas, self._zoom_in, self._zoom_out)
 
         status = ttk.Label(self.root, textvariable=self.status_var, anchor=tk.W, padding=(8, 4))
         status.pack(fill=tk.X)
@@ -281,6 +299,7 @@ class BoardCreatorApp:
         self.root.bind("<Key-2>", self._shortcut_mode_add_site)
         self.root.bind("<Key-3>", self._shortcut_mode_add_route)
         self.root.bind("<Key-4>", self._shortcut_mode_connect)
+        self.root.bind("<Key-5>", self._shortcut_mode_resize)
 
         self.root.protocol("WM_DELETE_WINDOW", self._on_close)
 
@@ -337,6 +356,10 @@ class BoardCreatorApp:
         self._set_mode(EditorMode.CONNECT)
         return "break"
 
+    def _shortcut_mode_resize(self, _: tk.Event[tk.Misc]) -> str:
+        self._set_mode(EditorMode.RESIZE)
+        return "break"
+
     def _set_mode(self, mode: EditorMode) -> None:
         self.mode_var.set(mode.value)
         self._on_mode_changed()
@@ -357,23 +380,19 @@ class BoardCreatorApp:
         self._redraw()
 
     def _zoom_in(self) -> None:
-        self._change_zoom(self.zoom_level + self.zoom_step)
+        self._change_zoom(self.zoom_level * self.zoom_factor)
 
     def _zoom_out(self) -> None:
-        self._change_zoom(self.zoom_level - self.zoom_step)
+        self._change_zoom(self.zoom_level / self.zoom_factor)
 
     def _zoom_reset(self) -> None:
         self._change_zoom(1.0)
 
-    def _on_ctrl_mousewheel(self, event: tk.Event[tk.Canvas]) -> None:
-        if event.delta > 0:
-            self._zoom_in()
-        else:
-            self._zoom_out()
-
-    def _change_zoom(self, requested_zoom: float) -> None:
+    def _change_zoom(self, requested_zoom: float, center_on: tuple[float, float] | None = None) -> None:
+        if self.background_image_path is not None:
+            requested_zoom = 1.0
         new_zoom = max(self.min_zoom, min(self.max_zoom, requested_zoom))
-        if abs(new_zoom - self.zoom_level) < 0.001:
+        if abs(new_zoom - self.zoom_level) < 0.001 and center_on is None:
             return
 
         old_zoom = self.zoom_level
@@ -384,15 +403,52 @@ class BoardCreatorApp:
         self._refresh_background_photo()
         self._apply_canvas_size()
 
-        ratio = self.zoom_level / old_zoom
-        scaled_width = max(1.0, self.canvas_width * self.zoom_level)
-        scaled_height = max(1.0, self.canvas_height * self.zoom_level)
-
-        self.canvas.xview_moveto(min(1.0, max(0.0, (old_left * ratio) / scaled_width)))
-        self.canvas.yview_moveto(min(1.0, max(0.0, (old_top * ratio) / scaled_height)))
+        if center_on is not None:
+            cx, cy = center_on
+            scaled_width = max(1.0, self.canvas_width * self.zoom_level)
+            scaled_height = max(1.0, self.canvas_height * self.zoom_level)
+            view_w = self.canvas.winfo_width()
+            view_h = self.canvas.winfo_height()
+            if view_w < 10:
+                view_w = int(self.canvas.cget("width"))
+            if view_h < 10:
+                view_h = int(self.canvas.cget("height"))
+            self.canvas.xview_moveto(min(1.0, max(0.0, (cx * self.zoom_level - view_w / 2) / scaled_width)))
+            self.canvas.yview_moveto(min(1.0, max(0.0, (cy * self.zoom_level - view_h / 2) / scaled_height)))
+        else:
+            ratio = self.zoom_level / old_zoom
+            scaled_width = max(1.0, self.canvas_width * self.zoom_level)
+            scaled_height = max(1.0, self.canvas_height * self.zoom_level)
+            self.canvas.xview_moveto(min(1.0, max(0.0, (old_left * ratio) / scaled_width)))
+            self.canvas.yview_moveto(min(1.0, max(0.0, (old_top * ratio) / scaled_height)))
 
         self._redraw()
         self.status_var.set(f"Zoom: {self.zoom_level:.2f}x")
+
+    def _auto_fit_zoom(self) -> None:
+        if not self.nodes:
+            return
+
+        bboxes: list[tuple[float, float, float, float]] = []
+        for node in self.nodes.values():
+            if node.bounds is not None:
+                left, top, width, height = node.bounds
+                bboxes.append((left, top, left + width, top + height))
+            else:
+                bboxes.append((node.center_x - ROUTE_RADIUS, node.center_y - ROUTE_RADIUS, node.center_x + ROUTE_RADIUS, node.center_y + ROUTE_RADIUS))
+
+        view_w = self.canvas.winfo_width()
+        view_h = self.canvas.winfo_height()
+        if view_w < 10:
+            view_w = int(self.canvas.cget("width"))
+        if view_h < 10:
+            view_h = int(self.canvas.cget("height"))
+
+        result = compute_fit_zoom(bboxes, view_w, view_h, min_zoom=self.min_zoom, max_zoom=self.max_zoom)
+        if result is None:
+            return
+
+        self._change_zoom(result.zoom, center_on=(result.center_x, result.center_y))
 
     def _new_board_dialog(self) -> None:
         if not self._confirm_discard_if_dirty():
@@ -451,6 +507,13 @@ class BoardCreatorApp:
                 layout_node.bounds.height,
             )
 
+        white_indices: set[int] = set()
+        initial_slots = getattr(board_node, "initial_troop_slots", None)
+        if initial_slots is not None:
+            for idx, occupant in enumerate(initial_slots):
+                if occupant == "white":
+                    white_indices.add(idx)
+
         return EditableNode(
             node_id=layout_node.node_id,
             label=layout_node.label,
@@ -460,9 +523,11 @@ class BoardCreatorApp:
             bounds=bounds,
             troop_slots=[(slot.x, slot.y) for slot in layout_node.troop_slots],
             troop_capacity=board_node.troop_capacity,
-            vp_value=board_node.vp_value,
-            initial_control_marker=board_node.initial_control_marker,
+            control_vp=board_node.control_vp,
+            total_control_vp_per_turn=getattr(board_node, "total_control_vp_per_turn", 0),
             initial_vp_tokens=board_node.initial_vp_tokens,
+            influence_income=getattr(board_node, "influence_income", 0),
+            white_troop_slot_indices=white_indices,
             adjacent_to=set(board_node.adjacent_to),
         )
 
@@ -522,6 +587,8 @@ class BoardCreatorApp:
         self._mark_saved_baseline()
         self.status_var.set(f"Loaded board '{self.board_id}'")
         self._redraw()
+        self.root.after(100, self._auto_fit_zoom)
+        _save_last_paths(board_path, layout_path)
 
     def _load_background_from_layout_value(self, stored_value: str | None) -> None:
         _, message = self.background_manager.load_from_layout_value(
@@ -584,6 +651,7 @@ class BoardCreatorApp:
         self.layout_path = layout_path
         self._mark_saved_baseline()
         self.status_var.set(f"Saved board package: {board_path.name} + {layout_path.name}")
+        _save_last_paths(board_path, layout_path)
 
     def _validate_current_package(self) -> None:
         try:
@@ -669,6 +737,7 @@ class BoardCreatorApp:
 
         self._begin_mutation(snapshot=mutation_snapshot)
         self._apply_canvas_size()
+        self._change_zoom(1.0)
         self._mark_dirty("Loaded background image")
 
     def _clear_background_image(self) -> None:
@@ -676,6 +745,7 @@ class BoardCreatorApp:
             return
         self._begin_mutation()
         self._set_background_from_path(None, adopt_image_size=False)
+        self._auto_fit_zoom()
         self._mark_dirty("Cleared background image")
 
     def _event_to_world(self, event: tk.Event[tk.Canvas]) -> tuple[float, float]:
@@ -739,6 +809,14 @@ class BoardCreatorApp:
             self._create_route_node(*snapped)
             return
 
+        if self.mode == EditorMode.RESIZE:
+            clicked_node_id = self._find_node_at(x, y)
+            if clicked_node_id is not None:
+                node = self.nodes[clicked_node_id]
+                if node.kind == NodeKind.SITE and node.bounds is not None:
+                    self._begin_resize(clicked_node_id, x, y)
+            return
+
         clicked_node_id = self._find_node_at(x, y)
         if self.mode == EditorMode.CONNECT:
             self._handle_connect_click(clicked_node_id)
@@ -787,6 +865,17 @@ class BoardCreatorApp:
                 self.status_var.set("Moved node")
                 self._redraw()
 
+        if (
+            self.mode == EditorMode.RESIZE
+            and self.interaction.resize_node_id is not None
+            and self.interaction.resize_anchor is not None
+            and self.interaction.resize_preview_rect_id is not None
+        ):
+            ax, ay = self.interaction.resize_anchor
+            ex, ey = self._snap_point(x, y)
+            self._draw_resize_preview(ax, ay, ex, ey)
+            return
+
     def _on_canvas_release(self, event: tk.Event[tk.Canvas]) -> None:
         x, y = self._event_to_world(event)
 
@@ -815,17 +904,145 @@ class BoardCreatorApp:
             self._redraw()
             return
 
+        if self.mode == EditorMode.RESIZE and self.interaction.resize_node_id is not None:
+            self._finish_resize(x, y)
+            return
+
         self.interaction.dragging_node_id = None
         self.interaction.drag_last = None
 
     def _on_canvas_right_press(self, event: tk.Event[tk.Canvas]) -> None:
-        _ = event
+        x, y = self._event_to_world(event)
+        node_id = self._find_node_at(x, y)
+        if node_id is not None and self.nodes[node_id].kind == NodeKind.SITE:
+            self.interaction.selected_node_id = node_id
+            self._show_site_context_menu(event.x_root, event.y_root, node_id)
 
-    def _on_pan_start(self, event: tk.Event[tk.Canvas]) -> None:
-        self.canvas.scan_mark(event.x, event.y)
+    def _on_canvas_double_click(self, event: tk.Event[tk.Canvas]) -> None:
+        x, y = self._event_to_world(event)
+        node_id = self._find_node_at(x, y)
 
-    def _on_pan_drag(self, event: tk.Event[tk.Canvas]) -> None:
-        self.canvas.scan_dragto(event.x, event.y, gain=1)
+        if self.mode == EditorMode.RESIZE:
+            if node_id is None or self.nodes[node_id].kind != NodeKind.SITE:
+                self._set_mode(EditorMode.SELECT)
+                return
+
+        if node_id is not None and self.nodes[node_id].kind == NodeKind.SITE:
+            self.interaction.selected_node_id = node_id
+            self._edit_selected_site(self.nodes[node_id])
+            self._redraw()
+
+    def _show_site_context_menu(self, root_x: int, root_y: int, node_id: str) -> None:
+        menu = tk.Menu(self.root, tearoff=False)
+        menu.add_command(
+            label="Properties",
+            command=lambda: self._context_edit_site(node_id),
+        )
+        menu.add_command(
+            label="Resize",
+            command=lambda: self._context_start_resize(node_id),
+        )
+        menu.tk_popup(root_x, root_y)
+
+    def _context_edit_site(self, node_id: str) -> None:
+        node = self.nodes.get(node_id)
+        if node is not None:
+            self.interaction.selected_node_id = node_id
+            self._edit_selected_site(node)
+            self._redraw()
+
+    def _context_start_resize(self, node_id: str) -> None:
+        self._set_mode(EditorMode.RESIZE)
+        self.interaction.selected_node_id = node_id
+        self.status_var.set(f"Resize mode — drag '{self.nodes[node_id].label}'")
+        self._redraw()
+
+    def _begin_resize(self, node_id: str, click_x: float, click_y: float) -> None:
+        node = self.nodes[node_id]
+        if node.bounds is None:
+            return
+
+        left, top, width, height = node.bounds
+        right = left + width
+        bottom = top + height
+
+        cx = left + width / 2
+        cy = top + height / 2
+
+        anchor_x = left if click_x >= cx else right
+        anchor_y = top if click_y >= cy else bottom
+
+        self.interaction.resize_node_id = node_id
+        self.interaction.resize_anchor = (anchor_x, anchor_y)
+        self._draw_resize_preview(anchor_x, anchor_y, click_x, click_y)
+
+    def _draw_resize_preview(self, ax: float, ay: float, bx: float, by: float) -> None:
+        if self.interaction.resize_preview_rect_id is not None:
+            self.canvas.delete(self.interaction.resize_preview_rect_id)
+        x1 = min(ax, bx)
+        y1 = min(ay, by)
+        x2 = max(ax, bx)
+        y2 = max(ay, by)
+        sx1, sy1 = self._to_screen(x1, y1)
+        sx2, sy2 = self._to_screen(x2, y2)
+        self.interaction.resize_preview_rect_id = self.canvas.create_rectangle(
+            sx1,
+            sy1,
+            sx2,
+            sy2,
+            outline="#d97706",
+            width=max(1, int(round(self._scaled(2)))),
+            dash=(4, 3),
+        )
+
+    def _finish_resize(self, x: float, y: float) -> None:
+        anchor = self.interaction.resize_anchor
+        resize_node_id = self.interaction.resize_node_id
+        if anchor is None or resize_node_id is None:
+            return
+
+        if self.interaction.resize_preview_rect_id is not None:
+            self.canvas.delete(self.interaction.resize_preview_rect_id)
+            self.interaction.resize_preview_rect_id = None
+
+        end_x, end_y = self._snap_point(x, y)
+        ax, ay = anchor
+
+        left = min(ax, end_x)
+        top = min(ay, end_y)
+        width = abs(ax - end_x)
+        height = abs(ay - end_y)
+
+        if width < 8 or height < 8:
+            self.status_var.set("Resize too small")
+            self.interaction.resize_node_id = None
+            self.interaction.resize_anchor = None
+            self._redraw()
+            return
+
+        node = self.nodes[resize_node_id]
+        self._begin_mutation()
+        node.bounds = (left, top, width, height)
+        node.center_x = left + width / 2
+        node.center_y = top + height / 2
+        node.troop_slots = self._compute_site_troop_slots(
+            left, top, width, height, node.troop_capacity
+        )
+        self.interaction.resize_node_id = None
+        self.interaction.resize_anchor = None
+        self.interaction.selected_node_id = resize_node_id
+        self._mark_dirty(f"Site '{node.label}' resized", redraw=True)
+
+    @staticmethod
+    def _compute_site_troop_slots(
+        left: float, top: float, width: float, height: float, capacity: int
+    ) -> list[tuple[float, float]]:
+        spacing_x = width / (capacity + 1)
+        row_y = top + (height / 2)
+        return [
+            (left + spacing_x * (slot_index + 1), row_y)
+            for slot_index in range(capacity)
+        ]
 
     def _create_site_node(self, x1: float, y1: float, x2: float, y2: float) -> None:
         metadata = self._prompt_site_metadata()
@@ -854,17 +1071,20 @@ class BoardCreatorApp:
             center_x=center_x,
             center_y=center_y,
             bounds=(left, top, width, height),
-            troop_slots=[],
+            troop_slots=self._compute_site_troop_slots(
+                left, top, width, height, metadata.troop_capacity
+            ),
             troop_capacity=metadata.troop_capacity,
-            vp_value=metadata.vp_value,
-            initial_control_marker=metadata.initial_control_marker,
+            control_vp=metadata.control_vp,
+            total_control_vp_per_turn=metadata.total_control_vp_per_turn,
             initial_vp_tokens=metadata.initial_vp_tokens,
+            influence_income=metadata.influence_income,
+            white_troop_slot_indices=set(range(metadata.white_troop_count)),
         )
         self.node_order.append(node_id)
         self.interaction.selected_node_id = node_id
-        self.interaction.pending_slot_node_id = node_id
         self._mark_dirty(
-            f"Site '{metadata.label}' created. Click {metadata.troop_capacity} troop slots inside the site.",
+            f"Site '{metadata.label}' created.",
             redraw=True,
         )
 
@@ -888,9 +1108,11 @@ class BoardCreatorApp:
             bounds=None,
             troop_slots=[],
             troop_capacity=1,
-            vp_value=metadata.vp_value,
-            initial_control_marker=metadata.initial_control_marker,
+            control_vp=metadata.control_vp,
+            total_control_vp_per_turn=metadata.total_control_vp_per_turn,
             initial_vp_tokens=metadata.initial_vp_tokens,
+            influence_income=metadata.influence_income,
+            white_troop_slot_indices={0} if metadata.has_white_troop else set(),
         )
         self.node_order.append(node_id)
         self.interaction.selected_node_id = node_id
@@ -1015,14 +1237,17 @@ class BoardCreatorApp:
         fields = [
             ("label", "Site name", "str"),
             ("troop_capacity", "Troop capacity", "int"),
-            ("vp_value", "VP value", "int"),
-            ("initial_control_marker", "Initial control marker (optional)", "opt_str"),
-            ("initial_vp_tokens", "Initial VP tokens", "int"),
+            ("white_troop_count", "Starting white troops", "int"),
+            ("control_vp", "Control VP (end game)", "int"),
+            ("influence_income", "Influence/turn (control)", "int"),
+            ("total_control_vp_per_turn", "Total Control VP/turn", "int"),
         ]
         initial = {
             "troop_capacity": "2",
-            "vp_value": "0",
-            "initial_vp_tokens": "0",
+            "white_troop_count": "0",
+            "control_vp": "0",
+            "influence_income": "0",
+            "total_control_vp_per_turn": "0",
         }
 
         while True:
@@ -1045,40 +1270,48 @@ class BoardCreatorApp:
                 continue
 
             troop_capacity = int(result["troop_capacity"])
-            if troop_capacity < 1:
-                messagebox.showerror("Invalid value", "Troop capacity must be at least 1.", parent=self.root)
+            if troop_capacity < 1 or troop_capacity > 6:
+                messagebox.showerror("Invalid value", "Troop capacity must be between 1 and 6.", parent=self.root)
                 continue
 
-            vp_value = int(result["vp_value"])
-            if vp_value < 0:
-                messagebox.showerror("Invalid value", "VP value must be 0 or more.", parent=self.root)
+            white_troop_count = int(result["white_troop_count"])
+            if white_troop_count < 0 or white_troop_count > troop_capacity:
+                messagebox.showerror("Invalid value", f"White troops must be between 0 and {troop_capacity}.", parent=self.root)
                 continue
 
-            initial_vp_tokens = int(result["initial_vp_tokens"])
-            if initial_vp_tokens < 0:
-                messagebox.showerror("Invalid value", "Initial VP tokens must be 0 or more.", parent=self.root)
+            control_vp = int(result["control_vp"])
+            if control_vp < 0:
+                messagebox.showerror("Invalid value", "Control VP must be 0 or more.", parent=self.root)
                 continue
 
-            control_marker = result.get("initial_control_marker")
-            control_marker = str(control_marker).strip() if control_marker else None
+            influence_income = int(result["influence_income"])
+            if influence_income < 0:
+                messagebox.showerror("Invalid value", "Influence income must be 0 or more.", parent=self.root)
+                continue
+
+            total_control_vp_per_turn = int(result["total_control_vp_per_turn"])
+            if total_control_vp_per_turn < 0:
+                messagebox.showerror("Invalid value", "Total Control VP/turn must be 0 or more.", parent=self.root)
+                continue
 
             return SiteMetadata(
                 label=label,
                 troop_capacity=troop_capacity,
-                vp_value=vp_value,
-                initial_control_marker=control_marker,
-                initial_vp_tokens=initial_vp_tokens,
+                control_vp=control_vp,
+                total_control_vp_per_turn=total_control_vp_per_turn,
+                initial_vp_tokens=0,
+                influence_income=influence_income,
+                white_troop_count=white_troop_count,
             )
 
     def _prompt_route_metadata(self) -> RouteMetadata | None:
         fields = [
-            ("vp_value", "VP value", "int"),
-            ("initial_control_marker", "Initial control marker (optional)", "opt_str"),
-            ("initial_vp_tokens", "Initial VP tokens", "int"),
+            ("control_vp", "VP value", "int"),
+            ("has_white_troop", "Starting white troop (1=yes, 0=no)", "int"),
         ]
         initial = {
-            "vp_value": "0",
-            "initial_vp_tokens": "0",
+            "control_vp": "0",
+            "has_white_troop": "0",
         }
 
         while True:
@@ -1092,23 +1325,22 @@ class BoardCreatorApp:
             if result is None:
                 return None
 
-            vp_value = int(result["vp_value"])
-            if vp_value < 0:
+            control_vp = int(result["control_vp"])
+            if control_vp < 0:
                 messagebox.showerror("Invalid value", "VP value must be 0 or more.", parent=self.root)
                 continue
 
-            initial_vp_tokens = int(result["initial_vp_tokens"])
-            if initial_vp_tokens < 0:
-                messagebox.showerror("Invalid value", "Initial VP tokens must be 0 or more.", parent=self.root)
+            has_white_troop = int(result["has_white_troop"])
+            if has_white_troop not in (0, 1):
+                messagebox.showerror("Invalid value", "White troop must be 0 or 1.", parent=self.root)
                 continue
 
-            control_marker = result.get("initial_control_marker")
-            control_marker = str(control_marker).strip() if control_marker else None
-
             return RouteMetadata(
-                vp_value=vp_value,
-                initial_control_marker=control_marker,
-                initial_vp_tokens=initial_vp_tokens,
+                control_vp=control_vp,
+                total_control_vp_per_turn=0,
+                initial_vp_tokens=0,
+                influence_income=0,
+                has_white_troop=has_white_troop,
             )
 
     def _edit_selected_node(self) -> None:
@@ -1124,115 +1356,105 @@ class BoardCreatorApp:
         self._edit_selected_route(node)
 
     def _edit_selected_site(self, node: EditableNode) -> None:
-        label = simpledialog.askstring(
-            "Edit Site Name",
-            "Site name:",
-            initialvalue=node.label,
-            parent=self.root,
-        )
-        if label is None:
-            return
-        label = label.strip()
-        if not label:
-            messagebox.showerror("Invalid name", "Site name is required.", parent=self.root)
-            return
-        if not self._is_label_available(label, ignore_node_id=node.node_id):
-            messagebox.showerror("Duplicate name", "A node with that name already exists.", parent=self.root)
-            return
+        fields = [
+            ("label", "Site name", "str"),
+            ("troop_capacity", "Troop capacity", "int"),
+            ("white_troop_count", "Starting white troops", "int"),
+            ("control_vp", "Control VP (end game)", "int"),
+            ("influence_income", "Influence/turn (control)", "int"),
+            ("total_control_vp_per_turn", "Total Control VP/turn", "int"),
+        ]
+        initial = {
+            "label": node.label,
+            "troop_capacity": str(node.troop_capacity),
+            "white_troop_count": str(len(node.white_troop_slot_indices)),
+            "control_vp": str(node.control_vp),
+            "influence_income": str(node.influence_income),
+            "total_control_vp_per_turn": str(node.total_control_vp_per_turn),
+        }
 
-        troop_capacity = simpledialog.askinteger(
-            "Edit Site Troop Capacity",
-            "Troop capacity:",
-            parent=self.root,
-            minvalue=1,
-            initialvalue=node.troop_capacity,
-        )
-        if troop_capacity is None:
-            return
-
-        vp_value = simpledialog.askinteger(
-            "Edit Site VP Value",
-            "VP value:",
-            parent=self.root,
-            minvalue=0,
-            initialvalue=node.vp_value,
-        )
-        if vp_value is None:
-            return
-
-        control_marker_raw = simpledialog.askstring(
-            "Edit Site Control Marker",
-            "Initial control marker (optional):",
-            initialvalue=node.initial_control_marker or "",
-            parent=self.root,
-        )
-        if control_marker_raw is None:
-            return
-
-        initial_vp_tokens = simpledialog.askinteger(
-            "Edit Site Initial VP Tokens",
-            "Initial VP tokens:",
-            parent=self.root,
-            minvalue=0,
-            initialvalue=node.initial_vp_tokens,
-        )
-        if initial_vp_tokens is None:
-            return
-
-        self._begin_mutation()
-        node.label = label
-        node.troop_capacity = troop_capacity
-        node.vp_value = vp_value
-        node.initial_control_marker = control_marker_raw.strip() or None
-        node.initial_vp_tokens = initial_vp_tokens
-
-        if len(node.troop_slots) > troop_capacity:
-            node.troop_slots = node.troop_slots[:troop_capacity]
-
-        if len(node.troop_slots) < troop_capacity:
-            self.interaction.pending_slot_node_id = node.node_id
-            self._mark_dirty(
-                f"Site updated. Add {troop_capacity - len(node.troop_slots)} more troop slots.",
-                redraw=True,
+        while True:
+            dialog = TabularInputDialog(
+                parent=self.root,
+                title="Edit Site",
+                fields=fields,
+                initial_values=initial,
             )
-            return
+            result = dialog.result
+            if result is None:
+                return
 
-        self._mark_dirty("Site updated", redraw=True)
+            label = str(result["label"]).strip()
+            if not label:
+                messagebox.showerror("Invalid name", "Site name is required.", parent=self.root)
+                continue
+            if not self._is_label_available(label, ignore_node_id=node.node_id):
+                messagebox.showerror("Duplicate name", "A node with that name already exists.", parent=self.root)
+                continue
+
+            troop_capacity = int(result["troop_capacity"])
+            if troop_capacity < 1 or troop_capacity > 6:
+                messagebox.showerror("Invalid value", "Troop capacity must be between 1 and 6.", parent=self.root)
+                continue
+
+            white_troop_count = int(result["white_troop_count"])
+            if white_troop_count < 0 or white_troop_count > troop_capacity:
+                messagebox.showerror("Invalid value", f"White troops must be between 0 and {troop_capacity}.", parent=self.root)
+                continue
+
+            control_vp = int(result["control_vp"])
+            if control_vp < 0:
+                messagebox.showerror("Invalid value", "Control VP must be 0 or more.", parent=self.root)
+                continue
+
+            influence_income = int(result["influence_income"])
+            if influence_income < 0:
+                messagebox.showerror("Invalid value", "Influence income must be 0 or more.", parent=self.root)
+                continue
+
+            total_control_vp_per_turn = int(result["total_control_vp_per_turn"])
+            if total_control_vp_per_turn < 0:
+                messagebox.showerror("Invalid value", "Total Control VP/turn must be 0 or more.", parent=self.root)
+                continue
+
+            self._begin_mutation()
+            node.label = label
+            node.troop_capacity = troop_capacity
+            node.control_vp = control_vp
+            node.total_control_vp_per_turn = total_control_vp_per_turn
+            node.influence_income = influence_income
+            node.white_troop_slot_indices = set(range(white_troop_count))
+
+            if node.bounds is not None:
+                node.troop_slots = self._compute_site_troop_slots(
+                    node.bounds[0], node.bounds[1], node.bounds[2], node.bounds[3], troop_capacity
+                )
+
+            self._mark_dirty("Site updated", redraw=True)
+            return
 
     def _edit_selected_route(self, node: EditableNode) -> None:
-        vp_value = simpledialog.askinteger(
+        control_vp = simpledialog.askinteger(
             "Edit Route VP Value",
             "VP value:",
             parent=self.root,
             minvalue=0,
-            initialvalue=node.vp_value,
+            initialvalue=node.control_vp,
         )
-        if vp_value is None:
+        if control_vp is None:
             return
 
-        control_marker_raw = simpledialog.askstring(
-            "Edit Route Control Marker",
-            "Initial control marker (optional):",
-            initialvalue=node.initial_control_marker or "",
+        has_white = messagebox.askyesno(
+            "Edit Route White Troop",
+            "Does this route start with a white troop?",
             parent=self.root,
         )
-        if control_marker_raw is None:
-            return
-
-        initial_vp_tokens = simpledialog.askinteger(
-            "Edit Route Initial VP Tokens",
-            "Initial VP tokens:",
-            parent=self.root,
-            minvalue=0,
-            initialvalue=node.initial_vp_tokens,
-        )
-        if initial_vp_tokens is None:
+        if has_white is None:
             return
 
         self._begin_mutation()
-        node.vp_value = vp_value
-        node.initial_control_marker = control_marker_raw.strip() or None
-        node.initial_vp_tokens = initial_vp_tokens
+        node.control_vp = control_vp
+        node.white_troop_slot_indices = {0} if has_white else set()
         self._mark_dirty(f"Route {node.label} updated", redraw=True)
 
     def _delete_selected_node(self) -> None:
@@ -1404,6 +1626,30 @@ class BoardCreatorApp:
         self.root.destroy()
 
 
+def _save_last_paths(board_path: Path, layout_path: Path | None) -> None:
+    LAST_PATHS_FILE.parent.mkdir(parents=True, exist_ok=True)
+    _write_json(LAST_PATHS_FILE, {
+        "board_path": str(board_path),
+        "layout_path": str(layout_path) if layout_path is not None else None,
+    })
+
+
+def _load_last_paths() -> tuple[Path | None, Path | None]:
+    if not LAST_PATHS_FILE.exists():
+        return None, None
+    try:
+        data = _read_json(LAST_PATHS_FILE)
+    except (ValueError, OSError):
+        return None, None
+    board = data.get("board_path")
+    layout = data.get("layout_path")
+    board_path = Path(board) if isinstance(board, str) else None
+    layout_path = Path(layout) if isinstance(layout, str) else None
+    if board_path is None or not board_path.exists():
+        return None, None
+    return board_path, layout_path if (layout_path is not None and layout_path.exists()) else None
+
+
 def _resolve_default_paths() -> tuple[Path | None, Path | None]:
     if DEFAULT_BOARD_PATH.exists() and DEFAULT_LAYOUT_PATH.exists():
         return DEFAULT_BOARD_PATH, DEFAULT_LAYOUT_PATH
@@ -1421,8 +1667,9 @@ def main() -> None:
     args = parser.parse_args()
 
     default_board, default_layout = _resolve_default_paths()
-    board_path = args.board_path if args.board_path is not None else default_board
-    layout_path = args.layout_path if args.layout_path is not None else default_layout
+    last_board, last_layout = _load_last_paths()
+    board_path = args.board_path if args.board_path is not None else (last_board or default_board)
+    layout_path = args.layout_path if args.layout_path is not None else (last_layout or default_layout)
 
     root = tk.Tk()
     BoardCreatorApp(root=root, board_path=board_path, layout_path=layout_path)

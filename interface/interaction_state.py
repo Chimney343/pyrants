@@ -19,6 +19,9 @@ class EditorInteractionState:
     drag_changed: bool = False
     site_drag_start: tuple[float, float] | None = None
     site_preview_rect_id: int | None = None
+    resize_node_id: str | None = None
+    resize_anchor: tuple[float, float] | None = None
+    resize_preview_rect_id: int | None = None
 
     def reset(self) -> None:
         """Clear all transient interaction state."""
@@ -30,12 +33,18 @@ class EditorInteractionState:
         self.clear_drag_state()
         self.site_drag_start = None
         self.site_preview_rect_id = None
+        self.resize_node_id = None
+        self.resize_anchor = None
+        self.resize_preview_rect_id = None
 
     def reset_for_mode_change(self) -> None:
         """Clear mode-specific connect selection while preserving node selection."""
 
         self.connect_start_node_id = None
         self.connect_end_node_id = None
+        self.resize_node_id = None
+        self.resize_anchor = None
+        self.resize_preview_rect_id = None
 
     def clear_connect_selection(self) -> None:
         """Clear the in-progress connect gesture and selection."""
@@ -60,6 +69,7 @@ class EditorInteractionState:
             "connect_start_node_id": self.connect_start_node_id,
             "connect_end_node_id": self.connect_end_node_id,
             "pending_slot_node_id": self.pending_slot_node_id,
+            "resize_node_id": self.resize_node_id,
         }
 
     def restore_snapshot_fields(self, snapshot: dict[str, object]) -> None:
@@ -77,6 +87,11 @@ class EditorInteractionState:
         pending_slot_node_id = snapshot.get("pending_slot_node_id")
         self.pending_slot_node_id = pending_slot_node_id if isinstance(pending_slot_node_id, str) else None
 
+        resize_node_id = snapshot.get("resize_node_id")
+        self.resize_node_id = resize_node_id if isinstance(resize_node_id, str) else None
+
         self.clear_drag_state()
         self.site_drag_start = None
         self.site_preview_rect_id = None
+        self.resize_anchor = None
+        self.resize_preview_rect_id = None
