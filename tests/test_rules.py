@@ -44,8 +44,7 @@ def _ability_state(cards: list[dict[str, object]], starter_entries: list[dict[st
                 "kind": "site",
                 "adjacent_to": [],
                 "troop_capacity": 3,
-                "vp_value": 0,
-                "initial_control_marker": None,
+                "control_vp": 0,
                 "initial_vp_tokens": 0,
             }
         ],
@@ -1003,9 +1002,9 @@ def test_glabrezu_defines_two_single_assassination_actions() -> None:
     execution_actions = card.execution_model.actions
     flattened_actions = card.actions
 
-    assert [action.op for action in execution_actions] == ["devour_cost", "assassinate_troop", "assassinate_troop"]
+    assert [action.op for action in execution_actions] == ["devour", "assassinate_troop", "assassinate_troop"]
     assert [action.quantity.value for action in execution_actions[1:]] == [1, 1]
-    assert [action.op for action in flattened_actions] == ["devour_cost", "assassinate_troop", "assassinate_troop"]
+    assert [action.op for action in flattened_actions] == ["devour", "assassinate_troop", "assassinate_troop"]
 
 
 def test_glabrezu_runtime_offers_second_assassination_after_first_target() -> None:
@@ -1846,7 +1845,7 @@ def test_presence_includes_adjacent_troop() -> None:
     assert has_presence(updated, "p1", "site_blingdenfire")
 
 
-def test_deploy_places_troop_and_updates_control_marker() -> None:
+def test_deploy_places_troop() -> None:
     state = _base_state(seed=19)
     updated = state.model_copy(deep=True)
     updated.resource_pool.power = 1
@@ -1863,7 +1862,6 @@ def test_deploy_places_troop_and_updates_control_marker() -> None:
     assert deployed.board.nodes["site_a"].troop_slots.count("p1") == 1
     assert deployed.players["p1"].barracks == updated.players["p1"].barracks - 1
     assert deployed.resource_pool.power == 0
-    assert deployed.board.nodes["site_a"].control_marker == "p1"
 
 
 def test_deploy_awards_score_when_barracks_are_empty() -> None:
@@ -2523,11 +2521,6 @@ def test_white_dragon_scales_vp_from_controlled_sites_not_markers_only() -> None
     state.board.nodes["site_chasmleap_bridge"].troop_slots = ["p1", None, None]
     state.board.nodes["site_everfire"].troop_slots = [None, None, None]
 
-    state.board.nodes["site_a"].control_marker = "p1"
-    state.board.nodes["site_blingdenfire"].control_marker = "p1"
-    state.board.nodes["site_chasmleap_bridge"].control_marker = None
-    state.board.nodes["site_everfire"].control_marker = None
-
     played = apply(state, PlayCardMove(player_id="p1", card_id="white_dragon", hand_index=0))
     current = played
     for target_node_id in ["site_a", "site_blingdenfire", "site_chasmleap_bridge"]:
@@ -2606,7 +2599,7 @@ def test_high_priest_of_myrkul_promotes_any_number_of_undead_played_cards() -> N
     state.players["p1"].played_cards = []
     state.players["p1"].barracks = 5
     state.board.nodes["site_a"].troop_slots = [None, None, None]
-    state.board.nodes["site_blingdenfire"].troop_slots = ["white", None, None]
+    state.board.nodes["site_blingdenfire"].troop_slots = ["p2", None, None]
 
     after_priest = apply(state, PlayCardMove(player_id="p1", card_id="high_priest_of_myrkul", hand_index=0))
     return_move = next(
@@ -2688,3 +2681,85 @@ def test_mummy_lord_custom_effect_moves_white_trophy_to_board_slot() -> None:
 
     assert "white" not in resolved.players["p2"].trophy_hall
     assert resolved.board.nodes["site_a"].troop_slots[0] == "white"
+
+
+# ---------------------------------------------------------------------------
+# _count_controlled_sites_by_troops
+# ---------------------------------------------------------------------------
+
+
+def test_count_controlled_sites_by_troops_unique_majority() -> None:
+    from engine.rules import _count_controlled_sites_by_troops
+
+    state = _base_state(seed=900).model_copy(deep=True)
+    state.board.nodes["site_a"].troop_slots = ["p1", None, None]
+    state.board.nodes["site_blingdenfire"].troop_slots = ["p1", "p1", None]
+
+    count = _count_controlled_sites_by_troops(state, "p1")
+    assert count == 2
+
+
+def test_count_controlled_sites_by_troops_tie_not_controlled() -> None:
+    from engine.rules import _count_controlled_sites_by_troops
+
+    state = _base_state(seed=901).model_copy(deep=True)
+    state.board.nodes["site_a"].troop_slots = ["p1", "p2", None]
+
+    count = _count_controlled_sites_by_troops(state, "p1")
+    assert count == 0
+
+
+def test_count_controlled_sites_by_troops_white_not_controlled() -> None:
+    from engine.rules import _count_controlled_sites_by_troops
+
+    state = _base_state(seed=902).model_copy(deep=True)
+    state.board.nodes["site_a"].troop_slots = ["white", "white", "white"]
+
+    count = _count_controlled_sites_by_troops(state, "p1")
+    assert count == 0
+
+
+def test_count_controlled_sites_by_troops_empty_slot_is_controlled() -> None:
+    from engine.rules import _count_controlled_sites_by_troops
+
+    state = _base_state(seed=903).model_copy(deep=True)
+    state.board.nodes["site_a"].troop_slots = ["p1", None, None]
+
+    count = _count_controlled_sites_by_troops(state, "p1")
+    assert count == 1
+
+
+def test_count_controlled_sites_by_troops_ignores_routes() -> None:
+    from engine.rules import _count_controlled_sites_by_troops
+
+    state = _base_state(seed=904).model_copy(deep=True)
+    state.board.nodes["route_ab"].troop_slots = ["p1"]
+
+    count = _count_controlled_sites_by_troops(state, "p1")
+    assert count == 0
+
+
+def test_count_controlled_sites_by_troops_player_beats_white() -> None:
+    from engine.rules import _count_controlled_sites_by_troops
+
+    state = _base_state(seed=905).model_copy(deep=True)
+    state.board.nodes["site_a"].troop_slots = ["p1", "p1", "white"]
+
+    count = _count_controlled_sites_by_troops(state, "p1")
+    assert count == 1
+
+
+def test_count_controlled_sites_by_troops_multiple_players() -> None:
+    from engine.rules import _count_controlled_sites_by_troops
+
+    state = _base_state(seed=906).model_copy(deep=True)
+    state.board.nodes["site_a"].troop_slots = ["p1", "p1", "p1"]
+    state.board.nodes["site_blingdenfire"].troop_slots = ["p2", None]
+    state.board.nodes["site_chasmleap_bridge"].troop_slots = ["p2", None]
+    state.board.nodes["site_everfire"].troop_slots = []
+
+    p1_count = _count_controlled_sites_by_troops(state, "p1")
+    p2_count = _count_controlled_sites_by_troops(state, "p2")
+
+    assert p1_count == 1
+    assert p2_count == 2

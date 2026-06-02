@@ -25,9 +25,10 @@ class EditableNodeLike(Protocol):
     troop_slots: list[tuple[float, float]]
     white_troop_slot_indices: set[int]
     troop_capacity: int
-    vp_value: int
-    initial_control_marker: str | None
+    control_vp: int
+    total_control_vp_per_turn: int
     initial_vp_tokens: int
+    influence_income: int
     adjacent_to: set[str]
 
 
@@ -87,10 +88,11 @@ class BoardPackageManager:
                     "kind": node.kind.value,
                     "adjacent_to": sorted(node.adjacent_to),
                     "troop_capacity": node.troop_capacity,
-                    "vp_value": node.vp_value,
+                    "control_vp": node.control_vp,
+                    "total_control_vp_per_turn": node.total_control_vp_per_turn,
                     "initial_troop_slots": initial_troop_slots,
-                    "initial_control_marker": node.initial_control_marker,
                     "initial_vp_tokens": node.initial_vp_tokens,
+                    "influence_income": node.influence_income,
                 }
             )
 

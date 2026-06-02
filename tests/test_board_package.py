@@ -13,17 +13,17 @@ from game_setup.loaders import (
 )
 
 BASE_DIR = Path(__file__).resolve().parents[1]
-BOARD_PATH = BASE_DIR / "data" / "boards" / "base_game.json"
-LAYOUT_PATH = BASE_DIR / "data" / "layouts" / "base_game_layout.json"
+BOARD_PATH = BASE_DIR / "data" / "boards" / "tyrants_of_the_underdark.json"
+LAYOUT_PATH = BASE_DIR / "data" / "layouts" / "tyrants_of_the_underdark_layout.json"
 
 
 def test_build_board_package_from_files() -> None:
     package = build_board_package_from_files(BOARD_PATH, LAYOUT_PATH)
 
-    assert package.board.board_id == "base_underdark"
-    assert package.layout.layout_id == "base_underdark_layout"
+    assert package.board.board_id == "Tyrants of the Underdark"
+    assert package.layout.layout_id == "Tyrants of the Underdark_layout"
     assert len(package.layout.nodes) == len(package.board.nodes)
-    route_layout = next(node for node in package.layout.nodes if node.node_id == "route_ab")
+    route_layout = next(node for node in package.layout.nodes if node.node_id == "route_1")
     assert route_layout.label.isdigit()
 
 
@@ -44,14 +44,14 @@ def test_rejects_duplicate_layout_labels() -> None:
                 "kind": "site",
                 "adjacent_to": ["route_1"],
                 "troop_capacity": 1,
-                "vp_value": 1,
+                "control_vp": 1,
             },
             {
                 "node_id": "route_1",
                 "kind": "route",
                 "adjacent_to": ["site_a"],
                 "troop_capacity": 1,
-                "vp_value": 0,
+                "control_vp": 0,
             },
         ],
     }
@@ -91,14 +91,14 @@ def test_rejects_site_slot_count_mismatch() -> None:
                 "kind": "site",
                 "adjacent_to": ["route_1"],
                 "troop_capacity": 2,
-                "vp_value": 1,
+                "control_vp": 1,
             },
             {
                 "node_id": "route_1",
                 "kind": "route",
                 "adjacent_to": ["site_a"],
                 "troop_capacity": 1,
-                "vp_value": 0,
+                "control_vp": 0,
             },
         ],
     }
@@ -138,14 +138,14 @@ def test_legacy_waypoints_payload_is_ignored() -> None:
                 "kind": "site",
                 "adjacent_to": ["route_1"],
                 "troop_capacity": 1,
-                "vp_value": 1,
+                "control_vp": 1,
             },
             {
                 "node_id": "route_1",
                 "kind": "route",
                 "adjacent_to": ["site_a"],
                 "troop_capacity": 1,
-                "vp_value": 0,
+                "control_vp": 0,
             },
         ],
     }
@@ -186,28 +186,28 @@ def test_route_can_connect_to_multiple_neighbors() -> None:
                 "kind": "site",
                 "adjacent_to": ["route_1"],
                 "troop_capacity": 1,
-                "vp_value": 1,
+                "control_vp": 1,
             },
             {
                 "node_id": "site_b",
                 "kind": "site",
                 "adjacent_to": ["route_1"],
                 "troop_capacity": 1,
-                "vp_value": 1,
+                "control_vp": 1,
             },
             {
                 "node_id": "site_c",
                 "kind": "site",
                 "adjacent_to": ["route_1"],
                 "troop_capacity": 1,
-                "vp_value": 1,
+                "control_vp": 1,
             },
             {
                 "node_id": "route_1",
                 "kind": "route",
                 "adjacent_to": ["site_a", "site_b", "site_c"],
                 "troop_capacity": 1,
-                "vp_value": 0,
+                "control_vp": 0,
             },
         ],
     }

@@ -31,7 +31,7 @@ from engine.moves import (
     PRIESTESS_RECRUIT_SLOT,
 )
 from engine.phases import advance_phase
-from engine.scoring import award_end_of_turn_site_vp, compute_final_scores, sync_site_control_markers
+from engine.scoring import award_end_of_turn_site_vp, compute_final_scores
 from engine.state import (
     CardAction,
     CardDefinition,
@@ -76,13 +76,24 @@ def _count_controlled_sites(state: GameState, player_id: str) -> int:
     )
 
 
-def _count_owned_control_markers(state: GameState, player_id: str) -> int:
+def _count_controlled_sites_by_troops(state: GameState, player_id: str) -> int:
     board_definitions = board_index(state.definition.board)
-    return sum(
-        1
-        for node_id, node_definition in board_definitions.items()
-        if node_definition.kind == NodeKind.SITE and state.board.nodes[node_id].control_marker == player_id
-    )
+    total = 0
+    for node_id, node_definition in board_definitions.items():
+        if node_definition.kind != NodeKind.SITE:
+            continue
+        node_state = state.board.nodes[node_id]
+        counts: dict[str, int] = {}
+        for occupant in node_state.troop_slots:
+            if occupant is not None:
+                counts[occupant] = counts.get(occupant, 0) + 1
+        if not counts:
+            continue
+        max_count = max(counts.values())
+        leaders = [owner for owner, count in counts.items() if count == max_count]
+        if len(leaders) == 1 and leaders[0] != "white" and leaders[0] == player_id:
+            total += 1
+    return total
 
 
 def _count_runtime_cards_by_aspect(
@@ -161,7 +172,7 @@ def _scaled_vp_award_count(state: GameState, player_id: str, action: CardAction)
             required_secondary_aspect=required_secondary_aspect,
         )
     elif count_from == "owned_control_markers":
-        base_count = _count_owned_control_markers(state, player_id)
+        base_count = _count_controlled_sites_by_troops(state, player_id)
     elif count_from == "controlled_sites":
         base_count = _count_controlled_sites(state, player_id)
     else:
@@ -591,7 +602,7 @@ def _apply_free_assassinate(state: GameState, player_id: str, target_node_id: st
 
     node_state.troop_slots[target_slot_index] = None
     updated.players[player_id].trophy_hall.append(occupant)
-    return sync_site_control_markers(updated)
+    return updated
 
 
 def _apply_free_deploy(state: GameState, player_id: str, target_node_id: str) -> GameState:
@@ -611,7 +622,7 @@ def _apply_free_deploy(state: GameState, player_id: str, target_node_id: str) ->
         if occupant is None:
             node_state.troop_slots[slot_index] = player_id
             player.barracks -= 1
-            return sync_site_control_markers(updated)
+            return updated
 
     raise IllegalMoveError("deploy target has no empty troop slot")
 
@@ -643,7 +654,7 @@ def _apply_assassinate(state: GameState, move: AssassinateMove) -> GameState:
     updated.resource_pool.power -= 3
     node_state.troop_slots[move.target_slot_index] = None
     updated.players[move.player_id].trophy_hall.append(occupant)
-    return sync_site_control_markers(updated)
+    return updated
 
 
 def _apply_deploy(state: GameState, move: DeployMove) -> GameState:
@@ -672,7 +683,7 @@ def _apply_deploy(state: GameState, move: DeployMove) -> GameState:
         if occupant is None:
             node_state.troop_slots[slot_index] = move.player_id
             player.barracks -= 1
-            return sync_site_control_markers(updated)
+            return updated
 
     raise IllegalMoveError("deploy target has no empty troop slot")
 
@@ -1162,7 +1173,7 @@ def _resolve_runtime_action_count(
         return _count_controlled_sites(state, player_id)
 
     if count_from == "owned_control_markers":
-        return _count_owned_control_markers(state, player_id)
+        return _count_controlled_sites_by_troops(state, player_id)
 
     return _resolve_action_count(action)
 
@@ -1335,7 +1346,7 @@ def _action_requires_selection(action: CardAction) -> bool:
         "move_troop",
         "force_discard",
         "recruit_card",
-        "devour_cost",
+        "devour",
         "play_card",
     }
 
@@ -1657,6 +1668,8 @@ def _legal_generic_target_selection_moves(
             for slot_index, owner_id in enumerate(node_state.troop_slots):
                 if owner_id is None:
                     continue
+                if owner_id == WHITE_TROOP_OWNER:
+                    continue
                 if opponent_only and owner_id == player_id:
                     continue
                 if self_only and owner_id != player_id:
@@ -1857,7 +1870,7 @@ def _legal_generic_target_selection_moves(
             f"generic_card play_card source_fragment '{action.source_fragment}' is not implemented yet for card '{card.card_id}'"
         )
 
-    if action.op == "devour_cost":
+    if action.op == "devour":
         default_zone = str(action.metadata.get("source_zone", action.target_scope)).strip() or "unknown"
 
         def _append_for_zone(zone: str) -> None:
@@ -2268,7 +2281,7 @@ def _apply_generic_action(
             else:
                 player.score += 1
 
-            updated = sync_site_control_markers(working)
+            updated = working
         return updated
 
     if action.op == "place_spy":
@@ -2365,6 +2378,8 @@ def _apply_generic_action(
                 owner_id = node_state.troop_slots[target_slot_index]
                 if owner_id is None:
                     raise IllegalMoveError("selected troop slot is empty")
+                if owner_id == WHITE_TROOP_OWNER:
+                    raise IllegalMoveError("return_unit cannot target white troops")
                 if opponent_only and owner_id == player_id:
                     raise IllegalMoveError("selection must target an opponent unit")
                 if self_only and owner_id != player_id:
@@ -2372,7 +2387,7 @@ def _apply_generic_action(
                 node_state.troop_slots[target_slot_index] = None
                 if owner_id in working.players:
                     working.players[owner_id].barracks += 1
-                updated = sync_site_control_markers(working)
+                updated = working
                 continue
 
             if unit_type == "spy":
@@ -2426,7 +2441,7 @@ def _apply_generic_action(
 
             source_state.troop_slots[source_slot_index] = None
             target_state.troop_slots[target_slot_index] = occupant
-            updated = sync_site_control_markers(working)
+            updated = working
         return updated
 
     if action.op == "force_discard":
@@ -2583,7 +2598,7 @@ def _apply_generic_action(
             updated = _apply_recruit(updated, RecruitMove(player_id=player_id, market_slot=market_slot))
         return updated
 
-    if action.op == "devour_cost":
+    if action.op == "devour":
         selected_zone = str(selection.get("source_zone", "")).strip()
         default_zone = str(action.metadata.get("source_zone", action.target_scope)).strip() or "unknown"
         if default_zone == "unknown":
@@ -2856,7 +2871,7 @@ def _apply_generic_action(
 
             target_player.trophy_hall.pop(trophy_index)
             node_state.troop_slots[target_slot_index] = WHITE_TROOP_OWNER
-            return sync_site_control_markers(updated)
+            return updated
 
         raise MissingRuleImplementationError(
             f"generic_card custom_effect is not implemented yet for card '{card.card_id}'"

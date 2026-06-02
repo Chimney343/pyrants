@@ -66,10 +66,10 @@ class NodeOccupancyView:
     node_id: str
     kind: NodeKind
     adjacent_to: tuple[str, ...]
-    vp_value: int
+    control_vp: int
+    total_control_vp_per_turn: int
     troop_slots: tuple[str | None, ...]
     spies: tuple[str, ...]
-    control_marker: str | None
     vp_tokens: int
 
 
@@ -171,13 +171,13 @@ def filter_legal_moves(
     return filtered
 
 
-def build_game_view(session: GameSession) -> GameView:
+def build_game_view(session: GameSession, *, node_names: dict[str, str] | None = None) -> GameView:
     """Project the current session into a GUI-friendly view model."""
 
-    return build_game_view_from_snapshot(session.snapshot())
+    return build_game_view_from_snapshot(session.snapshot(), node_names=node_names)
 
 
-def build_game_view_from_snapshot(snapshot: GameSessionSnapshot) -> GameView:
+def build_game_view_from_snapshot(snapshot: GameSessionSnapshot, *, node_names: dict[str, str] | None = None) -> GameView:
     """Project a frozen session snapshot into a GUI-friendly view model."""
 
     state = snapshot.state
@@ -213,10 +213,10 @@ def build_game_view_from_snapshot(snapshot: GameSessionSnapshot) -> GameView:
             node_id=node_definition.node_id,
             kind=node_definition.kind,
             adjacent_to=tuple(node_definition.adjacent_to),
-            vp_value=node_definition.vp_value,
+            control_vp=node_definition.control_vp,
+            total_control_vp_per_turn=node_definition.total_control_vp_per_turn,
             troop_slots=tuple(state.board.nodes[node_definition.node_id].troop_slots),
             spies=tuple(sorted(state.board.nodes[node_definition.node_id].spies)),
-            control_marker=state.board.nodes[node_definition.node_id].control_marker,
             vp_tokens=state.board.nodes[node_definition.node_id].vp_tokens,
         )
         for node_definition in state.definition.board.nodes
@@ -226,7 +226,7 @@ def build_game_view_from_snapshot(snapshot: GameSessionSnapshot) -> GameView:
         LegalMoveView(
             move=move,
             move_type=move_type(move),
-            label=describe_move(state, move),
+            label=describe_move(state, move, node_names=node_names),
             payload=move.model_dump(mode="json"),
         )
         for move in snapshot.legal_moves
@@ -257,7 +257,7 @@ def build_game_view_from_snapshot(snapshot: GameSessionSnapshot) -> GameView:
     )
 
 
-def describe_move(state: GameState, move: Move) -> str:
+def describe_move(state: GameState, move: Move, *, node_names: dict[str, str] | None = None) -> str:
     """Return a short, user-facing label for a legal move."""
 
     cards_by_id = card_index(state.definition.catalog)
@@ -271,9 +271,11 @@ def describe_move(state: GameState, move: Move) -> str:
     if isinstance(move, ResolveCleanupMove):
         return "Resolve cleanup"
     if isinstance(move, DeployMove):
-        return f"Deploy to {move.target_node_id}"
+        return f"Deploy to {_node_display_name(move.target_node_id, node_names)}"
     if isinstance(move, AssassinateMove):
-        return f"Assassinate at {move.target_node_id} slot {move.target_slot_index}"
+        owner = _troop_owner_label(state, move.target_node_id, move.target_slot_index)
+        site_name = _node_display_name(move.target_node_id, node_names)
+        return f"Assassinate {owner} troop at {site_name} slot {move.target_slot_index}"
     if isinstance(move, RecruitMove):
         if move.market_slot < len(state.market.row):
             card_id = state.market.row[move.market_slot]
@@ -281,7 +283,7 @@ def describe_move(state: GameState, move: Move) -> str:
             card_id = special_recruit_card_id(move.market_slot) or str(move.market_slot)
         return f"Recruit {_card_name(cards_by_id, card_id)}"
     if isinstance(move, ReturnSpyMove):
-        return f"Return {move.spy_owner_id} spy from {move.node_id}"
+        return f"Return {move.spy_owner_id} spy from {_node_display_name(move.node_id, node_names)}"
     if isinstance(move, ActivateCardAbilityMove):
         return f"Activate {move.ability_key} on {_card_name(cards_by_id, move.card_id)}"
     if isinstance(move, DeclineCardAbilityMove):
@@ -297,9 +299,37 @@ def describe_move(state: GameState, move: Move) -> str:
                 return f"Choose {option_summary} for {_card_name(cards_by_id, move.source_card_id)}"
             return f"Choose {move.option_id} for {_card_name(cards_by_id, move.source_card_id)}"
         if move.selection:
+            pending = state.pending_generic_choice
+            action: CardAction | None = None
+            if pending is not None and pending.source_card_id == move.source_card_id:
+                if 0 <= pending.next_action_index < len(pending.current_actions):
+                    action = pending.current_actions[pending.next_action_index]
+
+            if action is not None:
+                action_desc = _describe_option_action(action).capitalize()
+                if action.op == "devour":
+                    return _describe_devour_label(state, cards_by_id, move.selection)
+                if action.op in {"assassinate_troop", "supplant_troop"}:
+                    return _describe_assassinate_label(state, cards_by_id, move.selection, action, node_names)
+                if action.op == "return_unit":
+                    return _describe_return_unit_label(state, cards_by_id, move.selection, node_names)
+                if action.op == "place_spy":
+                    return _describe_place_spy_label(state, cards_by_id, move.selection, node_names)
+                selection_parts = _format_selection_parts(cards_by_id, move.selection, node_names=node_names)
+                preposition = "in" if node_names else "to"
+                return f"{action_desc} {preposition} {', '.join(selection_parts)}"
+
             selection_label = _describe_generic_selection(cards_by_id, move.selection)
             return f"Resolve {selection_label} for {_card_name(cards_by_id, move.source_card_id)}"
-        return f"Advance {_card_name(cards_by_id, move.source_card_id)}"
+        pending = state.pending_generic_choice
+        if pending is not None and pending.source_card_id == move.source_card_id:
+            if 0 <= pending.next_action_index < len(pending.current_actions):
+                action = pending.current_actions[pending.next_action_index]
+                action_desc = _describe_option_action(action)
+                if action.optional:
+                    return f"Skip {action_desc} for {_card_name(cards_by_id, move.source_card_id)}"
+                return f"{action_desc} for {_card_name(cards_by_id, move.source_card_id)}"
+        return f"Continue {_card_name(cards_by_id, move.source_card_id)}"
 
     return move_type(move).replace("_", " ").title()
 
@@ -336,6 +366,12 @@ def _card_name(cards_by_id: dict[str, object], card_id: str) -> str:
     return card.name
 
 
+def _node_display_name(node_id: str, node_names: dict[str, str] | None) -> str:
+    if node_names is not None:
+        return node_names.get(node_id, node_id)
+    return node_id
+
+
 def _describe_generic_selection(cards_by_id: dict[str, object], selection: dict[str, object]) -> str:
     target_card_id = str(selection.get("target_card_id", "")).strip()
     if target_card_id:
@@ -352,6 +388,114 @@ def _describe_generic_selection(cards_by_id: dict[str, object], selection: dict[
             details_parts.append(f"{key}={value}")
     details = ", ".join(details_parts)
     return f"target ({details})"
+
+
+def _format_selection_parts(
+    cards_by_id: dict[str, object],
+    selection: dict[str, object],
+    *,
+    node_names: dict[str, str] | None = None,
+) -> list[str]:
+    parts: list[str] = []
+    for key, value in selection.items():
+        if key.endswith("card_id"):
+            parts.append(f"{key}={_card_name(cards_by_id, str(value))}")
+        elif node_names is not None and key.endswith("node_id"):
+            node_name = node_names.get(str(value), str(value))
+            parts.append(node_name)
+        else:
+            parts.append(f"{key}={value}")
+    return parts if parts else ["target"]
+
+
+_SOURCE_ZONE_LABELS: dict[str, str] = {
+    "market": "market",
+    "hand": "hand",
+    "inner_circle": "inner circle",
+    "played_self": "played cards",
+}
+
+
+def _describe_devour_label(state: GameState, cards_by_id: dict[str, object], selection: dict[str, object]) -> str:
+    source_zone = str(selection.get("source_zone", "market")).strip()
+    zone_label = _SOURCE_ZONE_LABELS.get(source_zone, source_zone.replace("_", " "))
+
+    card_id: str | None = None
+    if source_zone == "market":
+        market_slot = int(selection.get("market_slot", -1))
+        if 0 <= market_slot < len(state.market.row):
+            card_id = state.market.row[market_slot]
+    elif source_zone == "hand":
+        hand_index = int(selection.get("hand_index", -1))
+        player_hand = state.players[state.current_player_id].hand
+        if 0 <= hand_index < len(player_hand):
+            card_id = player_hand[hand_index]
+    elif source_zone == "inner_circle":
+        inner_circle_index = int(selection.get("inner_circle_index", -1))
+        player_inner = state.players[state.current_player_id].inner_circle
+        if 0 <= inner_circle_index < len(player_inner):
+            card_id = player_inner[inner_circle_index]
+    elif source_zone == "played_self":
+        card_id = str(selection.get("target_card_id", "")).strip() or None
+
+    card_label = _card_name(cards_by_id, card_id) if card_id is not None else "Unknown Card"
+    return f"Devour {card_label} from {zone_label}"
+
+
+def _describe_return_unit_label(
+    state: GameState,
+    cards_by_id: dict[str, object],
+    selection: dict[str, object],
+    node_names: dict[str, str] | None,
+) -> str:
+    unit_type = str(selection.get("unit_type", "unit")).strip()
+    node_id = str(selection.get("node_id", "")).strip()
+    target_slot_index = int(selection.get("target_slot_index", -1))
+    site_name = _node_display_name(node_id, node_names)
+    return f"Return {unit_type} from {site_name}, target_slot_index={target_slot_index}"
+
+
+def _describe_place_spy_label(
+    state: GameState,
+    cards_by_id: dict[str, object],
+    selection: dict[str, object],
+    node_names: dict[str, str] | None,
+) -> str:
+    target_node_id = str(selection.get("target_node_id", "")).strip()
+    source_node_id = str(selection.get("source_node_id", "")).strip()
+    target_name = _node_display_name(target_node_id, node_names)
+    if source_node_id:
+        source_name = _node_display_name(source_node_id, node_names)
+        return f"Move spy from {source_name} to {target_name}"
+    preposition = "in" if node_names else "to"
+    return f"Place spy {preposition} {target_name}"
+
+
+def _troop_owner_label(state: GameState, node_id: str, slot_index: int) -> str:
+    node_state = state.board.nodes.get(node_id)
+    if node_state is None or slot_index < 0 or slot_index >= len(node_state.troop_slots):
+        return "unknown"
+    owner = node_state.troop_slots[slot_index]
+    if owner == "white":
+        return "white"
+    if owner is None:
+        return "empty"
+    return owner
+
+
+def _describe_assassinate_label(
+    state: GameState,
+    cards_by_id: dict[str, object],
+    selection: dict[str, object],
+    action: CardAction,
+    node_names: dict[str, str] | None,
+) -> str:
+    target_node_id = str(selection.get("target_node_id", "")).strip()
+    target_slot_index = int(selection.get("target_slot_index", -1))
+    owner = _troop_owner_label(state, target_node_id, target_slot_index)
+    site_name = _node_display_name(target_node_id, node_names)
+    verb = action.op.split("_")[0].capitalize()
+    return f"{verb} {owner} troop at {site_name} slot {target_slot_index}"
 
 
 def _describe_end_of_turn_promotion(

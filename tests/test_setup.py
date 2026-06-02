@@ -74,7 +74,7 @@ def test_rejects_unknown_card_reference() -> None:
                 "kind": "site",
                 "adjacent_to": [],
                 "troop_capacity": 2,
-                "vp_value": 1,
+                "control_vp": 1,
             }
         ],
     }
@@ -144,7 +144,7 @@ def test_build_initial_state_applies_initial_white_troop_slots() -> None:
                 "kind": "site",
                 "adjacent_to": ["route_ab"],
                 "troop_capacity": 2,
-                "vp_value": 1,
+                "control_vp": 1,
                 "initial_troop_slots": ["white", None],
             },
             {
@@ -152,7 +152,7 @@ def test_build_initial_state_applies_initial_white_troop_slots() -> None:
                 "kind": "route",
                 "adjacent_to": ["site_a"],
                 "troop_capacity": 1,
-                "vp_value": 0,
+                "control_vp": 0,
                 "initial_troop_slots": ["white"],
             },
         ],
@@ -175,7 +175,7 @@ def test_rejects_initial_troop_slot_length_mismatch() -> None:
                 "kind": "site",
                 "adjacent_to": [],
                 "troop_capacity": 2,
-                "vp_value": 1,
+                "control_vp": 1,
                 "initial_troop_slots": ["white"],
             }
         ],
@@ -195,7 +195,7 @@ def test_rejects_non_white_initial_troop_slots() -> None:
                 "kind": "site",
                 "adjacent_to": [],
                 "troop_capacity": 2,
-                "vp_value": 1,
+                "control_vp": 1,
                 "initial_troop_slots": ["p1", None],
             }
         ],

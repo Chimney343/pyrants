@@ -10,13 +10,12 @@
         "route_ab"
       ],
       "troop_capacity": 3,
-      "vp_value": 2,
+      "control_vp": 2,
       "initial_troop_slots": [
         null,
         null,
         null
       ],
-      "initial_control_marker": null,
       "initial_vp_tokens": 0
     },
     {
@@ -27,11 +26,10 @@
         "site_blingdenfire"
       ],
       "troop_capacity": 1,
-      "vp_value": 0,
+      "control_vp": 0,
       "initial_troop_slots": [
         null
       ],
-      "initial_control_marker": null,
       "initial_vp_tokens": 0
     },
     {
@@ -41,12 +39,11 @@
         "route_ab"
       ],
       "troop_capacity": 2,
-      "vp_value": 2,
+      "control_vp": 2,
       "initial_troop_slots": [
         "white",
         "white"
       ],
-      "initial_control_marker": null,
       "initial_vp_tokens": 0
     },
     {
@@ -57,11 +54,10 @@
         "site_a"
       ],
       "troop_capacity": 1,
-      "vp_value": 0,
+      "control_vp": 0,
       "initial_troop_slots": [
         "white"
       ],
-      "initial_control_marker": null,
       "initial_vp_tokens": 0
     },
     {
@@ -72,11 +68,10 @@
         "site_chasmleap_bridge"
       ],
       "troop_capacity": 1,
-      "vp_value": 0,
+      "control_vp": 0,
       "initial_troop_slots": [
         null
       ],
-      "initial_control_marker": null,
       "initial_vp_tokens": 0
     },
     {
@@ -87,11 +82,10 @@
         "site_a"
       ],
       "troop_capacity": 1,
-      "vp_value": 0,
+      "control_vp": 0,
       "initial_troop_slots": [
         null
       ],
-      "initial_control_marker": null,
       "initial_vp_tokens": 0
     },
     {
@@ -102,11 +96,10 @@
         "site_everfire"
       ],
       "troop_capacity": 1,
-      "vp_value": 0,
+      "control_vp": 0,
       "initial_troop_slots": [
         null
       ],
-      "initial_control_marker": null,
       "initial_vp_tokens": 0
     },
     {
@@ -116,11 +109,10 @@
         "route_3"
       ],
       "troop_capacity": 1,
-      "vp_value": 2,
+      "control_vp": 2,
       "initial_troop_slots": [
         "white"
       ],
-      "initial_control_marker": null,
       "initial_vp_tokens": 0
     },
     {
@@ -130,13 +122,12 @@
         "route_5"
       ],
       "troop_capacity": 3,
-      "vp_value": 2,
+      "control_vp": 2,
       "initial_troop_slots": [
         null,
         null,
         null
       ],
-      "initial_control_marker": null,
       "initial_vp_tokens": 0
     }
   ]

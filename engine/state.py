@@ -179,10 +179,11 @@ class NodeDefinition(BaseModel):
     kind: NodeKind
     adjacent_to: list[str] = Field(default_factory=list)
     troop_capacity: int = Field(gt=0)
-    vp_value: int = Field(default=0, ge=0)
+    control_vp: int = Field(default=0, ge=0)
+    total_control_vp_per_turn: int = Field(default=0, ge=0)
     initial_troop_slots: list[str | None] | None = None
-    initial_control_marker: str | None = None
     initial_vp_tokens: int = Field(default=0, ge=0)
+    influence_income: int = Field(default=0, ge=0)
 
     @model_validator(mode="after")
     def _validate_route_capacity(self) -> NodeDefinition:
@@ -266,7 +267,6 @@ class NodeState(BaseModel):
     node_id: str = Field(min_length=1)
     troop_slots: list[str | None] = Field(default_factory=list)
     spies: set[str] = Field(default_factory=set)
-    control_marker: str | None = None
     vp_tokens: int = Field(default=0, ge=0)
 
 
@@ -408,7 +408,6 @@ def create_board_state(board_definition: BoardDefinition) -> BoardState:
             node_id=node_definition.node_id,
             troop_slots=troop_slots,
             spies=set(),
-            control_marker=node_definition.initial_control_marker,
             vp_tokens=node_definition.initial_vp_tokens,
         )
     return BoardState(nodes=nodes)

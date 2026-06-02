@@ -14,19 +14,15 @@ def _site_control_owner(state: GameState, node_id: str) -> str | None:
     counts: dict[str, int] = {}
 
     for occupant in node_state.troop_slots:
-        if occupant is None:
-            continue
-        counts[occupant] = counts.get(occupant, 0) + 1
+        if occupant is not None:
+            counts[occupant] = counts.get(occupant, 0) + 1
 
     if not counts:
         return None
 
     max_count = max(counts.values())
-    leaders = [player_id for player_id, count in counts.items() if count == max_count]
-    if len(leaders) != 1:
-        return None
-
-    return leaders[0]
+    leaders = [owner for owner, count in counts.items() if count == max_count]
+    return leaders[0] if len(leaders) == 1 and leaders[0] != "white" else None
 
 
 def _is_total_control(state: GameState, node_id: str, player_id: str) -> bool:
@@ -46,27 +42,10 @@ def _cards_vp(cards: list[str], index: dict[str, CardDefinition], field_name: st
     return total
 
 
-def sync_site_control_markers(state: GameState) -> GameState:
-    """Apply unique troop-majority control to site markers without clearing ties."""
+def award_end_of_turn_site_vp(state: GameState, player_id: str) -> GameState:
+    """Add end-of-turn VP from sites where the player has total control."""
 
     updated = state.model_copy(deep=True)
-    board_definition_index = board_index(updated.definition.board)
-
-    for node_id, node_definition in board_definition_index.items():
-        if node_definition.kind != NodeKind.SITE:
-            continue
-
-        control_owner = _site_control_owner(updated, node_id)
-        if control_owner is not None:
-            updated.board.nodes[node_id].control_marker = control_owner
-
-    return updated
-
-
-def award_end_of_turn_site_vp(state: GameState, player_id: str) -> GameState:
-    """Add VP from currently controlled sites to a player's running score."""
-
-    updated = sync_site_control_markers(state)
     board_definition_index = board_index(updated.definition.board)
 
     site_vp = 0
@@ -74,8 +53,8 @@ def award_end_of_turn_site_vp(state: GameState, player_id: str) -> GameState:
         if node_definition.kind != NodeKind.SITE:
             continue
 
-        if updated.board.nodes[node_id].control_marker == player_id:
-            site_vp += node_definition.vp_value
+        if _is_total_control(updated, node_id, player_id):
+            site_vp += node_definition.total_control_vp_per_turn
 
     updated.players[player_id].score += site_vp
     return updated
@@ -84,25 +63,19 @@ def award_end_of_turn_site_vp(state: GameState, player_id: str) -> GameState:
 def compute_final_scores(state: GameState) -> dict[str, int]:
     """Compute final VP tally from map, deck, inner-circle, trophies, and tokens."""
 
-    synced = sync_site_control_markers(state)
-    definition_by_node = board_index(synced.definition.board)
-    card_by_id = card_index(synced.definition.catalog)
+    definition_by_node = board_index(state.definition.board)
+    card_by_id = card_index(state.definition.catalog)
     totals: dict[str, int] = {}
 
-    for player_id, player_state in synced.players.items():
-        map_vp = 0
-        total_control_bonus = 0
+    for player_id, player_state in state.players.items():
+        total_vp = player_state.score
 
         for node_id, node_definition in definition_by_node.items():
             if node_definition.kind != NodeKind.SITE:
                 continue
 
-            control_owner = synced.board.nodes[node_id].control_marker
-            if control_owner == player_id:
-                map_vp += node_definition.vp_value
-
-            if _is_total_control(synced, node_id, player_id):
-                total_control_bonus += 2
+            if _site_control_owner(state, node_id) == player_id:
+                total_vp += node_definition.control_vp
 
         trophy_vp = len(player_state.trophy_hall)
         token_vp = player_state.vp_tokens
@@ -111,9 +84,7 @@ def compute_final_scores(state: GameState) -> dict[str, int]:
         inner_circle_vp = _cards_vp(player_state.inner_circle, card_by_id, "inner_circle_vp")
 
         totals[player_id] = (
-            player_state.score
-            + map_vp
-            + total_control_bonus
+            total_vp
             + trophy_vp
             + token_vp
             + deck_vp
