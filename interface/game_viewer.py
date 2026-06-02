@@ -20,11 +20,14 @@ from engine.moves import (
     PRIESTESS_RECRUIT_SLOT,
     ResolveGenericChoiceMove,
 )
-from engine.state import build_initial_game_state
+from engine.scoring import _cards_vp, _is_total_control, _site_control_owner
+from engine.state import NodeKind, board_index, build_initial_game_state, card_index as state_card_index
 from game_session import GameSession
 from game_setup.loaders import build_board_package_from_files, build_game_definition_from_dicts
 from game_view import CardView, GameView, LegalMoveView, build_game_view, filter_legal_moves
 from interface.game_renderer import GameBoardRenderer
+from interface._canvas_scroll import bind_canvas_scrolling
+from interface.camera import compute_fit_zoom
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
 DATA_DIR = ROOT_DIR / "data"
@@ -367,8 +370,13 @@ class GameViewerApp:
         self._deck_profiles_by_label = {profile.label: profile for profile in self.deck_profiles}
 
         self.package = build_board_package_from_files(board_path=board_path, layout_path=layout_path)
+        self._node_names = {n.node_id: n.label for n in self.package.layout.nodes}
         self.session: GameSession | None = None
         self.renderer = GameBoardRenderer()
+
+        self.zoom_level = 1.0
+        self._min_zoom = 0.1
+        self._max_zoom = 3.0
 
         default_map_label = next(
             profile.label
@@ -405,6 +413,7 @@ class GameViewerApp:
         self.status_var = tk.StringVar(value="")
         self.market_meta_var = tk.StringVar(value="")
         self.resource_var = tk.StringVar(value="")
+        self.vp_breakdown_var = tk.StringVar(value="")
         self.house_guard_var = tk.StringVar(value="")
         self.priestess_var = tk.StringVar(value="")
         self.discard_selection_var = tk.StringVar(value="")
@@ -450,6 +459,7 @@ class GameViewerApp:
         self._player_card_height = PLAYER_CARD_HEIGHT
         self._resize_after_id: str | None = None
         self._is_refreshing = False
+        self._pending_initial_fit = True
 
         self._build_ui()
         self.root.bind("<Configure>", self._on_root_configure)
@@ -558,6 +568,13 @@ class GameViewerApp:
         self.market_canvas.bind("<Leave>", self._on_card_canvas_leave)
         map_frame = ttk.LabelFrame(canvas_frame, text="Map", padding=4)
         map_frame.pack(fill=tk.BOTH, expand=True)
+        zoom_bar = ttk.Frame(map_frame)
+        zoom_bar.pack(fill=tk.X, pady=(0, 2))
+        ttk.Button(zoom_bar, text="-", command=self._zoom_out, width=4).pack(side=tk.LEFT)
+        ttk.Button(zoom_bar, text="+", command=self._zoom_in, width=4).pack(side=tk.LEFT, padx=(2, 0))
+        ttk.Button(zoom_bar, text="Fit", command=self._auto_fit_zoom, width=4).pack(side=tk.LEFT, padx=(2, 0))
+        self._zoom_status_var = tk.StringVar(value="")
+        ttk.Label(zoom_bar, textvariable=self._zoom_status_var, font=("Segoe UI", 8)).pack(side=tk.LEFT, padx=(6, 0))
         map_canvas_row = ttk.Frame(map_frame)
         map_canvas_row.pack(fill=tk.BOTH, expand=True)
         self.canvas = tk.Canvas(
@@ -565,7 +582,8 @@ class GameViewerApp:
             width=min(self.package.layout.canvas.width, MAP_VIEWPORT_MAX_WIDTH),
             height=min(self.package.layout.canvas.height, MAP_VIEWPORT_MAX_HEIGHT),
             bg="#f7f8fa",
-            highlightthickness=0,
+            highlightthickness=1,
+            highlightbackground="#c4cdd8",
         )
         self.canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         self.map_scrollbar_y = ttk.Scrollbar(map_canvas_row, orient=tk.VERTICAL, command=self.canvas.yview)
@@ -574,6 +592,10 @@ class GameViewerApp:
         self.map_scrollbar_x.pack(fill=tk.X, pady=(2, 0))
         self.canvas.configure(xscrollcommand=self.map_scrollbar_x.set, yscrollcommand=self.map_scrollbar_y.set)
         self.canvas.bind("<Button-1>", self._on_canvas_click)
+        bind_canvas_scrolling(self.canvas, self._zoom_in, self._zoom_out)
+        self.root.bind("<plus>", lambda _: self._zoom_in())
+        self.root.bind("<minus>", lambda _: self._zoom_out())
+        self.root.bind("<Control-equal>", lambda _: self._zoom_in())
 
         bottom_frame = ttk.LabelFrame(canvas_frame, text="Current Player", padding=0)
         bottom_frame.pack(fill=tk.X, pady=(6, 0))
@@ -601,6 +623,7 @@ class GameViewerApp:
         bottom_content.bind("<Configure>", self._on_current_player_content_configure)
 
         ttk.Label(bottom_content, textvariable=self.resource_var, font=("TkFixedFont", 10, "bold")).pack(anchor=tk.W)
+        ttk.Label(bottom_content, textvariable=self.vp_breakdown_var, font=("TkFixedFont", 9)).pack(anchor=tk.W, pady=(4, 0))
 
         discard_frame = ttk.Frame(bottom_content)
         discard_frame.pack(fill=tk.X, pady=(6, 0))
@@ -761,10 +784,10 @@ class GameViewerApp:
                 board_path=map_profile.board_path,
                 layout_path=map_profile.layout_path,
             )
+            self._node_names = {n.node_id: n.label for n in self.package.layout.nodes}
             self.canvas.configure(
                 width=min(self.package.layout.canvas.width, MAP_VIEWPORT_MAX_WIDTH),
                 height=min(self.package.layout.canvas.height, MAP_VIEWPORT_MAX_HEIGHT),
-                scrollregion=(0, 0, self.package.layout.canvas.width, self.package.layout.canvas.height),
             )
             self.session = create_hotseat_session(
                 board_path=map_profile.board_path,
@@ -778,6 +801,7 @@ class GameViewerApp:
             self._clear_filters()
             self._apply_responsive_layout()
             self._refresh_view()
+            self._auto_fit_zoom()
         except Exception as error:
             messagebox.showerror("Failed to start game", str(error))
 
@@ -788,9 +812,15 @@ class GameViewerApp:
         self._is_refreshing = True
         try:
             self._apply_responsive_layout()
-            view = build_game_view(self.session)
-            self.renderer.redraw(self.canvas, self.package, view, highlighted_node_id=self._selected_node_id)
-            self.canvas.configure(scrollregion=(0, 0, self.package.layout.canvas.width, self.package.layout.canvas.height))
+            view = build_game_view(self.session, node_names=self._node_names)
+            self.renderer.redraw(
+                self.canvas, self.package, view,
+                highlighted_node_id=self._selected_node_id,
+                scale=self.zoom_level,
+            )
+            scaled_w = self.package.layout.canvas.width * self.zoom_level
+            scaled_h = self.package.layout.canvas.height * self.zoom_level
+            self.canvas.configure(scrollregion=(0, 0, scaled_w, scaled_h))
 
             state = self.session.state
             current_player = state.players[state.current_player_id]
@@ -804,6 +834,7 @@ class GameViewerApp:
             self.resource_var.set(
                 f"Power: {view.resource_power:>3}    Influence: {view.resource_influence:>3}"
             )
+            self._set_vp_breakdown(state, current_player)
             self.prompt_var.set("\n".join(view.prompts))
             self.market_meta_var.set(
                 f"Market deck: {len(view.market_row):>1} visible    Deck remaining: {view.market_deck_count:>3}    "
@@ -1160,7 +1191,7 @@ class GameViewerApp:
             canvas.create_rectangle(x0, y0, x1, y1, fill=fill, outline=outline, width=line_width)
 
             if is_selected and selected_has_focus:
-                canvas.create_rectangle(x0 + 4, y0 + 4, x0 + 12, y0 + 12, fill="#224f95", outline="")
+                canvas.create_rectangle(x0 + 3, y0 + 3, x0 + 13, y0 + 13, fill="#224f95", outline="")
 
             card_number = f"{count_from + index}. " if count_from is not None else ""
             deck_count = deck_counts.get(card.card_id, 0) if deck_counts is not None else 0
@@ -1269,7 +1300,7 @@ class GameViewerApp:
     def _apply_first_legal_move(self) -> None:
         if self.session is None:
             return
-        view = build_game_view(self.session)
+        view = build_game_view(self.session, node_names=self._node_names)
         if not view.legal_moves:
             return
         self.session.submit_move(view.legal_moves[0].move)
@@ -1311,6 +1342,11 @@ class GameViewerApp:
         self.current_player_canvas.configure(scrollregion=self.current_player_canvas.bbox("all"))
 
     def _on_resized(self) -> None:
+        if self._pending_initial_fit:
+            self._pending_initial_fit = False
+            self._apply_responsive_layout()
+            self._auto_fit_zoom()
+            return
         self._apply_responsive_layout()
         if self.session is not None and not self._is_refreshing:
             self._refresh_view()
@@ -1375,8 +1411,60 @@ class GameViewerApp:
         self.canvas.configure(
             width=map_width,
             height=map_height,
-            scrollregion=(0, 0, self.package.layout.canvas.width, self.package.layout.canvas.height),
+            scrollregion=(0, 0, self.package.layout.canvas.width * self.zoom_level, self.package.layout.canvas.height * self.zoom_level),
         )
+
+    def _auto_fit_zoom(self) -> None:
+        bboxes: list[tuple[float, float, float, float]] = []
+        for node in self.package.layout.nodes:
+            if node.bounds is not None:
+                b = node.bounds
+                bboxes.append((b.x, b.y, b.x + b.width, b.y + b.height))
+            else:
+                bboxes.append((node.center.x - 14, node.center.y - 14, node.center.x + 14, node.center.y + 14))
+
+        view_w = self.canvas.winfo_width()
+        view_h = self.canvas.winfo_height()
+        if view_w < 10:
+            view_w = int(self.canvas.cget("width"))
+        if view_h < 10:
+            view_h = int(self.canvas.cget("height"))
+
+        result = compute_fit_zoom(bboxes, view_w, view_h, min_zoom=self._min_zoom, max_zoom=self._max_zoom)
+        if result is None:
+            return
+
+        self.zoom_level = result.zoom
+
+        scaled_w = self.package.layout.canvas.width * self.zoom_level
+        scaled_h = self.package.layout.canvas.height * self.zoom_level
+
+        self.canvas.configure(scrollregion=(0, 0, scaled_w, scaled_h))
+
+        scroll_x = (result.center_x * self.zoom_level) - (view_w / 2)
+        scroll_y = (result.center_y * self.zoom_level) - (view_h / 2)
+        self.canvas.xview_moveto(min(1.0, max(0.0, scroll_x / scaled_w)))
+        self.canvas.yview_moveto(min(1.0, max(0.0, scroll_y / scaled_h)))
+
+        self._zoom_status_var.set(f"{self.zoom_level:.0%}")
+        self._refresh_view()
+
+    def _zoom_in(self) -> None:
+        self._change_zoom(self.zoom_level * 1.2)
+
+    def _zoom_out(self) -> None:
+        self._change_zoom(self.zoom_level / 1.2)
+
+    def _zoom_reset(self) -> None:
+        self._change_zoom(1.0)
+
+    def _change_zoom(self, new_zoom: float) -> None:
+        new_zoom = max(self._min_zoom, min(self._max_zoom, new_zoom))
+        if abs(new_zoom - self.zoom_level) < 0.001:
+            return
+        self.zoom_level = new_zoom
+        self._zoom_status_var.set(f"{self.zoom_level:.0%}")
+        self._refresh_view()
 
     def _on_canvas_click(self, event: tk.Event[tk.Canvas]) -> None:
         if self._is_refreshing:
@@ -1408,7 +1496,7 @@ class GameViewerApp:
             return
 
         selected_card_id = self._hand_card_ids[selected_index]
-        view = build_game_view(self.session)
+        view = build_game_view(self.session, node_names=self._node_names)
         for legal_move in view.legal_moves:
             if isinstance(legal_move.move, PlayCardMove) and legal_move.move.card_id == selected_card_id:
                 self.session.submit_move(legal_move.move)
@@ -1579,21 +1667,21 @@ class GameViewerApp:
 
     def _update_card_row_focus_styles(self) -> None:
         if self._active_card_row == "market":
-            self.market_canvas.configure(highlightthickness=2)
-            self.hand_canvas.configure(highlightthickness=1)
-            self.played_canvas.configure(highlightthickness=1)
+            self.market_canvas.configure(highlightthickness=2, highlightbackground="#3d5f90")
+            self.hand_canvas.configure(highlightthickness=1, highlightbackground="#9eb4d0")
+            self.played_canvas.configure(highlightthickness=1, highlightbackground="#9eb4d0")
         elif self._active_card_row == "hand":
-            self.market_canvas.configure(highlightthickness=1)
-            self.hand_canvas.configure(highlightthickness=2)
-            self.played_canvas.configure(highlightthickness=1)
+            self.market_canvas.configure(highlightthickness=1, highlightbackground="#9eb4d0")
+            self.hand_canvas.configure(highlightthickness=2, highlightbackground="#3d5f90")
+            self.played_canvas.configure(highlightthickness=1, highlightbackground="#9eb4d0")
         elif self._active_card_row == "played":
-            self.market_canvas.configure(highlightthickness=1)
-            self.hand_canvas.configure(highlightthickness=1)
-            self.played_canvas.configure(highlightthickness=2)
+            self.market_canvas.configure(highlightthickness=1, highlightbackground="#9eb4d0")
+            self.hand_canvas.configure(highlightthickness=1, highlightbackground="#9eb4d0")
+            self.played_canvas.configure(highlightthickness=2, highlightbackground="#3d5f90")
         else:
-            self.market_canvas.configure(highlightthickness=1)
-            self.hand_canvas.configure(highlightthickness=1)
-            self.played_canvas.configure(highlightthickness=1)
+            self.market_canvas.configure(highlightthickness=1, highlightbackground="#9eb4d0")
+            self.hand_canvas.configure(highlightthickness=1, highlightbackground="#9eb4d0")
+            self.played_canvas.configure(highlightthickness=1, highlightbackground="#9eb4d0")
 
     def _card_view_from_definition(self, card_definition: Any | None, fallback_card_id: str) -> CardView:
         if card_definition is None:
@@ -1638,6 +1726,38 @@ class GameViewerApp:
             )
         return max(0, stack_total - owned_total)
 
+    def _set_vp_breakdown(self, state: Any, current_player: Any) -> None:
+        node_index = board_index(state.definition.board)
+        card_index_lookup = state_card_index(state.definition.catalog)
+        player_id = state.current_player_id
+
+        control_vp = 0
+        total_control_vp_per_turn = 0
+        for node_id, node_def in node_index.items():
+            if node_def.kind != NodeKind.SITE:
+                continue
+            if _site_control_owner(state, node_id) == player_id:
+                control_vp += node_def.control_vp
+            if _is_total_control(state, node_id, player_id):
+                total_control_vp_per_turn += node_def.total_control_vp_per_turn
+
+        trophy_vp = len(current_player.trophy_hall)
+        token_vp = current_player.vp_tokens
+        deck_zone_cards = current_player.deck + current_player.hand + current_player.discard_pile
+        deck_vp = _cards_vp(deck_zone_cards, card_index_lookup, "deck_vp")
+        inner_circle_vp = _cards_vp(current_player.inner_circle, card_index_lookup, "inner_circle_vp")
+
+        running_score = current_player.score
+        total_vp = running_score + control_vp + total_control_vp_per_turn + trophy_vp + token_vp + deck_vp + inner_circle_vp
+
+        self.vp_breakdown_var.set(
+            f"Score: {running_score:>2} | Controlled sites: {control_vp:>2} | "
+            f"Total Control VP/turn: {total_control_vp_per_turn:>2} | "
+
+            f"Trophy: {trophy_vp:>2} | VP tokens: {token_vp:>2} | Deck VP: {deck_vp:>2} | "
+            f"Inner Circle VP: {inner_circle_vp:>2} | Total: {total_vp:>2}"
+        )
+
     def _starter_pile_summary(self, player: Any, card_id: str, card_definition: Any | None = None) -> str:
         deck_count = player.deck.count(card_id)
         hand_count = player.hand.count(card_id)
@@ -1670,18 +1790,20 @@ class GameViewerApp:
         return None
 
     def _node_id_at_point(self, x: float, y: float) -> str | None:
+        world_x = x / self.zoom_level
+        world_y = y / self.zoom_level
         for node in self.package.layout.nodes:
             if node.bounds is not None:
                 left = node.bounds.x
                 top = node.bounds.y
                 right = left + node.bounds.width
                 bottom = top + node.bounds.height
-                if left <= x <= right and top <= y <= bottom:
+                if left <= world_x <= right and top <= world_y <= bottom:
                     return node.node_id
                 continue
 
-            dx = node.center.x - x
-            dy = node.center.y - y
+            dx = node.center.x - world_x
+            dy = node.center.y - world_y
             if (dx * dx) + (dy * dy) <= 16 * 16:
                 return node.node_id
 
@@ -1709,16 +1831,26 @@ def main() -> None:
     args = parser.parse_args()
 
     root = tk.Tk()
-    GameViewerApp(
-        root,
-        board_path=args.board_path,
-        layout_path=args.layout_path,
-        card_path=args.card_path,
-        setup_path=args.setup_path,
-        rosters_path=args.rosters_path,
-        initial_player_count=len(_parse_player_ids(args.players)),
-        seed=args.seed,
-    )
+    root.withdraw()
+    try:
+        GameViewerApp(
+            root,
+            board_path=args.board_path,
+            layout_path=args.layout_path,
+            card_path=args.card_path,
+            setup_path=args.setup_path,
+            rosters_path=args.rosters_path,
+            initial_player_count=len(_parse_player_ids(args.players)),
+            seed=args.seed,
+        )
+    except Exception as exc:
+        messagebox.showerror(
+            "Failed to start Game Viewer",
+            str(exc),
+        )
+        root.destroy()
+        raise
+    root.deiconify()
     root.mainloop()
 
 
