@@ -14,6 +14,7 @@ from engine.rules import winner as get_winner
 from engine.scoring import compute_final_scores
 from engine.state import GameState
 from game_setup.loaders import create_game_state_from_files
+from game_setup.scenarios import load_game_state_from_scenario
 
 
 @dataclass(frozen=True)
@@ -56,6 +57,12 @@ class GameSession:
                 seed=seed,
             )
         )
+
+    @classmethod
+    def from_scenario_file(cls, path: Path) -> GameSession:
+        """Create a session from a saved scenario JSON file."""
+
+        return cls(load_game_state_from_scenario(path))
 
     @property
     def state(self) -> GameState:

@@ -3,31 +3,35 @@
 from __future__ import annotations
 
 import argparse
-from collections import Counter
-from datetime import datetime
 import json
+import tkinter as tk
+from collections import Counter
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 from random import Random
-import tkinter as tk
-from tkinter import messagebox, ttk
-from typing import Any, Mapping, Sequence
+from tkinter import filedialog, messagebox, ttk
+from typing import Any
 
 from engine.moves import (
     HOUSE_GUARD_RECRUIT_SLOT,
     INSANE_OUTCAST_RECRUIT_SLOT,
-    PlayCardMove,
     PRIESTESS_RECRUIT_SLOT,
+    PlayCardMove,
     ResolveGenericChoiceMove,
 )
 from engine.scoring import _cards_vp, _is_total_control, _site_control_owner
-from engine.state import NodeKind, board_index, build_initial_game_state, card_index as state_card_index
+from engine.state import GameState, NodeKind, board_index, build_initial_game_state
+from engine.state import card_index as state_card_index
 from game_session import GameSession
+from game_setup.board_package import BoardLayoutDefinition, BoardPackageDefinition, make_default_layout
 from game_setup.loaders import build_board_package_from_files, build_game_definition_from_dicts
+from game_setup.scenarios import save_game_state
 from game_view import CardView, GameView, LegalMoveView, build_game_view, filter_legal_moves
-from interface.game_renderer import GameBoardRenderer
 from interface._canvas_scroll import bind_canvas_scrolling
 from interface.camera import compute_fit_zoom
+from interface.game_renderer import GameBoardRenderer
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
 DATA_DIR = ROOT_DIR / "data"
@@ -520,6 +524,8 @@ class GameViewerApp:
         ttk.Button(action_controls, text="Clear Filters", command=self._clear_filters).pack(side=tk.LEFT, padx=6)
         ttk.Button(action_controls, text="Apply Selected Move", command=self._apply_selected_legal_move).pack(side=tk.LEFT)
         ttk.Button(action_controls, text="Apply First Legal Move", command=self._apply_first_legal_move).pack(side=tk.LEFT, padx=6)
+        ttk.Button(action_controls, text="Save Game", command=self._save_game).pack(side=tk.LEFT, padx=(12, 6))
+        ttk.Button(action_controls, text="Load Game", command=self._load_game).pack(side=tk.LEFT)
 
         ttk.Label(action_controls, textvariable=self.status_var, font=("TkFixedFont", 9)).pack(side=tk.RIGHT, padx=6)
 
@@ -596,6 +602,8 @@ class GameViewerApp:
         self.root.bind("<plus>", lambda _: self._zoom_in())
         self.root.bind("<minus>", lambda _: self._zoom_out())
         self.root.bind("<Control-equal>", lambda _: self._zoom_in())
+        self.root.bind("<Control-s>", lambda _: self._save_game())
+        self.root.bind("<Control-l>", lambda _: self._load_game())
 
         bottom_frame = ttk.LabelFrame(canvas_frame, text="Current Player", padding=0)
         bottom_frame.pack(fill=tk.X, pady=(6, 0))
@@ -804,6 +812,84 @@ class GameViewerApp:
             self._auto_fit_zoom()
         except Exception as error:
             messagebox.showerror("Failed to start game", str(error))
+
+    def _save_game(self) -> None:
+        if self.session is None:
+            messagebox.showinfo("No Game", "Start a game before saving.")
+            return
+
+        path = filedialog.asksaveasfilename(
+            title="Save Game Scenario",
+            defaultextension=".json",
+            filetypes=[("JSON files", "*.json"), ("All files", "*.*")],
+            initialdir=ROOT_DIR / "data" / "scenarios",
+        )
+        if not path:
+            return
+
+        try:
+            move_count = self.session.move_count
+            is_terminal = self.session.is_terminal()
+            save_game_state(
+                self.session.state,
+                Path(path),
+                scenario_id=Path(path).stem,
+                description=f"Saved at round {self.session.state.round_number}, {move_count} moves",
+                tags=["saved", "manual"],
+                move_count=move_count,
+                is_terminal=is_terminal,
+            )
+            messagebox.showinfo("Saved", f"Game saved to:\n{path}")
+        except Exception as error:
+            messagebox.showerror("Save Failed", str(error))
+
+    def _load_game(self) -> None:
+        path = filedialog.askopenfilename(
+            title="Load Game Scenario",
+            filetypes=[("JSON files", "*.json"), ("All files", "*.*")],
+            initialdir=ROOT_DIR / "data" / "scenarios",
+        )
+        if not path:
+            return
+
+        try:
+            self.session = GameSession.from_scenario_file(Path(path))
+            self._rebuild_package_for_loaded_state(self.session.state)
+            self._clear_filters()
+            self._apply_responsive_layout()
+            self._refresh_view()
+            self._auto_fit_zoom()
+        except Exception as error:
+            messagebox.showerror("Load Failed", str(error))
+
+    def _rebuild_package_for_loaded_state(self, state: GameState) -> None:
+        """Rebuild self.package and self._node_names to match the loaded state's board."""
+        board_def = state.definition.board
+        board_node_ids = {n.node_id for n in board_def.nodes}
+        layout_def = None
+
+        for profile in self.map_profiles:
+            try:
+                layout_data = _read_json_object(profile.layout_path)
+                if layout_data.get("board_id") != board_def.board_id:
+                    continue
+                layout_node_ids = {n["node_id"] for n in layout_data.get("nodes", ())}
+                if layout_node_ids != board_node_ids:
+                    continue
+                layout_def = BoardLayoutDefinition.model_validate(layout_data)
+                break
+            except Exception:
+                continue
+
+        if layout_def is None:
+            layout_def = make_default_layout(board_def)
+
+        self.package = BoardPackageDefinition(board=board_def, layout=layout_def)
+        self._node_names = {n.node_id: n.label for n in self.package.layout.nodes}
+        self.canvas.configure(
+            width=min(self.package.layout.canvas.width, MAP_VIEWPORT_MAX_WIDTH),
+            height=min(self.package.layout.canvas.height, MAP_VIEWPORT_MAX_HEIGHT),
+        )
 
     def _refresh_view(self) -> None:
         if self.session is None:
