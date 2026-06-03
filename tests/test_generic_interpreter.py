@@ -4,6 +4,9 @@ from __future__ import annotations
 
 from random import Random
 
+import pytest
+
+from engine.errors import IllegalMoveError, MissingRuleImplementationError, RuleViolationError
 from engine.moves import PlayCardMove, ResolveGenericChoiceMove
 from engine.rules import apply, legal_moves
 from engine.state import build_initial_game_state
@@ -496,3 +499,781 @@ def test_generic_play_card_from_inner_circle_without_removal() -> None:
     assert resolved.resource_pool.power == 1
     assert resolved.players["p1"].inner_circle == ["inner_gain_power"]
     assert "generic_play_inner_circle" in resolved.players["p1"].played_cards
+
+
+# ---------------------------------------------------------------------------
+# Batch A — draw_cards, grant_vp, recruit_card, return_spy
+# ---------------------------------------------------------------------------
+
+
+def test_generic_draw_cards_from_deck() -> None:
+    card = _sequence_card("drawer", [_action("draw", "draw_cards")])
+    state = _state_for_cards([card], [{"card_id": "drawer", "count": 3}])
+    state.players["p1"].hand = ["drawer"]
+    state.players["p1"].deck = ["drawer", "drawer"]
+
+    updated = apply(state, PlayCardMove(player_id="p1", card_id="drawer", hand_index=0))
+    # count defaults to 1; played card moves from hand to played_cards
+    assert len(updated.players["p1"].hand) == 1
+    assert len(updated.players["p1"].deck) == 1
+
+
+def test_generic_draw_cards_shuffles_discard_when_deck_empty() -> None:
+    card = _sequence_card("drawer", [_action("draw", "draw_cards")])
+    state = _state_for_cards([card], [{"card_id": "drawer", "count": 2}])
+    state.players["p1"].hand = ["drawer"]
+    state.players["p1"].deck = []
+    state.players["p1"].discard_pile = ["drawer"]
+
+    updated = apply(state, PlayCardMove(player_id="p1", card_id="drawer", hand_index=0))
+
+    assert len(updated.players["p1"].hand) == 1
+
+
+def test_generic_draw_cards_stops_when_deck_and_discard_empty() -> None:
+    card = _sequence_card("drawer", [_action("draw", "draw_cards")])
+    state = _state_for_cards([card], [{"card_id": "drawer", "count": 1}])
+    state.players["p1"].hand = ["drawer"]
+    state.players["p1"].deck = []
+    state.players["p1"].discard_pile = []
+
+    updated = apply(state, PlayCardMove(player_id="p1", card_id="drawer", hand_index=0))
+
+    assert updated.players["p1"].hand == []
+
+
+def test_generic_grant_vp_fixed_count() -> None:
+    card = _sequence_card("vp_giver", [_action("vp", "grant_vp")])
+    state = _state_for_cards([card], [{"card_id": "vp_giver", "count": 1}])
+    state.players["p1"].hand = ["vp_giver"]
+    before_score = state.players["p1"].score
+
+    updated = apply(state, PlayCardMove(player_id="p1", card_id="vp_giver", hand_index=0))
+
+    assert updated.players["p1"].score == before_score + 1
+
+
+def test_generic_grant_vp_scaled_by_inner_circle_cards() -> None:
+    fodder = _sequence_card("fodder1", [_action("noop", "gain_resource", metadata={"resource": "power"})])
+    fodder2 = _sequence_card("fodder2", [_action("noop", "gain_resource", metadata={"resource": "power"})])
+    card = _sequence_card(
+        "vp_scaled",
+        [_action(
+            "vp", "grant_vp",
+            source_fragment="scaled_vp",
+            metadata={"count_from": "inner_circle_cards", "per": 1},
+        )],
+    )
+    state = _state_for_cards(
+        [card, fodder, fodder2],
+        [{"card_id": "vp_scaled", "count": 1}, {"card_id": "fodder1", "count": 1}, {"card_id": "fodder2", "count": 1}],
+    )
+    state.players["p1"].hand = ["vp_scaled"]
+    state.players["p1"].inner_circle = ["fodder1", "fodder2"]
+    before_score = state.players["p1"].score
+
+    updated = apply(state, PlayCardMove(player_id="p1", card_id="vp_scaled", hand_index=0))
+
+    assert updated.players["p1"].score == before_score + 2
+
+
+def test_generic_recruit_card_from_market() -> None:
+    recruiter = _sequence_card("recruiter", [_action("recruit", "recruit_card")])
+    target = _sequence_card("target_card", [_action("noop", "gain_resource", metadata={"resource": "power"})])
+    state = _state_for_cards(
+        [recruiter, target],
+        [{"card_id": "recruiter", "count": 1}, {"card_id": "target_card", "count": 1}],
+    )
+    state.players["p1"].hand = ["recruiter"]
+    state.market.row = ["target_card"]
+    state.resource_pool.influence = 10
+    before_discard = len(state.players["p1"].discard_pile)
+
+    played = apply(state, PlayCardMove(player_id="p1", card_id="recruiter", hand_index=0))
+    updated = apply(
+        played,
+        ResolveGenericChoiceMove(
+            player_id="p1",
+            source_card_id="recruiter",
+            selection={"market_slot": 0},
+        ),
+    )
+
+    assert len(updated.players["p1"].discard_pile) == before_discard + 1
+    assert "target_card" in updated.players["p1"].discard_pile
+
+
+def test_generic_recruit_card_rejects_invalid_market_slot() -> None:
+    recruiter = _sequence_card("recruiter", [_action("recruit", "recruit_card")])
+    state = _state_for_cards([recruiter], [{"card_id": "recruiter", "count": 1}])
+    state.players["p1"].hand = ["recruiter"]
+    state.market.row = []
+
+    played = apply(state, PlayCardMove(player_id="p1", card_id="recruiter", hand_index=0))
+
+    with pytest.raises(IllegalMoveError):
+        apply(
+            played,
+            ResolveGenericChoiceMove(
+                player_id="p1",
+                source_card_id="recruiter",
+                selection={"market_slot": 0},
+            ),
+        )
+
+
+def test_generic_return_spy_self_to_supply() -> None:
+    card = _sequence_card(
+        "return_my_spy",
+        [_action("ret", "return_spy", metadata={"spy_owner": "self"})],
+    )
+    state = _state_for_cards([card], [{"card_id": "return_my_spy", "count": 1}])
+    state.players["p1"].hand = ["return_my_spy"]
+    state.board.nodes["site_a"].spies.add("p1")
+    before_spies = state.players["p1"].spies_available
+
+    played = apply(state, PlayCardMove(player_id="p1", card_id="return_my_spy", hand_index=0))
+    updated = apply(
+        played,
+        ResolveGenericChoiceMove(
+            player_id="p1",
+            source_card_id="return_my_spy",
+            selection={"node_id": "site_a", "spy_owner_id": "p1"},
+        ),
+    )
+
+    assert "p1" not in updated.board.nodes["site_a"].spies
+    assert updated.players["p1"].spies_available == before_spies + 1
+
+
+def test_generic_return_spy_opponent_with_presence_free() -> None:
+    card = _sequence_card(
+        "return_their_spy",
+        [_action("ret", "return_spy", metadata={"spy_owner": "opponent", "free_enemy_return": True})],
+    )
+    state = _state_for_cards([card], [{"card_id": "return_their_spy", "count": 1}])
+    state.players["p1"].hand = ["return_their_spy"]
+    state.board.nodes["site_a"].spies.add("p2")
+    state.board.nodes["site_a"].troop_slots = ["p1", None]
+    before_spies = state.players["p2"].spies_available
+
+    played = apply(state, PlayCardMove(player_id="p1", card_id="return_their_spy", hand_index=0))
+    updated = apply(
+        played,
+        ResolveGenericChoiceMove(
+            player_id="p1",
+            source_card_id="return_their_spy",
+            selection={"node_id": "site_a", "spy_owner_id": "p2"},
+        ),
+    )
+
+    assert "p2" not in updated.board.nodes["site_a"].spies
+    assert updated.players["p2"].spies_available == before_spies + 1
+
+
+# ---------------------------------------------------------------------------
+# Batch B — conditional_bonus
+# ---------------------------------------------------------------------------
+
+
+def test_generic_conditional_bonus_node_has_other_troop_matched() -> None:
+    card = _sequence_card(
+        "bonus_card",
+        [
+            _action("prep", "deploy_troops", target_scope="board_site"),
+            _action(
+                "bonus", "conditional_bonus",
+                metadata={"condition": "selected_node_has_other_player_troop", "resource": "power", "amount": 3},
+            ),
+        ],
+    )
+    state = _state_for_cards([card], [{"card_id": "bonus_card", "count": 1}])
+    state.players["p1"].hand = ["bonus_card"]
+    state.board.nodes["site_a"].troop_slots = ["p2", None]
+
+    played = apply(state, PlayCardMove(player_id="p1", card_id="bonus_card", hand_index=0))
+    updated = apply(
+        played,
+        ResolveGenericChoiceMove(
+            player_id="p1",
+            source_card_id="bonus_card",
+            selection={"target_node_id": "site_a"},
+        ),
+    )
+
+    assert updated.resource_pool.power == 3
+    assert updated.pending_generic_choice is None
+
+
+def test_generic_conditional_bonus_node_has_other_troop_noop() -> None:
+    card = _sequence_card(
+        "bonus_card",
+        [
+            _action("prep", "deploy_troops", target_scope="board_site"),
+            _action(
+                "bonus", "conditional_bonus",
+                metadata={"condition": "selected_node_has_other_player_troop", "resource": "power", "amount": 3},
+            ),
+        ],
+    )
+    state = _state_for_cards([card], [{"card_id": "bonus_card", "count": 1}])
+    state.players["p1"].hand = ["bonus_card"]
+    state.board.nodes["site_a"].troop_slots = ["p1", None]
+
+    played = apply(state, PlayCardMove(player_id="p1", card_id="bonus_card", hand_index=0))
+    updated = apply(
+        played,
+        ResolveGenericChoiceMove(
+            player_id="p1",
+            source_card_id="bonus_card",
+            selection={"target_node_id": "site_a"},
+        ),
+    )
+
+    assert updated.resource_pool.power == 0
+
+
+def test_generic_conditional_bonus_spies_at_least_matched() -> None:
+    card = _sequence_card(
+        "bonus_spy",
+        [
+            _action("prep", "deploy_troops", target_scope="board_site"),
+            _action(
+                "bonus", "conditional_bonus",
+                metadata={"condition": "selected_node_total_spies_at_least", "resource": "influence", "amount": 2, "min_spies": 1},
+            ),
+        ],
+    )
+    state = _state_for_cards([card], [{"card_id": "bonus_spy", "count": 1}])
+    state.players["p1"].hand = ["bonus_spy"]
+    state.board.nodes["site_a"].spies.add("p1")
+
+    played = apply(state, PlayCardMove(player_id="p1", card_id="bonus_spy", hand_index=0))
+    updated = apply(
+        played,
+        ResolveGenericChoiceMove(
+            player_id="p1",
+            source_card_id="bonus_spy",
+            selection={"target_node_id": "site_a"},
+        ),
+    )
+
+    assert updated.resource_pool.influence == 2
+
+
+def test_generic_conditional_bonus_spies_at_least_noop() -> None:
+    card = _sequence_card(
+        "bonus_spy",
+        [
+            _action("prep", "deploy_troops", target_scope="board_site"),
+            _action(
+                "bonus", "conditional_bonus",
+                metadata={"condition": "selected_node_total_spies_at_least", "resource": "influence", "amount": 2, "min_spies": 2},
+            ),
+        ],
+    )
+    state = _state_for_cards([card], [{"card_id": "bonus_spy", "count": 1}])
+    state.players["p1"].hand = ["bonus_spy"]
+    state.board.nodes["site_a"].spies.add("p1")
+
+    played = apply(state, PlayCardMove(player_id="p1", card_id="bonus_spy", hand_index=0))
+    updated = apply(
+        played,
+        ResolveGenericChoiceMove(
+            player_id="p1",
+            source_card_id="bonus_spy",
+            selection={"target_node_id": "site_a"},
+        ),
+    )
+
+    assert updated.resource_pool.influence == 0
+
+
+def test_generic_conditional_bonus_focus_aspect_present_matched() -> None:
+    card = _sequence_card(
+        "bonus_focus",
+        [_action(
+            "bonus", "conditional_bonus",
+            metadata={"condition": "focus_aspect_present", "resource": "influence", "amount": 4, "focus_aspect": "none"},
+        )],
+    )
+    other = _sequence_card("other_card", [_action("noop", "gain_resource", metadata={"resource": "power"})])
+    state = _state_for_cards(
+        [card, other],
+        [{"card_id": "bonus_focus", "count": 1}, {"card_id": "other_card", "count": 1}],
+    )
+    state.players["p1"].hand = ["bonus_focus", "other_card"]
+
+    updated = apply(state, PlayCardMove(player_id="p1", card_id="bonus_focus", hand_index=0))
+
+    assert updated.resource_pool.influence == 4
+
+
+def test_generic_conditional_bonus_focus_aspect_present_noop() -> None:
+    card = _sequence_card(
+        "bonus_focus",
+        [_action(
+            "bonus", "conditional_bonus",
+            metadata={"condition": "focus_aspect_present", "resource": "influence", "amount": 4, "focus_aspect": "ambition"},
+        )],
+    )
+    state = _state_for_cards([card], [{"card_id": "bonus_focus", "count": 1}])
+    state.players["p1"].hand = ["bonus_focus"]
+
+    updated = apply(state, PlayCardMove(player_id="p1", card_id="bonus_focus", hand_index=0))
+
+    assert updated.resource_pool.influence == 0
+
+
+def test_generic_conditional_bonus_trophy_hall_at_least_matched() -> None:
+    card = _sequence_card(
+        "bonus_trophy",
+        [_action(
+            "bonus", "conditional_bonus",
+            metadata={"condition": "player_trophy_hall_non_white_at_least", "resource": "power", "amount": 5, "min_trophies": 2},
+        )],
+    )
+    state = _state_for_cards([card], [{"card_id": "bonus_trophy", "count": 1}])
+    state.players["p1"].hand = ["bonus_trophy"]
+    state.players["p1"].trophy_hall = ["p2", "p2"]
+
+    updated = apply(state, PlayCardMove(player_id="p1", card_id="bonus_trophy", hand_index=0))
+
+    assert updated.resource_pool.power == 5
+
+
+def test_generic_conditional_bonus_trophy_hall_at_least_noop() -> None:
+    card = _sequence_card(
+        "bonus_trophy",
+        [_action(
+            "bonus", "conditional_bonus",
+            metadata={"condition": "player_trophy_hall_non_white_at_least", "resource": "power", "amount": 5, "min_trophies": 3},
+        )],
+    )
+    state = _state_for_cards([card], [{"card_id": "bonus_trophy", "count": 1}])
+    state.players["p1"].hand = ["bonus_trophy"]
+    state.players["p1"].trophy_hall = ["p2", "p2"]
+
+    updated = apply(state, PlayCardMove(player_id="p1", card_id="bonus_trophy", hand_index=0))
+
+    assert updated.resource_pool.power == 0
+
+
+def test_generic_conditional_bonus_inner_circle_at_least_matched() -> None:
+    card = _sequence_card(
+        "bonus_ic",
+        [_action(
+            "bonus", "conditional_bonus",
+            metadata={"condition": "player_inner_circle_at_least", "resource": "influence", "amount": 3, "min_cards": 2},
+        )],
+    )
+    state = _state_for_cards([card], [{"card_id": "bonus_ic", "count": 1}])
+    state.players["p1"].hand = ["bonus_ic"]
+    state.players["p1"].inner_circle = ["a", "b"]
+
+    updated = apply(state, PlayCardMove(player_id="p1", card_id="bonus_ic", hand_index=0))
+
+    assert updated.resource_pool.influence == 3
+
+
+def test_generic_conditional_bonus_inner_circle_at_least_noop() -> None:
+    card = _sequence_card(
+        "bonus_ic",
+        [_action(
+            "bonus", "conditional_bonus",
+            metadata={"condition": "player_inner_circle_at_least", "resource": "influence", "amount": 3, "min_cards": 3},
+        )],
+    )
+    state = _state_for_cards([card], [{"card_id": "bonus_ic", "count": 1}])
+    state.players["p1"].hand = ["bonus_ic"]
+    state.players["p1"].inner_circle = ["a", "b"]
+
+    updated = apply(state, PlayCardMove(player_id="p1", card_id="bonus_ic", hand_index=0))
+
+    assert updated.resource_pool.influence == 0
+
+
+# ---------------------------------------------------------------------------
+# Batch C — custom_effect
+# ---------------------------------------------------------------------------
+
+
+def test_generic_custom_effect_scaled_resource_from_trophy_hall() -> None:
+    card = _sequence_card(
+        "custom_card",
+        [_action(
+            "custom", "custom_effect",
+            metadata={"effect_kind": "scaled_resource_from_player_zone", "source_zone": "trophy_hall", "per": 2, "resource": "power"},
+        )],
+    )
+    state = _state_for_cards([card], [{"card_id": "custom_card", "count": 1}])
+    state.players["p1"].hand = ["custom_card"]
+    state.players["p1"].trophy_hall = ["p2", "p2", "p2", "p2", "p2"]
+
+    updated = apply(state, PlayCardMove(player_id="p1", card_id="custom_card", hand_index=0))
+
+    assert updated.resource_pool.power == 2  # 5 // 2
+
+
+def test_generic_custom_effect_scaled_resource_from_hand() -> None:
+    card = _sequence_card(
+        "custom_card",
+        [_action(
+            "custom", "custom_effect",
+            metadata={"effect_kind": "scaled_resource_from_player_zone", "source_zone": "hand", "per": 1, "resource": "power"},
+        )],
+    )
+    state = _state_for_cards([card], [{"card_id": "custom_card", "count": 1}])
+    state.players["p1"].hand = ["custom_card"]
+
+    updated = apply(state, PlayCardMove(player_id="p1", card_id="custom_card", hand_index=0))
+
+    assert updated.resource_pool.power == 0  # hand is empty after playing
+
+
+def test_generic_custom_effect_give_insane_outcast_with_presence() -> None:
+    card = _sequence_card(
+        "outcast_giver",
+        [
+            _action("prep", "deploy_troops", target_scope="board_site"),
+            _action(
+                "gift", "custom_effect",
+                metadata={"effect_kind": "give_insane_outcast_to_player_with_presence_on_last_selected_node"},
+            ),
+        ],
+    )
+    state = _state_for_cards([card], [{"card_id": "outcast_giver", "count": 1}])
+    state.players["p1"].hand = ["outcast_giver"]
+    state.board.nodes["site_a"].troop_slots = ["p2", None]
+
+    played = apply(state, PlayCardMove(player_id="p1", card_id="outcast_giver", hand_index=0))
+    # First ResolveGenericChoice sets last_selection["target_node_id"]
+    # Then auto-resolve hits custom_effect which requires selection
+    after_deploy = apply(
+        played,
+        ResolveGenericChoiceMove(
+            player_id="p1",
+            source_card_id="outcast_giver",
+            selection={"target_node_id": "site_a"},
+        ),
+    )
+    updated = apply(
+        after_deploy,
+        ResolveGenericChoiceMove(
+            player_id="p1",
+            source_card_id="outcast_giver",
+            selection={"target_player_id": "p2", "selected_node_id": "site_a"},
+        ),
+    )
+
+    assert "insane_outcast" in updated.players["p2"].discard_pile
+
+
+def test_generic_custom_effect_give_insane_outcast_to_selected_player() -> None:
+    card = _sequence_card(
+        "outcast_giver",
+        [_action(
+            "gift", "custom_effect",
+            metadata={"effect_kind": "give_insane_outcast_to_selected_player"},
+        )],
+    )
+    state = _state_for_cards([card], [{"card_id": "outcast_giver", "count": 1}])
+    state.players["p1"].hand = ["outcast_giver"]
+
+    played = apply(state, PlayCardMove(player_id="p1", card_id="outcast_giver", hand_index=0))
+    updated = apply(
+        played,
+        ResolveGenericChoiceMove(
+            player_id="p1",
+            source_card_id="outcast_giver",
+            selection={"target_player_id": "p2"},
+        ),
+    )
+
+    assert "insane_outcast" in updated.players["p2"].discard_pile
+
+
+def test_generic_custom_effect_give_insane_outcast_to_each_opponent() -> None:
+    card = _sequence_card(
+        "outcast_giver",
+        [_action(
+            "gift", "custom_effect",
+            metadata={"effect_kind": "give_insane_outcast_to_each_opponent"},
+        )],
+    )
+    state = _state_for_cards([card], [{"card_id": "outcast_giver", "count": 1}])
+    state.players["p1"].hand = ["outcast_giver"]
+
+    updated = apply(state, PlayCardMove(player_id="p1", card_id="outcast_giver", hand_index=0))
+
+    assert "insane_outcast" in updated.players["p2"].discard_pile
+
+
+def test_generic_custom_effect_mill_deck_to_discard() -> None:
+    card = _sequence_card(
+        "miller",
+        [_action("mill", "custom_effect", metadata={"effect_kind": "mill_deck_to_discard"})],
+    )
+    state = _state_for_cards([card], [{"card_id": "miller", "count": 3}])
+    state.players["p1"].hand = ["miller"]
+    state.players["p1"].deck = ["miller", "miller"]
+
+    updated = apply(state, PlayCardMove(player_id="p1", card_id="miller", hand_index=0))
+
+    assert updated.players["p1"].deck == []
+    assert "miller" in updated.players["p1"].discard_pile
+
+
+def test_generic_custom_effect_self_purge_to_supply_is_noop() -> None:
+    card = _sequence_card(
+        "purger",
+        [_action("purge", "custom_effect", metadata={"effect_kind": "self_purge_to_supply"})],
+    )
+    state = _state_for_cards([card], [{"card_id": "purger", "count": 1}])
+    state.players["p1"].hand = ["purger"]
+
+    updated = apply(state, PlayCardMove(player_id="p1", card_id="purger", hand_index=0))
+
+    assert updated.players["p1"].hand == []
+
+
+# ---------------------------------------------------------------------------
+# Batch D — promote_card sub-modes
+# ---------------------------------------------------------------------------
+
+
+def test_generic_promote_from_played_cards() -> None:
+    promoter = _sequence_card(
+        "promoter",
+        [_action("promo", "promote_card", source_fragment="single_promote_from_multiple_zones")],
+    )
+    target = _sequence_card("fodder", [_action("noop", "gain_resource", metadata={"resource": "power"})])
+    state = _state_for_cards(
+        [promoter, target],
+        [{"card_id": "promoter", "count": 1}, {"card_id": "fodder", "count": 1}],
+    )
+    state.players["p1"].hand = ["promoter"]
+    state.players["p1"].played_cards = ["fodder"]
+
+    played = apply(state, PlayCardMove(player_id="p1", card_id="promoter", hand_index=0))
+    updated = apply(
+        played,
+        ResolveGenericChoiceMove(
+            player_id="p1",
+            source_card_id="promoter",
+            selection={"source_zone": "played", "target_card_id": "fodder"},
+        ),
+    )
+
+    assert "fodder" in updated.players["p1"].inner_circle
+    assert "fodder" not in updated.players["p1"].played_cards
+
+
+def test_generic_promote_from_hand() -> None:
+    promoter = _sequence_card(
+        "promoter",
+        [_action("promo", "promote_card", source_fragment="single_promote_from_multiple_zones")],
+    )
+    target = _sequence_card("fodder", [_action("noop", "gain_resource", metadata={"resource": "power"})])
+    state = _state_for_cards(
+        [promoter, target],
+        [{"card_id": "promoter", "count": 1}, {"card_id": "fodder", "count": 1}],
+    )
+    state.players["p1"].hand = ["promoter", "fodder"]
+
+    played = apply(state, PlayCardMove(player_id="p1", card_id="promoter", hand_index=0))
+    updated = apply(
+        played,
+        ResolveGenericChoiceMove(
+            player_id="p1",
+            source_card_id="promoter",
+            selection={"source_zone": "hand", "hand_index": 0},
+        ),
+    )
+
+    assert "fodder" in updated.players["p1"].inner_circle
+    assert "fodder" not in updated.players["p1"].hand
+
+
+def test_generic_promote_from_discard_specific() -> None:
+    promoter = _sequence_card(
+        "promoter",
+        [_action("promo", "promote_card", source_fragment="promote_from_discard")],
+    )
+    target = _sequence_card("fodder", [_action("noop", "gain_resource", metadata={"resource": "power"})])
+    state = _state_for_cards(
+        [promoter, target],
+        [{"card_id": "promoter", "count": 1}, {"card_id": "fodder", "count": 1}],
+    )
+    state.players["p1"].hand = ["promoter"]
+    state.players["p1"].discard_pile = ["fodder"]
+
+    played = apply(state, PlayCardMove(player_id="p1", card_id="promoter", hand_index=0))
+    updated = apply(
+        played,
+        ResolveGenericChoiceMove(
+            player_id="p1",
+            source_card_id="promoter",
+            selection={"discard_index": 0},
+        ),
+    )
+
+    assert "fodder" in updated.players["p1"].inner_circle
+    assert "fodder" not in updated.players["p1"].discard_pile
+
+
+def test_generic_promote_threshold_self_when_enabled() -> None:
+    promoter = _sequence_card(
+        "promoter",
+        [_action("promo", "promote_card", source_fragment="threshold_self_promote", metadata={"min_trophies": 0})],
+    )
+    state = _state_for_cards([promoter], [{"card_id": "promoter", "count": 1}])
+    state.players["p1"].hand = ["promoter"]
+    state.players["p1"].discard_pile = []
+
+    updated = apply(state, PlayCardMove(player_id="p1", card_id="promoter", hand_index=0))
+
+    assert "promoter" in updated.players["p1"].inner_circle
+
+
+def test_generic_promote_threshold_self_noop_when_disabled() -> None:
+    promoter = _sequence_card(
+        "promoter",
+        [_action("promo", "promote_card", source_fragment="threshold_self_promote", metadata={"min_trophies": 99})],
+    )
+    state = _state_for_cards([promoter], [{"card_id": "promoter", "count": 1}])
+    state.players["p1"].hand = ["promoter"]
+
+    updated = apply(state, PlayCardMove(player_id="p1", card_id="promoter", hand_index=0))
+
+    assert "promoter" not in updated.players["p1"].inner_circle
+
+
+def test_generic_promote_end_of_turn_queues_pending() -> None:
+    promoter = _sequence_card(
+        "promoter",
+        [
+            {
+                "action_id": "promo",
+                "op": "promote_card",
+                "target_scope": "self",
+                "timing": "end_of_turn",
+                "optional": False,
+                "quantity": {"kind": "unspecified", "value": None},
+                "filters": [],
+                "source_fragment": "test_fragment",
+                "metadata": {},
+            }
+        ],
+    )
+    state = _state_for_cards([promoter], [{"card_id": "promoter", "count": 1}])
+    state.players["p1"].hand = ["promoter"]
+    before_pending = len(state.pending_end_of_turn_promotions)
+
+    updated = apply(state, PlayCardMove(player_id="p1", card_id="promoter", hand_index=0))
+
+    assert len(updated.pending_end_of_turn_promotions) == before_pending + 1
+    assert updated.pending_end_of_turn_promotions[-1].card_id == "promoter"
+
+
+# ---------------------------------------------------------------------------
+# Batch E — edge cases
+# ---------------------------------------------------------------------------
+
+
+def test_generic_play_card_skips_nested_card_requiring_choices() -> None:
+    """When a play_card action resolves a nested card that requires
+    further player choices, the action is silently skipped (the nested
+    card's effect is not applied). This is consistent with how
+    _auto_resolve_pending_generic skips actions without selectable
+    targets. Full nested-pending support will be added later.
+    """
+    source = _sequence_card(
+        "nested_player",
+        [
+            _action(
+                "play", "play_card",
+                target_scope="inner_circle_or_market",
+                source_fragment="play_from_inner_circle_without_removal",
+            ),
+        ],
+    )
+    nested = _sequence_card(
+        "inner_needs_selection",
+        [_action("deploy", "deploy_troops", target_scope="board_site")],
+    )
+    state = _state_for_cards(
+        [source, nested],
+        [{"card_id": "nested_player", "count": 1}, {"card_id": "inner_needs_selection", "count": 1}],
+    )
+    state.players["p1"].hand = ["nested_player"]
+    state.players["p1"].inner_circle = ["inner_needs_selection"]
+
+    played = apply(state, PlayCardMove(player_id="p1", card_id="nested_player", hand_index=0))
+
+    # The nested card (inner_needs_selection) requires a deployment choice.
+    # The play_card action skips it gracefully rather than raising.
+    updated = apply(
+        played,
+        ResolveGenericChoiceMove(
+            player_id="p1",
+            source_card_id="nested_player",
+            selection={"source_zone": "inner_circle", "inner_circle_index": 0},
+        ),
+    )
+    # After skipping, the outer pending advances (only one action, so it clears).
+    assert updated.pending_generic_choice is None
+
+
+def test_generic_play_card_from_market_with_max_cost() -> None:
+    cheap = _sequence_card("cheap_card", [_action("noop", "gain_resource", metadata={"resource": "power"})])
+    cheap_dict = cheap.copy()
+    cheap_dict["card_id"] = "cheap_card"
+    cheap_dict["cost"] = 0
+    expensive = cheap.copy()
+    expensive["card_id"] = "expensive_card"
+    expensive["cost"] = 5
+
+    source = _sequence_card(
+        "market_player",
+        [
+            _action(
+                "play", "play_card",
+                target_scope="inner_circle_or_market",
+                source_fragment="play",
+                metadata={"max_cost": 3},
+            ),
+        ],
+    )
+    state = _state_for_cards(
+        [source, cheap_dict, expensive],
+        [{"card_id": "market_player", "count": 1}, {"card_id": "cheap_card", "count": 1}, {"card_id": "expensive_card", "count": 1}],
+    )
+    state.players["p1"].hand = ["market_player"]
+    state.market.row = ["cheap_card"]
+    state.resource_pool.influence = 10
+
+    played = apply(state, PlayCardMove(player_id="p1", card_id="market_player", hand_index=0))
+    updated = apply(
+        played,
+        ResolveGenericChoiceMove(
+            player_id="p1",
+            source_card_id="market_player",
+            selection={"source_zone": "market", "market_slot": 0},
+        ),
+    )
+
+    assert updated.resource_pool.power == 1
+    assert updated.pending_generic_choice is None
+
+
+def test_generic_gain_resource_rejects_unknown_resource() -> None:
+    card = _sequence_card(
+        "bad_gain",
+        [_action("gain", "gain_resource", metadata={"resource": "unknown_resource"})],
+    )
+    state = _state_for_cards([card], [{"card_id": "bad_gain", "count": 1}])
+    state.players["p1"].hand = ["bad_gain"]
+
+    with pytest.raises(MissingRuleImplementationError, match="unknown resource"):
+        apply(state, PlayCardMove(player_id="p1", card_id="bad_gain", hand_index=0))

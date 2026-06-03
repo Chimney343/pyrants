@@ -1889,14 +1889,13 @@ def _legal_generic_target_selection_moves(
                     )
                 return
             if zone == "played_self":
-                for target_card_id in state.players[player_id].played_cards:
-                    moves.append(
-                        _generic_choice_move(
-                            player_id,
-                            pending,
-                            selection={"source_zone": zone, "target_card_id": target_card_id},
-                        )
+                moves.append(
+                    _generic_choice_move(
+                        player_id,
+                        pending,
+                        selection={"source_zone": zone, "target_card_id": pending.source_card_id},
                     )
+                )
                 return
             if zone == "market":
                 requires_last_selected_market_slot = bool(action.metadata.get("requires_last_selected_market_slot", False))
@@ -2159,6 +2158,963 @@ def _apply_devour_once(
     raise IllegalMoveError(f"Unsupported devour source_zone '{source_zone}'")
 
 
+def _apply_generic_gain_resource(
+    state: GameState,
+    player_id: str,
+    card: CardDefinition,
+    source_card_id: str,
+    action: CardAction,
+    *,
+    selection: dict[str, object] | None,
+) -> GameState:
+    count = _resolve_runtime_action_count(state, player_id, action)
+    resource = str(action.metadata.get("resource", "")).strip().lower()
+    if resource not in {"power", "influence"}:
+        raise MissingRuleImplementationError(
+            f"generic_card action '{action.action_id}' has unknown resource '{resource}'"
+        )
+    updated = state.model_copy(deep=True)
+    if resource == "power":
+        updated.resource_pool.power += count
+    else:
+        updated.resource_pool.influence += count
+    return updated
+
+
+def _apply_generic_draw_cards(
+    state: GameState,
+    player_id: str,
+    card: CardDefinition,
+    source_card_id: str,
+    action: CardAction,
+    *,
+    selection: dict[str, object] | None,
+) -> GameState:
+    count = _resolve_runtime_action_count(state, player_id, action)
+    updated = state.model_copy(deep=True)
+    for _ in range(count):
+        player = updated.players[player_id]
+        if not player.deck and player.discard_pile:
+            _reshuffle_discard_into_deck(updated, player_id)
+        if not player.deck:
+            break
+        player.hand.append(player.deck.pop())
+    return updated
+
+
+def _apply_generic_grant_vp(
+    state: GameState,
+    player_id: str,
+    card: CardDefinition,
+    source_card_id: str,
+    action: CardAction,
+    *,
+    selection: dict[str, object] | None,
+) -> GameState:
+    count = _resolve_runtime_action_count(state, player_id, action)
+    updated = state.model_copy(deep=True)
+    if action.source_fragment.strip().lower().startswith("scaled_vp") or str(action.metadata.get("count_from", "")).strip():
+        updated.players[player_id].score += _scaled_vp_award_count(updated, player_id, action)
+    else:
+        updated.players[player_id].score += count
+    return updated
+
+
+def _apply_generic_devour(
+    state: GameState,
+    player_id: str,
+    card: CardDefinition,
+    source_card_id: str,
+    action: CardAction,
+    *,
+    selection: dict[str, object] | None,
+) -> GameState:
+    count = _resolve_runtime_action_count(state, player_id, action)
+    selection = selection or {}
+    selected_zone = str(selection.get("source_zone", "")).strip()
+    default_zone = str(action.metadata.get("source_zone", action.target_scope)).strip() or "unknown"
+    if default_zone == "unknown":
+        source_zone = selected_zone
+        if not source_zone:
+            raise IllegalMoveError("selection source_zone is required for unknown devour source")
+    else:
+        source_zone = default_zone
+
+    updated = state
+    for _ in range(count):
+        updated = _apply_devour_once(
+            updated,
+            player_id,
+            source_card_id,
+            source_zone,
+            selection=selection,
+        )
+    return updated
+
+
+def _apply_generic_recruit_card(
+    state: GameState,
+    player_id: str,
+    card: CardDefinition,
+    source_card_id: str,
+    action: CardAction,
+    *,
+    selection: dict[str, object] | None,
+) -> GameState:
+    count = _resolve_runtime_action_count(state, player_id, action)
+    selection = selection or {}
+    market_slot = _require_selection_int(selection, "market_slot")
+    selected_card_id = state.market.row[market_slot] if 0 <= market_slot < len(state.market.row) else ""
+    selected_definition = card_index(state.definition.catalog).get(selected_card_id)
+    if selected_definition is None:
+        raise IllegalMoveError("selection market_slot does not reference a known card")
+    if not _legal_recruit_card_for_action(selected_definition, action):
+        raise IllegalMoveError("selection market_slot does not satisfy recruit restrictions")
+    updated = state
+    for _ in range(count):
+        updated = _apply_recruit(updated, RecruitMove(player_id=player_id, market_slot=market_slot))
+    return updated
+
+
+def _apply_generic_deploy_troops(
+    state: GameState,
+    player_id: str,
+    card: CardDefinition,
+    source_card_id: str,
+    action: CardAction,
+    *,
+    selection: dict[str, object] | None,
+) -> GameState:
+    selection = selection or {}
+    target_node_id = _require_selection_string(selection, "target_node_id")
+    updated = _apply_free_deploy(state, player_id, target_node_id)
+    pending = updated.pending_generic_choice
+    if pending is not None:
+        counter_key = _pending_action_counter_key(action)
+        pending.action_counters[counter_key] = _pending_action_counter_value(pending, action) + 1
+    return updated
+
+
+def _apply_generic_assassinate_troop(
+    state: GameState,
+    player_id: str,
+    card: CardDefinition,
+    source_card_id: str,
+    action: CardAction,
+    *,
+    selection: dict[str, object] | None,
+) -> GameState:
+    count = _resolve_runtime_action_count(state, player_id, action)
+    selection = selection or {}
+    target_node_id = _require_selection_string(selection, "target_node_id")
+    target_slot_index = _require_selection_int(selection, "target_slot_index")
+    white_only = "white_troop_only" in action.filters
+    requires_last_selected_node = bool(action.metadata.get("requires_last_selected_node", False))
+
+    updated = state
+    for _ in range(count):
+        if target_node_id not in updated.board.nodes:
+            raise IllegalMoveError("selection target_node_id is unknown")
+        if requires_last_selected_node:
+            required_node_id = _require_selection_string(selection, "required_node_id")
+            if target_node_id != required_node_id:
+                raise IllegalMoveError("selection target_node_id must match the previously selected node")
+        node_state = updated.board.nodes[target_node_id]
+        if target_slot_index < 0 or target_slot_index >= len(node_state.troop_slots):
+            raise IllegalMoveError("selection target_slot_index is out of range")
+        occupant = node_state.troop_slots[target_slot_index]
+        if white_only and occupant != WHITE_TROOP_OWNER:
+            raise IllegalMoveError("selection target is not a white troop")
+        if not white_only and occupant == WHITE_TROOP_OWNER:
+            raise IllegalMoveError("selection target cannot be a white troop for this action")
+
+        updated = _apply_free_assassinate(updated, player_id, target_node_id, target_slot_index)
+        pending = updated.pending_generic_choice
+        if pending is not None:
+            pending.action_counters["assassinate_troop"] = pending.action_counters.get("assassinate_troop", 0) + 1
+    return updated
+
+
+def _apply_generic_supplant_troop(
+    state: GameState,
+    player_id: str,
+    card: CardDefinition,
+    source_card_id: str,
+    action: CardAction,
+    *,
+    selection: dict[str, object] | None,
+) -> GameState:
+    count = _resolve_runtime_action_count(state, player_id, action)
+    selection = selection or {}
+    target_node_id = _require_selection_string(selection, "target_node_id")
+    target_slot_index = _require_selection_int(selection, "target_slot_index")
+    white_only = "white_troop_only" in action.filters
+    allow_white = "allow_white_troop" in action.filters
+    target_anywhere = _action_targets_anywhere(action)
+    requires_returned_spy_site = bool(action.metadata.get("requires_returned_spy_site", False))
+
+    updated = state
+    for _ in range(count):
+        if target_node_id not in updated.board.nodes:
+            raise IllegalMoveError("selection target_node_id is unknown")
+        if requires_returned_spy_site:
+            returned_node_id = _require_selection_string(selection, "returned_node_id")
+            if target_node_id != returned_node_id:
+                raise IllegalMoveError("selection target_node_id must match returned spy site")
+        elif not target_anywhere and not has_presence(updated, player_id, target_node_id):
+            raise IllegalMoveError("supplant requires presence at the target node")
+
+        working = updated.model_copy(deep=True)
+        node_state = working.board.nodes[target_node_id]
+        if target_slot_index < 0 or target_slot_index >= len(node_state.troop_slots):
+            raise IllegalMoveError("selection target_slot_index is out of range")
+
+        removed_owner = node_state.troop_slots[target_slot_index]
+        if removed_owner is None:
+            raise IllegalMoveError("supplant target slot is empty")
+        if removed_owner == player_id:
+            raise IllegalMoveError("cannot supplant your own troop")
+        if white_only and removed_owner != WHITE_TROOP_OWNER:
+            raise IllegalMoveError("selection target is not a white troop")
+        if not white_only and not allow_white and removed_owner == WHITE_TROOP_OWNER:
+            raise IllegalMoveError("selection target cannot be a white troop for this action")
+
+        node_state.troop_slots[target_slot_index] = None
+        player = working.players[player_id]
+        if removed_owner != WHITE_TROOP_OWNER:
+            player.trophy_hall.append(removed_owner)
+
+        if player.barracks > 0:
+            node_state.troop_slots[target_slot_index] = player_id
+            player.barracks -= 1
+        else:
+            player.score += 1
+
+        updated = working
+    return updated
+
+
+def _apply_generic_place_spy(
+    state: GameState,
+    player_id: str,
+    card: CardDefinition,
+    source_card_id: str,
+    action: CardAction,
+    *,
+    selection: dict[str, object] | None,
+) -> GameState:
+    count = _resolve_runtime_action_count(state, player_id, action)
+    selection = selection or {}
+    target_node_id = _require_selection_string(selection, "target_node_id")
+    source_node_id = str(selection.get("source_node_id", "")).strip() or None
+    updated = state
+
+    for _ in range(count):
+        working = updated.model_copy(deep=True)
+        board_definitions = board_index(working.definition.board)
+        if target_node_id not in working.board.nodes:
+            raise IllegalMoveError("selection target_node_id is unknown")
+        if board_definitions[target_node_id].kind == NodeKind.ROUTE:
+            raise IllegalMoveError("routes cannot hold spies")
+        if player_id in working.board.nodes[target_node_id].spies:
+            raise IllegalMoveError("cannot place a second spy of the same owner on one node")
+
+        player = working.players[player_id]
+        if player.spies_available > 0:
+            player.spies_available -= 1
+        else:
+            if source_node_id is None:
+                raise IllegalMoveError("selection source_node_id is required when spy supply is empty")
+            if source_node_id == target_node_id:
+                raise IllegalMoveError("selection source_node_id must differ from target_node_id")
+            if source_node_id not in working.board.nodes:
+                raise IllegalMoveError("selection source_node_id is unknown")
+            if player_id not in working.board.nodes[source_node_id].spies:
+                raise IllegalMoveError("selection source_node_id has no movable spy for this player")
+            working.board.nodes[source_node_id].spies.remove(player_id)
+
+        working.board.nodes[target_node_id].spies.add(player_id)
+        updated = working
+
+    return updated
+
+
+def _apply_generic_return_spy(
+    state: GameState,
+    player_id: str,
+    card: CardDefinition,
+    source_card_id: str,
+    action: CardAction,
+    *,
+    selection: dict[str, object] | None,
+) -> GameState:
+    count = _resolve_runtime_action_count(state, player_id, action)
+    selection = selection or {}
+    node_id = _require_selection_string(selection, "node_id")
+    spy_owner_id = _require_selection_string(selection, "spy_owner_id")
+    owner_constraint = str(action.metadata.get("spy_owner", "any")).strip().lower()
+    free_enemy_return = bool(action.metadata.get("free_enemy_return", False))
+
+    updated = state
+    for _ in range(count):
+        if owner_constraint == "self" and spy_owner_id != player_id:
+            raise IllegalMoveError("selection spy_owner_id must be the active player")
+        if owner_constraint == "opponent" and spy_owner_id == player_id:
+            raise IllegalMoveError("selection spy_owner_id must be an opponent")
+
+        if free_enemy_return and spy_owner_id != player_id:
+            if node_id not in updated.board.nodes:
+                raise IllegalMoveError("selection node_id is unknown")
+            if board_index(updated.definition.board)[node_id].kind == NodeKind.ROUTE:
+                raise IllegalMoveError("routes cannot hold spies")
+            if not has_presence(updated, player_id, node_id):
+                raise IllegalMoveError("returning an enemy spy requires presence at the node")
+
+            working = updated.model_copy(deep=True)
+            node_state = working.board.nodes[node_id]
+            if spy_owner_id not in node_state.spies:
+                raise IllegalMoveError("target spy is not present at the chosen node")
+            node_state.spies.remove(spy_owner_id)
+            working.players[spy_owner_id].spies_available += 1
+            updated = working
+            continue
+
+        updated = _apply_return_spy(
+            updated,
+            ReturnSpyMove(
+                player_id=player_id,
+                node_id=node_id,
+                spy_owner_id=spy_owner_id,
+            ),
+        )
+    return updated
+
+
+def _apply_generic_return_unit(
+    state: GameState,
+    player_id: str,
+    card: CardDefinition,
+    source_card_id: str,
+    action: CardAction,
+    *,
+    selection: dict[str, object] | None,
+) -> GameState:
+    count = _resolve_runtime_action_count(state, player_id, action)
+    selection = selection or {}
+    unit_type = _require_selection_string(selection, "unit_type")
+    node_id = _require_selection_string(selection, "node_id")
+    opponent_only = action.target_scope == "opponent_unit"
+    self_only = action.target_scope == "self_unit"
+
+    updated = state
+    for _ in range(count):
+        if node_id not in updated.board.nodes:
+            raise IllegalMoveError("selection node_id is unknown")
+        working = updated.model_copy(deep=True)
+        node_state = working.board.nodes[node_id]
+
+        if unit_type == "troop":
+            target_slot_index = _require_selection_int(selection, "target_slot_index")
+            if target_slot_index < 0 or target_slot_index >= len(node_state.troop_slots):
+                raise IllegalMoveError("selection target_slot_index is out of range")
+            owner_id = node_state.troop_slots[target_slot_index]
+            if owner_id is None:
+                raise IllegalMoveError("selected troop slot is empty")
+            if owner_id == WHITE_TROOP_OWNER:
+                raise IllegalMoveError("return_unit cannot target white troops")
+            if opponent_only and owner_id == player_id:
+                raise IllegalMoveError("selection must target an opponent unit")
+            if self_only and owner_id != player_id:
+                raise IllegalMoveError("selection must target an active player unit")
+            node_state.troop_slots[target_slot_index] = None
+            if owner_id in working.players:
+                working.players[owner_id].barracks += 1
+            updated = working
+            continue
+
+        if unit_type == "spy":
+            spy_owner_id = _require_selection_string(selection, "spy_owner_id")
+            if spy_owner_id not in node_state.spies:
+                raise IllegalMoveError("selection spy_owner_id is not present at node")
+            if opponent_only and spy_owner_id == player_id:
+                raise IllegalMoveError("selection must target an opponent unit")
+            if self_only and spy_owner_id != player_id:
+                raise IllegalMoveError("selection must target an active player unit")
+            node_state.spies.remove(spy_owner_id)
+            if spy_owner_id in working.players:
+                working.players[spy_owner_id].spies_available += 1
+            updated = working
+            continue
+
+        raise IllegalMoveError("selection unit_type must be 'troop' or 'spy'")
+
+    return updated
+
+
+def _apply_generic_move_troop(
+    state: GameState,
+    player_id: str,
+    card: CardDefinition,
+    source_card_id: str,
+    action: CardAction,
+    *,
+    selection: dict[str, object] | None,
+) -> GameState:
+    count = _resolve_runtime_action_count(state, player_id, action)
+    selection = selection or {}
+    source_node_id = _require_selection_string(selection, "source_node_id")
+    source_slot_index = _require_selection_int(selection, "source_slot_index")
+    target_node_id = _require_selection_string(selection, "target_node_id")
+    target_slot_index = _require_selection_int(selection, "target_slot_index")
+
+    updated = state
+    for _ in range(count):
+        board_definitions = board_index(updated.definition.board)
+        if source_node_id not in updated.board.nodes or target_node_id not in updated.board.nodes:
+            raise IllegalMoveError("selection source or target node is unknown")
+        if target_node_id not in board_definitions[source_node_id].adjacent_to:
+            raise IllegalMoveError("selection target_node_id is not adjacent to source_node_id")
+
+        working = updated.model_copy(deep=True)
+        source_state = working.board.nodes[source_node_id]
+        target_state = working.board.nodes[target_node_id]
+
+        if source_slot_index < 0 or source_slot_index >= len(source_state.troop_slots):
+            raise IllegalMoveError("selection source_slot_index is out of range")
+        if target_slot_index < 0 or target_slot_index >= len(target_state.troop_slots):
+            raise IllegalMoveError("selection target_slot_index is out of range")
+
+        occupant = source_state.troop_slots[source_slot_index]
+        if occupant is None:
+            raise IllegalMoveError("selection source slot is empty")
+        if occupant == player_id:
+            raise IllegalMoveError("selection source slot must contain an enemy troop")
+        if target_state.troop_slots[target_slot_index] is not None:
+            raise IllegalMoveError("selection target slot is occupied")
+
+        source_state.troop_slots[source_slot_index] = None
+        target_state.troop_slots[target_slot_index] = occupant
+        updated = working
+    return updated
+
+
+def _apply_generic_force_discard(
+    state: GameState,
+    player_id: str,
+    card: CardDefinition,
+    source_card_id: str,
+    action: CardAction,
+    *,
+    selection: dict[str, object] | None,
+) -> GameState:
+    if action.timing == "end_of_turn" and action.source_fragment.strip().lower() == "end_of_turn_mass_discard":
+        return state
+
+    count = _resolve_runtime_action_count(state, player_id, action)
+    selection = selection or {}
+    target_player_id = _require_selection_string(selection, "target_player_id")
+    hand_index = _require_selection_int(selection, "hand_index")
+
+    updated = state
+    for _ in range(count):
+        working = updated.model_copy(deep=True)
+        if target_player_id == player_id:
+            raise IllegalMoveError("selection target_player_id must be an opponent")
+        if target_player_id not in working.players:
+            raise IllegalMoveError("selection target_player_id is unknown")
+
+        target_player = working.players[target_player_id]
+        if hand_index < 0 or hand_index >= len(target_player.hand):
+            raise IllegalMoveError("selection hand_index is out of range")
+
+        target_player.discard_pile.append(target_player.hand.pop(hand_index))
+        updated = working
+
+    return updated
+
+
+def _apply_generic_promote_card(
+    state: GameState,
+    player_id: str,
+    card: CardDefinition,
+    source_card_id: str,
+    action: CardAction,
+    *,
+    selection: dict[str, object] | None,
+) -> GameState:
+    count = _resolve_runtime_action_count(state, player_id, action)
+    selection = selection or {}
+
+    if _promote_from_deck_top(action):
+        updated = state
+        for _ in range(count):
+            working = updated.model_copy(deep=True)
+            player = working.players[player_id]
+            if not player.deck and player.discard_pile:
+                _reshuffle_discard_into_deck(working, player_id)
+            if not player.deck:
+                updated = working
+                continue
+            player.inner_circle.append(player.deck.pop())
+            updated = working
+        return updated
+
+    if _promote_from_multiple_zones(action):
+        source_zone = _require_selection_string(selection, "source_zone").strip().lower()
+        updated = state
+        for _ in range(count):
+            working = updated.model_copy(deep=True)
+            player = working.players[player_id]
+
+            if source_zone == "played":
+                target_card_id = _require_selection_string(selection, "target_card_id")
+                try:
+                    played_index = player.played_cards.index(target_card_id)
+                except ValueError as error:
+                    raise IllegalMoveError("selection target_card_id is not in played cards") from error
+                player.inner_circle.append(player.played_cards.pop(played_index))
+                updated = working
+                continue
+
+            if source_zone == "hand":
+                hand_index = _require_selection_int(selection, "hand_index")
+                if hand_index < 0 or hand_index >= len(player.hand):
+                    raise IllegalMoveError("selection hand_index is out of range")
+                player.inner_circle.append(player.hand.pop(hand_index))
+                updated = working
+                continue
+
+            if source_zone == "discard":
+                discard_index = _require_selection_int(selection, "discard_index")
+                if discard_index < 0 or discard_index >= len(player.discard_pile):
+                    raise IllegalMoveError("selection discard_index is out of range")
+                player.inner_circle.append(player.discard_pile.pop(discard_index))
+                updated = working
+                continue
+
+            raise IllegalMoveError("selection source_zone must be one of: played, hand, discard")
+
+        return updated
+
+    if _promote_from_discard(action):
+        discard_index = _require_selection_int(selection, "discard_index")
+        updated = state
+        for _ in range(count):
+            working = updated.model_copy(deep=True)
+            player = working.players[player_id]
+            if discard_index < 0 or discard_index >= len(player.discard_pile):
+                raise IllegalMoveError("selection discard_index is out of range")
+            player.inner_circle.append(player.discard_pile.pop(discard_index))
+            updated = working
+        return updated
+
+    if action.source_fragment.strip().lower() == "threshold_self_promote":
+        if not _threshold_self_promote_enabled(state, player_id, action):
+            return state
+        updated = state.model_copy(deep=True)
+        _promote_card(updated, player_id, source_card_id)
+        return updated
+
+    promote_other = _promote_requires_other_card(action)
+    required_aspect = _promote_required_aspect(card, action)
+    required_secondary_aspect = _promote_required_secondary_aspect(action)
+    repeat_while_targets = bool(action.metadata.get("repeat_while_targets", False))
+
+    if action.timing == "end_of_turn":
+        updated = state
+        for _ in range(count):
+            working = updated.model_copy(deep=True)
+            working.pending_end_of_turn_promotions.append(
+                PendingPromotionState(
+                    card_id=source_card_id,
+                    timing="end_of_turn",
+                    optional=bool(action.optional),
+                    deferred_choice=True,
+                    source_card_id=source_card_id,
+                    requires_another_played_card=promote_other,
+                    required_aspect=required_aspect,
+                    required_secondary_aspect=required_secondary_aspect,
+                    repeat_while_targets=repeat_while_targets,
+                )
+            )
+            updated = working
+        return updated
+
+    target_card_id = _require_selection_string(selection, "target_card_id")
+    cards_by_id = card_index(state.definition.catalog)
+
+    updated = state
+    for _ in range(count):
+        if promote_other and target_card_id == source_card_id:
+            raise IllegalMoveError("selection target_card_id must be another played card")
+        if required_aspect is not None:
+            definition = cards_by_id.get(target_card_id)
+            if definition is None or definition.aspect != required_aspect:
+                raise IllegalMoveError("selection target_card_id does not satisfy required aspect")
+        if required_secondary_aspect is not None:
+            definition = cards_by_id.get(target_card_id)
+            if definition is None or required_secondary_aspect not in definition.secondary_aspects:
+                raise IllegalMoveError("selection target_card_id does not satisfy required secondary aspect")
+        working = updated.model_copy(deep=True)
+        _promote_card(working, player_id, target_card_id)
+        updated = working
+    return updated
+
+
+def _apply_generic_play_card(
+    state: GameState,
+    player_id: str,
+    card: CardDefinition,
+    source_card_id: str,
+    action: CardAction,
+    *,
+    selection: dict[str, object] | None,
+) -> GameState:
+    selection = selection or {}
+    source_fragment = action.source_fragment.strip().lower()
+    nested_card_id: str
+
+    if source_fragment == "play_from_inner_circle_without_removal":
+        source_zone = str(selection.get("source_zone", "")).strip().lower()
+        if source_zone != "inner_circle":
+            raise IllegalMoveError("selection source_zone must be 'inner_circle'")
+
+        inner_circle_index = _require_selection_int(selection, "inner_circle_index")
+        player = state.players[player_id]
+        if inner_circle_index < 0 or inner_circle_index >= len(player.inner_circle):
+            raise IllegalMoveError("selection inner_circle_index is out of range")
+
+        nested_card_id = player.inner_circle[inner_circle_index]
+    elif source_fragment == "play":
+        source_zone = str(selection.get("source_zone", "")).strip().lower()
+        if source_zone != "market":
+            raise IllegalMoveError("selection source_zone must be 'market'")
+
+        market_slot = _require_selection_int(selection, "market_slot")
+        if market_slot < 0 or market_slot >= len(state.market.row):
+            raise IllegalMoveError("selection market_slot is out of range")
+
+        nested_card_id = state.market.row[market_slot]
+        cards_by_id = card_index(state.definition.catalog)
+        nested_definition_for_cost = cards_by_id.get(nested_card_id)
+        if nested_definition_for_cost is None:
+            raise IllegalMoveError("selection market_slot does not reference a known card")
+
+        max_cost_raw = action.metadata.get("max_cost")
+        if max_cost_raw is not None:
+            try:
+                max_cost = int(max_cost_raw)
+            except (TypeError, ValueError) as error:
+                raise RuleViolationError("play_card max_cost metadata must be an integer") from error
+            if nested_definition_for_cost.cost > max_cost:
+                raise IllegalMoveError("selection market_slot exceeds play_card max_cost")
+    else:
+        raise MissingRuleImplementationError(
+            f"generic_card play_card source_fragment '{action.source_fragment}' is not implemented yet for card '{card.card_id}'"
+        )
+    nested_definition = card_index(state.definition.catalog).get(nested_card_id)
+    if nested_definition is None:
+        raise IllegalMoveError("selected card for play_card is not known in catalog")
+
+    nested_effect = _EFFECT_REGISTRY.get(nested_definition.effect_key)
+    if nested_effect is None:
+        raise UnknownCardEffectError(
+            f"Card '{nested_card_id}' references unregistered effect '{nested_definition.effect_key}'"
+        )
+
+    working = state.model_copy(deep=True)
+    outer_pending = working.pending_generic_choice.model_copy(deep=True)
+    working.pending_generic_choice = None
+    working.pending_ability = None
+
+    resolved = nested_effect(working, player_id, nested_definition)
+    if resolved.pending_generic_choice is not None:
+        # The nested card requires choices that cannot be auto-resolved inside
+        # a play_card action (e.g. place_spy, deploy_troops with valid targets).
+        # Skip the action rather than raising — consistent with how
+        # _auto_resolve_pending_generic skips actions when no selectable
+        # targets exist. Full nested-pending support will be added later.
+        resolved.pending_generic_choice = outer_pending
+        return resolved
+    if resolved.pending_ability is not None:
+        raise MissingRuleImplementationError(
+            "play_card currently supports only nested cards without paid ability prompts"
+        )
+
+    resolved.pending_generic_choice = outer_pending
+    return resolved
+
+
+def _apply_generic_conditional_bonus(
+    state: GameState,
+    player_id: str,
+    card: CardDefinition,
+    source_card_id: str,
+    action: CardAction,
+    *,
+    selection: dict[str, object] | None,
+) -> GameState:
+    count = _resolve_runtime_action_count(state, player_id, action)
+    selection = selection or {}
+    condition = str(action.metadata.get("condition", "")).strip().lower()
+    if condition == "selected_node_has_other_player_troop":
+        node_id = str(selection.get("target_node_id", "")).strip()
+        if not node_id or node_id not in state.board.nodes:
+            return state
+
+        node_state = state.board.nodes[node_id]
+        has_other_troop = any(
+            occupant is not None and occupant not in {player_id, WHITE_TROOP_OWNER}
+            for occupant in node_state.troop_slots
+        )
+        if not has_other_troop:
+            return state
+
+        resource = str(action.metadata.get("resource", "influence")).strip().lower()
+        amount_raw = action.metadata.get("amount", count)
+        try:
+            amount = int(amount_raw)
+        except (TypeError, ValueError) as error:
+            raise RuleViolationError("conditional_bonus amount must be an integer") from error
+
+        updated = state.model_copy(deep=True)
+        if resource == "power":
+            updated.resource_pool.power += amount
+        elif resource == "influence":
+            updated.resource_pool.influence += amount
+        else:
+            raise RuleViolationError("conditional_bonus resource must be power or influence")
+        return updated
+
+    if condition == "selected_node_total_spies_at_least":
+        node_id = str(selection.get("target_node_id", "")).strip()
+        minimum_raw = action.metadata.get("min_spies", 0)
+        try:
+            minimum = int(minimum_raw)
+        except (TypeError, ValueError) as error:
+            raise RuleViolationError("conditional_bonus min_spies must be an integer") from error
+
+        if node_id and node_id in state.board.nodes and len(state.board.nodes[node_id].spies) >= minimum:
+            resource = str(action.metadata.get("resource", "power")).strip().lower()
+            amount_raw = action.metadata.get("amount", count)
+            try:
+                amount = int(amount_raw)
+            except (TypeError, ValueError) as error:
+                raise RuleViolationError("conditional_bonus amount must be an integer") from error
+
+            updated = state.model_copy(deep=True)
+            if resource == "power":
+                updated.resource_pool.power += amount
+            elif resource == "influence":
+                updated.resource_pool.influence += amount
+            else:
+                raise RuleViolationError("conditional_bonus resource must be power or influence")
+            return updated
+        return state
+
+    if condition == "focus_aspect_present":
+        focus_aspect = str(action.metadata.get("focus_aspect", card.aspect)).strip().lower()
+        resource = str(action.metadata.get("resource", "influence")).strip().lower()
+        amount_raw = action.metadata.get("amount", count)
+        try:
+            amount = int(amount_raw)
+        except (TypeError, ValueError) as error:
+            raise RuleViolationError("conditional_bonus amount must be an integer") from error
+
+        if _focus_requirement_met_for_aspect(state, player_id, focus_aspect, source_card_id):
+            updated = state.model_copy(deep=True)
+            if resource == "power":
+                updated.resource_pool.power += amount
+            elif resource == "influence":
+                updated.resource_pool.influence += amount
+            else:
+                raise RuleViolationError("conditional_bonus resource must be power or influence")
+            return updated
+        return state
+
+    if condition == "player_trophy_hall_non_white_at_least":
+        minimum_raw = action.metadata.get("min_trophies", 0)
+        try:
+            minimum = int(minimum_raw)
+        except (TypeError, ValueError) as error:
+            raise RuleViolationError("conditional_bonus min_trophies must be an integer") from error
+
+        player = state.players[player_id]
+        non_white_trophies = sum(1 for owner in player.trophy_hall if owner != WHITE_TROOP_OWNER)
+        if non_white_trophies >= minimum:
+            resource = str(action.metadata.get("resource", "power")).strip().lower()
+            amount_raw = action.metadata.get("amount", count)
+            try:
+                amount = int(amount_raw)
+            except (TypeError, ValueError) as error:
+                raise RuleViolationError("conditional_bonus amount must be an integer") from error
+
+            updated = state.model_copy(deep=True)
+            if resource == "power":
+                updated.resource_pool.power += amount
+            elif resource == "influence":
+                updated.resource_pool.influence += amount
+            else:
+                raise RuleViolationError("conditional_bonus resource must be power or influence")
+            return updated
+        return state
+
+    if condition == "player_inner_circle_at_least":
+        minimum_raw = action.metadata.get("min_cards", 0)
+        try:
+            minimum = int(minimum_raw)
+        except (TypeError, ValueError) as error:
+            raise RuleViolationError("conditional_bonus min_cards must be an integer") from error
+
+        player = state.players[player_id]
+        if len(player.inner_circle) >= minimum:
+            resource = str(action.metadata.get("resource", "influence")).strip().lower()
+            amount_raw = action.metadata.get("amount", count)
+            try:
+                amount = int(amount_raw)
+            except (TypeError, ValueError) as error:
+                raise RuleViolationError("conditional_bonus amount must be an integer") from error
+
+            updated = state.model_copy(deep=True)
+            if resource == "power":
+                updated.resource_pool.power += amount
+            elif resource == "influence":
+                updated.resource_pool.influence += amount
+            else:
+                raise RuleViolationError("conditional_bonus resource must be power or influence")
+            return updated
+        return state
+
+    raise MissingRuleImplementationError(
+        f"generic_card conditional_bonus is not implemented yet for card '{card.card_id}'"
+    )
+
+
+def _apply_generic_custom_effect(
+    state: GameState,
+    player_id: str,
+    card: CardDefinition,
+    source_card_id: str,
+    action: CardAction,
+    *,
+    selection: dict[str, object] | None,
+) -> GameState:
+    selection = selection or {}
+    effect_kind = str(action.metadata.get("effect_kind", "")).strip().lower()
+    if effect_kind == "scaled_resource_from_player_zone":
+        source_zone = str(action.metadata.get("source_zone", "")).strip().lower()
+        per_raw = action.metadata.get("per", 1)
+        try:
+            per = int(per_raw)
+        except (TypeError, ValueError) as error:
+            raise RuleViolationError("custom_effect per must be an integer") from error
+        if per <= 0:
+            raise RuleViolationError("custom_effect per must be greater than zero")
+
+        resource = str(action.metadata.get("resource", "power")).strip().lower()
+        player = state.players[player_id]
+        if source_zone == "trophy_hall":
+            source_count = len(player.trophy_hall)
+        elif source_zone == "hand":
+            source_count = len(player.hand)
+        elif source_zone == "discard_pile":
+            source_count = len(player.discard_pile)
+        elif source_zone == "inner_circle":
+            source_count = len(player.inner_circle)
+        elif source_zone == "played_cards":
+            source_count = len(player.played_cards)
+        else:
+            raise RuleViolationError("custom_effect source_zone is unsupported")
+
+        gained = source_count // per
+        updated = state.model_copy(deep=True)
+        if resource == "power":
+            updated.resource_pool.power += gained
+        elif resource == "influence":
+            updated.resource_pool.influence += gained
+        else:
+            raise RuleViolationError("custom_effect resource must be power or influence")
+        return updated
+
+    if effect_kind == "give_insane_outcast_to_player_with_presence_on_last_selected_node":
+        target_player_id = _require_selection_string(selection, "target_player_id")
+        selected_node_id = _require_selection_string(selection, "selected_node_id")
+        if target_player_id == player_id:
+            raise IllegalMoveError("selection target_player_id must be an opponent")
+        if target_player_id not in state.players:
+            raise IllegalMoveError("selection target_player_id is unknown")
+        if selected_node_id not in state.board.nodes:
+            raise IllegalMoveError("selection selected_node_id is unknown")
+        if not has_presence(state, target_player_id, selected_node_id):
+            raise IllegalMoveError("selection target_player_id does not have presence at selected_node_id")
+
+        updated = state.model_copy(deep=True)
+        updated.players[target_player_id].discard_pile.append("insane_outcast")
+        return updated
+
+    if effect_kind == "give_insane_outcast_to_selected_player":
+        target_player_id = _require_selection_string(selection, "target_player_id")
+        if target_player_id == player_id:
+            raise IllegalMoveError("selection target_player_id must be an opponent")
+        if target_player_id not in state.players:
+            raise IllegalMoveError("selection target_player_id is unknown")
+
+        updated = state.model_copy(deep=True)
+        updated.players[target_player_id].discard_pile.append("insane_outcast")
+        return updated
+
+    if effect_kind == "give_insane_outcast_to_each_opponent":
+        updated = state.model_copy(deep=True)
+        for target_player_id in sorted(updated.players):
+            if target_player_id == player_id:
+                continue
+            updated.players[target_player_id].discard_pile.append("insane_outcast")
+        return updated
+
+    if effect_kind == "mill_deck_to_discard":
+        updated = state.model_copy(deep=True)
+        player = updated.players[player_id]
+        player.discard_pile.extend(player.deck)
+        player.deck = []
+        return updated
+
+    if effect_kind == "self_purge_to_supply":
+        return state
+
+    if effect_kind == "steal_white_trophy_to_board":
+        target_player_id = _require_selection_string(selection, "target_player_id")
+        target_node_id = _require_selection_string(selection, "target_node_id")
+        target_slot_index = _require_selection_int(selection, "target_slot_index")
+
+        if target_player_id == player_id:
+            raise IllegalMoveError("selection target_player_id must be an opponent")
+        if target_player_id not in state.players:
+            raise IllegalMoveError("selection target_player_id is unknown")
+        if target_node_id not in state.board.nodes:
+            raise IllegalMoveError("selection target_node_id is unknown")
+
+        updated = state.model_copy(deep=True)
+        target_player = updated.players[target_player_id]
+        try:
+            trophy_index = target_player.trophy_hall.index(WHITE_TROOP_OWNER)
+        except ValueError as error:
+            raise IllegalMoveError("selection target_player_id has no white trophy") from error
+
+        node_state = updated.board.nodes[target_node_id]
+        if target_slot_index < 0 or target_slot_index >= len(node_state.troop_slots):
+            raise IllegalMoveError("selection target_slot_index is out of range")
+        if node_state.troop_slots[target_slot_index] is not None:
+            raise IllegalMoveError("selection target slot is occupied")
+
+        target_player.trophy_hall.pop(trophy_index)
+        node_state.troop_slots[target_slot_index] = WHITE_TROOP_OWNER
+        return updated
+
+    raise MissingRuleImplementationError(
+        f"generic_card custom_effect is not implemented yet for card '{card.card_id}'"
+    )
+
+
 def _apply_generic_action(
     state: GameState,
     player_id: str,
@@ -2175,778 +3131,55 @@ def _apply_generic_action(
         return state
 
     if action.op == "gain_resource":
-        resource = str(action.metadata.get("resource", "")).strip().lower()
-        if resource not in {"power", "influence"}:
-            raise MissingRuleImplementationError(
-                f"generic_card action '{action.action_id}' has unknown resource '{resource}'"
-            )
-        updated = state.model_copy(deep=True)
-        if resource == "power":
-            updated.resource_pool.power += count
-        else:
-            updated.resource_pool.influence += count
-        return updated
+        return _apply_generic_gain_resource(state, player_id, card, source_card_id, action, selection=selection)
 
     if action.op == "draw_cards":
-        updated = state.model_copy(deep=True)
-        for _ in range(count):
-            player = updated.players[player_id]
-            if not player.deck and player.discard_pile:
-                _reshuffle_discard_into_deck(updated, player_id)
-            if not player.deck:
-                break
-            player.hand.append(player.deck.pop())
-        return updated
+        return _apply_generic_draw_cards(state, player_id, card, source_card_id, action, selection=selection)
 
     if action.op == "deploy_troops":
-        target_node_id = _require_selection_string(selection, "target_node_id")
-        updated = _apply_free_deploy(state, player_id, target_node_id)
-        pending = updated.pending_generic_choice
-        if pending is not None:
-            counter_key = _pending_action_counter_key(action)
-            pending.action_counters[counter_key] = _pending_action_counter_value(pending, action) + 1
-        return updated
+        return _apply_generic_deploy_troops(state, player_id, card, source_card_id, action, selection=selection)
 
     if action.op == "assassinate_troop":
-        target_node_id = _require_selection_string(selection, "target_node_id")
-        target_slot_index = _require_selection_int(selection, "target_slot_index")
-        white_only = "white_troop_only" in action.filters
-        requires_last_selected_node = bool(action.metadata.get("requires_last_selected_node", False))
-
-        updated = state
-        for _ in range(count):
-            if target_node_id not in updated.board.nodes:
-                raise IllegalMoveError("selection target_node_id is unknown")
-            if requires_last_selected_node:
-                required_node_id = _require_selection_string(selection, "required_node_id")
-                if target_node_id != required_node_id:
-                    raise IllegalMoveError("selection target_node_id must match the previously selected node")
-            node_state = updated.board.nodes[target_node_id]
-            if target_slot_index < 0 or target_slot_index >= len(node_state.troop_slots):
-                raise IllegalMoveError("selection target_slot_index is out of range")
-            occupant = node_state.troop_slots[target_slot_index]
-            if white_only and occupant != WHITE_TROOP_OWNER:
-                raise IllegalMoveError("selection target is not a white troop")
-            if not white_only and occupant == WHITE_TROOP_OWNER:
-                raise IllegalMoveError("selection target cannot be a white troop for this action")
-
-            updated = _apply_free_assassinate(updated, player_id, target_node_id, target_slot_index)
-            pending = updated.pending_generic_choice
-            if pending is not None:
-                pending.action_counters["assassinate_troop"] = pending.action_counters.get("assassinate_troop", 0) + 1
-        return updated
+        return _apply_generic_assassinate_troop(state, player_id, card, source_card_id, action, selection=selection)
 
     if action.op == "supplant_troop":
-        target_node_id = _require_selection_string(selection, "target_node_id")
-        target_slot_index = _require_selection_int(selection, "target_slot_index")
-        white_only = "white_troop_only" in action.filters
-        allow_white = "allow_white_troop" in action.filters
-        target_anywhere = _action_targets_anywhere(action)
-        requires_returned_spy_site = bool(action.metadata.get("requires_returned_spy_site", False))
-
-        updated = state
-        for _ in range(count):
-            if target_node_id not in updated.board.nodes:
-                raise IllegalMoveError("selection target_node_id is unknown")
-            if requires_returned_spy_site:
-                returned_node_id = _require_selection_string(selection, "returned_node_id")
-                if target_node_id != returned_node_id:
-                    raise IllegalMoveError("selection target_node_id must match returned spy site")
-            elif not target_anywhere and not has_presence(updated, player_id, target_node_id):
-                raise IllegalMoveError("supplant requires presence at the target node")
-
-            working = updated.model_copy(deep=True)
-            node_state = working.board.nodes[target_node_id]
-            if target_slot_index < 0 or target_slot_index >= len(node_state.troop_slots):
-                raise IllegalMoveError("selection target_slot_index is out of range")
-
-            removed_owner = node_state.troop_slots[target_slot_index]
-            if removed_owner is None:
-                raise IllegalMoveError("supplant target slot is empty")
-            if removed_owner == player_id:
-                raise IllegalMoveError("cannot supplant your own troop")
-            if white_only and removed_owner != WHITE_TROOP_OWNER:
-                raise IllegalMoveError("selection target is not a white troop")
-            if not white_only and not allow_white and removed_owner == WHITE_TROOP_OWNER:
-                raise IllegalMoveError("selection target cannot be a white troop for this action")
-
-            node_state.troop_slots[target_slot_index] = None
-            player = working.players[player_id]
-            if removed_owner != WHITE_TROOP_OWNER:
-                player.trophy_hall.append(removed_owner)
-
-            if player.barracks > 0:
-                node_state.troop_slots[target_slot_index] = player_id
-                player.barracks -= 1
-            else:
-                player.score += 1
-
-            updated = working
-        return updated
+        return _apply_generic_supplant_troop(state, player_id, card, source_card_id, action, selection=selection)
 
     if action.op == "place_spy":
-        target_node_id = _require_selection_string(selection, "target_node_id")
-        source_node_id = str(selection.get("source_node_id", "")).strip() or None
-        updated = state
-
-        for _ in range(count):
-            working = updated.model_copy(deep=True)
-            board_definitions = board_index(working.definition.board)
-            if target_node_id not in working.board.nodes:
-                raise IllegalMoveError("selection target_node_id is unknown")
-            if board_definitions[target_node_id].kind == NodeKind.ROUTE:
-                raise IllegalMoveError("routes cannot hold spies")
-            if player_id in working.board.nodes[target_node_id].spies:
-                raise IllegalMoveError("cannot place a second spy of the same owner on one node")
-
-            player = working.players[player_id]
-            if player.spies_available > 0:
-                player.spies_available -= 1
-            else:
-                if source_node_id is None:
-                    raise IllegalMoveError("selection source_node_id is required when spy supply is empty")
-                if source_node_id == target_node_id:
-                    raise IllegalMoveError("selection source_node_id must differ from target_node_id")
-                if source_node_id not in working.board.nodes:
-                    raise IllegalMoveError("selection source_node_id is unknown")
-                if player_id not in working.board.nodes[source_node_id].spies:
-                    raise IllegalMoveError("selection source_node_id has no movable spy for this player")
-                working.board.nodes[source_node_id].spies.remove(player_id)
-
-            working.board.nodes[target_node_id].spies.add(player_id)
-            updated = working
-
-        return updated
+        return _apply_generic_place_spy(state, player_id, card, source_card_id, action, selection=selection)
 
     if action.op == "return_spy":
-        node_id = _require_selection_string(selection, "node_id")
-        spy_owner_id = _require_selection_string(selection, "spy_owner_id")
-        owner_constraint = str(action.metadata.get("spy_owner", "any")).strip().lower()
-        free_enemy_return = bool(action.metadata.get("free_enemy_return", False))
-
-        updated = state
-        for _ in range(count):
-            if owner_constraint == "self" and spy_owner_id != player_id:
-                raise IllegalMoveError("selection spy_owner_id must be the active player")
-            if owner_constraint == "opponent" and spy_owner_id == player_id:
-                raise IllegalMoveError("selection spy_owner_id must be an opponent")
-
-            if free_enemy_return and spy_owner_id != player_id:
-                if node_id not in updated.board.nodes:
-                    raise IllegalMoveError("selection node_id is unknown")
-                if board_index(updated.definition.board)[node_id].kind == NodeKind.ROUTE:
-                    raise IllegalMoveError("routes cannot hold spies")
-                if not has_presence(updated, player_id, node_id):
-                    raise IllegalMoveError("returning an enemy spy requires presence at the node")
-
-                working = updated.model_copy(deep=True)
-                node_state = working.board.nodes[node_id]
-                if spy_owner_id not in node_state.spies:
-                    raise IllegalMoveError("target spy is not present at the chosen node")
-                node_state.spies.remove(spy_owner_id)
-                working.players[spy_owner_id].spies_available += 1
-                updated = working
-                continue
-
-            updated = _apply_return_spy(
-                updated,
-                ReturnSpyMove(
-                    player_id=player_id,
-                    node_id=node_id,
-                    spy_owner_id=spy_owner_id,
-                ),
-            )
-        return updated
+        return _apply_generic_return_spy(state, player_id, card, source_card_id, action, selection=selection)
 
     if action.op == "return_unit":
-        unit_type = _require_selection_string(selection, "unit_type")
-        node_id = _require_selection_string(selection, "node_id")
-        opponent_only = action.target_scope == "opponent_unit"
-        self_only = action.target_scope == "self_unit"
-
-        updated = state
-        for _ in range(count):
-            if node_id not in updated.board.nodes:
-                raise IllegalMoveError("selection node_id is unknown")
-            working = updated.model_copy(deep=True)
-            node_state = working.board.nodes[node_id]
-
-            if unit_type == "troop":
-                target_slot_index = _require_selection_int(selection, "target_slot_index")
-                if target_slot_index < 0 or target_slot_index >= len(node_state.troop_slots):
-                    raise IllegalMoveError("selection target_slot_index is out of range")
-                owner_id = node_state.troop_slots[target_slot_index]
-                if owner_id is None:
-                    raise IllegalMoveError("selected troop slot is empty")
-                if owner_id == WHITE_TROOP_OWNER:
-                    raise IllegalMoveError("return_unit cannot target white troops")
-                if opponent_only and owner_id == player_id:
-                    raise IllegalMoveError("selection must target an opponent unit")
-                if self_only and owner_id != player_id:
-                    raise IllegalMoveError("selection must target an active player unit")
-                node_state.troop_slots[target_slot_index] = None
-                if owner_id in working.players:
-                    working.players[owner_id].barracks += 1
-                updated = working
-                continue
-
-            if unit_type == "spy":
-                spy_owner_id = _require_selection_string(selection, "spy_owner_id")
-                if spy_owner_id not in node_state.spies:
-                    raise IllegalMoveError("selection spy_owner_id is not present at node")
-                if opponent_only and spy_owner_id == player_id:
-                    raise IllegalMoveError("selection must target an opponent unit")
-                if self_only and spy_owner_id != player_id:
-                    raise IllegalMoveError("selection must target an active player unit")
-                node_state.spies.remove(spy_owner_id)
-                if spy_owner_id in working.players:
-                    working.players[spy_owner_id].spies_available += 1
-                updated = working
-                continue
-
-            raise IllegalMoveError("selection unit_type must be 'troop' or 'spy'")
-
-        return updated
+        return _apply_generic_return_unit(state, player_id, card, source_card_id, action, selection=selection)
 
     if action.op == "move_troop":
-        source_node_id = _require_selection_string(selection, "source_node_id")
-        source_slot_index = _require_selection_int(selection, "source_slot_index")
-        target_node_id = _require_selection_string(selection, "target_node_id")
-        target_slot_index = _require_selection_int(selection, "target_slot_index")
-
-        updated = state
-        for _ in range(count):
-            board_definitions = board_index(updated.definition.board)
-            if source_node_id not in updated.board.nodes or target_node_id not in updated.board.nodes:
-                raise IllegalMoveError("selection source or target node is unknown")
-            if target_node_id not in board_definitions[source_node_id].adjacent_to:
-                raise IllegalMoveError("selection target_node_id is not adjacent to source_node_id")
-
-            working = updated.model_copy(deep=True)
-            source_state = working.board.nodes[source_node_id]
-            target_state = working.board.nodes[target_node_id]
-
-            if source_slot_index < 0 or source_slot_index >= len(source_state.troop_slots):
-                raise IllegalMoveError("selection source_slot_index is out of range")
-            if target_slot_index < 0 or target_slot_index >= len(target_state.troop_slots):
-                raise IllegalMoveError("selection target_slot_index is out of range")
-
-            occupant = source_state.troop_slots[source_slot_index]
-            if occupant is None:
-                raise IllegalMoveError("selection source slot is empty")
-            if occupant == player_id:
-                raise IllegalMoveError("selection source slot must contain an enemy troop")
-            if target_state.troop_slots[target_slot_index] is not None:
-                raise IllegalMoveError("selection target slot is occupied")
-
-            source_state.troop_slots[source_slot_index] = None
-            target_state.troop_slots[target_slot_index] = occupant
-            updated = working
-        return updated
+        return _apply_generic_move_troop(state, player_id, card, source_card_id, action, selection=selection)
 
     if action.op == "force_discard":
-        if action.timing == "end_of_turn" and action.source_fragment.strip().lower() == "end_of_turn_mass_discard":
-            # This action resolves when the game enters end_of_turn.
-            return state
-
-        target_player_id = _require_selection_string(selection, "target_player_id")
-        hand_index = _require_selection_int(selection, "hand_index")
-
-        updated = state
-        for _ in range(count):
-            working = updated.model_copy(deep=True)
-            if target_player_id == player_id:
-                raise IllegalMoveError("selection target_player_id must be an opponent")
-            if target_player_id not in working.players:
-                raise IllegalMoveError("selection target_player_id is unknown")
-
-            target_player = working.players[target_player_id]
-            if hand_index < 0 or hand_index >= len(target_player.hand):
-                raise IllegalMoveError("selection hand_index is out of range")
-
-            target_player.discard_pile.append(target_player.hand.pop(hand_index))
-            updated = working
-
-        return updated
+        return _apply_generic_force_discard(state, player_id, card, source_card_id, action, selection=selection)
 
     if action.op == "promote_card":
-        if _promote_from_deck_top(action):
-            updated = state
-            for _ in range(count):
-                working = updated.model_copy(deep=True)
-                player = working.players[player_id]
-                if not player.deck and player.discard_pile:
-                    _reshuffle_discard_into_deck(working, player_id)
-                if not player.deck:
-                    updated = working
-                    continue
-                player.inner_circle.append(player.deck.pop())
-                updated = working
-            return updated
-
-        if _promote_from_multiple_zones(action):
-            source_zone = _require_selection_string(selection, "source_zone").strip().lower()
-            updated = state
-            for _ in range(count):
-                working = updated.model_copy(deep=True)
-                player = working.players[player_id]
-
-                if source_zone == "played":
-                    target_card_id = _require_selection_string(selection, "target_card_id")
-                    try:
-                        played_index = player.played_cards.index(target_card_id)
-                    except ValueError as error:
-                        raise IllegalMoveError("selection target_card_id is not in played cards") from error
-                    player.inner_circle.append(player.played_cards.pop(played_index))
-                    updated = working
-                    continue
-
-                if source_zone == "hand":
-                    hand_index = _require_selection_int(selection, "hand_index")
-                    if hand_index < 0 or hand_index >= len(player.hand):
-                        raise IllegalMoveError("selection hand_index is out of range")
-                    player.inner_circle.append(player.hand.pop(hand_index))
-                    updated = working
-                    continue
-
-                if source_zone == "discard":
-                    discard_index = _require_selection_int(selection, "discard_index")
-                    if discard_index < 0 or discard_index >= len(player.discard_pile):
-                        raise IllegalMoveError("selection discard_index is out of range")
-                    player.inner_circle.append(player.discard_pile.pop(discard_index))
-                    updated = working
-                    continue
-
-                raise IllegalMoveError("selection source_zone must be one of: played, hand, discard")
-
-            return updated
-
-        if _promote_from_discard(action):
-            discard_index = _require_selection_int(selection, "discard_index")
-            updated = state
-            for _ in range(count):
-                working = updated.model_copy(deep=True)
-                player = working.players[player_id]
-                if discard_index < 0 or discard_index >= len(player.discard_pile):
-                    raise IllegalMoveError("selection discard_index is out of range")
-                player.inner_circle.append(player.discard_pile.pop(discard_index))
-                updated = working
-            return updated
-
-        if action.source_fragment.strip().lower() == "threshold_self_promote":
-            if not _threshold_self_promote_enabled(state, player_id, action):
-                return state
-            updated = state.model_copy(deep=True)
-            _promote_card(updated, player_id, source_card_id)
-            return updated
-
-        promote_other = _promote_requires_other_card(action)
-        required_aspect = _promote_required_aspect(card, action)
-        required_secondary_aspect = _promote_required_secondary_aspect(action)
-        repeat_while_targets = bool(action.metadata.get("repeat_while_targets", False))
-
-        if action.timing == "end_of_turn":
-            updated = state
-            for _ in range(count):
-                working = updated.model_copy(deep=True)
-                working.pending_end_of_turn_promotions.append(
-                    PendingPromotionState(
-                        card_id=source_card_id,
-                        timing="end_of_turn",
-                        optional=bool(action.optional),
-                        deferred_choice=True,
-                        source_card_id=source_card_id,
-                        requires_another_played_card=promote_other,
-                        required_aspect=required_aspect,
-                        required_secondary_aspect=required_secondary_aspect,
-                        repeat_while_targets=repeat_while_targets,
-                    )
-                )
-                updated = working
-            return updated
-
-        target_card_id = _require_selection_string(selection, "target_card_id")
-        cards_by_id = card_index(state.definition.catalog)
-
-        updated = state
-        for _ in range(count):
-            if promote_other and target_card_id == source_card_id:
-                raise IllegalMoveError("selection target_card_id must be another played card")
-            if required_aspect is not None:
-                definition = cards_by_id.get(target_card_id)
-                if definition is None or definition.aspect != required_aspect:
-                    raise IllegalMoveError("selection target_card_id does not satisfy required aspect")
-            if required_secondary_aspect is not None:
-                definition = cards_by_id.get(target_card_id)
-                if definition is None or required_secondary_aspect not in definition.secondary_aspects:
-                    raise IllegalMoveError("selection target_card_id does not satisfy required secondary aspect")
-            working = updated.model_copy(deep=True)
-            _promote_card(working, player_id, target_card_id)
-            updated = working
-        return updated
+        return _apply_generic_promote_card(state, player_id, card, source_card_id, action, selection=selection)
 
     if action.op == "recruit_card":
-        market_slot = _require_selection_int(selection, "market_slot")
-        selected_card_id = state.market.row[market_slot] if 0 <= market_slot < len(state.market.row) else ""
-        selected_definition = card_index(state.definition.catalog).get(selected_card_id)
-        if selected_definition is None:
-            raise IllegalMoveError("selection market_slot does not reference a known card")
-        if not _legal_recruit_card_for_action(selected_definition, action):
-            raise IllegalMoveError("selection market_slot does not satisfy recruit restrictions")
-        updated = state
-        for _ in range(count):
-            updated = _apply_recruit(updated, RecruitMove(player_id=player_id, market_slot=market_slot))
-        return updated
+        return _apply_generic_recruit_card(state, player_id, card, source_card_id, action, selection=selection)
 
     if action.op == "devour":
-        selected_zone = str(selection.get("source_zone", "")).strip()
-        default_zone = str(action.metadata.get("source_zone", action.target_scope)).strip() or "unknown"
-        if default_zone == "unknown":
-            source_zone = selected_zone
-            if not source_zone:
-                raise IllegalMoveError("selection source_zone is required for unknown devour source")
-        else:
-            source_zone = default_zone
-
-        updated = state
-        for _ in range(count):
-            updated = _apply_devour_once(
-                updated,
-                player_id,
-                source_card_id,
-                source_zone,
-                selection=selection,
-            )
-        return updated
+        return _apply_generic_devour(state, player_id, card, source_card_id, action, selection=selection)
 
     if action.op == "grant_vp":
-        updated = state.model_copy(deep=True)
-        if action.source_fragment.strip().lower().startswith("scaled_vp") or str(action.metadata.get("count_from", "")).strip():
-            updated.players[player_id].score += _scaled_vp_award_count(updated, player_id, action)
-        else:
-            updated.players[player_id].score += count
-        return updated
+        return _apply_generic_grant_vp(state, player_id, card, source_card_id, action, selection=selection)
 
     if action.op == "conditional_bonus":
-        condition = str(action.metadata.get("condition", "")).strip().lower()
-        if condition == "selected_node_has_other_player_troop":
-            node_id = str(selection.get("target_node_id", "")).strip()
-            if not node_id or node_id not in state.board.nodes:
-                return state
-
-            node_state = state.board.nodes[node_id]
-            has_other_troop = any(
-                occupant is not None and occupant not in {player_id, WHITE_TROOP_OWNER}
-                for occupant in node_state.troop_slots
-            )
-            if not has_other_troop:
-                return state
-
-            resource = str(action.metadata.get("resource", "influence")).strip().lower()
-            amount_raw = action.metadata.get("amount", count)
-            try:
-                amount = int(amount_raw)
-            except (TypeError, ValueError) as error:
-                raise RuleViolationError("conditional_bonus amount must be an integer") from error
-
-            updated = state.model_copy(deep=True)
-            if resource == "power":
-                updated.resource_pool.power += amount
-            elif resource == "influence":
-                updated.resource_pool.influence += amount
-            else:
-                raise RuleViolationError("conditional_bonus resource must be power or influence")
-            return updated
-
-        if condition == "selected_node_total_spies_at_least":
-            node_id = str(selection.get("target_node_id", "")).strip()
-            minimum_raw = action.metadata.get("min_spies", 0)
-            try:
-                minimum = int(minimum_raw)
-            except (TypeError, ValueError) as error:
-                raise RuleViolationError("conditional_bonus min_spies must be an integer") from error
-
-            if node_id and node_id in state.board.nodes and len(state.board.nodes[node_id].spies) >= minimum:
-                resource = str(action.metadata.get("resource", "power")).strip().lower()
-                amount_raw = action.metadata.get("amount", count)
-                try:
-                    amount = int(amount_raw)
-                except (TypeError, ValueError) as error:
-                    raise RuleViolationError("conditional_bonus amount must be an integer") from error
-
-                updated = state.model_copy(deep=True)
-                if resource == "power":
-                    updated.resource_pool.power += amount
-                elif resource == "influence":
-                    updated.resource_pool.influence += amount
-                else:
-                    raise RuleViolationError("conditional_bonus resource must be power or influence")
-                return updated
-            return state
-
-        if condition == "focus_aspect_present":
-            focus_aspect = str(action.metadata.get("focus_aspect", card.aspect)).strip().lower()
-            resource = str(action.metadata.get("resource", "influence")).strip().lower()
-            amount_raw = action.metadata.get("amount", count)
-            try:
-                amount = int(amount_raw)
-            except (TypeError, ValueError) as error:
-                raise RuleViolationError("conditional_bonus amount must be an integer") from error
-
-            if _focus_requirement_met_for_aspect(state, player_id, focus_aspect, source_card_id):
-                updated = state.model_copy(deep=True)
-                if resource == "power":
-                    updated.resource_pool.power += amount
-                elif resource == "influence":
-                    updated.resource_pool.influence += amount
-                else:
-                    raise RuleViolationError("conditional_bonus resource must be power or influence")
-                return updated
-            return state
-
-        if condition == "player_trophy_hall_non_white_at_least":
-            minimum_raw = action.metadata.get("min_trophies", 0)
-            try:
-                minimum = int(minimum_raw)
-            except (TypeError, ValueError) as error:
-                raise RuleViolationError("conditional_bonus min_trophies must be an integer") from error
-
-            player = state.players[player_id]
-            non_white_trophies = sum(1 for owner in player.trophy_hall if owner != WHITE_TROOP_OWNER)
-            if non_white_trophies >= minimum:
-                resource = str(action.metadata.get("resource", "power")).strip().lower()
-                amount_raw = action.metadata.get("amount", count)
-                try:
-                    amount = int(amount_raw)
-                except (TypeError, ValueError) as error:
-                    raise RuleViolationError("conditional_bonus amount must be an integer") from error
-
-                updated = state.model_copy(deep=True)
-                if resource == "power":
-                    updated.resource_pool.power += amount
-                elif resource == "influence":
-                    updated.resource_pool.influence += amount
-                else:
-                    raise RuleViolationError("conditional_bonus resource must be power or influence")
-                return updated
-            return state
-
-        if condition == "player_inner_circle_at_least":
-            minimum_raw = action.metadata.get("min_cards", 0)
-            try:
-                minimum = int(minimum_raw)
-            except (TypeError, ValueError) as error:
-                raise RuleViolationError("conditional_bonus min_cards must be an integer") from error
-
-            player = state.players[player_id]
-            if len(player.inner_circle) >= minimum:
-                resource = str(action.metadata.get("resource", "influence")).strip().lower()
-                amount_raw = action.metadata.get("amount", count)
-                try:
-                    amount = int(amount_raw)
-                except (TypeError, ValueError) as error:
-                    raise RuleViolationError("conditional_bonus amount must be an integer") from error
-
-                updated = state.model_copy(deep=True)
-                if resource == "power":
-                    updated.resource_pool.power += amount
-                elif resource == "influence":
-                    updated.resource_pool.influence += amount
-                else:
-                    raise RuleViolationError("conditional_bonus resource must be power or influence")
-                return updated
-            return state
-
-        raise MissingRuleImplementationError(
-            f"generic_card conditional_bonus is not implemented yet for card '{card.card_id}'"
-        )
+        return _apply_generic_conditional_bonus(state, player_id, card, source_card_id, action, selection=selection)
 
     if action.op == "custom_effect":
-        effect_kind = str(action.metadata.get("effect_kind", "")).strip().lower()
-        if effect_kind == "scaled_resource_from_player_zone":
-            source_zone = str(action.metadata.get("source_zone", "")).strip().lower()
-            per_raw = action.metadata.get("per", 1)
-            try:
-                per = int(per_raw)
-            except (TypeError, ValueError) as error:
-                raise RuleViolationError("custom_effect per must be an integer") from error
-            if per <= 0:
-                raise RuleViolationError("custom_effect per must be greater than zero")
-
-            resource = str(action.metadata.get("resource", "power")).strip().lower()
-            player = state.players[player_id]
-            if source_zone == "trophy_hall":
-                source_count = len(player.trophy_hall)
-            elif source_zone == "hand":
-                source_count = len(player.hand)
-            elif source_zone == "discard_pile":
-                source_count = len(player.discard_pile)
-            elif source_zone == "inner_circle":
-                source_count = len(player.inner_circle)
-            elif source_zone == "played_cards":
-                source_count = len(player.played_cards)
-            else:
-                raise RuleViolationError("custom_effect source_zone is unsupported")
-
-            gained = source_count // per
-            updated = state.model_copy(deep=True)
-            if resource == "power":
-                updated.resource_pool.power += gained
-            elif resource == "influence":
-                updated.resource_pool.influence += gained
-            else:
-                raise RuleViolationError("custom_effect resource must be power or influence")
-            return updated
-
-        if effect_kind == "give_insane_outcast_to_player_with_presence_on_last_selected_node":
-            target_player_id = _require_selection_string(selection, "target_player_id")
-            selected_node_id = _require_selection_string(selection, "selected_node_id")
-            if target_player_id == player_id:
-                raise IllegalMoveError("selection target_player_id must be an opponent")
-            if target_player_id not in state.players:
-                raise IllegalMoveError("selection target_player_id is unknown")
-            if selected_node_id not in state.board.nodes:
-                raise IllegalMoveError("selection selected_node_id is unknown")
-            if not has_presence(state, target_player_id, selected_node_id):
-                raise IllegalMoveError("selection target_player_id does not have presence at selected_node_id")
-
-            updated = state.model_copy(deep=True)
-            updated.players[target_player_id].discard_pile.append("insane_outcast")
-            return updated
-
-        if effect_kind == "give_insane_outcast_to_selected_player":
-            target_player_id = _require_selection_string(selection, "target_player_id")
-            if target_player_id == player_id:
-                raise IllegalMoveError("selection target_player_id must be an opponent")
-            if target_player_id not in state.players:
-                raise IllegalMoveError("selection target_player_id is unknown")
-
-            updated = state.model_copy(deep=True)
-            updated.players[target_player_id].discard_pile.append("insane_outcast")
-            return updated
-
-        if effect_kind == "give_insane_outcast_to_each_opponent":
-            updated = state.model_copy(deep=True)
-            for target_player_id in sorted(updated.players):
-                if target_player_id == player_id:
-                    continue
-                updated.players[target_player_id].discard_pile.append("insane_outcast")
-            return updated
-
-        if effect_kind == "mill_deck_to_discard":
-            updated = state.model_copy(deep=True)
-            player = updated.players[player_id]
-            player.discard_pile.extend(player.deck)
-            player.deck = []
-            return updated
-
-        if effect_kind == "self_purge_to_supply":
-            # Hand-triggered purge semantics are modeled outside immediate play resolution.
-            return state
-
-        if effect_kind == "steal_white_trophy_to_board":
-            target_player_id = _require_selection_string(selection, "target_player_id")
-            target_node_id = _require_selection_string(selection, "target_node_id")
-            target_slot_index = _require_selection_int(selection, "target_slot_index")
-
-            if target_player_id == player_id:
-                raise IllegalMoveError("selection target_player_id must be an opponent")
-            if target_player_id not in state.players:
-                raise IllegalMoveError("selection target_player_id is unknown")
-            if target_node_id not in state.board.nodes:
-                raise IllegalMoveError("selection target_node_id is unknown")
-
-            updated = state.model_copy(deep=True)
-            target_player = updated.players[target_player_id]
-            try:
-                trophy_index = target_player.trophy_hall.index(WHITE_TROOP_OWNER)
-            except ValueError as error:
-                raise IllegalMoveError("selection target_player_id has no white trophy") from error
-
-            node_state = updated.board.nodes[target_node_id]
-            if target_slot_index < 0 or target_slot_index >= len(node_state.troop_slots):
-                raise IllegalMoveError("selection target_slot_index is out of range")
-            if node_state.troop_slots[target_slot_index] is not None:
-                raise IllegalMoveError("selection target slot is occupied")
-
-            target_player.trophy_hall.pop(trophy_index)
-            node_state.troop_slots[target_slot_index] = WHITE_TROOP_OWNER
-            return updated
-
-        raise MissingRuleImplementationError(
-            f"generic_card custom_effect is not implemented yet for card '{card.card_id}'"
-        )
+        return _apply_generic_custom_effect(state, player_id, card, source_card_id, action, selection=selection)
 
     if action.op == "play_card":
-        source_fragment = action.source_fragment.strip().lower()
-        nested_card_id: str
-
-        if source_fragment == "play_from_inner_circle_without_removal":
-            source_zone = str(selection.get("source_zone", "")).strip().lower()
-            if source_zone != "inner_circle":
-                raise IllegalMoveError("selection source_zone must be 'inner_circle'")
-
-            inner_circle_index = _require_selection_int(selection, "inner_circle_index")
-            player = state.players[player_id]
-            if inner_circle_index < 0 or inner_circle_index >= len(player.inner_circle):
-                raise IllegalMoveError("selection inner_circle_index is out of range")
-
-            nested_card_id = player.inner_circle[inner_circle_index]
-        elif source_fragment == "play":
-            source_zone = str(selection.get("source_zone", "")).strip().lower()
-            if source_zone != "market":
-                raise IllegalMoveError("selection source_zone must be 'market'")
-
-            market_slot = _require_selection_int(selection, "market_slot")
-            if market_slot < 0 or market_slot >= len(state.market.row):
-                raise IllegalMoveError("selection market_slot is out of range")
-
-            nested_card_id = state.market.row[market_slot]
-            cards_by_id = card_index(state.definition.catalog)
-            nested_definition_for_cost = cards_by_id.get(nested_card_id)
-            if nested_definition_for_cost is None:
-                raise IllegalMoveError("selection market_slot does not reference a known card")
-
-            max_cost_raw = action.metadata.get("max_cost")
-            if max_cost_raw is not None:
-                try:
-                    max_cost = int(max_cost_raw)
-                except (TypeError, ValueError) as error:
-                    raise RuleViolationError("play_card max_cost metadata must be an integer") from error
-                if nested_definition_for_cost.cost > max_cost:
-                    raise IllegalMoveError("selection market_slot exceeds play_card max_cost")
-        else:
-            raise MissingRuleImplementationError(
-                f"generic_card play_card source_fragment '{action.source_fragment}' is not implemented yet for card '{card.card_id}'"
-            )
-        nested_definition = card_index(state.definition.catalog).get(nested_card_id)
-        if nested_definition is None:
-            raise IllegalMoveError("selected card for play_card is not known in catalog")
-
-        nested_effect = _EFFECT_REGISTRY.get(nested_definition.effect_key)
-        if nested_effect is None:
-            raise UnknownCardEffectError(
-                f"Card '{nested_card_id}' references unregistered effect '{nested_definition.effect_key}'"
-            )
-
-        # Preserve the active outer pending choice while resolving the nested card effect.
-        working = state.model_copy(deep=True)
-        outer_pending = working.pending_generic_choice.model_copy(deep=True)
-        working.pending_generic_choice = None
-        working.pending_ability = None
-
-        resolved = nested_effect(working, player_id, nested_definition)
-        if resolved.pending_generic_choice is not None:
-            raise MissingRuleImplementationError(
-                "play_card currently supports only nested cards that resolve without further player choices"
-            )
-        if resolved.pending_ability is not None:
-            raise MissingRuleImplementationError(
-                "play_card currently supports only nested cards without paid ability prompts"
-            )
-
-        resolved.pending_generic_choice = outer_pending
-        return resolved
+        return _apply_generic_play_card(state, player_id, card, source_card_id, action, selection=selection)
 
     raise MissingRuleImplementationError(
         f"Unknown generic_card action op '{action.op}' for card '{card.card_id}'"
