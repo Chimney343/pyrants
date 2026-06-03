@@ -11,13 +11,32 @@
 > (documentation, ownership, history, decisions). **Always verify against
 > actual source files before making changes** — the index may be stale.
 
-Last indexed: 2026-06-02 (commit ae077f9). Confidence: 100%.
+Last indexed: 2026-06-02 (commit 124b316). Confidence: 100%.
 ### Architecture
-This repository is a digital board game engine for a card-based strategy game: it ingests game configuration and card effects from JSON/YAML data files, transforms them through a Python-based state-machine engine (game state, moves, rules, scoring, phases), and outputs interactive rendered board views via a TypeScript interface layer, with additional support for headless simulation and catalog auditing. - **Python** (31.2%) – Core game engine: state management, move validation, rule enforcement, scoring, phase progression. - **TypeScript** (via .kilo package) – Frontend rendering: board views, camera controls, shared renderers. - **JSON** (13.0%) – Game definitions, card effect families, and configuration.
+Repo is a board game engine: it consumes game definitions (JSON board layouts, card data, scenario configurations) and player move inputs, validates and processes moves through a rule-driven state machine, advances through phases and scoring, and produces final game states for simulation or rendered board views for both digital display and computer-vision camera recognition. | Layer | Technologies |
+|-------|-------------|
+| Core engine | Python (31.2% of codebase) |
+| Game data | JSON (13.0%), TOML, YAML (1.6%) |
+| Documentation | Markdown (45.8%) |
+| Frontend/CLI | TypeScript via .kilo package |
+| Minor | C# (0.5%) |
+
+Key dependencies inferred from imports: likely pygame or opencv for rendering/vision (from camera.py, shared_board_renderer.py), and standard Python for rule engine. No explicit top‑level entry point is declared. Based on file‑rank analysis, the main execution paths are:
+
+- **game_session.py** – orchestrates a full game session (state, moves, rules, scoring)
+- **game_simulation.py** – runs automated simulations for testing or AI play
+- **scripts/** – utility scripts (e.g., catalog_audit.py, check_roster_card_stuck_states.py) for maintenance and debugging
+- **.kilo/** – TypeScript package that likely provides a CLI or web UI (not further detailed)
+
+
+
+The codebase follows a layered architecture:
+
+1.
 ### Key Modules
 | Module | Purpose | Owner |
 |--------|---------|-------|
-| `community-1` | The **tests** module is the verification subsystem of the game engine — it valid | — |
+| `community-1` | The tests module is the quality assurance layer of the repowise system — it syst | — |
 | `community-0` | The skills/impeccable module is the **skill lifecycle and injection subsystem**  | — |
 | `community-3` | The interface module is the graphical presentation and authoring subsystem of th | — |
 | `community-2` | The skills/impeccable (6) module is the **transport adapter** of the Impeccable  | — |
@@ -62,21 +81,21 @@ This repository is a digital board game engine for a card-based strategy game: i
 ### Hotspots (High Churn)
 | File | Churn | 90d Commits | Owner |
 |------|-------|-------------|-------|
-| `data/cards/effect_families.json` | 100.0th %ile | 3 | Chimney343 |
-| `scripts/generate_first_deck_artifacts.py` | 99.5th %ile | 3 | Chimney343 |
-| `tests/test_generic_interpreter.py` | 98.9th %ile | 2 | Chimney343 |
-| `artifacts/catalog_rules_model_consistency_report.json` | 98.4th %ile | 2 | Chimney343 |
-| `data/decks/first_deck_rosters.json` | 97.9th %ile | 2 | Chimney343 |
+| `game_view.py` | 100.0th %ile | 2 | Chimney343 |
+| `tests/test_rules.py` | 99.5th %ile | 2 | Chimney343 |
+| `data/cards/effect_families.json` | 98.9th %ile | 3 | Chimney343 |
+| `tests/test_scoring.py` | 98.4th %ile | 2 | Chimney343 |
+| `engine/rules.py` | 97.9th %ile | 2 | Chimney343 |
 
 ## Code health
-Hotspot health: 7.31/10 (stable) ·
+Hotspot health: 7.34/10 (stable) ·
 Average: 7.45/10 ·
 Worst: 5.3/10 (`.augment/skills/impeccable/scripts/design-parser.mjs`)
 
 ### Critical biomarkers
 - `engine/state.py` — untested hotspot — impact −2.0
 - `.agents/skills/impeccable/scripts/live-browser.js` — large method (<anonymous>) — impact −1.1
-- `interface/parser.py` — complex method (parse_command) — impact −0.9
+- `game_view.py` — complex method (describe_move) — impact −0.5
 - `.agents/skills/impeccable/scripts/live-server.mjs` — complex method (createRequestHandler) — impact −0.5
 - `.agents/skills/impeccable/scripts/live-server.mjs` — complex method (validateEvent) — impact −0.5
 
