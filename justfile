@@ -11,7 +11,7 @@ board-creator-open board="data/boards/tyrants_of_the_underdark.json" layout="dat
 test:
     & {{python}} -m pytest -q
 
-game-simulate players="p1,p2" seed="1" policy="first" policy_seed="1" max_steps="1" board="data/boards/base_game.json" card="data/cards/catalog.json" setup="data/decks/base_setup.json" replay="artifacts/replay.json":
+game-simulate players="p1,p2,p3,p4" seed="1" policy="first" policy_seed="1" max_steps="10000" board="data/boards/base_game.json" card="data/cards/catalog.json" setup="data/decks/base_setup.json" replay="artifacts/replay.json":
     & {{python}} -m game_simulation --players {{players}} --seed {{seed}} --policy {{policy}} --policy-seed {{policy_seed}} --max-steps {{max_steps}} --board-path {{board}} --card-path {{card}} --setup-path {{setup}} --replay-log-path {{replay}}
 
 game-viewer players="p1,p2" board="data/boards/tyrants_of_the_underdark.json" layout="data/layouts/tyrants_of_the_underdark_layout.json" card="data/cards/catalog.json" setup="data/decks/base_setup.json":
@@ -34,3 +34,9 @@ card-stuck-check rosters="data/decks/first_deck_rosters.json" board="data/boards
 
 card-stuck-check-ci rosters="data/decks/first_deck_rosters.json" board="data/boards/base_game.json" card="data/cards/catalog.json" setup="data/decks/base_setup.json" seed="7" seed_count="1" max_steps="120" expected_blocked="" json_out="artifacts/card_stuck_report.json":
     & {{python}} scripts/check_roster_card_stuck_states.py --rosters-path {{rosters}} --board-path {{board}} --card-path {{card}} --setup-path {{setup}} --seed {{seed}} --seed-count {{seed_count}} --max-steps {{max_steps}} --json-out {{json_out}} --ci --expected-blocked-cards {{expected_blocked}}
+
+generate-card-scenarios out="data/scenarios/cards" seed="0" attempts="3" steps="1500":
+    & {{python}} scripts/generate_card_scenarios.py --output-dir {{out}} --base-seed {{seed}} --max-attempts {{attempts}} --max-steps {{steps}}
+
+review-workbook:
+    & {{python}} scripts/build_review_workbook.py
