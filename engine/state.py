@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+from copy import copy, deepcopy
 from enum import Enum
 from random import Random
 from typing import Annotated, Any, Iterable, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic._internal._fields import PydanticUndefined
 
 
 class NodeKind(str, Enum):
@@ -365,6 +367,42 @@ class GameState(BaseModel):
     devour_pile: list[str] = Field(default_factory=list)
     shuffle_seed: int = 0
     shuffle_count: int = Field(default=0, ge=0)
+
+    def __deepcopy__(self, memo: dict[int, Any] | None = None) -> GameState:
+        """Deep-copy the state while sharing the immutable definition tree.
+
+        ``GameDefinition`` and all sub-models (CardCatalog, BoardDefinition,
+        etc.) are frozen.  Skipping them avoids ~10 ms of wasted allocation
+        per card play — a measurable saving over a 1000+ step simulation.
+        """
+        cls = type(self)
+        m = cls.__new__(cls)
+        if memo is None:
+            memo = {}
+        memo[id(self)] = m
+
+        # Build __dict__ without deep-copying the immutable definition
+        d: dict[str, Any] = {}
+        for key, value in self.__dict__.items():
+            if key == "definition":
+                d[key] = value  # immutable → share reference
+            else:
+                d[key] = deepcopy(value, memo)
+
+        object.__setattr__(m, "__dict__", d)
+        object.__setattr__(m, "__pydantic_extra__", deepcopy(self.__pydantic_extra__, memo=memo))
+        object.__setattr__(m, "__pydantic_fields_set__", copy(self.__pydantic_fields_set__))
+
+        if not hasattr(self, "__pydantic_private__") or self.__pydantic_private__ is None:
+            object.__setattr__(m, "__pydantic_private__", None)
+        else:
+            object.__setattr__(
+                m,
+                "__pydantic_private__",
+                deepcopy({k: v for k, v in self.__pydantic_private__.items() if v is not PydanticUndefined}, memo=memo),
+            )
+
+        return m
 
     @model_validator(mode="after")
     def _validate_turn_owner(self) -> GameState:
