@@ -26,7 +26,7 @@ from engine.state import GameState, NodeKind, board_index, build_initial_game_st
 from engine.state import card_index as state_card_index
 from game_session import GameSession
 from game_setup.board_package import BoardLayoutDefinition, BoardPackageDefinition, make_default_layout
-from game_setup.loaders import build_board_package_from_files, build_game_definition_from_dicts
+from game_setup.loaders import build_board_package_from_files, build_game_definition_from_dicts, load_deck_rosters
 from game_setup.scenarios import save_game_state
 from game_view import CardView, GameView, LegalMoveView, build_game_view, filter_legal_moves
 from interface._canvas_scroll import bind_canvas_scrolling
@@ -39,7 +39,7 @@ DEFAULT_BOARD_PATH = ROOT_DIR / "data" / "boards" / "base_game.json"
 DEFAULT_LAYOUT_PATH = ROOT_DIR / "data" / "layouts" / "base_game_layout.json"
 DEFAULT_CARD_PATH = ROOT_DIR / "data" / "cards" / "catalog.json"
 DEFAULT_SETUP_PATH = ROOT_DIR / "data" / "decks" / "base_setup.json"
-DEFAULT_ROSTERS_PATH = ROOT_DIR / "data" / "decks" / "first_deck_rosters.json"
+DECKS_DIR = ROOT_DIR / "data" / "decks"
 
 MARKET_CARD_WIDTH = 96
 MARKET_CARD_HEIGHT = 112
@@ -73,6 +73,25 @@ SPECIAL_TOP_SLOT_TO_MARKET_SLOT: dict[int, int] = {
     1: PRIESTESS_RECRUIT_SLOT,
     2: INSANE_OUTCAST_RECRUIT_SLOT,
 }
+
+
+def _compute_aspect_focus(cards: tuple[CardView, ...]) -> Counter[str]:
+    counter: Counter[str] = Counter()
+    for card in cards:
+        if card.aspect and card.aspect not in ("empty", "inactive", "unknown"):
+            counter[card.aspect] += 1
+        for sec in card.secondary_aspects:
+            counter[sec] += 1
+    return counter
+
+
+def _format_aspect_breakdown(counter: Counter[str]) -> str:
+    if not counter:
+        return "none"
+    return ", ".join(
+        f"{aspect} x{count}" if count > 1 else aspect
+        for aspect, count in counter.most_common()
+    )
 
 
 def _ellipsize(text: str, max_chars: int) -> str:
@@ -227,13 +246,12 @@ def discover_map_profiles(
     return tuple(profiles)
 
 
-def load_market_deck_profiles(rosters_path: Path) -> tuple[DeckProfile, ...]:
-    """Load selectable 40-card market deck profiles from roster JSON."""
+def load_market_deck_profiles(decks_dir: Path) -> tuple[DeckProfile, ...]:
+    """Load selectable 40-card market deck profiles from roster files."""
 
-    payload = _read_json_object(rosters_path)
-    raw_decks = payload.get("decks")
-    if not isinstance(raw_decks, list):
-        raise ValueError("Deck roster file must contain a top-level 'decks' array")
+    raw_decks = load_deck_rosters(decks_dir)
+    if not raw_decks:
+        raise ValueError(f"No deck roster files found in {decks_dir}")
 
     profiles: list[DeckProfile] = []
     for raw_deck in raw_decks:
@@ -354,7 +372,7 @@ class GameViewerApp:
         layout_path: Path,
         card_path: Path,
         setup_path: Path,
-        rosters_path: Path,
+        decks_dir: Path,
         initial_player_count: int,
         seed: int | None,
     ) -> None:
@@ -369,7 +387,7 @@ class GameViewerApp:
             default_board_path=board_path,
             default_layout_path=layout_path,
         )
-        self.deck_profiles = load_market_deck_profiles(rosters_path)
+        self.deck_profiles = load_market_deck_profiles(decks_dir)
         self._map_profiles_by_label = {profile.label: profile for profile in self.map_profiles}
         self._deck_profiles_by_label = {profile.label: profile for profile in self.deck_profiles}
 
@@ -457,6 +475,8 @@ class GameViewerApp:
         self._active_card_row: str | None = None
         self._compact_player_rows = False
         self._aberrations_in_market = False
+        self._deck_a_label = ""
+        self._deck_b_label = ""
         self._market_card_width = MARKET_CARD_WIDTH
         self._market_card_height = MARKET_CARD_HEIGHT
         self._player_card_width = PLAYER_CARD_WIDTH
@@ -783,6 +803,8 @@ class GameViewerApp:
             self._aberrations_in_market = (
                 deck_a.deck_id == ABERRATIONS_DECK_ID or deck_b.deck_id == ABERRATIONS_DECK_ID
             )
+            self._deck_a_label = deck_a.label
+            self._deck_b_label = deck_b.label
         except (TypeError, ValueError, tk.TclError):
             messagebox.showerror("Invalid setup", "Players must be valid integers, and seed (if set) must be a valid integer.")
             return
@@ -854,6 +876,7 @@ class GameViewerApp:
 
         try:
             self.session = GameSession.from_scenario_file(Path(path))
+            self._derive_market_deck_metadata(self.session.state)
             self._rebuild_package_for_loaded_state(self.session.state)
             self._clear_filters()
             self._apply_responsive_layout()
@@ -891,6 +914,44 @@ class GameViewerApp:
             height=min(self.package.layout.canvas.height, MAP_VIEWPORT_MAX_HEIGHT),
         )
 
+    def _derive_market_deck_metadata(self, state: GameState) -> None:
+        """Derive market deck labels and aberrations flag from loaded state."""
+        market_deck_id = state.definition.setup.market_deck.deck_id
+
+        if market_deck_id.startswith("market_"):
+            remaining = market_deck_id[len("market_"):]
+        else:
+            remaining = market_deck_id
+
+        profile_ids = {p.deck_id: p.label for p in self.deck_profiles}
+        sorted_ids = sorted(profile_ids.keys(), key=len, reverse=True)
+
+        deck_a_id = ""
+        deck_b_id = ""
+        deck_a_label = ""
+        deck_b_label = ""
+
+        for did in sorted_ids:
+            if remaining.startswith(did):
+                deck_a_id = did
+                deck_a_label = profile_ids[did]
+                remaining = remaining[len(did):]
+                if remaining.startswith("_"):
+                    remaining = remaining[1:]
+                break
+
+        for did in sorted_ids:
+            if remaining.startswith(did):
+                deck_b_id = did
+                deck_b_label = profile_ids[did]
+                break
+
+        self._deck_a_label = deck_a_label or deck_a_id
+        self._deck_b_label = deck_b_label or deck_b_id
+        self._aberrations_in_market = (
+            deck_a_id == ABERRATIONS_DECK_ID or deck_b_id == ABERRATIONS_DECK_ID
+        )
+
     def _refresh_view(self) -> None:
         if self.session is None:
             return
@@ -919,10 +980,15 @@ class GameViewerApp:
             )
             self.resource_var.set(
                 f"Power: {view.resource_power:>3}    Influence: {view.resource_influence:>3}"
+                f"  |  Hand: {_format_aspect_breakdown(_compute_aspect_focus(view.hand))}"
+                f"  |  Played: {_format_aspect_breakdown(_compute_aspect_focus(view.current_player_played))}"
             )
             self._set_vp_breakdown(state, current_player)
             self.prompt_var.set("\n".join(view.prompts))
+            deck_a_label = getattr(self, "_deck_a_label", "?")
+            deck_b_label = getattr(self, "_deck_b_label", "?")
             self.market_meta_var.set(
+                f"Deck A: {deck_a_label}    Deck B: {deck_b_label}    |    "
                 f"Market deck: {len(view.market_row):>1} visible    Deck remaining: {view.market_deck_count:>3}    "
                 f"Discard: {view.market_discard_count:>3}"
             )
@@ -1790,6 +1856,7 @@ class GameViewerApp:
             inner_circle_vp=card_definition.inner_circle_vp,
             rules_text=card_definition.rules_text,
             notes=card_definition.notes,
+            secondary_aspects=tuple(getattr(card_definition, "secondary_aspects", ())),
         )
 
     def _remaining_special_stack_count(self, card_id: str, stack_total: int) -> int:
@@ -1913,7 +1980,7 @@ def main() -> None:
     parser.add_argument("--layout-path", type=Path, default=DEFAULT_LAYOUT_PATH)
     parser.add_argument("--card-path", type=Path, default=DEFAULT_CARD_PATH)
     parser.add_argument("--setup-path", type=Path, default=DEFAULT_SETUP_PATH)
-    parser.add_argument("--rosters-path", type=Path, default=DEFAULT_ROSTERS_PATH)
+    parser.add_argument("--decks-dir", type=Path, default=DECKS_DIR)
     args = parser.parse_args()
 
     root = tk.Tk()
@@ -1925,7 +1992,7 @@ def main() -> None:
             layout_path=args.layout_path,
             card_path=args.card_path,
             setup_path=args.setup_path,
-            rosters_path=args.rosters_path,
+            decks_dir=args.decks_dir,
             initial_player_count=len(_parse_player_ids(args.players)),
             seed=args.seed,
         )

@@ -29,14 +29,20 @@ game-viewer-help:
 replay-viewer-help:
     & {{python}} -m interface.replay_viewer --help
 
-card-stuck-check rosters="data/decks/first_deck_rosters.json" board="data/boards/base_game.json" card="data/cards/catalog.json" setup="data/decks/base_setup.json" seed="7" seed_count="1" max_steps="120" json_out="artifacts/card_stuck_report.json":
-    & {{python}} scripts/check_roster_card_stuck_states.py --rosters-path {{rosters}} --board-path {{board}} --card-path {{card}} --setup-path {{setup}} --seed {{seed}} --seed-count {{seed_count}} --max-steps {{max_steps}} --json-out {{json_out}}
+card-stuck-check decks="data/decks" board="data/boards/base_game.json" card="data/cards/catalog.json" setup="data/decks/base_setup.json" seed="7" seed_count="1" max_steps="120" json_out="artifacts/card_stuck_report.json":
+    & {{python}} scripts/check_roster_card_stuck_states.py --decks-dir {{decks}} --board-path {{board}} --card-path {{card}} --setup-path {{setup}} --seed {{seed}} --seed-count {{seed_count}} --max-steps {{max_steps}} --json-out {{json_out}}
 
-card-stuck-check-ci rosters="data/decks/first_deck_rosters.json" board="data/boards/base_game.json" card="data/cards/catalog.json" setup="data/decks/base_setup.json" seed="7" seed_count="1" max_steps="120" expected_blocked="" json_out="artifacts/card_stuck_report.json":
-    & {{python}} scripts/check_roster_card_stuck_states.py --rosters-path {{rosters}} --board-path {{board}} --card-path {{card}} --setup-path {{setup}} --seed {{seed}} --seed-count {{seed_count}} --max-steps {{max_steps}} --json-out {{json_out}} --ci --expected-blocked-cards {{expected_blocked}}
+card-stuck-check-ci decks="data/decks" board="data/boards/base_game.json" card="data/cards/catalog.json" setup="data/decks/base_setup.json" seed="7" seed_count="1" max_steps="120" expected_blocked="" json_out="artifacts/card_stuck_report.json":
+    & {{python}} scripts/check_roster_card_stuck_states.py --decks-dir {{decks}} --board-path {{board}} --card-path {{card}} --setup-path {{setup}} --seed {{seed}} --seed-count {{seed_count}} --max-steps {{max_steps}} --json-out {{json_out}} --ci --expected-blocked-cards {{expected_blocked}}
 
 generate-card-scenarios out="data/scenarios/cards" seed="0" attempts="3" steps="1500":
     & {{python}} scripts/generate_card_scenarios.py --output-dir {{out}} --base-seed {{seed}} --max-attempts {{attempts}} --max-steps {{steps}}
+
+random-walk:
+    & {{python}} scripts/random_walk.py
+
+random-walk-run seed policy_seed max_steps run_id:
+    & {{python}} scripts/random_walk.py --seed {{seed}} --policy-seed {{policy_seed}} --max-steps {{max_steps}} --run-id {{run_id}}
 
 review-workbook:
     & {{python}} scripts/build_review_workbook.py

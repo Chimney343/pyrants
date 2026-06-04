@@ -14,7 +14,7 @@ from scripts.check_roster_card_stuck_states import (
 )
 
 BASE_DIR = Path(__file__).resolve().parents[1]
-ROSTERS_PATH = BASE_DIR / "data" / "decks" / "first_deck_rosters.json"
+ROSTERS_PATH = BASE_DIR / "data" / "decks"
 BOARD_PATH = BASE_DIR / "data" / "boards" / "base_game.json"
 CARD_PATH = BASE_DIR / "data" / "cards" / "catalog.json"
 SETUP_PATH = BASE_DIR / "data" / "decks" / "base_setup.json"

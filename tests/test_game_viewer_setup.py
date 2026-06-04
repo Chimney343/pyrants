@@ -29,7 +29,7 @@ BOARD_PATH = DATA_DIR / "boards" / "base_game.json"
 LAYOUT_PATH = DATA_DIR / "layouts" / "base_game_layout.json"
 CARD_PATH = DATA_DIR / "cards" / "catalog.json"
 SETUP_PATH = DATA_DIR / "decks" / "base_setup.json"
-ROSTERS_PATH = DATA_DIR / "decks" / "first_deck_rosters.json"
+DECKS_DIR = DATA_DIR / "decks"
 
 
 def test_discover_map_profiles_includes_default_pair() -> None:
@@ -44,14 +44,14 @@ def test_discover_map_profiles_includes_default_pair() -> None:
 
 
 def test_load_market_deck_profiles_reads_full_40_card_decks() -> None:
-    profiles = load_market_deck_profiles(ROSTERS_PATH)
+    profiles = load_market_deck_profiles(DECKS_DIR)
 
     assert len(profiles) >= 2
     assert all(profile.total_cards == 40 for profile in profiles)
 
 
 def test_build_setup_from_market_selection_combines_two_decks() -> None:
-    deck_profiles = load_market_deck_profiles(ROSTERS_PATH)
+    deck_profiles = load_market_deck_profiles(DECKS_DIR)
     setup = build_setup_from_market_selection(
         SETUP_PATH,
         deck_a=deck_profiles[0],
@@ -69,7 +69,7 @@ def test_build_setup_from_market_selection_combines_two_decks() -> None:
 
 
 def test_create_hotseat_session_uses_selected_market_decks() -> None:
-    deck_profiles = load_market_deck_profiles(ROSTERS_PATH)
+    deck_profiles = load_market_deck_profiles(DECKS_DIR)
     session = create_hotseat_session(
         board_path=BOARD_PATH,
         card_path=CARD_PATH,
@@ -87,7 +87,7 @@ def test_create_hotseat_session_uses_selected_market_decks() -> None:
 
 
 def test_special_recruit_slots_include_house_guard_and_priestess() -> None:
-    deck_profiles = load_market_deck_profiles(ROSTERS_PATH)
+    deck_profiles = load_market_deck_profiles(DECKS_DIR)
     deck_a = next(profile for profile in deck_profiles if profile.deck_id != ABERRATIONS_DECK_ID)
     deck_b = next(
         profile
@@ -117,7 +117,7 @@ def test_special_recruit_slots_include_house_guard_and_priestess() -> None:
 
 
 def test_special_recruit_slots_include_outcasts_with_aberrations_market() -> None:
-    deck_profiles = load_market_deck_profiles(ROSTERS_PATH)
+    deck_profiles = load_market_deck_profiles(DECKS_DIR)
     deck_a = next(profile for profile in deck_profiles if profile.deck_id == ABERRATIONS_DECK_ID)
     deck_b = next(profile for profile in deck_profiles if profile.deck_id != ABERRATIONS_DECK_ID)
     session = create_hotseat_session(

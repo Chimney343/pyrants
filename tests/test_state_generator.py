@@ -24,7 +24,7 @@ from game_setup.state_generator import (
     iter_roster_card_ids,
 )
 
-ROSTERS_PATH = Path(__file__).resolve().parents[1] / "data" / "decks" / "first_deck_rosters.json"
+ROSTERS_PATH = Path(__file__).resolve().parents[1] / "data" / "decks"
 
 
 def test_find_state_returns_matching_state() -> None:

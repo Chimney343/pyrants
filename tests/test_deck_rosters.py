@@ -1,25 +1,30 @@
-"""Tests for the generated first-deck roster artifact."""
+"""Tests for the generated deck roster artifacts."""
 
 from __future__ import annotations
 
 import json
 from pathlib import Path
 
+from game_setup.loaders import load_deck_rosters
+
 BASE_DIR = Path(__file__).resolve().parents[1]
 CARD_PATH = BASE_DIR / "data" / "cards" / "catalog.json"
-ROSTER_PATH = BASE_DIR / "data" / "decks" / "first_deck_rosters.json"
+DECKS_DIR = BASE_DIR / "data" / "decks"
 
 
 def _load_json(path: Path) -> dict[str, object]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def test_first_deck_rosters_reference_catalog_cards_and_match_expected_totals() -> None:
+def _load_decks() -> list[dict[str, object]]:
+    return load_deck_rosters(DECKS_DIR)
+
+
+def test_deck_rosters_reference_catalog_cards_and_match_expected_totals() -> None:
     catalog_payload = _load_json(CARD_PATH)
-    roster_payload = _load_json(ROSTER_PATH)
+    decks = _load_decks()
 
     cards = catalog_payload["cards"]
-    decks = roster_payload["decks"]
     assert isinstance(cards, list)
     assert isinstance(decks, list)
 
@@ -29,7 +34,7 @@ def test_first_deck_rosters_reference_catalog_cards_and_match_expected_totals() 
         "dragon": 40,
         "drow": 40,
         "elementals": 40,
-        "fungus": 40,
+        "demons": 40,
         "undead": 40,
         "insane_outcast": 30,
         "house_guard": 15,
@@ -47,9 +52,8 @@ def test_first_deck_rosters_reference_catalog_cards_and_match_expected_totals() 
         assert all(entry["card_id"] in catalog_card_ids for entry in entries)
 
 
-def test_first_deck_rosters_capture_starter_and_kobold_dragon_assignment() -> None:
-    roster_payload = _load_json(ROSTER_PATH)
-    decks = {deck["deck_id"]: deck for deck in roster_payload["decks"]}
+def test_deck_rosters_capture_starter_and_kobold_dragon_assignment() -> None:
+    decks = {deck["deck_id"]: deck for deck in _load_decks()}
     starter_deck = decks["starter_deck"]
 
     assert starter_deck["kind"] == "starter_deck"
@@ -63,5 +67,3 @@ def test_first_deck_rosters_capture_starter_and_kobold_dragon_assignment() -> No
     drow_entries = {entry["card_id"]: entry["count"] for entry in decks["drow"]["entries"]}
     assert dragon_entries["kobold"] == 3
     assert "kobold" not in drow_entries
-
-    assert roster_payload["normalizations"] == []

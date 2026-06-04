@@ -39,6 +39,7 @@ class CardView:
     inner_circle_vp: int
     rules_text: str
     notes: str
+    secondary_aspects: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -356,6 +357,7 @@ def _card_view(cards_by_id: dict[str, object], card_id: str) -> CardView:
         inner_circle_vp=card.inner_circle_vp,
         rules_text=card.rules_text,
         notes=card.notes,
+        secondary_aspects=tuple(getattr(card, "secondary_aspects", ())),
     )
 
 
