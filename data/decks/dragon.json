@@ -1,0 +1,88 @@
+{
+  "deck_id": "dragon",
+  "name": "Dragon",
+  "kind": "full_deck",
+  "total_cards": 40,
+  "entries": [
+    {
+      "card_id": "black_dragon",
+      "count": 1
+    },
+    {
+      "card_id": "black_wyrmling",
+      "count": 2
+    },
+    {
+      "card_id": "blue_dragon",
+      "count": 1
+    },
+    {
+      "card_id": "blue_wyrmling",
+      "count": 2
+    },
+    {
+      "card_id": "cleric_of_laogzed",
+      "count": 2
+    },
+    {
+      "card_id": "cult_fanatic",
+      "count": 2
+    },
+    {
+      "card_id": "dragon_cultist",
+      "count": 4
+    },
+    {
+      "card_id": "dragonclaw",
+      "count": 2
+    },
+    {
+      "card_id": "enchanter_of_thay",
+      "count": 3
+    },
+    {
+      "card_id": "green_dragon",
+      "count": 1
+    },
+    {
+      "card_id": "green_wyrmling",
+      "count": 2
+    },
+    {
+      "card_id": "kobold",
+      "count": 3
+    },
+    {
+      "card_id": "rather_modar",
+      "count": 1
+    },
+    {
+      "card_id": "red_dragon",
+      "count": 1
+    },
+    {
+      "card_id": "red_wyrmling",
+      "count": 2
+    },
+    {
+      "card_id": "severin_silrajin",
+      "count": 1
+    },
+    {
+      "card_id": "watcher_of_thay",
+      "count": 3
+    },
+    {
+      "card_id": "white_dragon",
+      "count": 1
+    },
+    {
+      "card_id": "white_wyrmling",
+      "count": 3
+    },
+    {
+      "card_id": "wyrmspeaker",
+      "count": 3
+    }
+  ]
+}

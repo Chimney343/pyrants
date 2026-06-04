@@ -1,0 +1,17 @@
+{
+  "deck_id": "starter_deck",
+  "name": "Starter Deck",
+  "kind": "starter_deck",
+  "total_cards": 10,
+  "per_player": true,
+  "entries": [
+    {
+      "card_id": "noble",
+      "count": 7
+    },
+    {
+      "card_id": "soldier",
+      "count": 3
+    }
+  ]
+}

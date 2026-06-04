@@ -1,0 +1,88 @@
+{
+  "deck_id": "drow",
+  "name": "Drow",
+  "kind": "full_deck",
+  "total_cards": 40,
+  "entries": [
+    {
+      "card_id": "advance_scout",
+      "count": 3
+    },
+    {
+      "card_id": "advocate",
+      "count": 4
+    },
+    {
+      "card_id": "blackguard",
+      "count": 4
+    },
+    {
+      "card_id": "bounty_hunter",
+      "count": 2
+    },
+    {
+      "card_id": "chosen_of_lolth",
+      "count": 2
+    },
+    {
+      "card_id": "council_member",
+      "count": 1
+    },
+    {
+      "card_id": "deathblade",
+      "count": 1
+    },
+    {
+      "card_id": "doppelganger",
+      "count": 2
+    },
+    {
+      "card_id": "drow_negotiator",
+      "count": 2
+    },
+    {
+      "card_id": "infiltrator",
+      "count": 2
+    },
+    {
+      "card_id": "information_broker",
+      "count": 2
+    },
+    {
+      "card_id": "inquisitor",
+      "count": 1
+    },
+    {
+      "card_id": "master_of_melee_magthere",
+      "count": 2
+    },
+    {
+      "card_id": "masters_of_sorcere",
+      "count": 1
+    },
+    {
+      "card_id": "matron_mother",
+      "count": 1
+    },
+    {
+      "card_id": "mercenary_squad",
+      "count": 2
+    },
+    {
+      "card_id": "spellspinner",
+      "count": 3
+    },
+    {
+      "card_id": "spy_master",
+      "count": 2
+    },
+    {
+      "card_id": "underdark_ranger",
+      "count": 2
+    },
+    {
+      "card_id": "weaponmaster",
+      "count": 1
+    }
+  ]
+}

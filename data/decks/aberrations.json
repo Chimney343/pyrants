@@ -1,0 +1,88 @@
+{
+  "deck_id": "aberrations",
+  "name": "Aberrations",
+  "kind": "full_deck",
+  "total_cards": 40,
+  "entries": [
+    {
+      "card_id": "aboleth",
+      "count": 1
+    },
+    {
+      "card_id": "ambassador",
+      "count": 4
+    },
+    {
+      "card_id": "beholder",
+      "count": 1
+    },
+    {
+      "card_id": "brainwashed_slave",
+      "count": 2
+    },
+    {
+      "card_id": "chuul",
+      "count": 2
+    },
+    {
+      "card_id": "cloaker",
+      "count": 3
+    },
+    {
+      "card_id": "cranium_rats",
+      "count": 3
+    },
+    {
+      "card_id": "death_tyrant",
+      "count": 1
+    },
+    {
+      "card_id": "elder_brain",
+      "count": 1
+    },
+    {
+      "card_id": "gauth",
+      "count": 2
+    },
+    {
+      "card_id": "grimlock",
+      "count": 2
+    },
+    {
+      "card_id": "intellect_devourer",
+      "count": 2
+    },
+    {
+      "card_id": "mindwitness",
+      "count": 3
+    },
+    {
+      "card_id": "neogi",
+      "count": 1
+    },
+    {
+      "card_id": "nothic",
+      "count": 2
+    },
+    {
+      "card_id": "puppeteer",
+      "count": 2
+    },
+    {
+      "card_id": "quaggoth",
+      "count": 2
+    },
+    {
+      "card_id": "spectator",
+      "count": 3
+    },
+    {
+      "card_id": "ulitharid",
+      "count": 1
+    },
+    {
+      "card_id": "umber_hulk",
+      "count": 2
+    }
+  ]
+}

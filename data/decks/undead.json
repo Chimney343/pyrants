@@ -1,0 +1,88 @@
+{
+  "deck_id": "undead",
+  "name": "Undead",
+  "kind": "full_deck",
+  "total_cards": 40,
+  "entries": [
+    {
+      "card_id": "banshee",
+      "count": 2
+    },
+    {
+      "card_id": "carrion_crawler",
+      "count": 2
+    },
+    {
+      "card_id": "conjurer",
+      "count": 3
+    },
+    {
+      "card_id": "cultist_of_myrkul",
+      "count": 3
+    },
+    {
+      "card_id": "death_knight",
+      "count": 1
+    },
+    {
+      "card_id": "flesh_golem",
+      "count": 2
+    },
+    {
+      "card_id": "ghost",
+      "count": 2
+    },
+    {
+      "card_id": "high_priest_of_myrkul",
+      "count": 1
+    },
+    {
+      "card_id": "lich",
+      "count": 1
+    },
+    {
+      "card_id": "minotaur_skeleton",
+      "count": 2
+    },
+    {
+      "card_id": "mummy_lord",
+      "count": 1
+    },
+    {
+      "card_id": "necromancer",
+      "count": 2
+    },
+    {
+      "card_id": "ogre_zombie",
+      "count": 2
+    },
+    {
+      "card_id": "ravenous_zombies",
+      "count": 2
+    },
+    {
+      "card_id": "revenant",
+      "count": 1
+    },
+    {
+      "card_id": "skeletal_horde",
+      "count": 3
+    },
+    {
+      "card_id": "vampire",
+      "count": 1
+    },
+    {
+      "card_id": "vampire_spawn",
+      "count": 3
+    },
+    {
+      "card_id": "wight",
+      "count": 4
+    },
+    {
+      "card_id": "wraith",
+      "count": 2
+    }
+  ]
+}

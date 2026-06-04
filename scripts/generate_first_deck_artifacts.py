@@ -24,7 +24,7 @@ FULL_DECK_SPECS: dict[str, dict[str, Any]] = {
     "Dragon": {"deck_id": "dragon", "name": "Dragon", "kind": "full_deck", "total_cards": 40},
     "Drow": {"deck_id": "drow", "name": "Drow", "kind": "full_deck", "total_cards": 40},
     "Elementals": {"deck_id": "elementals", "name": "Elementals", "kind": "full_deck", "total_cards": 40},
-    "Fungus": {"deck_id": "fungus", "name": "Fungus", "kind": "full_deck", "total_cards": 40},
+    "Demons": {"deck_id": "demons", "name": "Demons", "kind": "full_deck", "total_cards": 40},
     "Undead": {"deck_id": "undead", "name": "Undead", "kind": "full_deck", "total_cards": 40},
 }
 

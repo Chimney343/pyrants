@@ -1,0 +1,88 @@
+{
+  "deck_id": "elementals",
+  "name": "Elementals",
+  "kind": "full_deck",
+  "total_cards": 40,
+  "entries": [
+    {
+      "card_id": "aerisi_kalinoth",
+      "count": 1
+    },
+    {
+      "card_id": "air_elemental",
+      "count": 4
+    },
+    {
+      "card_id": "air_elemental_myrmidon",
+      "count": 2
+    },
+    {
+      "card_id": "black_earth_cultist",
+      "count": 4
+    },
+    {
+      "card_id": "crushing_wave_cultist",
+      "count": 3
+    },
+    {
+      "card_id": "earth_elemental",
+      "count": 2
+    },
+    {
+      "card_id": "earth_elemental_myrmidon",
+      "count": 2
+    },
+    {
+      "card_id": "eternal_flame_cultist",
+      "count": 3
+    },
+    {
+      "card_id": "fire_elemental",
+      "count": 3
+    },
+    {
+      "card_id": "fire_elemental_myrmidon",
+      "count": 2
+    },
+    {
+      "card_id": "gar_shatterkeel",
+      "count": 1
+    },
+    {
+      "card_id": "howling_hatred_cultist",
+      "count": 2
+    },
+    {
+      "card_id": "imix",
+      "count": 1
+    },
+    {
+      "card_id": "marlos_urnrayle",
+      "count": 1
+    },
+    {
+      "card_id": "ogremoch",
+      "count": 1
+    },
+    {
+      "card_id": "olhydra",
+      "count": 1
+    },
+    {
+      "card_id": "vanifer",
+      "count": 1
+    },
+    {
+      "card_id": "water_elemental",
+      "count": 3
+    },
+    {
+      "card_id": "water_elemental_myrmidon",
+      "count": 2
+    },
+    {
+      "card_id": "yan_c_bin",
+      "count": 1
+    }
+  ]
+}

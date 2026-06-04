@@ -1,0 +1,12 @@
+{
+  "deck_id": "house_guard",
+  "name": "House Guard",
+  "kind": "single_card_stack",
+  "total_cards": 15,
+  "entries": [
+    {
+      "card_id": "house_guard",
+      "count": 15
+    }
+  ]
+}

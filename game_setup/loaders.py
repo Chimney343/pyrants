@@ -29,6 +29,27 @@ def _read_json(path: Path) -> dict[str, Any]:
     return loaded
 
 
+def load_deck_rosters(decks_dir: Path) -> list[dict[str, Any]]:
+    """Load deck roster dicts from every JSON file in a directory.
+
+    Each file should be a single deck object with ``deck_id``, ``kind``,
+    and ``entries`` keys.  Files missing those keys are silently skipped
+    (e.g. base_setup.json).
+    """
+    decks: list[dict[str, Any]] = []
+    if not decks_dir.is_dir():
+        return decks
+    for path in sorted(decks_dir.glob("*.json")):
+        deck = _read_json(path)
+        if (
+            isinstance(deck.get("deck_id"), str)
+            and isinstance(deck.get("kind"), str)
+            and isinstance(deck.get("entries"), list)
+        ):
+            decks.append(deck)
+    return decks
+
+
 def _write_json(path: Path, payload: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8") as handle:

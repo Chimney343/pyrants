@@ -1,0 +1,12 @@
+{
+  "deck_id": "priestess_of_lolth",
+  "name": "Priestess of Lolth",
+  "kind": "single_card_stack",
+  "total_cards": 15,
+  "entries": [
+    {
+      "card_id": "priestess_of_lolth",
+      "count": 15
+    }
+  ]
+}

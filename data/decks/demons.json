@@ -1,0 +1,88 @@
+{
+  "deck_id": "demons",
+  "name": "Demons",
+  "kind": "full_deck",
+  "total_cards": 40,
+  "entries": [
+    {
+      "card_id": "balor",
+      "count": 1
+    },
+    {
+      "card_id": "demogorgon",
+      "count": 1
+    },
+    {
+      "card_id": "derro",
+      "count": 2
+    },
+    {
+      "card_id": "ettin",
+      "count": 3
+    },
+    {
+      "card_id": "ghoul",
+      "count": 3
+    },
+    {
+      "card_id": "gibbering_mouther",
+      "count": 3
+    },
+    {
+      "card_id": "glabrezu",
+      "count": 1
+    },
+    {
+      "card_id": "grazzt",
+      "count": 1
+    },
+    {
+      "card_id": "hezrou",
+      "count": 2
+    },
+    {
+      "card_id": "jackalwere",
+      "count": 3
+    },
+    {
+      "card_id": "marilith",
+      "count": 2
+    },
+    {
+      "card_id": "mind_flayer",
+      "count": 3
+    },
+    {
+      "card_id": "myconid_adult",
+      "count": 3
+    },
+    {
+      "card_id": "myconid_sovereign",
+      "count": 2
+    },
+    {
+      "card_id": "nalfeshnee",
+      "count": 2
+    },
+    {
+      "card_id": "night_hag",
+      "count": 3
+    },
+    {
+      "card_id": "orcus",
+      "count": 1
+    },
+    {
+      "card_id": "succubus",
+      "count": 2
+    },
+    {
+      "card_id": "vrock",
+      "count": 1
+    },
+    {
+      "card_id": "zuggtmoy",
+      "count": 1
+    }
+  ]
+}
