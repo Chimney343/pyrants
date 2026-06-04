@@ -10,14 +10,14 @@
       ],
       "troop_capacity": 3,
       "control_vp": 2,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         "white",
         "white",
         null
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "route_1",
@@ -28,12 +28,12 @@
       ],
       "troop_capacity": 1,
       "control_vp": 0,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         null
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "route_2",
@@ -44,12 +44,12 @@
       ],
       "troop_capacity": 1,
       "control_vp": 0,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         null
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "route_3",
@@ -60,12 +60,12 @@
       ],
       "troop_capacity": 1,
       "control_vp": 0,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         null
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "route_4",
@@ -76,12 +76,12 @@
       ],
       "troop_capacity": 1,
       "control_vp": 0,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         "white"
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "route_5",
@@ -92,12 +92,12 @@
       ],
       "troop_capacity": 1,
       "control_vp": 0,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         null
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "route_6",
@@ -108,12 +108,12 @@
       ],
       "troop_capacity": 1,
       "control_vp": 0,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         null
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "route_7",
@@ -124,12 +124,12 @@
       ],
       "troop_capacity": 1,
       "control_vp": 0,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         null
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "route_8",
@@ -140,12 +140,12 @@
       ],
       "troop_capacity": 1,
       "control_vp": 0,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         null
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "route_9",
@@ -156,12 +156,12 @@
       ],
       "troop_capacity": 1,
       "control_vp": 0,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         null
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "route_10",
@@ -172,12 +172,12 @@
       ],
       "troop_capacity": 1,
       "control_vp": 0,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         null
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "route_11",
@@ -188,12 +188,12 @@
       ],
       "troop_capacity": 1,
       "control_vp": 0,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         null
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "route_12",
@@ -204,12 +204,12 @@
       ],
       "troop_capacity": 1,
       "control_vp": 0,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         null
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "site_jhachalkhyn",
@@ -221,6 +221,7 @@
       ],
       "troop_capacity": 4,
       "control_vp": 4,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         null,
         null,
@@ -228,8 +229,7 @@
         null
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "site_gracklstugh",
@@ -242,6 +242,7 @@
       ],
       "troop_capacity": 4,
       "control_vp": 3,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         "white",
         "white",
@@ -249,8 +250,7 @@
         null
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "site_chasmleap_bridge",
@@ -263,12 +263,12 @@
       ],
       "troop_capacity": 1,
       "control_vp": 1,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         null
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "site_blingdenfire",
@@ -279,13 +279,13 @@
       ],
       "troop_capacity": 2,
       "control_vp": 2,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         null,
         null
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "site_mantol_derith",
@@ -298,6 +298,7 @@
       ],
       "troop_capacity": 5,
       "control_vp": 4,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         "white",
         "white",
@@ -306,8 +307,7 @@
         null
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "site_menzoberranzan",
@@ -319,6 +319,7 @@
       ],
       "troop_capacity": 6,
       "control_vp": 5,
+      "total_control_vp_per_turn": 1,
       "initial_troop_slots": [
         "white",
         "white",
@@ -328,8 +329,7 @@
         null
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 1,
-      "total_control_vp_per_turn": 1
+      "influence_income": 1
     },
     {
       "node_id": "site_blingdenstone",
@@ -339,13 +339,13 @@
       ],
       "troop_capacity": 2,
       "control_vp": 4,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         "white",
         "white"
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "site_the_wormwrithings",
@@ -356,14 +356,14 @@
       ],
       "troop_capacity": 3,
       "control_vp": 3,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         null,
         null,
         null
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "site_buiyrandyn",
@@ -375,14 +375,14 @@
       ],
       "troop_capacity": 3,
       "control_vp": 3,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         "white",
         null,
         null
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "site_stoneshaft_clanhold",
@@ -394,13 +394,13 @@
       ],
       "troop_capacity": 2,
       "control_vp": 4,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         "white",
         null
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "site_ch_chitl",
@@ -411,14 +411,14 @@
       ],
       "troop_capacity": 3,
       "control_vp": 2,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         "white",
         "white",
         null
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "site_kanaglym",
@@ -431,14 +431,14 @@
       ],
       "troop_capacity": 3,
       "control_vp": 3,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         null,
         null,
         null
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "site_skullport",
@@ -450,6 +450,7 @@
       ],
       "troop_capacity": 5,
       "control_vp": 4,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         "white",
         "white",
@@ -458,8 +459,7 @@
         null
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "site_eryndlyn",
@@ -471,14 +471,14 @@
       ],
       "troop_capacity": 3,
       "control_vp": 3,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         null,
         null,
         null
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "site_tsenvilyq",
@@ -489,14 +489,14 @@
       ],
       "troop_capacity": 3,
       "control_vp": 4,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         "white",
         "white",
         "white"
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "site_the_labirynth",
@@ -509,14 +509,14 @@
       ],
       "troop_capacity": 3,
       "control_vp": 3,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         "white",
         null,
         null
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "site_araumycos",
@@ -529,6 +529,7 @@
       ],
       "troop_capacity": 4,
       "control_vp": 3,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         "white",
         "white",
@@ -536,8 +537,7 @@
         "white"
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "site_llacerellyn",
@@ -550,13 +550,13 @@
       ],
       "troop_capacity": 2,
       "control_vp": 2,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         null,
         null
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "site_ss_zuraass_nee",
@@ -567,14 +567,14 @@
       ],
       "troop_capacity": 3,
       "control_vp": 2,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         "white",
         "white",
         null
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "site_ruins_of_dekanter",
@@ -586,6 +586,7 @@
       ],
       "troop_capacity": 6,
       "control_vp": 5,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         "white",
         "white",
@@ -595,8 +596,7 @@
         null
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "site_old_yathchol",
@@ -608,14 +608,14 @@
       ],
       "troop_capacity": 3,
       "control_vp": 3,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         "white",
         null,
         null
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "site_ched_nasad",
@@ -630,6 +630,7 @@
       ],
       "troop_capacity": 4,
       "control_vp": 3,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         null,
         null,
@@ -637,8 +638,7 @@
         null
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "site_halls_of_the_scoured_legion",
@@ -650,13 +650,13 @@
       ],
       "troop_capacity": 2,
       "control_vp": 3,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         "white",
         null
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "site_everfire",
@@ -669,14 +669,14 @@
       ],
       "troop_capacity": 3,
       "control_vp": 3,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         null,
         null,
         null
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "site_the_phaerlin",
@@ -689,14 +689,14 @@
       ],
       "troop_capacity": 3,
       "control_vp": 2,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         "white",
         "white",
         null
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "site_yathchol",
@@ -709,13 +709,13 @@
       ],
       "troop_capacity": 2,
       "control_vp": 4,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         "white",
         "white"
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "site_chaulssin",
@@ -726,6 +726,7 @@
       ],
       "troop_capacity": 5,
       "control_vp": 4,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         null,
         null,
@@ -734,8 +735,7 @@
         null
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "route_13",
@@ -746,12 +746,12 @@
       ],
       "troop_capacity": 1,
       "control_vp": 0,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         null
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "route_14",
@@ -762,12 +762,12 @@
       ],
       "troop_capacity": 1,
       "control_vp": 0,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         null
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "route_15",
@@ -778,12 +778,12 @@
       ],
       "troop_capacity": 1,
       "control_vp": 0,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         null
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "route_16",
@@ -794,12 +794,12 @@
       ],
       "troop_capacity": 1,
       "control_vp": 0,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         null
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "route_17",
@@ -810,12 +810,12 @@
       ],
       "troop_capacity": 1,
       "control_vp": 0,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         null
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "route_18",
@@ -826,12 +826,12 @@
       ],
       "troop_capacity": 1,
       "control_vp": 0,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         null
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "route_19",
@@ -842,12 +842,12 @@
       ],
       "troop_capacity": 1,
       "control_vp": 0,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         null
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "route_20",
@@ -858,12 +858,12 @@
       ],
       "troop_capacity": 1,
       "control_vp": 0,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         null
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "route_21",
@@ -874,12 +874,12 @@
       ],
       "troop_capacity": 1,
       "control_vp": 0,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         null
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "route_22",
@@ -890,12 +890,12 @@
       ],
       "troop_capacity": 1,
       "control_vp": 0,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         "white"
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "route_23",
@@ -906,12 +906,12 @@
       ],
       "troop_capacity": 1,
       "control_vp": 0,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         "white"
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "route_24",
@@ -922,12 +922,12 @@
       ],
       "troop_capacity": 1,
       "control_vp": 0,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         "white"
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "route_25",
@@ -938,12 +938,12 @@
       ],
       "troop_capacity": 1,
       "control_vp": 0,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         "white"
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "route_26",
@@ -954,12 +954,12 @@
       ],
       "troop_capacity": 1,
       "control_vp": 0,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         "white"
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "route_27",
@@ -970,12 +970,12 @@
       ],
       "troop_capacity": 1,
       "control_vp": 0,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         "white"
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "route_28",
@@ -986,12 +986,12 @@
       ],
       "troop_capacity": 1,
       "control_vp": 0,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         null
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "route_29",
@@ -1002,12 +1002,12 @@
       ],
       "troop_capacity": 1,
       "control_vp": 0,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         null
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "route_30",
@@ -1018,12 +1018,12 @@
       ],
       "troop_capacity": 1,
       "control_vp": 0,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         null
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "route_31",
@@ -1034,12 +1034,12 @@
       ],
       "troop_capacity": 1,
       "control_vp": 0,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         null
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "route_32",
@@ -1050,12 +1050,12 @@
       ],
       "troop_capacity": 1,
       "control_vp": 0,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         null
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "route_33",
@@ -1066,12 +1066,12 @@
       ],
       "troop_capacity": 1,
       "control_vp": 0,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         null
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "route_34",
@@ -1082,12 +1082,12 @@
       ],
       "troop_capacity": 1,
       "control_vp": 0,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         null
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "route_35",
@@ -1098,12 +1098,12 @@
       ],
       "troop_capacity": 1,
       "control_vp": 0,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         null
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "route_36",
@@ -1114,12 +1114,12 @@
       ],
       "troop_capacity": 1,
       "control_vp": 0,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         null
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "route_37",
@@ -1130,12 +1130,12 @@
       ],
       "troop_capacity": 1,
       "control_vp": 0,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         null
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "route_38",
@@ -1146,12 +1146,12 @@
       ],
       "troop_capacity": 1,
       "control_vp": 0,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         null
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "route_39",
@@ -1162,12 +1162,12 @@
       ],
       "troop_capacity": 1,
       "control_vp": 0,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         null
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "route_40",
@@ -1178,12 +1178,12 @@
       ],
       "troop_capacity": 1,
       "control_vp": 0,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         null
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "route_41",
@@ -1194,12 +1194,12 @@
       ],
       "troop_capacity": 1,
       "control_vp": 0,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         null
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "route_42",
@@ -1210,12 +1210,12 @@
       ],
       "troop_capacity": 1,
       "control_vp": 0,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         null
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "route_43",
@@ -1226,12 +1226,12 @@
       ],
       "troop_capacity": 1,
       "control_vp": 0,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         null
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "route_44",
@@ -1242,12 +1242,12 @@
       ],
       "troop_capacity": 1,
       "control_vp": 0,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         null
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "route_45",
@@ -1258,12 +1258,12 @@
       ],
       "troop_capacity": 1,
       "control_vp": 0,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         null
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "route_46",
@@ -1274,12 +1274,12 @@
       ],
       "troop_capacity": 1,
       "control_vp": 0,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         null
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "route_47",
@@ -1290,12 +1290,12 @@
       ],
       "troop_capacity": 1,
       "control_vp": 0,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         null
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "route_48",
@@ -1306,12 +1306,12 @@
       ],
       "troop_capacity": 1,
       "control_vp": 0,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         null
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "route_49",
@@ -1319,12 +1319,12 @@
       "adjacent_to": [],
       "troop_capacity": 1,
       "control_vp": 0,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         null
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "route_50",
@@ -1335,12 +1335,12 @@
       ],
       "troop_capacity": 1,
       "control_vp": 0,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         null
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "route_51",
@@ -1351,12 +1351,12 @@
       ],
       "troop_capacity": 1,
       "control_vp": 0,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         null
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "route_52",
@@ -1367,12 +1367,12 @@
       ],
       "troop_capacity": 1,
       "control_vp": 0,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         null
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     },
     {
       "node_id": "route_53",
@@ -1383,12 +1383,12 @@
       ],
       "troop_capacity": 1,
       "control_vp": 0,
+      "total_control_vp_per_turn": 0,
       "initial_troop_slots": [
         null
       ],
       "initial_vp_tokens": 0,
-      "influence_income": 0,
-      "total_control_vp_per_turn": 0
+      "influence_income": 0
     }
   ]
 }
