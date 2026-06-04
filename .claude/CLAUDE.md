@@ -11,35 +11,27 @@
 > (documentation, ownership, history, decisions). **Always verify against
 > actual source files before making changes** — the index may be stale.
 
-Last indexed: 2026-06-02 (commit 124b316). Confidence: 100%.
+Last indexed: 2026-06-04 (commit 2a60abe). Confidence: 100%.
 ### Architecture
-Repo is a board game engine: it consumes game definitions (JSON board layouts, card data, scenario configurations) and player move inputs, validates and processes moves through a rule-driven state machine, advances through phases and scoring, and produces final game states for simulation or rendered board views for both digital display and computer-vision camera recognition. | Layer | Technologies |
-|-------|-------------|
-| Core engine | Python (31.2% of codebase) |
-| Game data | JSON (13.0%), TOML, YAML (1.6%) |
-| Documentation | Markdown (45.8%) |
-| Frontend/CLI | TypeScript via .kilo package |
-| Minor | C# (0.5%) |
-
-Key dependencies inferred from imports: likely pygame or opencv for rendering/vision (from camera.py, shared_board_renderer.py), and standard Python for rule engine. No explicit top‑level entry point is declared. Based on file‑rank analysis, the main execution paths are:
-
-- **game_session.py** – orchestrates a full game session (state, moves, rules, scoring)
-- **game_simulation.py** – runs automated simulations for testing or AI play
-- **scripts/** – utility scripts (e.g., catalog_audit.py, check_roster_card_stuck_states.py) for maintenance and debugging
-- **.kilo/** – TypeScript package that likely provides a CLI or web UI (not further detailed)
+**Repo** is a turn-based board game engine: it consumes scenario definitions and board packages from JSON and TOML configuration files, processes them through a game-setup pipeline that validates components and initializes a state machine, then executes player moves through a rules engine that enforces game logic, phases, and scoring, ultimately producing a rendered board view via a Python interface and optionally generating simulation traces for replay analysis. | Layer | Technology | Purpose |
+|---|---|---|
+| Core Engine | Python 3.x | State management, rule enforcement, move execution, scoring |
+| Game Setup | Python, JSON, TOML | Parsing scenario definitions, board components, validation |
+| Interface | Python (likely Pygame or Tkinter) | Real-time rendering of board view with camera zoom |
+| Frontend (optional) | TypeScript (.kilo package) | Could provide an alternative web/desktop UI |
+| Configuration | JSON, YAML, TOML | Game scenario and catalog files |
+| Tooling | Justfile, Claude | Automation, documentation |
 
 
 
-The codebase follows a layered architecture:
-
-1.
+- **game_session.py** – Primary interactive entry point for a live game session (state-driven, user moves). - **game_simulation.py** – Headless simulation mode: runs automated moves or replays for testing and analysis. - **game_view.py** – Possibly a viewer entry point to replay saved states or visualize scenarios.
 ### Key Modules
 | Module | Purpose | Owner |
 |--------|---------|-------|
-| `community-1` | The tests module is the quality assurance layer of the repowise system — it syst | — |
+| `community-1` | The tests module is the quality assurance layer of repowise's Tyrants of the Und | — |
 | `community-0` | The skills/impeccable module is the **skill lifecycle and injection subsystem**  | — |
 | `community-3` | The interface module is the graphical presentation and authoring subsystem of th | — |
-| `community-2` | The skills/impeccable (6) module is the **transport adapter** of the Impeccable  | — |
+| `community-2` | The tests module is the verification and validation layer of the repowise system | — |
 | `community-248` | The **tests** module is the verification subsystem of repowise — it consumes gen | — |
 ### Entry Points
 - `.agents/skills/impeccable/scripts/cleanup-deprecated.mjs`
@@ -81,15 +73,15 @@ The codebase follows a layered architecture:
 ### Hotspots (High Churn)
 | File | Churn | 90d Commits | Owner |
 |------|-------|-------------|-------|
-| `game_view.py` | 100.0th %ile | 2 | Chimney343 |
-| `tests/test_rules.py` | 99.5th %ile | 2 | Chimney343 |
-| `data/cards/effect_families.json` | 98.9th %ile | 3 | Chimney343 |
-| `tests/test_scoring.py` | 98.4th %ile | 2 | Chimney343 |
-| `engine/rules.py` | 97.9th %ile | 2 | Chimney343 |
+| `engine/rules.py` | 100.0th %ile | 3 | Chimney343 |
+| `tests/test_generic_interpreter.py` | 99.7th %ile | 3 | Chimney343 |
+| `interface/game_viewer.py` | 99.4th %ile | 3 | Chimney343 |
+| `interface/board_creator.py` | 99.1th %ile | 2 | Chimney343 |
+| `data/cards/catalog.json` | 98.9th %ile | 2 | Chimney343 |
 
 ## Code health
-Hotspot health: 7.34/10 (stable) ·
-Average: 7.45/10 ·
+Hotspot health: 7.25/10 (stable) ·
+Average: 7.46/10 ·
 Worst: 5.3/10 (`.augment/skills/impeccable/scripts/design-parser.mjs`)
 
 ### Critical biomarkers
