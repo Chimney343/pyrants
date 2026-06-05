@@ -5,11 +5,17 @@ from __future__ import annotations
 import argparse
 import json
 from collections.abc import Callable, Sequence
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from random import Random
 
-from engine.moves import Move
+from engine.moves import Move, move_type as _move_type
+from engine.rules import apply as apply_move
+from engine.rules import is_terminal as state_is_terminal
+from engine.rules import legal_moves as get_legal_moves
+from engine.rules import winner as get_winner
+from engine.scoring import compute_final_scores
+from engine.state import GameState
 from game_session import GameSession
 from game_view import GameView, LegalMoveView, build_game_view
 from pydantic import TypeAdapter
@@ -20,6 +26,7 @@ DEFAULT_CARD_PATH = ROOT_DIR / "data" / "cards" / "catalog.json"
 DEFAULT_SETUP_PATH = ROOT_DIR / "data" / "decks" / "base_setup.json"
 
 MoveChooser = Callable[[GameSession, GameView], Move]
+EngineMoveChooser = Callable[[GameState, list[Move]], Move]
 MOVE_ADAPTER = TypeAdapter(Move)
 
 
@@ -80,6 +87,112 @@ def make_random_legal_move_chooser(seed: int) -> MoveChooser:
         return rng.choice(view.legal_moves).move
 
     return _choose
+
+
+def choose_first_legal_move_engine(_state: GameState, moves: list[Move]) -> Move:
+    """Choose the first legal move in engine order (fast-path variant)."""
+
+    if not moves:
+        raise ValueError("Cannot choose a move when no legal moves are available")
+    return moves[0]
+
+
+def make_random_legal_move_chooser_engine(seed: int) -> EngineMoveChooser:
+    """Return a deterministic random chooser for legal moves (fast-path variant)."""
+
+    rng = Random(seed)
+
+    def _choose(_state: GameState, moves: list[Move]) -> Move:
+        if not moves:
+            raise ValueError("Cannot choose a move when no legal moves are available")
+        return rng.choice(moves)
+
+    return _choose
+
+
+@dataclass(frozen=True)
+class FastSimulationStep:
+    """Minimal step record for fast simulation runs."""
+
+    step_index: int
+    player_id: str
+    phase: str
+    move_type: str
+
+
+@dataclass
+class FastSimulationResult:
+    """Final outcome for a fast simulation run with optional move log."""
+
+    stopped_reason: str
+    step_count: int
+    is_terminal: bool
+    winner_id: str | None
+    final_scores: dict[str, int] | None
+    move_log: tuple[FastSimulationStep, ...] = ()
+    final_state: GameState | None = None
+
+
+def run_fast_simulation(
+    state: GameState,
+    chooser: EngineMoveChooser = choose_first_legal_move_engine,
+    *,
+    max_steps: int = 500,
+    record_moves: bool = False,
+) -> FastSimulationResult:
+    """Advance a state headlessly without building GameView projections.
+
+    Returns a ``FastSimulationResult``.  When ``record_moves`` is True the
+    ``move_log`` field is populated with lightweight step records.
+    """
+
+    move_log: list[FastSimulationStep] = []
+
+    for step_index in range(max_steps):
+        if state_is_terminal(state):
+            return FastSimulationResult(
+                stopped_reason="terminal",
+                step_count=step_index,
+                is_terminal=True,
+                winner_id=get_winner(state),
+                final_scores=compute_final_scores(state),
+                move_log=tuple(move_log) if record_moves else (),
+                final_state=state,
+            )
+
+        moves = get_legal_moves(state)
+        if not moves:
+            return FastSimulationResult(
+                stopped_reason="no_legal_moves",
+                step_count=step_index,
+                is_terminal=False,
+                winner_id=None,
+                final_scores=None,
+                move_log=tuple(move_log) if record_moves else (),
+                final_state=state,
+            )
+
+        move = chooser(state, moves)
+        if record_moves:
+            move_log.append(
+                FastSimulationStep(
+                    step_index=step_index,
+                    player_id=state.current_player_id,
+                    phase=state.phase.value,
+                    move_type=_move_type(move),
+                )
+            )
+        state = apply_move(state, move)
+
+    return FastSimulationResult(
+        stopped_reason="max_steps",
+        step_count=max_steps,
+        is_terminal=state_is_terminal(state),
+        winner_id=get_winner(state),
+        final_scores=compute_final_scores(state) if state_is_terminal(state) else None,
+        move_log=tuple(move_log) if record_moves else (),
+        final_state=state,
+    )
 
 
 def run_simulation(
