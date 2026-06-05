@@ -14,7 +14,7 @@ from engine.state import GameState, build_initial_game_state
 def _base_state_paths() -> tuple[Path, Path, Path]:
     base = Path(__file__).resolve().parents[1]
     return (
-        base / "data" / "boards" / "base_game.json",
+        base / "data" / "boards" / "tyrants_of_the_underdark.json",
         base / "data" / "cards" / "catalog.json",
         base / "data" / "decks" / "base_setup.json",
     )

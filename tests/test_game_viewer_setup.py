@@ -25,8 +25,8 @@ from interface.game_viewer import (
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 DATA_DIR = BASE_DIR / "data"
-BOARD_PATH = DATA_DIR / "boards" / "base_game.json"
-LAYOUT_PATH = DATA_DIR / "layouts" / "base_game_layout.json"
+BOARD_PATH = DATA_DIR / "boards" / "tyrants_of_the_underdark.json"
+LAYOUT_PATH = DATA_DIR / "layouts" / "tyrants_of_the_underdark_layout.json"
 CARD_PATH = DATA_DIR / "cards" / "catalog.json"
 SETUP_PATH = DATA_DIR / "decks" / "base_setup.json"
 DECKS_DIR = DATA_DIR / "decks"

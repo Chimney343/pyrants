@@ -122,11 +122,11 @@ def test_has_card_in_market_predicate() -> None:
 
 
 def test_has_enemy_troop_at_site_predicate() -> None:
-    pred = has_enemy_troop_at_site("site_a", "p2", "p1")
+    pred = has_enemy_troop_at_site("site_gauntlgrym", "p2", "p1")
     state = find_state(pred, seed=1, max_steps=300)
 
     if state is not None:
-        node = state.board.nodes["site_a"]
+        node = state.board.nodes["site_gauntlgrym"]
         assert "p2" in node.troop_slots
         assert "p1" in node.spies
 

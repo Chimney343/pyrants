@@ -11,7 +11,7 @@ from game_session import GameSession
 from game_view import LegalMoveView, build_game_view, describe_move, filter_legal_moves
 
 BASE_DIR = Path(__file__).resolve().parents[1]
-BOARD_PATH = BASE_DIR / "data" / "boards" / "base_game.json"
+BOARD_PATH = BASE_DIR / "data" / "boards" / "tyrants_of_the_underdark.json"
 CARD_PATH = BASE_DIR / "data" / "cards" / "catalog.json"
 SETUP_PATH = BASE_DIR / "data" / "decks" / "base_setup.json"
 
@@ -70,14 +70,14 @@ def test_filter_legal_moves_by_hand_card_id() -> None:
 
 
 def test_filter_legal_moves_by_node_id() -> None:
-    deploy_site_a = DeployMove(player_id="p1", target_node_id="site_a", troop_count=1)
+    deploy_site_gauntlgrym = DeployMove(player_id="p1", target_node_id="site_gauntlgrym", troop_count=1)
     deploy_site_b = DeployMove(player_id="p1", target_node_id="site_b", troop_count=1)
     legal_moves = (
         LegalMoveView(
-            move=deploy_site_a,
+            move=deploy_site_gauntlgrym,
             move_type="deploy",
-            label="Deploy to site_a",
-            payload=deploy_site_a.model_dump(mode="json"),
+            label="Deploy to site_gauntlgrym",
+            payload=deploy_site_gauntlgrym.model_dump(mode="json"),
         ),
         LegalMoveView(
             move=deploy_site_b,
@@ -87,10 +87,10 @@ def test_filter_legal_moves_by_node_id() -> None:
         ),
     )
 
-    node_filtered = filter_legal_moves(legal_moves, node_id="site_a")
+    node_filtered = filter_legal_moves(legal_moves, node_id="site_gauntlgrym")
 
     assert len(node_filtered) == 1
-    assert node_filtered[0].move.target_node_id == "site_a"
+    assert node_filtered[0].move.target_node_id == "site_gauntlgrym"
 
 
 def test_filter_legal_moves_by_option_id() -> None:
@@ -185,13 +185,13 @@ def test_build_game_view_includes_current_player_trophy_hall() -> None:
     session = _session(seed=31)
     state = session.state.model_copy(deep=True)
     state.resource_pool.power = 3
-    state.board.nodes["site_a"].troop_slots = ["p1", "p2", None]
+    state.board.nodes["site_gauntlgrym"].troop_slots = ["p1", "p2", None]
 
     updated = apply(
         state,
         AssassinateMove(
             player_id="p1",
-            target_node_id="site_a",
+            target_node_id="site_gauntlgrym",
             target_slot_index=1,
         ),
     )

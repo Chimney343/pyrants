@@ -26,7 +26,7 @@ from engine.state import PendingPromotionState, TurnPhase, build_initial_game_st
 from game_setup.loaders import build_game_definition_from_dicts, create_game_state_from_files
 
 BASE_DIR = Path(__file__).resolve().parents[1]
-BOARD_PATH = BASE_DIR / "data" / "boards" / "base_game.json"
+BOARD_PATH = BASE_DIR / "data" / "boards" / "tyrants_of_the_underdark.json"
 CARD_PATH = BASE_DIR / "data" / "cards" / "catalog.json"
 SETUP_PATH = BASE_DIR / "data" / "decks" / "base_setup.json"
 
@@ -44,7 +44,7 @@ def _ability_state(cards: list[dict[str, object]], starter_entries: list[dict[st
                 "kind": "site",
                 "adjacent_to": [],
                 "troop_capacity": 3,
-                "control_vp": 0,
+                "vp_value": 0,
                 "initial_vp_tokens": 0,
             }
         ],
@@ -107,8 +107,8 @@ def test_deathblade_resolves_two_separate_assassinations() -> None:
     state.players["p1"].deck = []
     state.players["p1"].discard_pile = []
     state.players["p1"].played_cards = []
-    state.board.nodes["site_a"].spies.add("p1")
-    state.board.nodes["site_a"].troop_slots = ["p2", "p2", None]
+    state.board.nodes["site_gauntlgrym"].spies.add("p1")
+    state.board.nodes["site_gauntlgrym"].troop_slots = ["p2", "p2", None]
 
     played = apply(state, PlayCardMove(player_id="p1", card_id="deathblade", hand_index=0))
     first = apply(
@@ -116,7 +116,7 @@ def test_deathblade_resolves_two_separate_assassinations() -> None:
         ResolveGenericChoiceMove(
             player_id="p1",
             source_card_id="deathblade",
-            selection={"target_node_id": "site_a", "target_slot_index": 0},
+            selection={"target_node_id": "site_gauntlgrym", "target_slot_index": 0},
         ),
     )
     resolved = apply(
@@ -124,11 +124,11 @@ def test_deathblade_resolves_two_separate_assassinations() -> None:
         ResolveGenericChoiceMove(
             player_id="p1",
             source_card_id="deathblade",
-            selection={"target_node_id": "site_a", "target_slot_index": 1},
+            selection={"target_node_id": "site_gauntlgrym", "target_slot_index": 1},
         ),
     )
 
-    assert resolved.board.nodes["site_a"].troop_slots == [None, None, None]
+    assert resolved.board.nodes["site_gauntlgrym"].troop_slots == [None, None, None]
     assert len(resolved.players["p1"].trophy_hall) >= 2
 
 
@@ -168,11 +168,11 @@ def test_enchanter_of_thay_modal_place_spy_option_places_spy() -> None:
         ResolveGenericChoiceMove(
             player_id="p1",
             source_card_id="enchanter_of_thay",
-            selection={"target_node_id": "site_a"},
+            selection={"target_node_id": "site_gauntlgrym"},
         ),
     )
 
-    assert "p1" in resolved.board.nodes["site_a"].spies
+    assert "p1" in resolved.board.nodes["site_gauntlgrym"].spies
 
 
 def test_enchanter_of_thay_modal_return_spy_option_grants_four_power() -> None:
@@ -182,7 +182,7 @@ def test_enchanter_of_thay_modal_return_spy_option_grants_four_power() -> None:
     state.players["p1"].discard_pile = []
     state.players["p1"].played_cards = []
     state.resource_pool.power = 0
-    state.board.nodes["site_a"].spies.add("p1")
+    state.board.nodes["site_gauntlgrym"].spies.add("p1")
     spies_available_before = state.players["p1"].spies_available
 
     played = apply(state, PlayCardMove(player_id="p1", card_id="enchanter_of_thay", hand_index=0))
@@ -195,11 +195,11 @@ def test_enchanter_of_thay_modal_return_spy_option_grants_four_power() -> None:
         ResolveGenericChoiceMove(
             player_id="p1",
             source_card_id="enchanter_of_thay",
-            selection={"node_id": "site_a", "spy_owner_id": "p1"},
+            selection={"node_id": "site_gauntlgrym", "spy_owner_id": "p1"},
         ),
     )
 
-    assert "p1" not in resolved.board.nodes["site_a"].spies
+    assert "p1" not in resolved.board.nodes["site_gauntlgrym"].spies
     assert resolved.players["p1"].spies_available == spies_available_before + 1
     assert resolved.resource_pool.power == 4
 
@@ -210,8 +210,8 @@ def test_ettin_modal_deploy_option_deploys_three_troops() -> None:
     state.players["p1"].deck = []
     state.players["p1"].discard_pile = []
     state.players["p1"].played_cards = []
-    state.board.nodes["site_a"].spies.add("p1")
-    state.board.nodes["site_a"].troop_slots = [None, None, None]
+    state.board.nodes["site_gauntlgrym"].spies.add("p1")
+    state.board.nodes["site_gauntlgrym"].troop_slots = [None, None, None]
     barracks_before = state.players["p1"].barracks
 
     played = apply(state, PlayCardMove(player_id="p1", card_id="ettin", hand_index=0))
@@ -220,10 +220,10 @@ def test_ettin_modal_deploy_option_deploys_three_troops() -> None:
     for _ in range(3):
         current = apply(
             current,
-            ResolveGenericChoiceMove(player_id="p1", source_card_id="ettin", selection={"target_node_id": "site_a"}),
+            ResolveGenericChoiceMove(player_id="p1", source_card_id="ettin", selection={"target_node_id": "site_gauntlgrym"}),
         )
 
-    assert current.board.nodes["site_a"].troop_slots == ["p1", "p1", "p1"]
+    assert current.board.nodes["site_gauntlgrym"].troop_slots == ["p1", "p1", "p1"]
     assert current.players["p1"].barracks == barracks_before - 3
 
 
@@ -233,8 +233,8 @@ def test_ettin_modal_assassinate_option_removes_two_white_troops() -> None:
     state.players["p1"].deck = []
     state.players["p1"].discard_pile = []
     state.players["p1"].played_cards = []
-    state.board.nodes["site_a"].spies.add("p1")
-    state.board.nodes["site_a"].troop_slots = ["white", "white", None]
+    state.board.nodes["site_gauntlgrym"].spies.add("p1")
+    state.board.nodes["site_gauntlgrym"].troop_slots = ["white", "white", None]
 
     played = apply(state, PlayCardMove(player_id="p1", card_id="ettin", hand_index=0))
     chose_mode = apply(played, ResolveGenericChoiceMove(player_id="p1", source_card_id="ettin", option_id="option_2"))
@@ -243,7 +243,7 @@ def test_ettin_modal_assassinate_option_removes_two_white_troops() -> None:
         ResolveGenericChoiceMove(
             player_id="p1",
             source_card_id="ettin",
-            selection={"target_node_id": "site_a", "target_slot_index": 0},
+            selection={"target_node_id": "site_gauntlgrym", "target_slot_index": 0},
         ),
     )
     resolved = apply(
@@ -251,11 +251,11 @@ def test_ettin_modal_assassinate_option_removes_two_white_troops() -> None:
         ResolveGenericChoiceMove(
             player_id="p1",
             source_card_id="ettin",
-            selection={"target_node_id": "site_a", "target_slot_index": 1},
+            selection={"target_node_id": "site_gauntlgrym", "target_slot_index": 1},
         ),
     )
 
-    assert resolved.board.nodes["site_a"].troop_slots == [None, None, None]
+    assert resolved.board.nodes["site_gauntlgrym"].troop_slots == [None, None, None]
     assert resolved.players["p1"].trophy_hall == ["white", "white"]
 
 
@@ -320,8 +320,8 @@ def test_death_tyrant_gains_influence_per_troop_removed_by_effect() -> None:
     state.players["p1"].discard_pile = []
     state.players["p1"].played_cards = []
     state.resource_pool.influence = 0
-    state.board.nodes["site_a"].spies.add("p1")
-    state.board.nodes["site_a"].troop_slots = ["p2", "p2", None]
+    state.board.nodes["site_gauntlgrym"].spies.add("p1")
+    state.board.nodes["site_gauntlgrym"].troop_slots = ["p2", "p2", None]
 
     played = apply(state, PlayCardMove(player_id="p1", card_id="death_tyrant", hand_index=0))
     first = apply(
@@ -329,7 +329,7 @@ def test_death_tyrant_gains_influence_per_troop_removed_by_effect() -> None:
         ResolveGenericChoiceMove(
             player_id="p1",
             source_card_id="death_tyrant",
-            selection={"target_node_id": "site_a", "target_slot_index": 0},
+            selection={"target_node_id": "site_gauntlgrym", "target_slot_index": 0},
         ),
     )
     resolved = apply(
@@ -337,11 +337,11 @@ def test_death_tyrant_gains_influence_per_troop_removed_by_effect() -> None:
         ResolveGenericChoiceMove(
             player_id="p1",
             source_card_id="death_tyrant",
-            selection={"target_node_id": "site_a", "target_slot_index": 1},
+            selection={"target_node_id": "site_gauntlgrym", "target_slot_index": 1},
         ),
     )
 
-    assert resolved.board.nodes["site_a"].troop_slots == [None, None, None]
+    assert resolved.board.nodes["site_gauntlgrym"].troop_slots == [None, None, None]
     assert resolved.resource_pool.influence == 2
 
 
@@ -352,8 +352,8 @@ def test_death_tyrant_can_stop_after_one_assassination() -> None:
     state.players["p1"].discard_pile = []
     state.players["p1"].played_cards = []
     state.resource_pool.influence = 0
-    state.board.nodes["site_a"].spies.add("p1")
-    state.board.nodes["site_a"].troop_slots = ["p2", "p2", "p2"]
+    state.board.nodes["site_gauntlgrym"].spies.add("p1")
+    state.board.nodes["site_gauntlgrym"].troop_slots = ["p2", "p2", "p2"]
 
     played = apply(state, PlayCardMove(player_id="p1", card_id="death_tyrant", hand_index=0))
     after_first = apply(
@@ -361,7 +361,7 @@ def test_death_tyrant_can_stop_after_one_assassination() -> None:
         ResolveGenericChoiceMove(
             player_id="p1",
             source_card_id="death_tyrant",
-            selection={"target_node_id": "site_a", "target_slot_index": 0},
+            selection={"target_node_id": "site_gauntlgrym", "target_slot_index": 0},
         ),
     )
 
@@ -383,7 +383,7 @@ def test_death_tyrant_can_stop_after_one_assassination() -> None:
     )
     resolved = apply(after_second, second_skip)
 
-    assert resolved.board.nodes["site_a"].troop_slots == [None, "p2", "p2"]
+    assert resolved.board.nodes["site_gauntlgrym"].troop_slots == [None, "p2", "p2"]
     assert resolved.resource_pool.influence == 1
 
 
@@ -394,8 +394,8 @@ def test_death_tyrant_no_legal_targets_resolves_with_zero_influence() -> None:
     state.players["p1"].discard_pile = []
     state.players["p1"].played_cards = []
     state.resource_pool.influence = 0
-    state.board.nodes["site_a"].spies.add("p1")
-    state.board.nodes["site_a"].troop_slots = [None, None, None]
+    state.board.nodes["site_gauntlgrym"].spies.add("p1")
+    state.board.nodes["site_gauntlgrym"].troop_slots = [None, None, None]
 
     resolved = apply(state, PlayCardMove(player_id="p1", card_id="death_tyrant", hand_index=0))
 
@@ -410,8 +410,8 @@ def test_death_tyrant_can_decline_all_assassinations_even_with_targets() -> None
     state.players["p1"].discard_pile = []
     state.players["p1"].played_cards = []
     state.resource_pool.influence = 0
-    state.board.nodes["site_a"].spies.add("p1")
-    state.board.nodes["site_a"].troop_slots = ["p2", "p2", "p2"]
+    state.board.nodes["site_gauntlgrym"].spies.add("p1")
+    state.board.nodes["site_gauntlgrym"].troop_slots = ["p2", "p2", "p2"]
 
     played = apply(state, PlayCardMove(player_id="p1", card_id="death_tyrant", hand_index=0))
 
@@ -442,7 +442,7 @@ def test_death_tyrant_can_decline_all_assassinations_even_with_targets() -> None
     )
     resolved = apply(after_second, skip_third)
 
-    assert resolved.board.nodes["site_a"].troop_slots == ["p2", "p2", "p2"]
+    assert resolved.board.nodes["site_gauntlgrym"].troop_slots == ["p2", "p2", "p2"]
     assert resolved.resource_pool.influence == 0
 
 
@@ -453,8 +453,8 @@ def test_earth_elemental_grants_one_influence_and_draws_with_ambition_focus() ->
     state.players["p1"].discard_pile = []
     state.players["p1"].played_cards = []
     state.resource_pool.influence = 0
-    state.board.nodes["site_a"].troop_slots = ["p2", None, None]
-    state.board.nodes["site_a"].spies.add("p1")
+    state.board.nodes["site_gauntlgrym"].troop_slots = ["p2", None, None]
+    state.board.nodes["site_gauntlgrym"].spies.add("p1")
     p2_barracks_before = state.players["p2"].barracks
 
     played = apply(state, PlayCardMove(player_id="p1", card_id="earth_elemental", hand_index=0))
@@ -463,7 +463,7 @@ def test_earth_elemental_grants_one_influence_and_draws_with_ambition_focus() ->
         ResolveGenericChoiceMove(
             player_id="p1",
             source_card_id="earth_elemental",
-            selection={"unit_type": "troop", "node_id": "site_a", "target_slot_index": 0},
+            selection={"unit_type": "troop", "node_id": "site_gauntlgrym", "target_slot_index": 0},
         ),
     )
 
@@ -479,8 +479,8 @@ def test_earth_elemental_does_not_draw_without_ambition_focus() -> None:
     state.players["p1"].discard_pile = []
     state.players["p1"].played_cards = []
     state.resource_pool.influence = 0
-    state.board.nodes["site_a"].troop_slots = ["p2", None, None]
-    state.board.nodes["site_a"].spies.add("p1")
+    state.board.nodes["site_gauntlgrym"].troop_slots = ["p2", None, None]
+    state.board.nodes["site_gauntlgrym"].spies.add("p1")
 
     played = apply(state, PlayCardMove(player_id="p1", card_id="earth_elemental", hand_index=0))
     resolved = apply(
@@ -488,7 +488,7 @@ def test_earth_elemental_does_not_draw_without_ambition_focus() -> None:
         ResolveGenericChoiceMove(
             player_id="p1",
             source_card_id="earth_elemental",
-            selection={"unit_type": "troop", "node_id": "site_a", "target_slot_index": 0},
+            selection={"unit_type": "troop", "node_id": "site_gauntlgrym", "target_slot_index": 0},
         ),
     )
 
@@ -503,8 +503,8 @@ def test_eternal_flame_cultist_focus_bonus_grants_two_power() -> None:
     state.players["p1"].discard_pile = []
     state.players["p1"].played_cards = []
     state.resource_pool.power = 0
-    state.board.nodes["site_a"].spies.add("p1")
-    state.board.nodes["site_a"].troop_slots = ["p2", None, None]
+    state.board.nodes["site_gauntlgrym"].spies.add("p1")
+    state.board.nodes["site_gauntlgrym"].troop_slots = ["p2", None, None]
 
     played = apply(state, PlayCardMove(player_id="p1", card_id="eternal_flame_cultist", hand_index=0))
     resolved = apply(
@@ -512,7 +512,7 @@ def test_eternal_flame_cultist_focus_bonus_grants_two_power() -> None:
         ResolveGenericChoiceMove(
             player_id="p1",
             source_card_id="eternal_flame_cultist",
-            selection={"target_node_id": "site_a", "target_slot_index": 0},
+            selection={"target_node_id": "site_gauntlgrym", "target_slot_index": 0},
         ),
     )
 
@@ -526,8 +526,8 @@ def test_eternal_flame_cultist_without_focus_grants_no_bonus_power() -> None:
     state.players["p1"].discard_pile = []
     state.players["p1"].played_cards = []
     state.resource_pool.power = 0
-    state.board.nodes["site_a"].spies.add("p1")
-    state.board.nodes["site_a"].troop_slots = ["p2", None, None]
+    state.board.nodes["site_gauntlgrym"].spies.add("p1")
+    state.board.nodes["site_gauntlgrym"].troop_slots = ["p2", None, None]
 
     played = apply(state, PlayCardMove(player_id="p1", card_id="eternal_flame_cultist", hand_index=0))
     resolved = apply(
@@ -535,7 +535,7 @@ def test_eternal_flame_cultist_without_focus_grants_no_bonus_power() -> None:
         ResolveGenericChoiceMove(
             player_id="p1",
             source_card_id="eternal_flame_cultist",
-            selection={"target_node_id": "site_a", "target_slot_index": 0},
+            selection={"target_node_id": "site_gauntlgrym", "target_slot_index": 0},
         ),
     )
 
@@ -550,8 +550,8 @@ def test_dragonclaw_grants_two_power_when_non_white_trophy_threshold_met() -> No
     state.players["p1"].played_cards = []
     state.players["p1"].trophy_hall = ["p2", "p2", "p2", "p2", "p2"]
     state.resource_pool.power = 0
-    state.board.nodes["site_a"].spies.add("p1")
-    state.board.nodes["site_a"].troop_slots = ["p2", None, None]
+    state.board.nodes["site_gauntlgrym"].spies.add("p1")
+    state.board.nodes["site_gauntlgrym"].troop_slots = ["p2", None, None]
 
     played = apply(state, PlayCardMove(player_id="p1", card_id="dragonclaw", hand_index=0))
     resolved = apply(
@@ -559,7 +559,7 @@ def test_dragonclaw_grants_two_power_when_non_white_trophy_threshold_met() -> No
         ResolveGenericChoiceMove(
             player_id="p1",
             source_card_id="dragonclaw",
-            selection={"target_node_id": "site_a", "target_slot_index": 0},
+            selection={"target_node_id": "site_gauntlgrym", "target_slot_index": 0},
         ),
     )
 
@@ -574,8 +574,8 @@ def test_dragonclaw_does_not_count_white_trophies_toward_threshold() -> None:
     state.players["p1"].played_cards = []
     state.players["p1"].trophy_hall = ["p2", "p2", "p2", "white", "white"]
     state.resource_pool.power = 0
-    state.board.nodes["site_a"].spies.add("p1")
-    state.board.nodes["site_a"].troop_slots = ["p2", None, None]
+    state.board.nodes["site_gauntlgrym"].spies.add("p1")
+    state.board.nodes["site_gauntlgrym"].troop_slots = ["p2", None, None]
 
     played = apply(state, PlayCardMove(player_id="p1", card_id="dragonclaw", hand_index=0))
     resolved = apply(
@@ -583,7 +583,7 @@ def test_dragonclaw_does_not_count_white_trophies_toward_threshold() -> None:
         ResolveGenericChoiceMove(
             player_id="p1",
             source_card_id="dragonclaw",
-            selection={"target_node_id": "site_a", "target_slot_index": 0},
+            selection={"target_node_id": "site_gauntlgrym", "target_slot_index": 0},
         ),
     )
 
@@ -626,7 +626,7 @@ def test_white_wyrmling_deploys_two_before_market_devour_choice() -> None:
     state.players["p1"].deck = []
     state.players["p1"].discard_pile = []
     state.players["p1"].played_cards = []
-    state.board.nodes["site_a"].troop_slots = [None, None, None]
+    state.board.nodes["site_gauntlgrym"].troop_slots = [None, None, None]
     barracks_before = state.players["p1"].barracks
 
     played = apply(state, PlayCardMove(player_id="p1", card_id="white_wyrmling", hand_index=0))
@@ -635,7 +635,7 @@ def test_white_wyrmling_deploys_two_before_market_devour_choice() -> None:
         for move in legal_moves(played)
         if isinstance(move, ResolveGenericChoiceMove)
         and move.source_card_id == "white_wyrmling"
-        and move.selection.get("target_node_id") == "site_a"
+        and move.selection.get("target_node_id") == "site_gauntlgrym"
     )
     after_first_deploy = apply(played, deploy_move)
     second_deploy_move = next(
@@ -643,11 +643,11 @@ def test_white_wyrmling_deploys_two_before_market_devour_choice() -> None:
         for move in legal_moves(after_first_deploy)
         if isinstance(move, ResolveGenericChoiceMove)
         and move.source_card_id == "white_wyrmling"
-        and move.selection.get("target_node_id") == "site_a"
+        and move.selection.get("target_node_id") == "site_gauntlgrym"
     )
     deployed = apply(after_first_deploy, second_deploy_move)
 
-    assert deployed.board.nodes["site_a"].troop_slots.count("p1") == 2
+    assert deployed.board.nodes["site_gauntlgrym"].troop_slots.count("p1") == 2
     assert deployed.players["p1"].barracks == barracks_before - 2
 
     follow_up_moves = [
@@ -665,7 +665,7 @@ def test_gar_shatterkeel_deploys_three_before_recruit_choice() -> None:
     state.players["p1"].deck = []
     state.players["p1"].discard_pile = []
     state.players["p1"].played_cards = []
-    state.board.nodes["site_a"].troop_slots = [None, None, None]
+    state.board.nodes["site_gauntlgrym"].troop_slots = [None, None, None]
     barracks_before = state.players["p1"].barracks
 
     played = apply(state, PlayCardMove(player_id="p1", card_id="gar_shatterkeel", hand_index=0))
@@ -674,13 +674,13 @@ def test_gar_shatterkeel_deploys_three_before_recruit_choice() -> None:
         for move in legal_moves(played)
         if isinstance(move, ResolveGenericChoiceMove)
         and move.source_card_id == "gar_shatterkeel"
-        and move.selection.get("target_node_id") == "site_a"
+        and move.selection.get("target_node_id") == "site_gauntlgrym"
     )
     deployed = played
     for _ in range(3):
         deployed = apply(deployed, deploy_move)
 
-    assert deployed.board.nodes["site_a"].troop_slots.count("p1") == 3
+    assert deployed.board.nodes["site_gauntlgrym"].troop_slots.count("p1") == 3
     assert deployed.players["p1"].barracks == barracks_before - 3
 
 
@@ -692,7 +692,7 @@ def test_gar_shatterkeel_recruit_respects_aspect_and_cost_cap() -> None:
     state.players["p1"].played_cards = []
     state.resource_pool.influence = 10
     state.market.row = ["advance_scout", "balor", "blackguard"]
-    state.board.nodes["site_a"].troop_slots = [None, None, None]
+    state.board.nodes["site_gauntlgrym"].troop_slots = [None, None, None]
 
     played = apply(state, PlayCardMove(player_id="p1", card_id="gar_shatterkeel", hand_index=0))
     deploy_move = next(
@@ -700,7 +700,7 @@ def test_gar_shatterkeel_recruit_respects_aspect_and_cost_cap() -> None:
         for move in legal_moves(played)
         if isinstance(move, ResolveGenericChoiceMove)
         and move.source_card_id == "gar_shatterkeel"
-        and move.selection.get("target_node_id") == "site_a"
+        and move.selection.get("target_node_id") == "site_gauntlgrym"
     )
     after_deploy = played
     for _ in range(3):
@@ -724,8 +724,8 @@ def test_gibbering_mouther_targets_only_opponents_with_presence_and_adds_insane_
     state.players["p1"].deck = []
     state.players["p1"].discard_pile = []
     state.players["p1"].played_cards = []
-    state.board.nodes["site_a"].troop_slots = [None, None, None]
-    state.board.nodes["site_a"].spies = {"p2", "p3"}
+    state.board.nodes["site_gauntlgrym"].troop_slots = [None, None, None]
+    state.board.nodes["site_gauntlgrym"].spies = {"p2", "p3"}
 
     played = apply(state, PlayCardMove(player_id="p1", card_id="gibbering_mouther", hand_index=0))
     deploy_move = next(
@@ -733,7 +733,7 @@ def test_gibbering_mouther_targets_only_opponents_with_presence_and_adds_insane_
         for move in legal_moves(played)
         if isinstance(move, ResolveGenericChoiceMove)
         and move.source_card_id == "gibbering_mouther"
-        and move.selection.get("target_node_id") == "site_a"
+        and move.selection.get("target_node_id") == "site_gauntlgrym"
     )
     after_first_deploy = apply(played, deploy_move)
     second_deploy_move = next(
@@ -741,7 +741,7 @@ def test_gibbering_mouther_targets_only_opponents_with_presence_and_adds_insane_
         for move in legal_moves(after_first_deploy)
         if isinstance(move, ResolveGenericChoiceMove)
         and move.source_card_id == "gibbering_mouther"
-        and move.selection.get("target_node_id") == "site_a"
+        and move.selection.get("target_node_id") == "site_gauntlgrym"
     )
     after_deploy = apply(after_first_deploy, second_deploy_move)
 
@@ -814,8 +814,8 @@ def test_red_dragon_returns_enemy_spy_after_supplant() -> None:
     state.players["p1"].deck = []
     state.players["p1"].discard_pile = []
     state.players["p1"].played_cards = []
-    state.board.nodes["site_a"].troop_slots = ["p1", "p2", None]
-    state.board.nodes["site_a"].spies = {"p1", "p2"}
+    state.board.nodes["site_gauntlgrym"].troop_slots = ["p1", "p2", None]
+    state.board.nodes["site_gauntlgrym"].spies = {"p1", "p2"}
     spies_available_before = state.players["p2"].spies_available
 
     played = apply(state, PlayCardMove(player_id="p1", card_id="red_dragon", hand_index=0))
@@ -824,7 +824,7 @@ def test_red_dragon_returns_enemy_spy_after_supplant() -> None:
         for move in legal_moves(played)
         if isinstance(move, ResolveGenericChoiceMove)
         and move.source_card_id == "red_dragon"
-        and move.selection.get("target_node_id") == "site_a"
+        and move.selection.get("target_node_id") == "site_gauntlgrym"
         and move.selection.get("target_slot_index") == 1
     )
     after_supplant = apply(played, supplant_move)
@@ -834,14 +834,14 @@ def test_red_dragon_returns_enemy_spy_after_supplant() -> None:
         for move in legal_moves(after_supplant)
         if isinstance(move, ResolveGenericChoiceMove)
         and move.source_card_id == "red_dragon"
-        and move.selection.get("node_id") == "site_a"
+        and move.selection.get("node_id") == "site_gauntlgrym"
     ]
 
     assert {str(move.selection["spy_owner_id"]) for move in return_spy_moves} == {"p2"}
 
     resolved = apply(after_supplant, return_spy_moves[0])
 
-    assert "p2" not in resolved.board.nodes["site_a"].spies
+    assert "p2" not in resolved.board.nodes["site_gauntlgrym"].spies
     assert resolved.players["p2"].spies_available == spies_available_before + 1
 
 
@@ -851,7 +851,7 @@ def test_yan_c_bin_focus_adds_a_second_spy_action() -> None:
     state.players["p1"].deck = []
     state.players["p1"].discard_pile = []
     state.players["p1"].played_cards = []
-    state.board.nodes["site_a"].troop_slots = ["p2", None, None]
+    state.board.nodes["site_gauntlgrym"].troop_slots = ["p2", None, None]
 
     played = apply(state, PlayCardMove(player_id="p1", card_id="yan_c_bin", hand_index=0))
     place_spy_move = next(
@@ -859,7 +859,7 @@ def test_yan_c_bin_focus_adds_a_second_spy_action() -> None:
         for move in legal_moves(played)
         if isinstance(move, ResolveGenericChoiceMove)
         and move.source_card_id == "yan_c_bin"
-        and move.selection.get("target_node_id") == "site_a"
+        and move.selection.get("target_node_id") == "site_gauntlgrym"
     )
     after_spy = apply(played, place_spy_move)
     assassinate_move = next(
@@ -867,7 +867,7 @@ def test_yan_c_bin_focus_adds_a_second_spy_action() -> None:
         for move in legal_moves(after_spy)
         if isinstance(move, ResolveGenericChoiceMove)
         and move.source_card_id == "yan_c_bin"
-        and move.selection.get("target_node_id") == "site_a"
+        and move.selection.get("target_node_id") == "site_gauntlgrym"
         and move.selection.get("target_slot_index") == 0
     )
     after_assassinate = apply(after_spy, assassinate_move)
@@ -1002,9 +1002,9 @@ def test_glabrezu_defines_two_single_assassination_actions() -> None:
     execution_actions = card.execution_model.actions
     flattened_actions = card.actions
 
-    assert [action.op for action in execution_actions] == ["devour", "assassinate_troop", "assassinate_troop"]
+    assert [action.op for action in execution_actions] == ["devour_cost", "assassinate_troop", "assassinate_troop"]
     assert [action.quantity.value for action in execution_actions[1:]] == [1, 1]
-    assert [action.op for action in flattened_actions] == ["devour", "assassinate_troop", "assassinate_troop"]
+    assert [action.op for action in flattened_actions] == ["devour_cost", "assassinate_troop", "assassinate_troop"]
 
 
 def test_glabrezu_runtime_offers_second_assassination_after_first_target() -> None:
@@ -1013,8 +1013,8 @@ def test_glabrezu_runtime_offers_second_assassination_after_first_target() -> No
     state.players["p1"].deck = []
     state.players["p1"].discard_pile = []
     state.players["p1"].played_cards = []
-    state.board.nodes["site_a"].spies.add("p1")
-    state.board.nodes["site_a"].troop_slots = ["p2", "p2", None]
+    state.board.nodes["site_gauntlgrym"].spies.add("p1")
+    state.board.nodes["site_gauntlgrym"].troop_slots = ["p2", "p2", None]
 
     played = apply(state, PlayCardMove(player_id="p1", card_id="glabrezu", hand_index=0))
     devour_move = next(
@@ -1031,7 +1031,7 @@ def test_glabrezu_runtime_offers_second_assassination_after_first_target() -> No
         for move in legal_moves(after_devour)
         if isinstance(move, ResolveGenericChoiceMove)
         and move.source_card_id == "glabrezu"
-        and move.selection.get("target_node_id") == "site_a"
+        and move.selection.get("target_node_id") == "site_gauntlgrym"
         and move.selection.get("target_slot_index") == 0
     )
     after_first = apply(after_devour, first_assassinate)
@@ -1041,7 +1041,7 @@ def test_glabrezu_runtime_offers_second_assassination_after_first_target() -> No
         for move in legal_moves(after_first)
         if isinstance(move, ResolveGenericChoiceMove)
         and move.source_card_id == "glabrezu"
-        and move.selection.get("target_node_id") == "site_a"
+        and move.selection.get("target_node_id") == "site_gauntlgrym"
     ]
     assert second_assassination_moves
     assert {int(move.selection["target_slot_index"]) for move in second_assassination_moves} == {1}
@@ -1053,8 +1053,8 @@ def test_grazzt_option_two_returns_own_spy_then_supplants_white_at_same_site() -
     state.players["p1"].deck = []
     state.players["p1"].discard_pile = []
     state.players["p1"].played_cards = []
-    state.board.nodes["site_a"].spies = {"p1"}
-    state.board.nodes["site_a"].troop_slots = ["white", None, None]
+    state.board.nodes["site_gauntlgrym"].spies = {"p1"}
+    state.board.nodes["site_gauntlgrym"].troop_slots = ["white", None, None]
 
     played = apply(state, PlayCardMove(player_id="p1", card_id="grazzt", hand_index=0))
     option_two_move = next(
@@ -1071,7 +1071,7 @@ def test_grazzt_option_two_returns_own_spy_then_supplants_white_at_same_site() -
         for move in legal_moves(after_option)
         if isinstance(move, ResolveGenericChoiceMove)
         and move.source_card_id == "grazzt"
-        and move.selection.get("node_id") == "site_a"
+        and move.selection.get("node_id") == "site_gauntlgrym"
         and move.selection.get("spy_owner_id") == "p1"
     )
     after_return = apply(after_option, return_move)
@@ -1084,12 +1084,12 @@ def test_grazzt_option_two_returns_own_spy_then_supplants_white_at_same_site() -
         and "target_node_id" in move.selection
     ]
     assert supplant_moves
-    assert {str(move.selection["target_node_id"]) for move in supplant_moves} == {"site_a"}
+    assert {str(move.selection["target_node_id"]) for move in supplant_moves} == {"site_gauntlgrym"}
 
     supplant_move = next(move for move in supplant_moves if int(move.selection["target_slot_index"]) == 0)
     resolved = apply(after_return, supplant_move)
 
-    assert resolved.board.nodes["site_a"].troop_slots[0] == "p1"
+    assert resolved.board.nodes["site_gauntlgrym"].troop_slots[0] == "p1"
 
 
 def test_green_wyrmling_gains_two_influence_when_other_troop_present_at_spy_site() -> None:
@@ -1099,7 +1099,7 @@ def test_green_wyrmling_gains_two_influence_when_other_troop_present_at_spy_site
     state.players["p1"].discard_pile = []
     state.players["p1"].played_cards = []
     state.resource_pool.influence = 0
-    state.board.nodes["site_a"].troop_slots = ["p2", None, None]
+    state.board.nodes["site_gauntlgrym"].troop_slots = ["p2", None, None]
     state.board.nodes["site_blingdenfire"].troop_slots = [None, None]
 
     played = apply(state, PlayCardMove(player_id="p1", card_id="green_wyrmling", hand_index=0))
@@ -1108,7 +1108,7 @@ def test_green_wyrmling_gains_two_influence_when_other_troop_present_at_spy_site
         for move in legal_moves(played)
         if isinstance(move, ResolveGenericChoiceMove)
         and move.source_card_id == "green_wyrmling"
-        and move.selection.get("target_node_id") == "site_a"
+        and move.selection.get("target_node_id") == "site_gauntlgrym"
     )
     resolved = apply(played, place_spy_move)
 
@@ -1122,7 +1122,7 @@ def test_green_wyrmling_does_not_gain_influence_without_other_troop_at_spy_site(
     state.players["p1"].discard_pile = []
     state.players["p1"].played_cards = []
     state.resource_pool.influence = 0
-    state.board.nodes["site_a"].troop_slots = [None, None, None]
+    state.board.nodes["site_gauntlgrym"].troop_slots = [None, None, None]
 
     played = apply(state, PlayCardMove(player_id="p1", card_id="green_wyrmling", hand_index=0))
     place_spy_move = next(
@@ -1130,7 +1130,7 @@ def test_green_wyrmling_does_not_gain_influence_without_other_troop_at_spy_site(
         for move in legal_moves(played)
         if isinstance(move, ResolveGenericChoiceMove)
         and move.source_card_id == "green_wyrmling"
-        and move.selection.get("target_node_id") == "site_a"
+        and move.selection.get("target_node_id") == "site_gauntlgrym"
     )
     resolved = apply(played, place_spy_move)
 
@@ -1195,7 +1195,7 @@ def test_howling_hatred_cultist_return_spy_mode_gains_three_influence_with_focus
     state.players["p1"].played_cards = []
     state.resource_pool.influence = 0
     state.resource_pool.power = 0
-    state.board.nodes["site_a"].spies = {"p1"}
+    state.board.nodes["site_gauntlgrym"].spies = {"p1"}
 
     played = apply(state, PlayCardMove(player_id="p1", card_id="howling_hatred_cultist", hand_index=0))
     option_two = apply(
@@ -1207,7 +1207,7 @@ def test_howling_hatred_cultist_return_spy_mode_gains_three_influence_with_focus
         for move in legal_moves(option_two)
         if isinstance(move, ResolveGenericChoiceMove)
         and move.source_card_id == "howling_hatred_cultist"
-        and move.selection.get("node_id") == "site_a"
+        and move.selection.get("node_id") == "site_gauntlgrym"
         and move.selection.get("spy_owner_id") == "p1"
     )
     resolved = apply(option_two, return_spy)
@@ -1224,7 +1224,7 @@ def test_howling_hatred_cultist_return_spy_mode_without_focus_gains_only_influen
     state.players["p1"].played_cards = []
     state.resource_pool.influence = 0
     state.resource_pool.power = 0
-    state.board.nodes["site_a"].spies = {"p1"}
+    state.board.nodes["site_gauntlgrym"].spies = {"p1"}
 
     played = apply(state, PlayCardMove(player_id="p1", card_id="howling_hatred_cultist", hand_index=0))
     option_two = apply(
@@ -1236,7 +1236,7 @@ def test_howling_hatred_cultist_return_spy_mode_without_focus_gains_only_influen
         for move in legal_moves(option_two)
         if isinstance(move, ResolveGenericChoiceMove)
         and move.source_card_id == "howling_hatred_cultist"
-        and move.selection.get("node_id") == "site_a"
+        and move.selection.get("node_id") == "site_gauntlgrym"
         and move.selection.get("spy_owner_id") == "p1"
     )
     resolved = apply(option_two, return_spy)
@@ -1252,8 +1252,8 @@ def test_howling_hatred_cultist_return_spy_mode_only_allows_own_spies() -> None:
     state.players["p1"].discard_pile = []
     state.players["p1"].played_cards = []
     state.resource_pool.power = 10
-    state.board.nodes["site_a"].spies = {"p1", "p2"}
-    state.board.nodes["site_a"].troop_slots = ["p1", None, None]
+    state.board.nodes["site_gauntlgrym"].spies = {"p1", "p2"}
+    state.board.nodes["site_gauntlgrym"].troop_slots = ["p1", None, None]
 
     played = apply(state, PlayCardMove(player_id="p1", card_id="howling_hatred_cultist", hand_index=0))
     option_two = apply(
@@ -1305,7 +1305,7 @@ def test_infiltrator_gains_one_power_when_other_player_troop_present_at_spy_site
     state.players["p1"].discard_pile = []
     state.players["p1"].played_cards = []
     state.resource_pool.power = 0
-    state.board.nodes["site_a"].troop_slots = ["p2", None, None]
+    state.board.nodes["site_gauntlgrym"].troop_slots = ["p2", None, None]
 
     played = apply(state, PlayCardMove(player_id="p1", card_id="infiltrator", hand_index=0))
     place_spy_move = next(
@@ -1313,7 +1313,7 @@ def test_infiltrator_gains_one_power_when_other_player_troop_present_at_spy_site
         for move in legal_moves(played)
         if isinstance(move, ResolveGenericChoiceMove)
         and move.source_card_id == "infiltrator"
-        and move.selection.get("target_node_id") == "site_a"
+        and move.selection.get("target_node_id") == "site_gauntlgrym"
     )
     resolved = apply(played, place_spy_move)
 
@@ -1327,7 +1327,7 @@ def test_infiltrator_does_not_gain_power_without_other_player_troop_at_spy_site(
     state.players["p1"].discard_pile = []
     state.players["p1"].played_cards = []
     state.resource_pool.power = 0
-    state.board.nodes["site_a"].troop_slots = [None, None, None]
+    state.board.nodes["site_gauntlgrym"].troop_slots = [None, None, None]
 
     played = apply(state, PlayCardMove(player_id="p1", card_id="infiltrator", hand_index=0))
     place_spy_move = next(
@@ -1335,7 +1335,7 @@ def test_infiltrator_does_not_gain_power_without_other_player_troop_at_spy_site(
         for move in legal_moves(played)
         if isinstance(move, ResolveGenericChoiceMove)
         and move.source_card_id == "infiltrator"
-        and move.selection.get("target_node_id") == "site_a"
+        and move.selection.get("target_node_id") == "site_gauntlgrym"
     )
     resolved = apply(played, place_spy_move)
 
@@ -1348,7 +1348,7 @@ def test_information_broker_return_spy_mode_returns_own_spy_and_draws_three() ->
     state.players["p1"].deck = ["blackguard", "drow_negotiator", "infiltrator", "kobold"]
     state.players["p1"].discard_pile = []
     state.players["p1"].played_cards = []
-    state.board.nodes["site_a"].spies = {"p1", "p2"}
+    state.board.nodes["site_gauntlgrym"].spies = {"p1", "p2"}
 
     played = apply(state, PlayCardMove(player_id="p1", card_id="information_broker", hand_index=0))
     option_two = apply(
@@ -1369,13 +1369,13 @@ def test_information_broker_return_spy_mode_returns_own_spy_and_draws_three() ->
     return_spy_move = next(
         move
         for move in return_moves
-        if move.selection.get("node_id") == "site_a" and move.selection.get("spy_owner_id") == "p1"
+        if move.selection.get("node_id") == "site_gauntlgrym" and move.selection.get("spy_owner_id") == "p1"
     )
     hand_before = len(option_two.players["p1"].hand)
     resolved = apply(option_two, return_spy_move)
 
     assert len(resolved.players["p1"].hand) == hand_before + 3
-    assert "p1" not in resolved.board.nodes["site_a"].spies
+    assert "p1" not in resolved.board.nodes["site_gauntlgrym"].spies
 
 
 def test_information_broker_model_includes_draw_three_on_option_two() -> None:
@@ -1417,7 +1417,7 @@ def test_jackalwere_option_two_returns_own_spy_and_gains_power_and_influence() -
     state.players["p1"].played_cards = []
     state.resource_pool.power = 0
     state.resource_pool.influence = 0
-    state.board.nodes["site_a"].spies = {"p1", "p2"}
+    state.board.nodes["site_gauntlgrym"].spies = {"p1", "p2"}
 
     played = apply(state, PlayCardMove(player_id="p1", card_id="jackalwere", hand_index=0))
     option_two = apply(
@@ -1438,7 +1438,7 @@ def test_jackalwere_option_two_returns_own_spy_and_gains_power_and_influence() -
     return_spy_move = next(
         move
         for move in return_moves
-        if move.selection.get("node_id") == "site_a" and move.selection.get("spy_owner_id") == "p1"
+        if move.selection.get("node_id") == "site_gauntlgrym" and move.selection.get("spy_owner_id") == "p1"
     )
     resolved = apply(option_two, return_spy_move)
 
@@ -1452,7 +1452,7 @@ def test_intellect_devourer_option_two_returns_only_own_units_with_mixed_choices
     state.players["p1"].deck = []
     state.players["p1"].discard_pile = []
     state.players["p1"].played_cards = []
-    state.board.nodes["site_a"].troop_slots = ["p1", "p2", None]
+    state.board.nodes["site_gauntlgrym"].troop_slots = ["p1", "p2", None]
     state.board.nodes["site_blingdenfire"].spies = {"p1", "p2"}
     barracks_before = state.players["p1"].barracks
     spies_before = state.players["p1"].spies_available
@@ -1484,7 +1484,7 @@ def test_intellect_devourer_option_two_returns_only_own_units_with_mixed_choices
     return_troop_move = next(
         move
         for move in troop_moves
-        if move.selection.get("node_id") == "site_a" and int(move.selection.get("target_slot_index", -1)) == 0
+        if move.selection.get("node_id") == "site_gauntlgrym" and int(move.selection.get("target_slot_index", -1)) == 0
     )
     after_first = apply(option_two, return_troop_move)
 
@@ -1649,9 +1649,9 @@ def test_minotaur_skeleton_white_assassination_chain_stays_on_initial_site() -> 
     state.players["p1"].deck = []
     state.players["p1"].discard_pile = []
     state.players["p1"].played_cards = []
-    state.board.nodes["site_a"].spies.add("p1")
+    state.board.nodes["site_gauntlgrym"].spies.add("p1")
     state.board.nodes["site_blingdenfire"].spies.add("p1")
-    state.board.nodes["site_a"].troop_slots = ["white", "white", "white"]
+    state.board.nodes["site_gauntlgrym"].troop_slots = ["white", "white", "white"]
     state.board.nodes["site_blingdenfire"].troop_slots = ["white", None, None]
 
     played = apply(state, PlayCardMove(player_id="p1", card_id="minotaur_skeleton", hand_index=0))
@@ -1665,7 +1665,7 @@ def test_minotaur_skeleton_white_assassination_chain_stays_on_initial_site() -> 
         for move in legal_moves(option_two)
         if isinstance(move, ResolveGenericChoiceMove)
         and move.source_card_id == "minotaur_skeleton"
-        and move.selection.get("target_node_id") == "site_a"
+        and move.selection.get("target_node_id") == "site_gauntlgrym"
         and move.selection.get("target_slot_index") == 0
     )
     after_first = apply(option_two, first_assassinate)
@@ -1679,7 +1679,7 @@ def test_minotaur_skeleton_white_assassination_chain_stays_on_initial_site() -> 
     ]
 
     assert second_assassinate_moves
-    assert {str(move.selection["target_node_id"]) for move in second_assassinate_moves} == {"site_a"}
+    assert {str(move.selection["target_node_id"]) for move in second_assassinate_moves} == {"site_gauntlgrym"}
 
 
 def test_nalfeshnee_grants_three_influence() -> None:
@@ -1806,7 +1806,7 @@ def test_night_hag_option_two_returns_own_spy_and_draws_two() -> None:
     state.players["p1"].deck = ["advance_scout", "soldier", "noble"]
     state.players["p1"].discard_pile = []
     state.players["p1"].played_cards = []
-    state.board.nodes["site_a"].spies = {"p1", "p2"}
+    state.board.nodes["site_gauntlgrym"].spies = {"p1", "p2"}
 
     played = apply(state, PlayCardMove(player_id="p1", card_id="night_hag", hand_index=0))
     option_two = apply(
@@ -1827,25 +1827,25 @@ def test_night_hag_option_two_returns_own_spy_and_draws_two() -> None:
     return_spy_move = next(
         move
         for move in return_moves
-        if move.selection.get("node_id") == "site_a" and move.selection.get("spy_owner_id") == "p1"
+        if move.selection.get("node_id") == "site_gauntlgrym" and move.selection.get("spy_owner_id") == "p1"
     )
     hand_before = len(option_two.players["p1"].hand)
     resolved = apply(option_two, return_spy_move)
 
     assert len(resolved.players["p1"].hand) == hand_before + 2
-    assert "p1" not in resolved.board.nodes["site_a"].spies
+    assert "p1" not in resolved.board.nodes["site_gauntlgrym"].spies
 
 
 def test_presence_includes_adjacent_troop() -> None:
     state = _base_state(seed=17)
     updated = state.model_copy(deep=True)
-    updated.board.nodes["route_ab"].troop_slots[0] = "p1"
+    updated.board.nodes["route_1"].troop_slots[0] = "p1"
 
-    assert has_presence(updated, "p1", "site_a")
-    assert has_presence(updated, "p1", "site_blingdenfire")
+    assert has_presence(updated, "p1", "site_gauntlgrym")
+    assert has_presence(updated, "p1", "site_the_wormwrithings")
 
 
-def test_deploy_places_troop() -> None:
+def test_deploy_places_troop_and_updates_control_marker() -> None:
     state = _base_state(seed=19)
     updated = state.model_copy(deep=True)
     updated.resource_pool.power = 1
@@ -1854,12 +1854,12 @@ def test_deploy_places_troop() -> None:
         updated,
         DeployMove(
             player_id=updated.current_player_id,
-            target_node_id="site_a",
+            target_node_id="site_gauntlgrym",
             troop_count=1,
         ),
     )
 
-    assert deployed.board.nodes["site_a"].troop_slots.count("p1") == 1
+    assert deployed.board.nodes["site_gauntlgrym"].troop_slots.count("p1") == 1
     assert deployed.players["p1"].barracks == updated.players["p1"].barracks - 1
     assert deployed.resource_pool.power == 0
 
@@ -1874,13 +1874,13 @@ def test_deploy_awards_score_when_barracks_are_empty() -> None:
         updated,
         DeployMove(
             player_id=updated.current_player_id,
-            target_node_id="site_a",
+            target_node_id="site_gauntlgrym",
             troop_count=1,
         ),
     )
 
     assert deployed.players["p1"].score == updated.players["p1"].score + 1
-    assert deployed.board.nodes["site_a"].troop_slots == updated.board.nodes["site_a"].troop_slots
+    assert deployed.board.nodes["site_gauntlgrym"].troop_slots == updated.board.nodes["site_gauntlgrym"].troop_slots
 
 
 def test_deploy_can_place_troop_on_route() -> None:
@@ -1892,12 +1892,12 @@ def test_deploy_can_place_troop_on_route() -> None:
         updated,
         DeployMove(
             player_id=updated.current_player_id,
-            target_node_id="route_ab",
+            target_node_id="route_1",
             troop_count=1,
         ),
     )
 
-    assert deployed.board.nodes["route_ab"].troop_slots == ["p1"]
+    assert deployed.board.nodes["route_1"].troop_slots == ["p1"]
     assert deployed.players["p1"].barracks == updated.players["p1"].barracks - 1
     assert deployed.resource_pool.power == 0
 
@@ -1906,14 +1906,14 @@ def test_deploy_rejects_targeting_full_route_slot() -> None:
     state = _base_state(seed=24)
     updated = state.model_copy(deep=True)
     updated.resource_pool.power = 1
-    updated.board.nodes["route_ab"].troop_slots = ["p2"]
+    updated.board.nodes["route_1"].troop_slots = ["p2"]
 
     with pytest.raises(IllegalMoveError, match="empty slot"):
         apply(
             updated,
             DeployMove(
                 player_id=updated.current_player_id,
-                target_node_id="route_ab",
+                target_node_id="route_1",
                 troop_count=1,
             ),
         )
@@ -1923,18 +1923,18 @@ def test_assassinate_removes_enemy_troop_and_records_trophy() -> None:
     state = _base_state(seed=23)
     updated = state.model_copy(deep=True)
     updated.resource_pool.power = 3
-    updated.board.nodes["site_a"].troop_slots = ["p1", "p2", None]
+    updated.board.nodes["site_gauntlgrym"].troop_slots = ["p1", "p2", None]
 
     assassinated = apply(
         updated,
         AssassinateMove(
             player_id=updated.current_player_id,
-            target_node_id="site_a",
+            target_node_id="site_gauntlgrym",
             target_slot_index=1,
         ),
     )
 
-    assert assassinated.board.nodes["site_a"].troop_slots == ["p1", None, None]
+    assert assassinated.board.nodes["site_gauntlgrym"].troop_slots == ["p1", None, None]
     assert assassinated.players["p1"].trophy_hall == ["p2"]
     assert assassinated.resource_pool.power == 0
 
@@ -1962,10 +1962,10 @@ def test_recruit_moves_market_card_to_discard_and_refills_slot() -> None:
 def test_return_spy_is_not_legal_without_card_effect() -> None:
     state = _base_state(seed=27)
     updated = state.model_copy(deep=True)
-    updated.board.nodes["site_a"].spies.add("p1")
-    updated.board.nodes["site_a"].spies.add("p2")
+    updated.board.nodes["site_gauntlgrym"].spies.add("p1")
+    updated.board.nodes["site_gauntlgrym"].spies.add("p2")
     updated.resource_pool.power = 3
-    updated.board.nodes["site_a"].troop_slots = ["p1", None, None]
+    updated.board.nodes["site_gauntlgrym"].troop_slots = ["p1", None, None]
 
     moves = legal_moves(updated)
 
@@ -1976,15 +1976,15 @@ def test_apply_rejects_direct_return_spy_move() -> None:
     state = _base_state(seed=29)
     updated = state.model_copy(deep=True)
     updated.resource_pool.power = 3
-    updated.board.nodes["site_a"].troop_slots = ["p1", None, None]
-    updated.board.nodes["site_a"].spies.add("p2")
+    updated.board.nodes["site_gauntlgrym"].troop_slots = ["p1", None, None]
+    updated.board.nodes["site_gauntlgrym"].spies.add("p2")
 
     with pytest.raises(IllegalMoveError, match="card effect"):
         apply(
             updated,
             ReturnSpyMove(
                 player_id=updated.current_player_id,
-                node_id="site_a",
+                node_id="site_gauntlgrym",
                 spy_owner_id="p2",
             ),
         )
@@ -1993,14 +1993,14 @@ def test_apply_rejects_direct_return_spy_move() -> None:
 def test_apply_rejects_direct_return_spy_move_on_route_nodes() -> None:
     state = _base_state(seed=30)
     updated = state.model_copy(deep=True)
-    updated.board.nodes["route_ab"].spies.add("p1")
+    updated.board.nodes["route_1"].spies.add("p1")
 
     with pytest.raises(IllegalMoveError, match="card effect"):
         apply(
             updated,
             ReturnSpyMove(
                 player_id=updated.current_player_id,
-                node_id="route_ab",
+                node_id="route_1",
                 spy_owner_id="p1",
             ),
         )
@@ -2396,9 +2396,9 @@ def test_ogre_zombie_can_supplant_white_without_presence() -> None:
     state.players["p1"].discard_pile = []
     state.players["p1"].played_cards = []
     state.players["p1"].barracks = 5
-    state.board.nodes["site_a"].troop_slots = [None, None, None]
+    state.board.nodes["site_gauntlgrym"].troop_slots = [None, None, None]
     state.board.nodes["site_blingdenfire"].troop_slots = ["white", None, None]
-    state.board.nodes["site_a"].spies = set()
+    state.board.nodes["site_gauntlgrym"].spies = set()
     state.board.nodes["site_blingdenfire"].spies = set()
 
     played = apply(state, PlayCardMove(player_id="p1", card_id="ogre_zombie", hand_index=0))
@@ -2424,9 +2424,9 @@ def test_master_of_melee_magthere_anywhere_mode_targets_white_without_presence()
     state.players["p1"].discard_pile = []
     state.players["p1"].played_cards = []
     state.players["p1"].barracks = 5
-    state.board.nodes["site_a"].troop_slots = [None, None, None]
+    state.board.nodes["site_gauntlgrym"].troop_slots = [None, None, None]
     state.board.nodes["site_blingdenfire"].troop_slots = ["white", None, None]
-    state.board.nodes["site_a"].spies = set()
+    state.board.nodes["site_gauntlgrym"].spies = set()
     state.board.nodes["site_blingdenfire"].spies = set()
 
     played = apply(state, PlayCardMove(player_id="p1", card_id="master_of_melee_magthere", hand_index=0))
@@ -2463,8 +2463,8 @@ def test_black_dragon_scales_vp_from_white_trophies_only() -> None:
     state.players["p1"].score = 0
     state.players["p1"].barracks = 5
     state.board.nodes["site_blingdenfire"].troop_slots = ["white", None, None]
-    state.board.nodes["site_a"].troop_slots = [None, None, None]
-    state.board.nodes["site_a"].spies = set()
+    state.board.nodes["site_gauntlgrym"].troop_slots = [None, None, None]
+    state.board.nodes["site_gauntlgrym"].spies = set()
     state.board.nodes["site_blingdenfire"].spies = set()
 
     played = apply(state, PlayCardMove(player_id="p1", card_id="black_dragon", hand_index=0))
@@ -2490,8 +2490,8 @@ def test_death_knight_scales_vp_from_non_white_trophies() -> None:
     state.players["p1"].trophy_hall = ["p2", "p2", "p2", "p2", "p2", "white", "white"]
     state.players["p1"].score = 0
     state.players["p1"].barracks = 5
-    state.board.nodes["site_a"].troop_slots = ["p1", "p2", None]
-    state.board.nodes["site_a"].spies = set()
+    state.board.nodes["site_gauntlgrym"].troop_slots = ["p1", "p2", None]
+    state.board.nodes["site_gauntlgrym"].spies = set()
 
     played = apply(state, PlayCardMove(player_id="p1", card_id="death_knight", hand_index=0))
     supplant_move = next(
@@ -2499,7 +2499,7 @@ def test_death_knight_scales_vp_from_non_white_trophies() -> None:
         for move in legal_moves(played)
         if isinstance(move, ResolveGenericChoiceMove)
         and move.source_card_id == "death_knight"
-        and move.selection.get("target_node_id") == "site_a"
+        and move.selection.get("target_node_id") == "site_gauntlgrym"
         and move.selection.get("target_slot_index") == 1
     )
     resolved = apply(played, supplant_move)
@@ -2516,14 +2516,14 @@ def test_white_dragon_scales_vp_from_controlled_sites_not_markers_only() -> None
     state.players["p1"].score = 0
     state.players["p1"].barracks = 5
 
-    state.board.nodes["site_a"].troop_slots = ["p1", None, None]
+    state.board.nodes["site_gauntlgrym"].troop_slots = ["p1", None, None]
     state.board.nodes["site_blingdenfire"].troop_slots = ["p1", None, None]
     state.board.nodes["site_chasmleap_bridge"].troop_slots = ["p1", None, None]
     state.board.nodes["site_everfire"].troop_slots = [None, None, None]
 
     played = apply(state, PlayCardMove(player_id="p1", card_id="white_dragon", hand_index=0))
     current = played
-    for target_node_id in ["site_a", "site_blingdenfire", "site_chasmleap_bridge"]:
+    for target_node_id in ["site_gauntlgrym", "site_blingdenfire", "site_chasmleap_bridge"]:
         deploy_move = next(
             move
             for move in legal_moves(current)
@@ -2544,7 +2544,7 @@ def test_revenant_threshold_self_promote_triggers_at_eight_trophies() -> None:
     state.players["p1"].played_cards = []
     state.players["p1"].trophy_hall = ["white", "white", "white", "white", "p2", "p2", "p2", "p2"]
     state.players["p1"].barracks = 5
-    state.board.nodes["site_a"].troop_slots = ["p1", "p2", "p2"]
+    state.board.nodes["site_gauntlgrym"].troop_slots = ["p1", "p2", "p2"]
 
     played = apply(state, PlayCardMove(player_id="p1", card_id="revenant", hand_index=0))
     first = apply(
@@ -2552,7 +2552,7 @@ def test_revenant_threshold_self_promote_triggers_at_eight_trophies() -> None:
         ResolveGenericChoiceMove(
             player_id="p1",
             source_card_id="revenant",
-            selection={"target_node_id": "site_a", "target_slot_index": 1},
+            selection={"target_node_id": "site_gauntlgrym", "target_slot_index": 1},
         ),
     )
     resolved = apply(
@@ -2560,7 +2560,7 @@ def test_revenant_threshold_self_promote_triggers_at_eight_trophies() -> None:
         ResolveGenericChoiceMove(
             player_id="p1",
             source_card_id="revenant",
-            selection={"target_node_id": "site_a", "target_slot_index": 2},
+            selection={"target_node_id": "site_gauntlgrym", "target_slot_index": 2},
         ),
     )
 
@@ -2598,8 +2598,8 @@ def test_high_priest_of_myrkul_promotes_any_number_of_undead_played_cards() -> N
     state.players["p1"].discard_pile = []
     state.players["p1"].played_cards = []
     state.players["p1"].barracks = 5
-    state.board.nodes["site_a"].troop_slots = [None, None, None]
-    state.board.nodes["site_blingdenfire"].troop_slots = ["p2", None, None]
+    state.board.nodes["site_gauntlgrym"].troop_slots = ["p2", None, None]
+    state.board.nodes["site_blingdenfire"].troop_slots = ["white", None, None]
 
     after_priest = apply(state, PlayCardMove(player_id="p1", card_id="high_priest_of_myrkul", hand_index=0))
     return_move = next(
@@ -2656,7 +2656,7 @@ def test_mummy_lord_custom_effect_moves_white_trophy_to_board_slot() -> None:
     state.players["p1"].discard_pile = []
     state.players["p1"].played_cards = []
     state.players["p2"].trophy_hall = ["white", "p1"]
-    state.board.nodes["site_a"].troop_slots = [None, None, None]
+    state.board.nodes["site_gauntlgrym"].troop_slots = [None, None, None]
 
     played = apply(state, PlayCardMove(player_id="p1", card_id="mummy_lord", hand_index=0))
     chose_custom_mode = apply(
@@ -2673,93 +2673,11 @@ def test_mummy_lord_custom_effect_moves_white_trophy_to_board_slot() -> None:
         if isinstance(move, ResolveGenericChoiceMove)
         and move.source_card_id == "mummy_lord"
         and move.selection.get("target_player_id") == "p2"
-        and move.selection.get("target_node_id") == "site_a"
+        and move.selection.get("target_node_id") == "site_gauntlgrym"
         and move.selection.get("target_slot_index") == 0
     )
 
     resolved = apply(chose_custom_mode, custom_move)
 
     assert "white" not in resolved.players["p2"].trophy_hall
-    assert resolved.board.nodes["site_a"].troop_slots[0] == "white"
-
-
-# ---------------------------------------------------------------------------
-# _count_controlled_sites_by_troops
-# ---------------------------------------------------------------------------
-
-
-def test_count_controlled_sites_by_troops_unique_majority() -> None:
-    from engine.rules import _count_controlled_sites_by_troops
-
-    state = _base_state(seed=900).model_copy(deep=True)
-    state.board.nodes["site_a"].troop_slots = ["p1", None, None]
-    state.board.nodes["site_blingdenfire"].troop_slots = ["p1", "p1", None]
-
-    count = _count_controlled_sites_by_troops(state, "p1")
-    assert count == 2
-
-
-def test_count_controlled_sites_by_troops_tie_not_controlled() -> None:
-    from engine.rules import _count_controlled_sites_by_troops
-
-    state = _base_state(seed=901).model_copy(deep=True)
-    state.board.nodes["site_a"].troop_slots = ["p1", "p2", None]
-
-    count = _count_controlled_sites_by_troops(state, "p1")
-    assert count == 0
-
-
-def test_count_controlled_sites_by_troops_white_not_controlled() -> None:
-    from engine.rules import _count_controlled_sites_by_troops
-
-    state = _base_state(seed=902).model_copy(deep=True)
-    state.board.nodes["site_a"].troop_slots = ["white", "white", "white"]
-
-    count = _count_controlled_sites_by_troops(state, "p1")
-    assert count == 0
-
-
-def test_count_controlled_sites_by_troops_empty_slot_is_controlled() -> None:
-    from engine.rules import _count_controlled_sites_by_troops
-
-    state = _base_state(seed=903).model_copy(deep=True)
-    state.board.nodes["site_a"].troop_slots = ["p1", None, None]
-
-    count = _count_controlled_sites_by_troops(state, "p1")
-    assert count == 1
-
-
-def test_count_controlled_sites_by_troops_ignores_routes() -> None:
-    from engine.rules import _count_controlled_sites_by_troops
-
-    state = _base_state(seed=904).model_copy(deep=True)
-    state.board.nodes["route_ab"].troop_slots = ["p1"]
-
-    count = _count_controlled_sites_by_troops(state, "p1")
-    assert count == 0
-
-
-def test_count_controlled_sites_by_troops_player_beats_white() -> None:
-    from engine.rules import _count_controlled_sites_by_troops
-
-    state = _base_state(seed=905).model_copy(deep=True)
-    state.board.nodes["site_a"].troop_slots = ["p1", "p1", "white"]
-
-    count = _count_controlled_sites_by_troops(state, "p1")
-    assert count == 1
-
-
-def test_count_controlled_sites_by_troops_multiple_players() -> None:
-    from engine.rules import _count_controlled_sites_by_troops
-
-    state = _base_state(seed=906).model_copy(deep=True)
-    state.board.nodes["site_a"].troop_slots = ["p1", "p1", "p1"]
-    state.board.nodes["site_blingdenfire"].troop_slots = ["p2", None]
-    state.board.nodes["site_chasmleap_bridge"].troop_slots = ["p2", None]
-    state.board.nodes["site_everfire"].troop_slots = []
-
-    p1_count = _count_controlled_sites_by_troops(state, "p1")
-    p2_count = _count_controlled_sites_by_troops(state, "p2")
-
-    assert p1_count == 1
-    assert p2_count == 2
+    assert resolved.board.nodes["site_gauntlgrym"].troop_slots[0] == "white"

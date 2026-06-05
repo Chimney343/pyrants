@@ -24,7 +24,7 @@ from interface.display import render_state
 from interface.parser import CommandKind, parse_command
 
 BASE_DIR = Path(__file__).resolve().parents[1]
-BOARD_PATH = BASE_DIR / "data" / "boards" / "base_game.json"
+BOARD_PATH = BASE_DIR / "data" / "boards" / "tyrants_of_the_underdark.json"
 CARD_PATH = BASE_DIR / "data" / "cards" / "catalog.json"
 SETUP_PATH = BASE_DIR / "data" / "decks" / "base_setup.json"
 
@@ -44,16 +44,16 @@ def test_parse_play_command_returns_play_card_move() -> None:
 
 def test_parse_deploy_command_returns_deploy_move() -> None:
     state = _base_state()
-    parsed = parse_command("deploy site_a", state)
+    parsed = parse_command("deploy site_gauntlgrym", state)
 
     assert parsed.kind == CommandKind.MOVE
     assert isinstance(parsed.move, DeployMove)
-    assert parsed.move.target_node_id == "site_a"
+    assert parsed.move.target_node_id == "site_gauntlgrym"
 
 
 def test_parse_assassinate_command_returns_assassinate_move() -> None:
     state = _base_state()
-    parsed = parse_command("assassinate site_a 1", state)
+    parsed = parse_command("assassinate site_gauntlgrym 1", state)
 
     assert parsed.kind == CommandKind.MOVE
     assert isinstance(parsed.move, AssassinateMove)
@@ -71,11 +71,11 @@ def test_parse_recruit_command_returns_recruit_move() -> None:
 
 def test_parse_return_spy_command_returns_return_spy_move() -> None:
     state = _base_state()
-    parsed = parse_command("return-spy site_a p2", state)
+    parsed = parse_command("return-spy site_gauntlgrym p2", state)
 
     assert parsed.kind == CommandKind.MOVE
     assert isinstance(parsed.move, ReturnSpyMove)
-    assert parsed.move.node_id == "site_a"
+    assert parsed.move.node_id == "site_gauntlgrym"
     assert parsed.move.spy_owner_id == "p2"
 
 
@@ -158,6 +158,9 @@ def test_run_cli_accepts_legal_and_quit_commands() -> None:
     run_cli(
         player_ids=["p1", "p2"],
         seed=5,
+        board_path=BOARD_PATH,
+        card_path=CARD_PATH,
+        setup_path=SETUP_PATH,
         input_fn=_input,
         output_fn=_output,
         max_steps=4,

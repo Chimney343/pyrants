@@ -24,7 +24,7 @@ FULL_DECK_SPECS: dict[str, dict[str, Any]] = {
     "Dragon": {"deck_id": "dragon", "name": "Dragon", "kind": "full_deck", "total_cards": 40},
     "Drow": {"deck_id": "drow", "name": "Drow", "kind": "full_deck", "total_cards": 40},
     "Elementals": {"deck_id": "elementals", "name": "Elementals", "kind": "full_deck", "total_cards": 40},
-    "Demons": {"deck_id": "demons", "name": "Demons", "kind": "full_deck", "total_cards": 40},
+    "Fungus": {"deck_id": "fungus", "name": "Fungus", "kind": "full_deck", "total_cards": 40},
     "Undead": {"deck_id": "undead", "name": "Undead", "kind": "full_deck", "total_cards": 40},
 }
 
@@ -222,7 +222,7 @@ ACTION_STATE_READS: dict[str, list[str]] = {
     "draw_cards": ["player.deck", "player.discard_pile"],
     "promote_card": ["player.played_cards", "player.hand", "player.discard_pile"],
     "recruit_card": ["market.row", "card_catalog"],
-    "devour": ["source_zone", "devour_rules"],
+    "devour_cost": ["source_zone", "devour_rules"],
     "force_discard": ["player.hand", "threshold_or_target_rules"],
     "move_troop": ["board.troop_slots", "board.adjacency"],
     "transfer_trophy": ["player.trophy_hall", "target_player.trophy_hall"],
@@ -244,7 +244,7 @@ ACTION_STATE_WRITES: dict[str, list[str]] = {
     "draw_cards": ["player.hand", "player.deck", "player.discard_pile"],
     "promote_card": ["player.inner_circle", "player.played_cards", "player.hand", "player.discard_pile"],
     "recruit_card": ["player.discard_pile", "market.row", "market.deck"],
-    "devour": ["devour_zone_or_equivalent", "source_zone"],
+    "devour_cost": ["devour_zone_or_equivalent", "source_zone"],
     "force_discard": ["player.hand", "player.discard_pile"],
     "move_troop": ["board.troop_slots"],
     "transfer_trophy": ["player.trophy_hall", "target_player.trophy_hall", "board.troop_slots"],
@@ -385,7 +385,7 @@ def _devour_action(fragment: str) -> dict[str, Any]:
         source_zone = "played_self"
 
     return _new_action(
-        "devour",
+        "devour_cost",
         fragment,
         target_scope=source_zone,
         optional="optional" in fragment,
@@ -1702,7 +1702,7 @@ def _apply_catalog_overrides(cards: list[dict[str, Any]]) -> None:
     mind_flayer_option_1_actions = [
         {
             "action_id": "option_1_action_1",
-            "op": "devour",
+            "op": "devour_cost",
             "target_scope": "hand",
             "timing": "immediate",
             "optional": False,
@@ -1726,7 +1726,7 @@ def _apply_catalog_overrides(cards: list[dict[str, Any]]) -> None:
     mind_flayer_option_2_actions = [
         {
             "action_id": "option_2_action_1",
-            "op": "devour",
+            "op": "devour_cost",
             "target_scope": "hand",
             "timing": "immediate",
             "optional": False,

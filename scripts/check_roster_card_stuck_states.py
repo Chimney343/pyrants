@@ -22,12 +22,11 @@ from engine.errors import IllegalMoveError, MissingRuleImplementationError, Rule
 from engine.moves import EndMainPhaseMove, Move, PlayCardMove
 from engine.rules import apply
 from game_session import GameSession
-from game_setup.loaders import load_deck_rosters
 from game_view import build_game_view
 DEFAULT_BOARD_PATH = ROOT_DIR / "data" / "boards" / "base_game.json"
 DEFAULT_CARD_PATH = ROOT_DIR / "data" / "cards" / "catalog.json"
 DEFAULT_SETUP_PATH = ROOT_DIR / "data" / "decks" / "base_setup.json"
-DEFAULT_ROSTERS_PATH = ROOT_DIR / "data" / "decks"
+DEFAULT_ROSTERS_PATH = ROOT_DIR / "data" / "decks" / "first_deck_rosters.json"
 DEFAULT_JSON_OUT = ROOT_DIR / "artifacts" / "card_stuck_report.json"
 
 ProbeStatus = Literal["ok", "stuck", "blocked", "error", "max_steps"]
@@ -58,17 +57,20 @@ class ProbeSummary:
     results: tuple[ProbeResult, ...]
 
 
-def iter_roster_card_ids(decks_dir: Path, *, include_duplicates: bool = False) -> list[str]:
+def iter_roster_card_ids(rosters_path: Path, *, include_duplicates: bool = False) -> list[str]:
     """Return card ids from roster decks in deterministic order."""
 
-    decks = load_deck_rosters(decks_dir)
-    if not decks:
-        raise ValueError(f"No deck roster files found in {decks_dir}")
+    payload = json.loads(rosters_path.read_text(encoding="utf-8"))
+    decks = payload.get("decks")
+    if not isinstance(decks, list):
+        raise ValueError("rosters payload must contain a decks list")
 
     card_ids: list[str] = []
     seen: set[str] = set()
 
     for deck in decks:
+        if not isinstance(deck, dict):
+            continue
         entries = deck.get("entries", [])
         if not isinstance(entries, list):
             continue
@@ -427,7 +429,7 @@ def evaluate_ci_gate(
 
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Probe roster cards for stuck-state behavior")
-    parser.add_argument("--decks-dir", type=Path, default=DEFAULT_ROSTERS_PATH)
+    parser.add_argument("--rosters-path", type=Path, default=DEFAULT_ROSTERS_PATH)
     parser.add_argument("--board-path", type=Path, default=DEFAULT_BOARD_PATH)
     parser.add_argument("--card-path", type=Path, default=DEFAULT_CARD_PATH)
     parser.add_argument("--setup-path", type=Path, default=DEFAULT_SETUP_PATH)
@@ -463,7 +465,7 @@ def main() -> None:
         board_path=args.board_path,
         card_path=args.card_path,
         setup_path=args.setup_path,
-        rosters_path=args.decks_dir,
+        rosters_path=args.rosters_path,
         seed=args.seed,
         seed_count=args.seed_count,
         max_steps=args.max_steps,

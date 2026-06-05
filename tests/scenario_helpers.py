@@ -8,7 +8,7 @@ from engine.state import GameState
 from game_setup.loaders import create_game_state_from_files
 
 BASE_DIR = Path(__file__).resolve().parents[1]
-BOARD_PATH = BASE_DIR / "data" / "boards" / "base_game.json"
+BOARD_PATH = BASE_DIR / "data" / "boards" / "tyrants_of_the_underdark.json"
 CARD_PATH = BASE_DIR / "data" / "cards" / "catalog.json"
 SETUP_PATH = BASE_DIR / "data" / "decks" / "base_setup.json"
 

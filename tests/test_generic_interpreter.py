@@ -1024,17 +1024,63 @@ def test_generic_custom_effect_mill_deck_to_discard() -> None:
     assert "miller" in updated.players["p1"].discard_pile
 
 
-def test_generic_custom_effect_self_purge_to_supply_is_noop() -> None:
+def test_generic_custom_effect_discard_selected_hand_card_from_self() -> None:
     card = _sequence_card(
-        "purger",
-        [_action("purge", "custom_effect", metadata={"effect_kind": "self_purge_to_supply"})],
+        "discarder",
+        [
+            _action(
+                "discard", "custom_effect",
+                metadata={"effect_kind": "discard_selected_hand_card_from_self"},
+            ),
+        ],
     )
-    state = _state_for_cards([card], [{"card_id": "purger", "count": 1}])
-    state.players["p1"].hand = ["purger"]
+    state = _state_for_cards([card], [{"card_id": "discarder", "count": 1}])
+    state.players["p1"].hand = ["discarder", "fodder_a", "fodder_b"]
 
-    updated = apply(state, PlayCardMove(player_id="p1", card_id="purger", hand_index=0))
+    played = apply(state, PlayCardMove(player_id="p1", card_id="discarder", hand_index=0))
 
-    assert updated.players["p1"].hand == []
+    assert played.pending_generic_choice is not None
+    assert played.players["p1"].hand == ["fodder_a", "fodder_b"]
+
+    choice_moves = [
+        move for move in legal_moves(played)
+        if isinstance(move, ResolveGenericChoiceMove) and move.source_card_id == "discarder"
+    ]
+    assert len(choice_moves) == 2
+    hand_indices = {int(move.selection["hand_index"]) for move in choice_moves}
+    assert hand_indices == {0, 1}
+
+    resolved = apply(
+        played,
+        ResolveGenericChoiceMove(
+            player_id="p1",
+            source_card_id="discarder",
+            selection={"hand_index": 0},
+        ),
+    )
+
+    assert resolved.players["p1"].hand == ["fodder_b"]
+    assert "fodder_a" in resolved.players["p1"].discard_pile
+
+
+def test_generic_custom_effect_return_source_card_to_recruit_deck() -> None:
+    card = _sequence_card(
+        "returner",
+        [
+            _action(
+                "return", "custom_effect",
+                metadata={"effect_kind": "return_source_card_to_recruit_deck"},
+            ),
+        ],
+    )
+    state = _state_for_cards([card], [{"card_id": "returner", "count": 1}])
+    state.players["p1"].hand = ["returner"]
+
+    updated = apply(state, PlayCardMove(player_id="p1", card_id="returner", hand_index=0))
+
+    assert "returner" not in updated.players["p1"].played_cards
+    assert "returner" not in updated.players["p1"].hand
+    assert "returner" not in updated.players["p1"].discard_pile
 
 
 # ---------------------------------------------------------------------------

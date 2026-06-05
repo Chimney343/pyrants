@@ -20,7 +20,7 @@ from game_setup.scenarios import (
 )
 
 BASE_DIR = Path(__file__).resolve().parents[1]
-BOARD_PATH = BASE_DIR / "data" / "boards" / "base_game.json"
+BOARD_PATH = BASE_DIR / "data" / "boards" / "tyrants_of_the_underdark.json"
 CARD_PATH = BASE_DIR / "data" / "cards" / "catalog.json"
 SETUP_PATH = BASE_DIR / "data" / "decks" / "base_setup.json"
 
@@ -46,7 +46,7 @@ def test_scenario_metadata_round_trip_via_json() -> None:
         description="A test scenario",
         tags=["cards", "resume"],
         card_under_test="aboleth",
-        source_board_id="base_underdark",
+        source_board_id="Tyrants of the Underdark",
         source_catalog_id="base_catalog",
         source_setup_id="base_setup",
         move_count=5,
@@ -92,24 +92,24 @@ def test_game_state_round_trip_preserves_spies() -> None:
     session = _session(seed=13)
     original = session.state
     updated = original.model_copy(deep=True)
-    updated.board.nodes["site_a"].spies = {"p1", "p2"}
+    updated.board.nodes["site_gauntlgrym"].spies = {"p1", "p2"}
 
     payload = updated.model_dump(mode="json")
     reconstructed = updated.__class__.model_validate(payload)
 
-    assert reconstructed.board.nodes["site_a"].spies == {"p1", "p2"}
+    assert reconstructed.board.nodes["site_gauntlgrym"].spies == {"p1", "p2"}
 
 
 def test_game_state_round_trip_preserves_troop_slots() -> None:
     session = _session(seed=13)
     original = session.state
     updated = original.model_copy(deep=True)
-    updated.board.nodes["site_a"].troop_slots = ["p1", None, "p2"]
+    updated.board.nodes["site_gauntlgrym"].troop_slots = ["p1", None, "p2"]
 
     payload = updated.model_dump(mode="json")
     reconstructed = updated.__class__.model_validate(payload)
 
-    assert reconstructed.board.nodes["site_a"].troop_slots == ["p1", None, "p2"]
+    assert reconstructed.board.nodes["site_gauntlgrym"].troop_slots == ["p1", None, "p2"]
 
 
 # ---------------------------------------------------------------------------
@@ -216,7 +216,7 @@ def test_reload_state_with_pending_generic_choice() -> None:
     state.players["p1"].deck = []
     state.players["p1"].discard_pile = []
     state.players["p1"].played_cards = []
-    state.board.nodes["site_a"].spies.add("p1")
+    state.board.nodes["site_gauntlgrym"].spies.add("p1")
 
     played = apply(state, PlayCardMove(player_id="p1", card_id="enchanter_of_thay", hand_index=0))
 

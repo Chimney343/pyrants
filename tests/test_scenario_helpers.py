@@ -62,18 +62,18 @@ def test_set_only_hand_card() -> None:
 def test_add_and_remove_spy() -> None:
     state = card_test_state("x")
 
-    add_spy(state, "site_a", "p1")
-    assert "p1" in state.board.nodes["site_a"].spies
+    add_spy(state, "site_gauntlgrym", "p1")
+    assert "p1" in state.board.nodes["site_gauntlgrym"].spies
 
-    remove_spy(state, "site_a", "p1")
-    assert "p1" not in state.board.nodes["site_a"].spies
+    remove_spy(state, "site_gauntlgrym", "p1")
+    assert "p1" not in state.board.nodes["site_gauntlgrym"].spies
 
 
 def test_set_troop_slots() -> None:
     state = card_test_state("x")
-    set_troop_slots(state, "site_a", ["p1", None, "p2"])
+    set_troop_slots(state, "site_gauntlgrym", ["p1", None, "p2"])
 
-    assert state.board.nodes["site_a"].troop_slots == ["p1", None, "p2"]
+    assert state.board.nodes["site_gauntlgrym"].troop_slots == ["p1", None, "p2"]
 
 
 def test_fill_trophy_hall() -> None:
