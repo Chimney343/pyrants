@@ -345,6 +345,7 @@ class PendingGenericChoiceState(BaseModel):
     allow_repeat: bool = False
     last_selection: dict[str, Any] = Field(default_factory=dict)
     action_counters: dict[str, int] = Field(default_factory=dict)
+    action_repeat_limits: dict[str, int] = Field(default_factory=dict)
 
 
 class GameState(BaseModel):
