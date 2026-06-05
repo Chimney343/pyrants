@@ -38,6 +38,9 @@ card-stuck-check-ci decks="data/decks" board="data/boards/base_game.json" card="
 generate-card-scenarios out="data/scenarios/cards" seed="0" attempts="3" steps="1500":
     & {{python}} scripts/generate_card_scenarios.py --output-dir {{out}} --base-seed {{seed}} --max-attempts {{attempts}} --max-steps {{steps}}
 
+generate-card-scenario card out="data/scenarios/cards" seed="0" attempts="3" steps="1500":
+    & {{python}} scripts/generate_card_scenarios.py --card-id {{card}} --output-dir {{out}} --base-seed {{seed}} --max-attempts {{attempts}} --max-steps {{steps}}
+
 random-walk:
     & {{python}} scripts/random_walk.py
 
