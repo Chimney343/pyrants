@@ -22,7 +22,8 @@ from engine.moves import (
     move_type,
     special_recruit_card_id,
 )
-from engine.state import GameState, NodeKind, PendingGenericChoiceState, PendingPromotionState, card_index
+from engine.scoring import _is_total_control, _site_control_owner
+from engine.state import GameState, NodeKind, PendingGenericChoiceState, PendingPromotionState, board_index, card_index
 from engine.state import CardAction, ModalChoiceExecutionModel, RepeatChoiceExecutionModel
 from game_session import GameSession, GameSessionSnapshot
 
@@ -99,6 +100,8 @@ class GameView:
     current_player_discard: tuple[CardView, ...]
     current_player_inner_circle: tuple[CardView, ...]
     current_player_trophy_hall: tuple[str, ...]
+    current_player_controlled_sites: int
+    current_player_total_control_sites: int
     market_row: tuple[CardView, ...]
     market_deck_count: int
     market_discard_count: int
@@ -233,6 +236,17 @@ def build_game_view_from_snapshot(snapshot: GameSessionSnapshot, *, node_names: 
         for move in snapshot.legal_moves
     )
 
+    controlled_sites = 0
+    total_control_sites = 0
+    board_def = board_index(state.definition.board)
+    for node_id, node_def in board_def.items():
+        if node_def.kind != NodeKind.SITE:
+            continue
+        if _site_control_owner(state, node_id) == state.current_player_id:
+            controlled_sites += 1
+        if _is_total_control(state, node_id, state.current_player_id):
+            total_control_sites += 1
+
     return GameView(
         round_number=state.round_number,
         phase=state.phase.value,
@@ -245,6 +259,8 @@ def build_game_view_from_snapshot(snapshot: GameSessionSnapshot, *, node_names: 
         current_player_discard=current_player_discard,
         current_player_inner_circle=current_player_inner_circle,
         current_player_trophy_hall=current_player_trophy_hall,
+        current_player_controlled_sites=controlled_sites,
+        current_player_total_control_sites=total_control_sites,
         market_row=market_row,
         market_deck_count=len(state.market.deck),
         market_discard_count=len(state.market.discard_pile),

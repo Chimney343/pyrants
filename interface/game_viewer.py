@@ -80,8 +80,6 @@ def _compute_aspect_focus(cards: tuple[CardView, ...]) -> Counter[str]:
     for card in cards:
         if card.aspect and card.aspect not in ("empty", "inactive", "unknown"):
             counter[card.aspect] += 1
-        for sec in card.secondary_aspects:
-            counter[sec] += 1
     return counter
 
 
@@ -980,6 +978,7 @@ class GameViewerApp:
             )
             self.resource_var.set(
                 f"Power: {view.resource_power:>3}    Influence: {view.resource_influence:>3}"
+                f"  |  Sites: {view.current_player_controlled_sites} controlled, {view.current_player_total_control_sites} total"
                 f"  |  Hand: {_format_aspect_breakdown(_compute_aspect_focus(view.hand))}"
                 f"  |  Played: {_format_aspect_breakdown(_compute_aspect_focus(view.current_player_played))}"
             )
