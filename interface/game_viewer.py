@@ -30,7 +30,7 @@ from game_setup.loaders import build_board_package_from_files, build_game_defini
 from game_setup.scenarios import save_game_state
 from game_view import CardView, GameView, LegalMoveView, build_game_view, filter_legal_moves
 from interface._canvas_scroll import bind_canvas_scrolling
-from interface.camera import compute_fit_zoom
+from interface.view_fit import compute_fit_zoom
 from interface.game_renderer import GameBoardRenderer
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
@@ -67,6 +67,12 @@ ABERRATIONS_DECK_ID = "aberrations"
 HOUSE_GUARD_STACK_TOTAL = 15
 PRIESTESS_STACK_TOTAL = 15
 INSANE_OUTCAST_STACK_TOTAL = 30
+
+SPECIAL_CARD_TINTS: dict[str, str] = {
+    HOUSE_GUARD_CARD_ID: "#d5d0c6",
+    PRIESTESS_CARD_ID: "#cfcbe0",
+    INSANE_OUTCAST_CARD_ID: "#ddcdcd",
+}
 
 SPECIAL_TOP_SLOT_TO_MARKET_SLOT: dict[int, int] = {
     0: HOUSE_GUARD_RECRUIT_SLOT,
@@ -444,8 +450,7 @@ class GameViewerApp:
         self.trophy_hall_meta_var = tk.StringVar(value="")
         self.prompt_var = tk.StringVar(value="")
         self.players_var = tk.StringVar(value="")
-        self.hover_title_var = tk.StringVar(value="Hover over a card")
-        self.hover_card_var = tk.StringVar(value="Card details will appear here.")
+        self._hover_popup: tk.Toplevel | None = None
         self.selection_var = tk.StringVar(value="No active filters")
         self.option_var = tk.StringVar(value="")
         self.other_discard_selection_vars: dict[str, tk.StringVar] = {}
@@ -760,12 +765,6 @@ class GameViewerApp:
         self._other_discards_placeholder = ttk.Label(self.other_discards_frame, text="(none)", justify=tk.LEFT)
         self._other_discards_placeholder.pack(anchor=tk.W)
 
-        ttk.Label(sidebar, text="Card Hover", font=("Segoe UI", 10, "bold")).pack(anchor=tk.W)
-        hover_frame = ttk.LabelFrame(sidebar, text=self.hover_title_var.get(), padding=6)
-        self.hover_title_var.trace_add("write", lambda *_: hover_frame.configure(text=self.hover_title_var.get()))
-        hover_frame.pack(fill=tk.X, pady=(0, 10))
-        ttk.Label(hover_frame, textvariable=self.hover_card_var, wraplength=324, justify=tk.LEFT).pack(anchor=tk.W)
-
         ttk.Label(sidebar, text="Generic Choice Options", font=("Segoe UI", 10, "bold")).pack(anchor=tk.W)
         self.option_box = ttk.Combobox(sidebar, state="readonly", textvariable=self.option_var)
         self.option_box.pack(fill=tk.X, pady=(0, 8))
@@ -970,8 +969,6 @@ class GameViewerApp:
             state = self.session.state
             current_player = state.players[state.current_player_id]
             cards_by_id = {card.card_id: card for card in state.definition.catalog.cards}
-            market_deck_counts = Counter(state.market.deck)
-            market_total_counts = Counter(state.market.deck + state.market.row + state.market.discard_pile)
 
             self.status_var.set(
                 f"Round {view.round_number} | Phase {view.phase} | Current {view.current_player_id}"
@@ -1003,7 +1000,7 @@ class GameViewerApp:
             ]
             self.players_var.set("\n".join(player_lines))
 
-            self._sync_market_row(view, deck_counts=market_deck_counts, total_counts=market_total_counts)
+            self._sync_market_row(view)
             self._sync_hand_row(view)
             self._sync_played_row(view)
             self._sync_option_box(view)
@@ -1144,9 +1141,6 @@ class GameViewerApp:
     def _sync_market_row(
         self,
         view: GameView,
-        *,
-        deck_counts: Counter[str],
-        total_counts: Counter[str],
     ) -> None:
         state = self.session.state if self.session is not None else None
         cards_by_id: dict[str, Any] = {}
@@ -1188,11 +1182,6 @@ class GameViewerApp:
         if self._selected_market_slot not in self._market_slot_indices:
             self._selected_market_slot = None
 
-        stack_remaining_counts: dict[str, int] = {
-            HOUSE_GUARD_CARD_ID: self._remaining_special_stack_count(HOUSE_GUARD_CARD_ID, HOUSE_GUARD_STACK_TOTAL),
-            PRIESTESS_CARD_ID: self._remaining_special_stack_count(PRIESTESS_CARD_ID, PRIESTESS_STACK_TOTAL),
-            INSANE_OUTCAST_CARD_ID: self._remaining_special_stack_count(INSANE_OUTCAST_CARD_ID, INSANE_OUTCAST_STACK_TOTAL),
-        }
         if not self._aberrations_in_market:
             top_cards[2] = CardView(
                 card_id="insane_outcast_disabled",
@@ -1204,15 +1193,6 @@ class GameViewerApp:
                 rules_text="Disabled (requires Aberrations in market deck)",
                 notes="",
             )
-
-        overlay_deck_counts = Counter(deck_counts)
-        overlay_total_counts = Counter(total_counts)
-        overlay_deck_counts[HOUSE_GUARD_CARD_ID] = stack_remaining_counts[HOUSE_GUARD_CARD_ID]
-        overlay_total_counts[HOUSE_GUARD_CARD_ID] = HOUSE_GUARD_STACK_TOTAL
-        overlay_deck_counts[PRIESTESS_CARD_ID] = stack_remaining_counts[PRIESTESS_CARD_ID]
-        overlay_total_counts[PRIESTESS_CARD_ID] = PRIESTESS_STACK_TOTAL
-        overlay_deck_counts[INSANE_OUTCAST_CARD_ID] = stack_remaining_counts[INSANE_OUTCAST_CARD_ID]
-        overlay_total_counts[INSANE_OUTCAST_CARD_ID] = INSANE_OUTCAST_STACK_TOTAL
 
         selected_top_index = -1
         if self._selected_market_slot is not None:
@@ -1226,8 +1206,11 @@ class GameViewerApp:
             tuple(top_cards),
             selected_index=selected_top_index,
             selected_has_focus=self._active_card_row == "market",
-            deck_counts=overlay_deck_counts,
-            total_counts=overlay_total_counts,
+            tint_colors={
+                0: SPECIAL_CARD_TINTS[HOUSE_GUARD_CARD_ID],
+                1: SPECIAL_CARD_TINTS[PRIESTESS_CARD_ID],
+                2: SPECIAL_CARD_TINTS[INSANE_OUTCAST_CARD_ID],
+            },
             compact=True,
         )
         self._hover_market_hitboxes = top_hitboxes
@@ -1259,7 +1242,6 @@ class GameViewerApp:
             selected_index=selected_played_index,
             selected_has_focus=self._active_card_row == "played",
             compact=self._compact_player_rows,
-            show_copy_counts=False,
             empty_label="No cards played this phase",
         )
 
@@ -1282,7 +1264,6 @@ class GameViewerApp:
             selected_index=selected_hand_index,
             selected_has_focus=self._active_card_row == "hand",
             compact=self._compact_player_rows,
-            show_copy_counts=False,
         )
 
     def _draw_card_row(
@@ -1292,11 +1273,8 @@ class GameViewerApp:
         *,
         selected_index: int = -1,
         selected_has_focus: bool = False,
-        deck_counts: Counter[str] | None = None,
-        total_counts: Counter[str] | None = None,
-        count_from: int | None = None,
+        tint_colors: dict[int, str] | None = None,
         compact: bool = False,
-        show_copy_counts: bool = True,
         empty_label: str = "No cards",
     ) -> list[tuple[int, int, int, int, int]]:
         canvas.delete("all")
@@ -1321,6 +1299,8 @@ class GameViewerApp:
             canvas.configure(scrollregion=(0, 0, max(canvas.winfo_width(), CARD_ROW_SIDE_PAD * 2), content_height))
             return []
 
+        tint_colors_map = tint_colors if tint_colors is not None else {}
+
         hitboxes: list[tuple[int, int, int, int, int]] = []
         for index, card in enumerate(cards):
             x0 = CARD_ROW_SIDE_PAD + index * (card_width + CARD_GAP)
@@ -1329,7 +1309,13 @@ class GameViewerApp:
             y1 = y0 + card_height
 
             is_selected = index == selected_index
-            fill = "#dcecff" if is_selected else "#ffffff"
+            if is_selected:
+                fill = "#dcecff"
+            elif index in tint_colors_map:
+                fill = tint_colors_map[index]
+            else:
+                fill = "#ffffff"
+
             if is_selected and selected_has_focus:
                 outline = "#224f95"
                 line_width = 2
@@ -1344,92 +1330,61 @@ class GameViewerApp:
             if is_selected and selected_has_focus:
                 canvas.create_rectangle(x0 + 3, y0 + 3, x0 + 13, y0 + 13, fill="#224f95", outline="")
 
-            card_number = f"{count_from + index}. " if count_from is not None else ""
-            deck_count = deck_counts.get(card.card_id, 0) if deck_counts is not None else 0
-            total_count = total_counts.get(card.card_id, 0) if total_counts is not None else 0
-            card_text = card.rules_text.strip() or "(no rules text)"
-            flavor_text = card.notes.strip() or "(no flavor text)"
             text_budget = max(10, (card_width - 14) // 5)
+
             if compact:
                 name_chars = min(CARD_NAME_MAX_CHARS, text_budget + 4)
-                meta_chars = min(CARD_META_MAX_CHARS, text_budget + 4)
-                body_chars = min(20, text_budget + 2)
+                meta_chars = min(CARD_META_MAX_CHARS, text_budget + 8)
+                name_y = y0 + 13
+                meta_y = y0 + 28
+                rules_y = y0 + 42
+                rules_width = card_width - 14
             else:
                 name_chars = min(CARD_NAME_MAX_CHARS, text_budget + 12)
-                meta_chars = min(CARD_META_MAX_CHARS, text_budget + 12)
-                body_chars = min(CARD_TEXT_MAX_CHARS, text_budget + 32)
+                meta_chars = min(CARD_META_MAX_CHARS, text_budget + 16)
+                name_y = y0 + 18
+                meta_y = y0 + 38
+                rules_y = y0 + 56
+                rules_width = card_width - 20
+
             canvas.create_text(
                 x0 + 8,
-                y0 + 14,
+                name_y,
                 anchor=tk.W,
-                text=_ellipsize(f"{card_number}{card.name}", name_chars),
+                text=_ellipsize(card.name, name_chars),
                 fill="#152238",
                 font=("Segoe UI", 9, "bold"),
             )
+
+            if card.secondary_aspects:
+                secondary = " / ".join((card.aspect, *card.secondary_aspects))
+                aspect_display = f"{secondary}  |  "
+            else:
+                aspect_display = f"{card.aspect}  |  " if card.aspect else ""
+
             canvas.create_text(
                 x0 + 8,
-                y0 + 30,
+                meta_y,
                 anchor=tk.W,
                 text=_ellipsize(
-                    f"cost {card.cost} | aspect {card.aspect} | vp {card.deck_vp}/{card.inner_circle_vp}",
+                    f"{aspect_display}Cost {card.cost}  |  VP {card.deck_vp}/{card.inner_circle_vp}",
                     meta_chars,
                 ),
                 fill="#2c3f5f",
-                font=("Segoe UI", 9),
+                font=("Segoe UI", 8),
             )
 
-            if compact:
-                if show_copy_counts:
-                    canvas.create_text(
-                        x0 + 8,
-                        y0 + 46,
-                        anchor=tk.W,
-                        text=_ellipsize(f"deck {deck_count} | total {total_count}", body_chars),
-                        fill="#2c3f5f",
-                        font=("Segoe UI", 8),
-                    )
-                canvas.create_text(
-                    x0 + 8,
-                    y0 + (60 if show_copy_counts else 46),
-                    anchor=tk.W,
-                    text=_ellipsize(card_text, body_chars),
-                    fill="#394f71",
-                    font=("Segoe UI", 8),
-                )
-                canvas.create_text(
-                    x0 + 8,
-                    y0 + (74 if show_copy_counts else 60),
-                    anchor=tk.W,
-                    text=_ellipsize(flavor_text, body_chars),
-                    fill="#4f6282",
-                    font=("Segoe UI", 8),
-                )
-            else:
-                if show_copy_counts:
-                    canvas.create_text(
-                        x0 + 8,
-                        y0 + 48,
-                        anchor=tk.W,
-                        text=_ellipsize(f"deck copies {deck_count} | owned {total_count}", meta_chars),
-                        fill="#2c3f5f",
-                        font=("Segoe UI", 8),
-                    )
-                canvas.create_text(
-                    x0 + 8,
-                    y0 + (70 if show_copy_counts else 48),
-                    anchor=tk.W,
-                    text=_ellipsize(card_text, body_chars),
-                    fill="#394f71",
-                    font=("Segoe UI", 8),
-                )
-                canvas.create_text(
-                    x0 + 8,
-                    y0 + (100 if show_copy_counts else 78),
-                    anchor=tk.W,
-                    text=_ellipsize(flavor_text, body_chars),
-                    fill="#4f6282",
-                    font=("Segoe UI", 8),
-                )
+            rules_text = card.rules_text.strip() or "(no rules text)"
+            canvas.create_text(
+                x0 + 8,
+                rules_y,
+                anchor=tk.NW,
+                text=rules_text,
+                fill="#394f71",
+                font=("Segoe UI", 8),
+                width=rules_width,
+                justify=tk.LEFT,
+            )
             hitboxes.append((x0, y0, x1, y1, index))
 
         canvas.configure(scrollregion=(0, 0, max(content_width, canvas.winfo_width()), content_height))
@@ -1529,7 +1484,7 @@ class GameViewerApp:
         market_canvas_width = max(self.market_canvas.winfo_width(), root_width - 520)
         total_gap = CARD_GAP * (TOP_DECK_SLOT_COUNT - 1)
         total_padding = CARD_ROW_SIDE_PAD * 2
-        max_slot_width = 108
+        max_slot_width = 200
         min_slot_width = 72
         fitted_slot_width = (market_canvas_width - total_gap - total_padding) // TOP_DECK_SLOT_COUNT
         self._market_card_width = max(min_slot_width, min(max_slot_width, fitted_slot_width))
@@ -1688,7 +1643,7 @@ class GameViewerApp:
             self.market_canvas.canvasy(event.y),
             self._hover_market_hitboxes,
         )
-        self._set_hover_card("Market", self._hover_market_cards, selected_index)
+        self._set_hover_card("Market", self._hover_market_cards, selected_index, event.x_root, event.y_root)
 
     def _on_hand_canvas_hover(self, event: tk.Event[tk.Canvas]) -> None:
         if self._is_refreshing:
@@ -1698,7 +1653,7 @@ class GameViewerApp:
             self.hand_canvas.canvasy(event.y),
             self._hand_hitboxes,
         )
-        self._set_hover_card("Hand", self._hover_hand_cards, selected_index)
+        self._set_hover_card("Hand", self._hover_hand_cards, selected_index, event.x_root, event.y_root)
 
     def _on_played_canvas_hover(self, event: tk.Event[tk.Canvas]) -> None:
         if self._is_refreshing:
@@ -1708,21 +1663,49 @@ class GameViewerApp:
             self.played_canvas.canvasy(event.y),
             self._played_hitboxes,
         )
-        self._set_hover_card("Played", self._hover_played_cards, selected_index)
+        self._set_hover_card("Played", self._hover_played_cards, selected_index, event.x_root, event.y_root)
 
     def _on_card_canvas_leave(self, _event: tk.Event[tk.Canvas]) -> None:
-        self.hover_title_var.set("Hover over a card")
-        self.hover_card_var.set("Card details will appear here.")
+        self._hide_card_popup()
 
-    def _set_hover_card(self, zone_name: str, cards: Sequence[CardView], index: int | None) -> None:
+    def _set_hover_card(self, zone_name: str, cards: Sequence[CardView], index: int | None, x_root: int = 0, y_root: int = 0) -> None:
         if index is None or index < 0 or index >= len(cards):
-            self.hover_title_var.set("Hover over a card")
-            self.hover_card_var.set("Card details will appear here.")
+            self._hide_card_popup()
             return
 
         card = cards[index]
-        self.hover_title_var.set(f"{zone_name}: {card.name}")
-        self.hover_card_var.set(format_card_hover_details(card))
+        self._show_card_popup(card, x_root, y_root, zone_name)
+
+    def _show_card_popup(self, card: CardView, x_root: int, y_root: int, zone_name: str) -> None:
+        self._hide_card_popup()
+        popup = tk.Toplevel(self.root)
+        popup.overrideredirect(True)
+        popup.attributes("-topmost", True)
+        frame = ttk.Frame(popup, padding=8)
+        frame.pack(fill=tk.BOTH, expand=True)
+        title_label = ttk.Label(frame, text=f"{zone_name}: {card.name}", font=("Segoe UI", 9, "bold"))
+        title_label.pack(anchor=tk.W)
+        detail_text = format_card_hover_details(card)
+        detail_label = ttk.Label(frame, text=detail_text, font=("Segoe UI", 8), wraplength=280, justify=tk.LEFT)
+        detail_label.pack(anchor=tk.W, pady=(4, 0))
+        popup.update_idletasks()
+        popup_x = x_root + 16
+        popup_y = y_root + 8
+        screen_w = self.root.winfo_screenwidth()
+        screen_h = self.root.winfo_screenheight()
+        pw = popup.winfo_width()
+        ph = popup.winfo_height()
+        if popup_x + pw > screen_w:
+            popup_x = x_root - pw - 16
+        if popup_y + ph > screen_h:
+            popup_y = y_root - ph - 8
+        popup.geometry(f"+{popup_x}+{popup_y}")
+        self._hover_popup = popup
+
+    def _hide_card_popup(self) -> None:
+        if self._hover_popup is not None:
+            self._hover_popup.destroy()
+            self._hover_popup = None
 
     def _on_market_key_left(self, _event: tk.Event[tk.Canvas]) -> str | None:
         if not self._market_slot_indices:
@@ -1857,26 +1840,6 @@ class GameViewerApp:
             notes=card_definition.notes,
             secondary_aspects=tuple(getattr(card_definition, "secondary_aspects", ())),
         )
-
-    def _remaining_special_stack_count(self, card_id: str, stack_total: int) -> int:
-        if self.session is None:
-            return stack_total
-        state = self.session.state
-        available = state.market.deck.count(card_id) + state.market.row.count(card_id)
-        if available > 0:
-            return available
-
-        owned_total = 0
-        for player in state.players.values():
-            owned_total += (
-                player.deck.count(card_id)
-                + player.hand.count(card_id)
-                + player.discard_pile.count(card_id)
-                + player.played_cards.count(card_id)
-                + player.inner_circle.count(card_id)
-                + player.trophy_hall.count(card_id)
-            )
-        return max(0, stack_total - owned_total)
 
     def _set_vp_breakdown(self, state: Any, current_player: Any) -> None:
         node_index = board_index(state.definition.board)
