@@ -1,0 +1,192 @@
+[
+  {
+    "card_id": "aboleth",
+    "current_player_id": "p1",
+    "replaced_card_id": "brainwashed_slave",
+    "replaced_hand_index": 0,
+    "attempts_exhausted": 10,
+    "max_steps_per_attempt": 5000,
+    "note": "Target card was force-injected after reachable search exhausted all attempts.",
+    "scenario_file": "001_seed_42_aboleth.json"
+  },
+  {
+    "card_id": "black_dragon",
+    "current_player_id": "p4",
+    "replaced_card_id": "priestess_of_lolth",
+    "replaced_hand_index": 0,
+    "attempts_exhausted": 10,
+    "max_steps_per_attempt": 5000,
+    "note": "Target card was force-injected after reachable search exhausted all attempts.",
+    "scenario_file": "041_seed_42_black_dragon.json"
+  },
+  {
+    "card_id": "blue_dragon",
+    "current_player_id": "p4",
+    "replaced_card_id": "priestess_of_lolth",
+    "replaced_hand_index": 0,
+    "attempts_exhausted": 10,
+    "max_steps_per_attempt": 5000,
+    "note": "Target card was force-injected after reachable search exhausted all attempts.",
+    "scenario_file": "043_seed_42_blue_dragon.json"
+  },
+  {
+    "card_id": "council_member",
+    "current_player_id": "p1",
+    "replaced_card_id": "advocate",
+    "replaced_hand_index": 0,
+    "attempts_exhausted": 10,
+    "max_steps_per_attempt": 5000,
+    "note": "Target card was force-injected after reachable search exhausted all attempts.",
+    "scenario_file": "066_seed_42_council_member.json"
+  },
+  {
+    "card_id": "death_knight",
+    "current_player_id": "p3",
+    "replaced_card_id": "noble",
+    "replaced_hand_index": 0,
+    "attempts_exhausted": 10,
+    "max_steps_per_attempt": 5000,
+    "note": "Target card was force-injected after reachable search exhausted all attempts.",
+    "scenario_file": "110_seed_42_death_knight.json"
+  },
+  {
+    "card_id": "death_tyrant",
+    "current_player_id": "p1",
+    "replaced_card_id": "brainwashed_slave",
+    "replaced_hand_index": 0,
+    "attempts_exhausted": 10,
+    "max_steps_per_attempt": 5000,
+    "note": "Target card was force-injected after reachable search exhausted all attempts.",
+    "scenario_file": "008_seed_42_death_tyrant.json"
+  },
+  {
+    "card_id": "deathblade",
+    "current_player_id": "p1",
+    "replaced_card_id": "advocate",
+    "replaced_hand_index": 0,
+    "attempts_exhausted": 10,
+    "max_steps_per_attempt": 5000,
+    "note": "Target card was force-injected after reachable search exhausted all attempts.",
+    "scenario_file": "067_seed_42_deathblade.json"
+  },
+  {
+    "card_id": "demogorgon",
+    "current_player_id": "p3",
+    "replaced_card_id": "noble",
+    "replaced_hand_index": 2,
+    "attempts_exhausted": 10,
+    "max_steps_per_attempt": 5000,
+    "note": "Target card was force-injected after reachable search exhausted all attempts.",
+    "scenario_file": "022_seed_42_demogorgon.json"
+  },
+  {
+    "card_id": "elder_brain",
+    "current_player_id": "p1",
+    "replaced_card_id": "brainwashed_slave",
+    "replaced_hand_index": 0,
+    "attempts_exhausted": 10,
+    "max_steps_per_attempt": 5000,
+    "note": "Target card was force-injected after reachable search exhausted all attempts.",
+    "scenario_file": "009_seed_42_elder_brain.json"
+  },
+  {
+    "card_id": "green_dragon",
+    "current_player_id": "p4",
+    "replaced_card_id": "priestess_of_lolth",
+    "replaced_hand_index": 0,
+    "attempts_exhausted": 10,
+    "max_steps_per_attempt": 5000,
+    "note": "Target card was force-injected after reachable search exhausted all attempts.",
+    "scenario_file": "050_seed_42_green_dragon.json"
+  },
+  {
+    "card_id": "imix",
+    "current_player_id": "p2",
+    "replaced_card_id": "house_guard",
+    "replaced_hand_index": 0,
+    "attempts_exhausted": 10,
+    "max_steps_per_attempt": 5000,
+    "note": "Target card was force-injected after reachable search exhausted all attempts.",
+    "scenario_file": "093_seed_42_imix.json"
+  },
+  {
+    "card_id": "lich",
+    "current_player_id": "p3",
+    "replaced_card_id": "noble",
+    "replaced_hand_index": 0,
+    "attempts_exhausted": 10,
+    "max_steps_per_attempt": 5000,
+    "note": "Target card was force-injected after reachable search exhausted all attempts.",
+    "scenario_file": "114_seed_42_lich.json"
+  },
+  {
+    "card_id": "neogi",
+    "current_player_id": "p1",
+    "replaced_card_id": "brainwashed_slave",
+    "replaced_hand_index": 0,
+    "attempts_exhausted": 10,
+    "max_steps_per_attempt": 5000,
+    "note": "Target card was force-injected after reachable search exhausted all attempts.",
+    "scenario_file": "014_seed_42_neogi.json"
+  },
+  {
+    "card_id": "olhydra",
+    "current_player_id": "p2",
+    "replaced_card_id": "house_guard",
+    "replaced_hand_index": 0,
+    "attempts_exhausted": 10,
+    "max_steps_per_attempt": 5000,
+    "note": "Target card was force-injected after reachable search exhausted all attempts.",
+    "scenario_file": "096_seed_42_olhydra.json"
+  },
+  {
+    "card_id": "orcus",
+    "current_player_id": "p3",
+    "replaced_card_id": "noble",
+    "replaced_hand_index": 2,
+    "attempts_exhausted": 10,
+    "max_steps_per_attempt": 5000,
+    "note": "Target card was force-injected after reachable search exhausted all attempts.",
+    "scenario_file": "037_seed_42_orcus.json"
+  },
+  {
+    "card_id": "red_dragon",
+    "current_player_id": "p4",
+    "replaced_card_id": "priestess_of_lolth",
+    "replaced_hand_index": 0,
+    "attempts_exhausted": 10,
+    "max_steps_per_attempt": 5000,
+    "note": "Target card was force-injected after reachable search exhausted all attempts.",
+    "scenario_file": "054_seed_42_red_dragon.json"
+  },
+  {
+    "card_id": "vampire",
+    "current_player_id": "p3",
+    "replaced_card_id": "noble",
+    "replaced_hand_index": 0,
+    "attempts_exhausted": 10,
+    "max_steps_per_attempt": 5000,
+    "note": "Target card was force-injected after reachable search exhausted all attempts.",
+    "scenario_file": "122_seed_42_vampire.json"
+  },
+  {
+    "card_id": "weaponmaster",
+    "current_player_id": "p1",
+    "replaced_card_id": "advocate",
+    "replaced_hand_index": 0,
+    "attempts_exhausted": 10,
+    "max_steps_per_attempt": 5000,
+    "note": "Target card was force-injected after reachable search exhausted all attempts.",
+    "scenario_file": "080_seed_42_weaponmaster.json"
+  },
+  {
+    "card_id": "white_dragon",
+    "current_player_id": "p4",
+    "replaced_card_id": "priestess_of_lolth",
+    "replaced_hand_index": 0,
+    "attempts_exhausted": 10,
+    "max_steps_per_attempt": 5000,
+    "note": "Target card was force-injected after reachable search exhausted all attempts.",
+    "scenario_file": "058_seed_42_white_dragon.json"
+  }
+]
