@@ -6,7 +6,6 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-
 HOUSE_GUARD_RECRUIT_SLOT = 100
 PRIESTESS_RECRUIT_SLOT = 101
 INSANE_OUTCAST_RECRUIT_SLOT = 102

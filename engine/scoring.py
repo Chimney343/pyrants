@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from engine.state import CardDefinition, GameState, NodeKind, card_index, board_index
+from engine.state import CardDefinition, GameState, NodeKind, board_index, card_index
 
 
 def _count_troops(node_troop_slots: list[str | None], player_id: str) -> int:
