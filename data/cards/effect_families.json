@@ -1412,7 +1412,7 @@
             },
             {
               "action_id": "action_2",
-              "op": "devour",
+              "op": "devour_cost",
               "target_scope": "market",
               "timing": "immediate",
               "optional": true,
@@ -1446,7 +1446,7 @@
           },
           {
             "action_id": "action_2",
-            "op": "devour",
+            "op": "devour_cost",
             "target_scope": "market",
             "timing": "immediate",
             "optional": true,
@@ -1516,7 +1516,7 @@
             },
             {
               "action_id": "action_2",
-              "op": "devour",
+              "op": "devour_cost",
               "target_scope": "played_self",
               "timing": "immediate",
               "optional": true,
@@ -1564,7 +1564,7 @@
           },
           {
             "action_id": "action_2",
-            "op": "devour",
+            "op": "devour_cost",
             "target_scope": "played_self",
             "timing": "immediate",
             "optional": true,
@@ -2391,7 +2391,7 @@
             },
             {
               "action_id": "action_2",
-              "op": "devour",
+              "op": "devour_cost",
               "target_scope": "market",
               "timing": "immediate",
               "optional": true,
@@ -2427,7 +2427,7 @@
           },
           {
             "action_id": "action_2",
-            "op": "devour",
+            "op": "devour_cost",
             "target_scope": "market",
             "timing": "immediate",
             "optional": true,
@@ -3610,7 +3610,7 @@
             },
             {
               "action_id": "action_2",
-              "op": "devour",
+              "op": "devour_cost",
               "target_scope": "market",
               "timing": "immediate",
               "optional": false,
@@ -3646,7 +3646,7 @@
           },
           {
             "action_id": "action_2",
-            "op": "devour",
+            "op": "devour_cost",
             "target_scope": "market",
             "timing": "immediate",
             "optional": false,
@@ -3814,7 +3814,7 @@
             },
             {
               "action_id": "action_2",
-              "op": "devour",
+              "op": "devour_cost",
               "target_scope": "played_self",
               "timing": "immediate",
               "optional": true,
@@ -3864,7 +3864,7 @@
           },
           {
             "action_id": "action_2",
-            "op": "devour",
+            "op": "devour_cost",
             "target_scope": "played_self",
             "timing": "immediate",
             "optional": true,
@@ -4358,7 +4358,7 @@
           "actions": [
             {
               "action_id": "action_1",
-              "op": "devour",
+              "op": "devour_cost",
               "target_scope": "hand",
               "timing": "immediate",
               "optional": false,
@@ -4392,7 +4392,7 @@
         "actions": [
           {
             "action_id": "action_1",
-            "op": "devour",
+            "op": "devour_cost",
             "target_scope": "hand",
             "timing": "immediate",
             "optional": false,
@@ -4462,7 +4462,7 @@
           "actions": [
             {
               "action_id": "action_1",
-              "op": "devour",
+              "op": "devour_cost",
               "target_scope": "hand",
               "timing": "immediate",
               "optional": false,
@@ -4496,7 +4496,7 @@
         "actions": [
           {
             "action_id": "action_1",
-            "op": "devour",
+            "op": "devour_cost",
             "target_scope": "hand",
             "timing": "immediate",
             "optional": false,
@@ -4564,7 +4564,7 @@
           "actions": [
             {
               "action_id": "action_1",
-              "op": "devour",
+              "op": "devour_cost",
               "target_scope": "hand",
               "timing": "immediate",
               "optional": false,
@@ -4626,7 +4626,7 @@
         "actions": [
           {
             "action_id": "action_1",
-            "op": "devour",
+            "op": "devour_cost",
             "target_scope": "hand",
             "timing": "immediate",
             "optional": false,
@@ -4728,7 +4728,7 @@
           "actions": [
             {
               "action_id": "action_1",
-              "op": "devour",
+              "op": "devour_cost",
               "target_scope": "hand",
               "timing": "immediate",
               "optional": false,
@@ -4762,7 +4762,7 @@
         "actions": [
           {
             "action_id": "action_1",
-            "op": "devour",
+            "op": "devour_cost",
             "target_scope": "hand",
             "timing": "immediate",
             "optional": false,
@@ -4832,7 +4832,7 @@
           "actions": [
             {
               "action_id": "action_1",
-              "op": "devour",
+              "op": "devour_cost",
               "target_scope": "hand",
               "timing": "immediate",
               "optional": false,
@@ -4882,7 +4882,7 @@
         "actions": [
           {
             "action_id": "action_1",
-            "op": "devour",
+            "op": "devour_cost",
             "target_scope": "hand",
             "timing": "immediate",
             "optional": false,
@@ -4973,7 +4973,7 @@
           "actions": [
             {
               "action_id": "action_1",
-              "op": "devour",
+              "op": "devour_cost",
               "target_scope": "hand",
               "timing": "immediate",
               "optional": false,
@@ -5021,7 +5021,7 @@
         "actions": [
           {
             "action_id": "action_1",
-            "op": "devour",
+            "op": "devour_cost",
             "target_scope": "hand",
             "timing": "immediate",
             "optional": false,
@@ -5109,7 +5109,7 @@
           "actions": [
             {
               "action_id": "action_1",
-              "op": "devour",
+              "op": "devour_cost",
               "target_scope": "hand",
               "timing": "immediate",
               "optional": false,
@@ -5159,7 +5159,7 @@
         "actions": [
           {
             "action_id": "action_1",
-            "op": "devour",
+            "op": "devour_cost",
             "target_scope": "hand",
             "timing": "immediate",
             "optional": false,
@@ -5247,7 +5247,7 @@
           "actions": [
             {
               "action_id": "action_1",
-              "op": "devour",
+              "op": "devour_cost",
               "target_scope": "inner_circle",
               "timing": "immediate",
               "optional": false,
@@ -5295,7 +5295,7 @@
         "actions": [
           {
             "action_id": "action_1",
-            "op": "devour",
+            "op": "devour_cost",
             "target_scope": "inner_circle",
             "timing": "immediate",
             "optional": false,
@@ -6326,7 +6326,7 @@
               "actions": [
                 {
                   "action_id": "option_2_action_1",
-                  "op": "devour",
+                  "op": "devour_cost",
                   "target_scope": "played_self",
                   "timing": "immediate",
                   "optional": false,
@@ -6378,7 +6378,7 @@
           },
           {
             "action_id": "option_2_action_1",
-            "op": "devour",
+            "op": "devour_cost",
             "target_scope": "played_self",
             "timing": "immediate",
             "optional": false,
@@ -6708,7 +6708,7 @@
               "actions": [
                 {
                   "action_id": "option_2_action_1",
-                  "op": "devour",
+                  "op": "devour_cost",
                   "target_scope": "hand",
                   "timing": "immediate",
                   "optional": false,
@@ -6760,7 +6760,7 @@
           },
           {
             "action_id": "option_2_action_1",
-            "op": "devour",
+            "op": "devour_cost",
             "target_scope": "hand",
             "timing": "immediate",
             "optional": false,
@@ -8463,7 +8463,7 @@
               "actions": [
                 {
                   "action_id": "option_2_action_1",
-                  "op": "devour",
+                  "op": "devour_cost",
                   "target_scope": "unknown",
                   "timing": "immediate",
                   "optional": false,
@@ -8480,7 +8480,7 @@
                 },
                 {
                   "action_id": "option_2_action_2",
-                  "op": "devour",
+                  "op": "devour_cost",
                   "target_scope": "market",
                   "timing": "immediate",
                   "optional": false,
@@ -8516,7 +8516,7 @@
           },
           {
             "action_id": "option_2_action_1",
-            "op": "devour",
+            "op": "devour_cost",
             "target_scope": "unknown",
             "timing": "immediate",
             "optional": false,
@@ -8533,7 +8533,7 @@
           },
           {
             "action_id": "option_2_action_2",
-            "op": "devour",
+            "op": "devour_cost",
             "target_scope": "market",
             "timing": "immediate",
             "optional": false,
@@ -9483,7 +9483,7 @@
             },
             {
               "action_id": "action_2",
-              "op": "devour",
+              "op": "devour_cost",
               "target_scope": "unknown",
               "timing": "immediate",
               "optional": false,
@@ -9517,7 +9517,7 @@
           },
           {
             "action_id": "action_2",
-            "op": "devour",
+            "op": "devour_cost",
             "target_scope": "unknown",
             "timing": "immediate",
             "optional": false,
@@ -10449,7 +10449,7 @@
             },
             {
               "action_id": "action_2",
-              "op": "devour",
+              "op": "devour_cost",
               "target_scope": "played_self",
               "timing": "immediate",
               "optional": true,
@@ -10497,7 +10497,7 @@
           },
           {
             "action_id": "action_2",
-            "op": "devour",
+            "op": "devour_cost",
             "target_scope": "played_self",
             "timing": "immediate",
             "optional": true,
