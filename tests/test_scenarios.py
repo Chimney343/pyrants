@@ -230,7 +230,7 @@ def test_reload_state_with_pending_generic_choice() -> None:
 
     assert restored.pending_generic_choice is not None
     assert restored.pending_generic_choice.source_card_id == "enchanter_of_thay"
-    assert restored.pending_generic_choice.execution_kind == "modal_choice"
+    assert restored.pending_generic_choice.execution_kind == "repeat_choice"
 
     option_ids = {m.option_id for m in legal_moves(restored) if isinstance(m, ResolveGenericChoiceMove)}
     assert {"option_1", "option_2"}.issubset(option_ids)

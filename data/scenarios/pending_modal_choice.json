@@ -14599,7 +14599,7 @@
     "pending_end_of_turn_promotions": [],
     "pending_generic_choice": {
       "source_card_id": "enchanter_of_thay",
-      "execution_kind": "modal_choice",
+      "execution_kind": "repeat_choice",
       "option_ids": [
         "option_1",
         "option_2"
