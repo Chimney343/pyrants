@@ -3,21 +3,22 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Iterable
 from pathlib import Path
 from random import Random
-from typing import Any, Iterable
+from typing import Any
 
-from game_setup.board_package import (
-    BoardLayoutDefinition,
-    BoardPackageDefinition,
-    make_default_layout,
-)
 from engine.state import (
     BoardDefinition,
     CardCatalog,
     GameDefinition,
     SetupDefinition,
     build_initial_game_state,
+)
+from game_setup.board_package import (
+    BoardLayoutDefinition,
+    BoardPackageDefinition,
+    make_default_layout,
 )
 
 
@@ -159,3 +160,41 @@ def save_board_package_to_files(
 
     _write_json(board_path, package.board.model_dump(mode="json"))
     _write_json(layout_path, package.layout.model_dump(mode="json"))
+
+
+def load_card_catalog(card_path: Path) -> CardCatalog:
+    """Load a single card catalog from a JSON file."""
+    return CardCatalog.model_validate(_read_json(card_path))
+
+
+def build_catalog_registry(cards_dir: Path) -> dict[str, CardCatalog]:
+    """Load every JSON file in cards_dir, parse as CardCatalog, key by catalog_id.
+
+    Files that fail validation as CardCatalog are silently skipped.
+    """
+    registry: dict[str, CardCatalog] = {}
+    if not cards_dir.is_dir():
+        return registry
+    for path in sorted(cards_dir.glob("*.json")):
+        try:
+            catalog = CardCatalog.model_validate(_read_json(path))
+        except Exception:
+            continue
+        registry[catalog.catalog_id] = catalog
+    return registry
+
+
+def resolve_catalog(catalog_id: str, registry: dict[str, CardCatalog]) -> CardCatalog:
+    """Return the catalog for a given id; raise with a clear message if missing."""
+    if catalog_id not in registry:
+        available = ", ".join(sorted(registry.keys())) if registry else "(none)"
+        raise ValueError(
+            f"Catalog '{catalog_id}' not found in registry. Available ids: {available}"
+        )
+    return registry[catalog_id]
+
+
+def default_catalog_registry() -> dict[str, CardCatalog]:
+    """Build a registry from the project-default data/cards/ directory."""
+    cards_dir = Path(__file__).resolve().parents[1] / "data" / "cards"
+    return build_catalog_registry(cards_dir)

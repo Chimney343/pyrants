@@ -5,23 +5,23 @@ from __future__ import annotations
 import argparse
 import copy
 import re
+import tkinter as tk
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-import tkinter as tk
 from tkinter import filedialog, messagebox, simpledialog, ttk
 
 from engine.state import NodeKind
 from game_setup.board_package import BoardPackageDefinition
 from game_setup.loaders import _read_json, _write_json
+from interface._canvas_scroll import bind_canvas_scrolling
 from interface.background_manager import BackgroundImageManager
 from interface.board_renderer import BoardRenderer
-from interface._canvas_scroll import bind_canvas_scrolling
-from interface.view_fit import compute_fit_zoom
 from interface.dialogs import TabularInputDialog
 from interface.interaction_state import EditorInteractionState
 from interface.package_manager import BoardPackageManager
 from interface.state_history import EditorStateHistory
+from interface.view_fit import compute_fit_zoom
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
 DEFAULT_BOARD_PATH = ROOT_DIR / "data" / "boards" / "tyrants_of_the_underdark.json"
@@ -499,7 +499,7 @@ class BoardCreatorApp:
 
     def _build_editable_node(self, layout_node: object, board_node: object) -> EditableNode:
         bounds = None
-        if getattr(layout_node, "bounds") is not None:
+        if layout_node.bounds is not None:
             bounds = (
                 layout_node.bounds.x,
                 layout_node.bounds.y,

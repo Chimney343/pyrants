@@ -5,11 +5,14 @@ from __future__ import annotations
 import argparse
 import json
 from collections.abc import Callable, Sequence
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from random import Random
 
-from engine.moves import Move, move_type as _move_type
+from pydantic import TypeAdapter
+
+from engine.moves import Move
+from engine.moves import move_type as _move_type
 from engine.rules import apply as apply_move
 from engine.rules import is_terminal as state_is_terminal
 from engine.rules import legal_moves as get_legal_moves
@@ -18,7 +21,6 @@ from engine.scoring import compute_final_scores
 from engine.state import GameState
 from game_session import GameSession
 from game_view import GameView, LegalMoveView, build_game_view
-from pydantic import TypeAdapter
 
 ROOT_DIR = Path(__file__).resolve().parent
 DEFAULT_BOARD_PATH = ROOT_DIR / "data" / "boards" / "base_game.json"

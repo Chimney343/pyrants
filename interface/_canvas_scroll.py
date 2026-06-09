@@ -8,8 +8,8 @@ callables.
 
 from __future__ import annotations
 
-from collections.abc import Callable
 import tkinter as tk
+from collections.abc import Callable
 
 
 def bind_canvas_scrolling(

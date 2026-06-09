@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from copy import copy, deepcopy
 from enum import Enum
 from random import Random
-from typing import Annotated, Any, Iterable, Literal
+from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from pydantic._internal._fields import PydanticUndefined
@@ -162,6 +163,7 @@ class CardCatalog(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     catalog_id: str = Field(min_length=1)
+    version: str = Field(min_length=1)
     cards: list[CardDefinition] = Field(default_factory=list)
 
     @model_validator(mode="after")

@@ -7,9 +7,9 @@ from __future__ import annotations
 
 import json
 import re
-from difflib import get_close_matches
 from collections import Counter, defaultdict
 from dataclasses import dataclass
+from difflib import get_close_matches
 from pathlib import Path
 from typing import Any
 

@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any
 import tkinter as tk
+from typing import Any
 
 from engine.state import NodeKind
 from interface.board_view import build_node_views_from_editor

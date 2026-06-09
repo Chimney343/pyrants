@@ -11,22 +11,24 @@
 > (documentation, ownership, history, decisions). **Always verify against
 > actual source files before making changes** — the index may be stale.
 
-Last indexed: 2026-06-05 (commit e7791be). Confidence: 100%.
+Last indexed: 2026-06-09 (commit 8464ff4). Confidence: 100%.
 ### Architecture
-This repository implements a turn‑based board game engine: it loads scenario definitions and board configurations from JSON/Markdown files, processes player moves through a rules‑validated state machine with scoring, and produces a rendered game view optionally augmented with camera input. The pipeline spans three stages – **game setup** (loaders, board packaging, scenario generation), **engine** (state management, move execution, rule enforcement, scoring), and **interface** (board rendering, camera integration, shared view). The primary artifacts are an interactive game session, a simulation log, and a camera‑aware board display. | Layer       | Technologies                                    |
-|-------------|-------------------------------------------------|
-| **Runtime** | Python 3.x (32.9% of codebase)                  |
-| **Data**    | JSON (14.9%), TOML (0.4%), YAML (1.3%) for configs; Markdown (43.9%) for documentation and scenarios |
-| **Frontend** | TypeScript / JavaScript (6.1%) in the .kilo package |
-| **Other**   | C# (0.4%) for auxiliary tooling                 |
+Repo is a turn‑based card/board game engine: it ingests scenario and card definitions from JSON catalogs, processes player moves through a rule‑driven state machine, and outputs serialised game state and rendered board views for both human‑facing viewers and simulation runners. After loading a scenario and its card catalog, the engine validates moves against a rule set (engine/rules.py), updates engine/state.py, applies scoring via engine/scoring.py, and pushes the resulting board to interface/board_view.py or to a simulation recorder (game_simulation.py). The game_session.py file orchestrates a full game loop, while the .kilo package (written in TypeScript) likely provides a web or desktop front‑end for interactivity. | Layer           | Technology                                |
+|-----------------|-------------------------------------------|
+| Core engine     | Python 3.10+                              |
+| Data storage    | JSON (catalog files), TOML (config), YAML |
+| Front‑end       | TypeScript (.kilo package)             |
+| Documentation   | Markdown (43 % of repo)                   |
+| Build/tooling   | justfile for automation                 |
+| Test & audit    | Python scripts under scripts/           |
 
-The repository is overwhelmingly Python with a small TypeScript component (.kilo package).
+**Language breakdown (by LOC):** Python 35.5 %, Markdown 43 %, JSON 14 %, YAML 1.2 %, TOML 0.4 %, JavaScript 5.8 % (likely within the .kilo package).
 ### Key Modules
 | Module | Purpose | Owner |
 |--------|---------|-------|
 | `community-1` | The tests module is repowise's validation subsystem — it consumes game state sch | — |
 | `community-0` | The skills/impeccable module is the **skill lifecycle and injection subsystem**  | — |
-| `community-3` | The game_setup module is the **initialization and configuration subsystem** of t | — |
+| `community-3` | The tests module is the **validation subsystem** of repowise — it consumes engin | — |
 | `community-2` | The tests module is the verification and validation layer of the repowise system | — |
 | `community-248` | The **tests** module is the verification subsystem of repowise — it consumes gen | — |
 ### Entry Points
@@ -70,15 +72,15 @@ The repository is overwhelmingly Python with a small TypeScript component (.kilo
 | File | Churn | 90d Commits | Owner |
 |------|-------|-------------|-------|
 | `engine/rules.py` | 100.0th %ile | 4 | Chimney343 |
-| `interface/game_viewer.py` | 99.7th %ile | 4 | Chimney343 |
-| `tests/test_generic_interpreter.py` | 99.5th %ile | 3 | Chimney343 |
-| `data/decks/first_deck_rosters.json` | 99.2th %ile | 3 | Chimney343 |
-| `data/boards/tyrants_of_the_underdark.json` | 98.9th %ile | 2 | Chimney343 |
+| `data/cards/catalog.json` | 99.8th %ile | 3 | Chimney343 |
+| `tests/test_rules.py` | 99.6th %ile | 3 | Chimney343 |
+| `interface/game_viewer.py` | 99.4th %ile | 5 | Chimney343 |
+| `tests/test_scoring.py` | 99.2th %ile | 3 | Chimney343 |
 
 ## Code health
-Hotspot health: 7.32/10 (stable) ·
-Average: 7.49/10 ·
-Worst: 5.3/10 (`.augment/skills/impeccable/scripts/design-parser.mjs`)
+Hotspot health: 6.64/10 (stable) ·
+Average: 7.14/10 ·
+Worst: 2.42/10 (`scripts/generate_first_deck_artifacts.py`)
 
 ### Critical biomarkers
 - `engine/state.py` — untested hotspot — impact −2.0

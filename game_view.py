@@ -23,8 +23,17 @@ from engine.moves import (
     special_recruit_card_id,
 )
 from engine.scoring import _is_total_control, _site_control_owner
-from engine.state import GameState, NodeKind, PendingGenericChoiceState, PendingPromotionState, board_index, card_index
-from engine.state import CardAction, ModalChoiceExecutionModel, RepeatChoiceExecutionModel
+from engine.state import (
+    CardAction,
+    GameState,
+    ModalChoiceExecutionModel,
+    NodeKind,
+    PendingGenericChoiceState,
+    PendingPromotionState,
+    RepeatChoiceExecutionModel,
+    board_index,
+    card_index,
+)
 from game_session import GameSession, GameSessionSnapshot
 
 

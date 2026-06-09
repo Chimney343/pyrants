@@ -30,8 +30,8 @@ from game_setup.loaders import build_board_package_from_files, build_game_defini
 from game_setup.scenarios import save_game_state
 from game_view import CardView, GameView, LegalMoveView, build_game_view, filter_legal_moves
 from interface._canvas_scroll import bind_canvas_scrolling
-from interface.view_fit import compute_fit_zoom
 from interface.game_renderer import GameBoardRenderer
+from interface.view_fit import compute_fit_zoom
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
 DATA_DIR = ROOT_DIR / "data"

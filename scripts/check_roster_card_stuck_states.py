@@ -8,11 +8,12 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from collections import Counter
+from collections.abc import Iterable
 from dataclasses import asdict, dataclass
 from pathlib import Path
-import sys
-from typing import Iterable, Literal
+from typing import Literal
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
@@ -20,9 +21,9 @@ if str(ROOT_DIR) not in sys.path:
 
 from engine.errors import IllegalMoveError, MissingRuleImplementationError, RuleViolationError, UnknownCardEffectError
 from engine.moves import EndMainPhaseMove, Move, PlayCardMove
-from engine.rules import apply
 from game_session import GameSession
 from game_view import build_game_view
+
 DEFAULT_BOARD_PATH = ROOT_DIR / "data" / "boards" / "base_game.json"
 DEFAULT_CARD_PATH = ROOT_DIR / "data" / "cards" / "catalog.json"
 DEFAULT_SETUP_PATH = ROOT_DIR / "data" / "decks" / "base_setup.json"

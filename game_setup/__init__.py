@@ -3,18 +3,14 @@
 from game_setup.loaders import (
     build_board_package_from_dicts,
     build_board_package_from_files,
+    build_catalog_registry,
     build_game_definition_from_dicts,
     build_game_definition_from_files,
     create_game_state_from_files,
+    default_catalog_registry,
+    load_card_catalog,
+    resolve_catalog,
     save_board_package_to_files,
-)
-from game_setup.scenarios import (
-    Scenario,
-    ScenarioMetadata,
-    load_game_state_from_scenario,
-    load_scenario,
-    save_game_state,
-    save_scenario,
 )
 from game_setup.random_state_search import (
     find_state,
@@ -33,17 +29,29 @@ from game_setup.scenario_generation.card_scenarios import (
     iter_roster_card_ids,
     write_forced_injection_notes,
 )
+from game_setup.scenarios import (
+    CatalogVersionMismatchError,
+    Scenario,
+    ScenarioMetadata,
+    load_game_state_from_scenario,
+    load_scenario,
+    save_game_state,
+    save_scenario,
+)
 
 __all__ = [
     "CardScenarioGenerator",
+    "CatalogVersionMismatchError",
     "FORCED_INJECTIONS_FILENAME",
     "Scenario",
     "ScenarioMetadata",
     "build_board_package_from_dicts",
     "build_board_package_from_files",
+    "build_catalog_registry",
     "build_game_definition_from_dicts",
     "build_game_definition_from_files",
     "create_game_state_from_files",
+    "default_catalog_registry",
     "ensure_card_scenario",
     "find_card_scenario",
     "find_state",
@@ -54,8 +62,10 @@ __all__ = [
     "has_card_in_market",
     "has_enemy_troop_at_site",
     "iter_roster_card_ids",
+    "load_card_catalog",
     "load_game_state_from_scenario",
     "load_scenario",
+    "resolve_catalog",
     "save_board_package_to_files",
     "save_game_state",
     "save_scenario",

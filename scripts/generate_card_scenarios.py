@@ -1,8 +1,10 @@
-"""Generate 125 reachable card scenarios for the Tyrants board."""
+"""Generate reachable card scenarios for the Tyrants board."""
 
 from __future__ import annotations
 
+import argparse
 import json
+import logging
 import sys
 from pathlib import Path
 
@@ -22,10 +24,18 @@ from game_setup.state_generator import (  # noqa: E402
     write_forced_injection_notes,
 )
 
+logger = logging.getLogger("generate_card_scenarios")
 
-def main() -> None:
-    import argparse
 
+def _configure_logging(quiet: bool = False) -> None:
+    level = logging.WARNING if quiet else logging.INFO
+    handler = logging.StreamHandler(sys.stderr)
+    fmt = '{"ts": "%(asctime)s", "level": "%(levelname)s", "msg": "%(message)s"}'
+    handler.setFormatter(logging.Formatter(fmt, datefmt="%Y-%m-%dT%H:%M:%S"))
+    logging.basicConfig(level=level, handlers=[handler])
+
+
+def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Generate reachable card scenarios for the Tyrants board")
     parser.add_argument("--output-dir", type=Path, default=ROOT / "data" / "scenarios" / "cards")
     parser.add_argument("--board-path", type=Path, default=DEFAULT_BOARD_PATH)
@@ -39,59 +49,80 @@ def main() -> None:
     parser.add_argument("--card-id", type=str, default=None, help="Generate only this card id (for debugging)")
     parser.add_argument("--list-ids", action="store_true", help="List all card ids and exit")
     parser.add_argument("--quiet", action="store_true", help="Suppress per-card output")
-    args = parser.parse_args()
+    parser.add_argument("--workers", type=int, default=1, help="Number of parallel workers (default: 1)")
+    parser.add_argument("--pretty", action="store_true", help="Write pretty-printed JSON (indent=2)")
+    return parser.parse_args(argv)
 
-    player_ids = [pid.strip() for pid in args.players.split(",") if pid.strip()]
+
+def _resolve_player_ids(players_arg: str) -> list[str]:
+    player_ids = [pid.strip() for pid in players_arg.split(",") if pid.strip()]
     if not player_ids:
         raise ValueError("At least one player id is required")
+    return player_ids
 
-    if args.list_ids:
-        for cid in iter_roster_card_ids(args.rosters_path):
-            print(cid)
-        return
 
-    args.output_dir.mkdir(parents=True, exist_ok=True)
+def _run_list_mode(rosters_path: Path) -> None:
+    for cid in iter_roster_card_ids(rosters_path):
+        print(cid)
 
-    if args.card_id is not None:
-        print(f"Searching for {args.card_id}...")
-        state, injection_note = ensure_card_scenario(
-            args.card_id,
-            board_path=args.board_path,
-            card_path=args.card_path,
-            setup_path=args.setup_path,
-            rosters_path=args.rosters_path,
-            player_ids=player_ids,
-            base_seed=args.base_seed,
-            max_attempts=args.max_attempts,
-            max_steps_per_attempt=args.max_steps,
-            verbose=True,
-        )
 
-        path = args.output_dir / f"000_{args.card_id}.json"
+def _run_single_card_mode(args: argparse.Namespace, player_ids: list[str]) -> None:
+    card_id = args.card_id
+    logger.info("Searching for card scenario card_id=%s seed=%d", card_id, args.base_seed)
+
+    state, injection_note = ensure_card_scenario(
+        card_id,
+        board_path=args.board_path,
+        card_path=args.card_path,
+        setup_path=args.setup_path,
+        rosters_path=args.rosters_path,
+        player_ids=player_ids,
+        base_seed=args.base_seed,
+        max_attempts=args.max_attempts,
+        max_steps_per_attempt=args.max_steps,
+        verbose=True,
+    )
+
+    filename = f"{card_id}_seed_{args.base_seed}.json"
+    path = args.output_dir / filename
+    forced_notes: list[dict[str, object]] = []
+
+    if injection_note is not None:
+        tags = ["generated", "cards", "forced_injection"]
+        description = f"Forced-injection fallback scenario for {card_id} after reachable search exhaustion"
+        forced_notes.append({**injection_note, "scenario_file": filename})
+    else:
         tags = ["generated", "cards", "reachable", "playable_now"]
-        description = f"Reachable 4-player Tyrants scenario for {args.card_id}"
-        forced_notes: list[dict[str, object]] = []
-        if injection_note is not None:
-            tags = ["generated", "cards", "forced_injection"]
-            description = f"Forced-injection fallback scenario for {args.card_id} after reachable search exhaustion"
-            forced_notes.append({**injection_note, "scenario_file": path.name})
+        description = f"Reachable 4-player Tyrants scenario for {card_id}"
 
-        save_game_state(
-            state,
-            path,
-            scenario_id=f"card_{args.card_id}",
-            description=description,
-            tags=tags,
-            card_under_test=args.card_id,
-        )
-        notes_path = write_forced_injection_notes(args.output_dir, forced_notes)
-        print(f"Saved: {path}")
-        if forced_notes:
-            print("Forced injections: 1")
-            print(f"Notes: {notes_path}")
-        return
+    save_game_state(
+        state,
+        path,
+        scenario_id=f"card_{card_id}",
+        description=description,
+        tags=tags,
+        card_under_test=card_id,
+    )
+    notes_path = write_forced_injection_notes(args.output_dir, forced_notes)
 
+    print(f"Saved: {path}")
+    logger.info("Scenario saved card_id=%s path=%s seed=%d", card_id, path, args.base_seed)
+    if forced_notes:
+        print(f"Forced injections: {len(forced_notes)}")
+        print(f"Notes: {notes_path}")
+        logger.warning("Forced injection used card_id=%s count=%d seed=%d", card_id, len(forced_notes), args.base_seed)
+
+
+def _run_batch_mode(args: argparse.Namespace, player_ids: list[str]) -> None:
     all_ids = iter_roster_card_ids(args.rosters_path)
+    logger.info(
+        "Starting batch generation cards=%d players=%d attempts=%d steps=%d",
+        len(all_ids),
+        len(player_ids),
+        args.max_attempts,
+        args.max_steps,
+    )
+
     if not args.quiet:
         print(f"Generating {len(all_ids)} scenarios")
         print(f"  players={len(player_ids)}  attempts={args.max_attempts}  steps={args.max_steps}")
@@ -109,18 +140,48 @@ def main() -> None:
         base_seed=args.base_seed,
         max_attempts=args.max_attempts,
         max_steps_per_attempt=args.max_steps,
+        workers=args.workers,
+        pretty=args.pretty,
     )
 
     notes_path = args.output_dir / FORCED_INJECTIONS_FILENAME
     forced_notes = json.loads(notes_path.read_text(encoding="utf-8")) if notes_path.exists() else []
 
-    print(f"\nSaved: {len(saved)}")
+    print(f"Saved: {len(saved)}")
     print(f"Injected: {len(forced_notes)}")
     print(f"Missing: {len(missing)}")
     print(f"Notes: {notes_path}")
+
+    logger.info(
+        "Batch generation complete saved=%d injected=%d missing=%d",
+        len(saved),
+        len(forced_notes),
+        len(missing),
+    )
+
     if missing:
         print(f"Missing cards: {', '.join(missing)}")
+        logger.error("Missing cards %s", missing)
         sys.exit(1)
+
+
+def main(argv: list[str] | None = None) -> None:
+    args = _parse_args(argv)
+    _configure_logging(quiet=args.quiet)
+
+    player_ids = _resolve_player_ids(args.players)
+
+    if args.list_ids:
+        _run_list_mode(args.rosters_path)
+        return
+
+    args.output_dir.mkdir(parents=True, exist_ok=True)
+
+    if args.card_id is not None:
+        _run_single_card_mode(args, player_ids)
+        return
+
+    _run_batch_mode(args, player_ids)
 
 
 if __name__ == "__main__":

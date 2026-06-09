@@ -1,13 +1,10 @@
 """Build the card scenario review workbook: data/scenarios/cards/card_scenario_review.xlsx."""
 
 import json
-import os
-from datetime import datetime
 from pathlib import Path
 
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
-from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.datavalidation import DataValidation
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -81,7 +78,7 @@ THIN_BORDER = Border(
 
 def _load_scenario(filepath: Path) -> dict | None:
     try:
-        with open(filepath, "r", encoding="utf-8") as fh:
+        with open(filepath, encoding="utf-8") as fh:
             return json.load(fh)
     except Exception:
         return None
@@ -254,11 +251,11 @@ def main():
     ws2.column_dimensions["C"].width = 14
 
     metrics = [
-        ("Total Scenarios", f"=COUNTA(Review!C2:C{last_row + 10})", f"=B2/B2"),
-        ("UNTESTED", f'=COUNTIF(Review!K2:K{last_row + 10},"UNTESTED")', f"=B3/B2"),
-        ("PASS", f'=COUNTIF(Review!K2:K{last_row + 10},"PASS")', f"=B4/B2"),
-        ("FAIL", f'=COUNTIF(Review!K2:K{last_row + 10},"FAIL")', f"=B5/B2"),
-        ("N/A", f'=COUNTIF(Review!K2:K{last_row + 10},"N/A")', f"=B6/B2"),
+        ("Total Scenarios", f"=COUNTA(Review!C2:C{last_row + 10})", "=B2/B2"),
+        ("UNTESTED", f'=COUNTIF(Review!K2:K{last_row + 10},"UNTESTED")', "=B3/B2"),
+        ("PASS", f'=COUNTIF(Review!K2:K{last_row + 10},"PASS")', "=B4/B2"),
+        ("FAIL", f'=COUNTIF(Review!K2:K{last_row + 10},"FAIL")', "=B5/B2"),
+        ("N/A", f'=COUNTIF(Review!K2:K{last_row + 10},"N/A")', "=B6/B2"),
         ("", "", ""),
         ("By Failure Category", "", ""),
         ("Engine Bug", f'=COUNTIF(Review!L2:L{last_row + 10},"Engine Bug")', ""),
@@ -414,7 +411,7 @@ def main():
     wb.save(str(OUTPUT))
     print(f"Review workbook written: {OUTPUT}")
     print(f"  Scenarios listed: {len(files)}")
-    print(f"  Sheets: Review, Summary, Instructions")
+    print("  Sheets: Review, Summary, Instructions")
 
 
 if __name__ == "__main__":

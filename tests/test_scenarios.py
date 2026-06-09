@@ -10,7 +10,9 @@ import pytest
 from engine.moves import PlayCardMove, ResolveGenericChoiceMove
 from engine.rules import apply, legal_moves
 from game_session import GameSession
+from game_setup.loaders import load_card_catalog
 from game_setup.scenarios import (
+    CatalogVersionMismatchError,
     Scenario,
     ScenarioMetadata,
     load_game_state_from_scenario,
@@ -23,6 +25,11 @@ BASE_DIR = Path(__file__).resolve().parents[1]
 BOARD_PATH = BASE_DIR / "data" / "boards" / "tyrants_of_the_underdark.json"
 CARD_PATH = BASE_DIR / "data" / "cards" / "catalog.json"
 SETUP_PATH = BASE_DIR / "data" / "decks" / "base_setup.json"
+
+
+def _catalog_registry() -> dict[str, object]:
+    catalog = load_card_catalog(CARD_PATH)
+    return {catalog.catalog_id: catalog}
 
 
 def _session(seed: int = 41) -> GameSession:
@@ -140,7 +147,7 @@ def test_save_and_load_scenario_file() -> None:
     assert loaded.metadata.move_count == 0
     assert loaded.metadata.is_terminal is False
 
-    state = loaded.to_game_state()
+    state = loaded.to_game_state(catalog_registry=_catalog_registry())
     assert state.current_player_id == session.state.current_player_id
     assert set(state.players.keys()) == set(session.state.players.keys())
 
@@ -157,7 +164,7 @@ def test_save_game_state_convenience() -> None:
             description="Convenience test",
         )
 
-        state_from_file = load_game_state_from_scenario(path)
+        state_from_file = load_game_state_from_scenario(path, catalog_registry=_catalog_registry())
 
     assert state_from_file.current_player_id == session.state.current_player_id
 
@@ -226,7 +233,7 @@ def test_reload_state_with_pending_generic_choice() -> None:
         path = Path(tmpdir) / "pending_choice_scenario.json"
         save_game_state(played, path, scenario_id="pending_choice")
 
-        restored = load_game_state_from_scenario(path)
+        restored = load_game_state_from_scenario(path, catalog_registry=_catalog_registry())
 
     assert restored.pending_generic_choice is not None
     assert restored.pending_generic_choice.source_card_id == "enchanter_of_thay"
@@ -243,7 +250,7 @@ def test_reload_state_preserves_market_deck_and_row() -> None:
         path = Path(tmpdir) / "market_scenario.json"
         save_game_state(session.state, path, scenario_id="market_check")
 
-        restored = load_game_state_from_scenario(path)
+        restored = load_game_state_from_scenario(path, catalog_registry=_catalog_registry())
 
     assert restored.market.row == session.state.market.row
     assert restored.market.deck == session.state.market.deck
@@ -260,7 +267,7 @@ def test_reload_preserves_inner_circle_and_trophy_hall() -> None:
         path = Path(tmpdir) / "zones_scenario.json"
         save_game_state(state, path, scenario_id="zones_check")
 
-        restored = load_game_state_from_scenario(path)
+        restored = load_game_state_from_scenario(path, catalog_registry=_catalog_registry())
 
     assert restored.players["p1"].inner_circle == ["noble", "soldier"]
     assert restored.players["p1"].trophy_hall == ["enemy_troop"]
@@ -273,7 +280,7 @@ def test_reload_preserves_shuffle_metadata() -> None:
         path = Path(tmpdir) / "shuffle_scenario.json"
         save_game_state(session.state, path, scenario_id="shuffle_check")
 
-        restored = load_game_state_from_scenario(path)
+        restored = load_game_state_from_scenario(path, catalog_registry=_catalog_registry())
 
     assert restored.shuffle_seed == session.state.shuffle_seed
     assert restored.shuffle_count == session.state.shuffle_count
@@ -302,13 +309,13 @@ def test_canonical_scenario_loads(filename: str) -> None:
     assert scenario.metadata.scenario_id
     assert scenario.metadata.description
 
-    state = scenario.to_game_state()
+    state = scenario.to_game_state(catalog_registry=_catalog_registry())
     assert state.current_player_id in state.players
     assert len(state.turn_order) >= 2
 
 
 def test_canonical_initial_scenario_is_fresh() -> None:
-    state = load_game_state_from_scenario(SCENARIOS_DIR / "initial_two_player.json")
+    state = load_game_state_from_scenario(SCENARIOS_DIR / "initial_two_player.json", catalog_registry=_catalog_registry())
     assert state.phase.value == "main"
     assert len(state.players["p1"].hand) == 5
     assert len(state.market.row) == 6
@@ -316,13 +323,13 @@ def test_canonical_initial_scenario_is_fresh() -> None:
 
 
 def test_canonical_mid_turn_has_played_card() -> None:
-    state = load_game_state_from_scenario(SCENARIOS_DIR / "mid_turn_two_player.json")
+    state = load_game_state_from_scenario(SCENARIOS_DIR / "mid_turn_two_player.json", catalog_registry=_catalog_registry())
     assert len(state.players["p1"].played_cards) >= 1
     assert len(state.players["p1"].hand) == 4
 
 
 def test_canonical_pending_modal_choice_has_both_options() -> None:
-    state = load_game_state_from_scenario(SCENARIOS_DIR / "pending_modal_choice.json")
+    state = load_game_state_from_scenario(SCENARIOS_DIR / "pending_modal_choice.json", catalog_registry=_catalog_registry())
     assert state.pending_generic_choice is not None
     assert state.pending_generic_choice.source_card_id == "enchanter_of_thay"
 
@@ -333,8 +340,109 @@ def test_canonical_pending_modal_choice_has_both_options() -> None:
 
 
 def test_canonical_scoring_state_has_control() -> None:
-    state = load_game_state_from_scenario(SCENARIOS_DIR / "scoring_test.json")
+    state = load_game_state_from_scenario(SCENARIOS_DIR / "scoring_test.json", catalog_registry=_catalog_registry())
     assert len(state.players["p1"].inner_circle) == 3
     assert len(state.players["p1"].trophy_hall) == 3
     assert len(state.players["p2"].inner_circle) == 2
-    assert state.board.nodes["site_a"].troop_slots == ["p1", "p1", "p1"]
+    assert state.board.nodes["site_gauntlgrym"].troop_slots == ["p1", "p1", "p1"]
+
+
+# ---------------------------------------------------------------------------
+# Catalog deduplication tests
+# ---------------------------------------------------------------------------
+
+
+def test_save_strips_catalog_from_payload() -> None:
+    session = _session(seed=13)
+    scenario = Scenario.from_game_state(session.state, scenario_id="strip_test")
+    payload = scenario.state_payload
+    assert "catalog" not in payload.get("definition", {})
+
+
+def test_save_records_catalog_version() -> None:
+    session = _session(seed=13)
+    scenario = Scenario.from_game_state(session.state, scenario_id="version_test")
+    assert scenario.metadata.source_catalog_version == "1.0.0"
+    assert scenario.metadata.source_catalog_id == "base_catalog"
+
+
+def test_load_with_registry_rehydrates_catalog() -> None:
+    session = _session(seed=13)
+    scenario = Scenario.from_game_state(session.state, scenario_id="rehydrate_test")
+    state = scenario.to_game_state(catalog_registry=_catalog_registry())
+    assert state.definition.catalog.catalog_id == "base_catalog"
+    assert state.definition.catalog.version == "1.0.0"
+    assert len(state.definition.catalog.cards) == 125
+
+
+def test_load_with_matching_version_succeeds() -> None:
+    session = _session(seed=13)
+    scenario = Scenario.from_game_state(session.state, scenario_id="match_test")
+    state = scenario.to_game_state(catalog_registry=_catalog_registry())
+    assert state.current_player_id == session.state.current_player_id
+
+
+def test_load_with_mismatched_version_raises() -> None:
+    session = _session(seed=13)
+    catalog = load_card_catalog(CARD_PATH)
+    catalog_bumped = catalog.model_copy(update={"version": "1.1.0"})
+    bumped_registry: dict[str, object] = {catalog_bumped.catalog_id: catalog_bumped}
+
+    scenario = Scenario.from_game_state(session.state, scenario_id="mismatch_test")
+    with pytest.raises(CatalogVersionMismatchError, match="1\\.0\\.0.*1\\.1\\.0"):
+        scenario.to_game_state(catalog_registry=bumped_registry)
+
+
+def test_load_with_force_overrides_version_mismatch() -> None:
+    session = _session(seed=13)
+    catalog = load_card_catalog(CARD_PATH)
+    catalog_bumped = catalog.model_copy(update={"version": "1.1.0"})
+    bumped_registry: dict[str, object] = {catalog_bumped.catalog_id: catalog_bumped}
+
+    scenario = Scenario.from_game_state(session.state, scenario_id="force_test")
+    state = scenario.to_game_state(catalog_registry=bumped_registry, force=True)
+    assert state.definition.catalog.version == "1.1.0"
+
+
+def test_save_file_size_drops_significantly() -> None:
+    import json
+
+    session = _session(seed=13)
+    legacy_payload = session.state.model_dump(mode="json")
+    legacy_size = len(json.dumps(legacy_payload))
+
+    scenario = Scenario.from_game_state(session.state, scenario_id="size_test")
+    new_payload = scenario.model_dump(mode="json")
+    new_size = len(json.dumps(new_payload))
+
+    reduction = (legacy_size - new_size) / legacy_size
+    assert reduction > 0.5, f"Expected >50% reduction, got {reduction:.1%}"
+
+
+def test_legacy_save_with_embedded_catalog_raises_clear_error() -> None:
+    import json
+
+    session = _session(seed=13)
+    legacy_payload = session.state.model_dump(mode="json")
+    legacy_scenario_payload = {
+        "metadata": {
+            "scenario_id": "legacy_test",
+            "description": "legacy embedded catalog",
+            "tags": [],
+            "card_under_test": None,
+            "source_board_id": "Tyrants of the Underdark",
+            "source_catalog_id": "base_catalog",
+            "source_catalog_version": "1.0.0",
+            "source_setup_id": "base_setup",
+            "move_count": 0,
+            "is_terminal": False,
+        },
+        "state_payload": legacy_payload,
+    }
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        path = Path(tmpdir) / "legacy_scenario.json"
+        path.write_text(json.dumps(legacy_scenario_payload, indent=2), encoding="utf-8")
+
+        with pytest.raises(ValueError, match="catalog"):
+            load_game_state_from_scenario(path, catalog_registry=_catalog_registry())

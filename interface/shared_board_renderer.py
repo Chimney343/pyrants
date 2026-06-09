@@ -7,8 +7,8 @@ from a  dict of *BoardNodeView* objects.
 
 from __future__ import annotations
 
-from collections.abc import Callable, Sequence
 import tkinter as tk
+from collections.abc import Callable, Sequence
 
 from engine.state import NodeKind
 from interface.board_view import BoardNodeView

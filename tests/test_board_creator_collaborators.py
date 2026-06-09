@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+import tkinter as tk
 from pathlib import Path
 from types import SimpleNamespace
-import tkinter as tk
 
 from interface.background_manager import BackgroundImageManager
 from interface.board_creator import BoardCreatorApp
@@ -86,10 +86,10 @@ def test_background_manager_load_from_layout_value_does_not_adopt_size_when_disa
         def height(self) -> int:
             return 600
 
-        def zoom(self, _: int, __: int) -> "FakePhoto":
+        def zoom(self, _: int, __: int) -> FakePhoto:
             return self
 
-        def subsample(self, _: int, __: int) -> "FakePhoto":
+        def subsample(self, _: int, __: int) -> FakePhoto:
             return self
 
     monkeypatch.setattr("interface.background_manager.tk.PhotoImage", FakePhoto)

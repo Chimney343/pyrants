@@ -6,8 +6,8 @@ from types import SimpleNamespace
 
 from engine.state import NodeKind
 from game_setup.board_package import (
-    BoardPackageDefinition,
     BoardLayoutDefinition,
+    BoardPackageDefinition,
     CanvasConfig,
     Coordinate,
     NodeLayoutDefinition,

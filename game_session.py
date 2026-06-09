@@ -13,7 +13,7 @@ from engine.rules import legal_moves as get_legal_moves
 from engine.rules import winner as get_winner
 from engine.scoring import compute_final_scores
 from engine.state import GameState
-from game_setup.loaders import create_game_state_from_files
+from game_setup.loaders import create_game_state_from_files, default_catalog_registry
 from game_setup.scenarios import load_game_state_from_scenario
 
 
@@ -59,10 +59,10 @@ class GameSession:
         )
 
     @classmethod
-    def from_scenario_file(cls, path: Path) -> GameSession:
-        """Create a session from a saved scenario JSON file."""
+    def from_scenario_file(cls, path: Path, *, force: bool = False) -> GameSession:
+        """Create a session from a saved scenario JSON file. Pass force=True to override catalog version mismatch."""
 
-        return cls(load_game_state_from_scenario(path))
+        return cls(load_game_state_from_scenario(path, catalog_registry=default_catalog_registry(), force=force))
 
     @property
     def state(self) -> GameState:

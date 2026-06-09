@@ -35,11 +35,11 @@ card-stuck-check decks="data/decks" board="data/boards/base_game.json" card="dat
 card-stuck-check-ci decks="data/decks" board="data/boards/base_game.json" card="data/cards/catalog.json" setup="data/decks/base_setup.json" seed="7" seed_count="1" max_steps="120" expected_blocked="" json_out="artifacts/card_stuck_report.json":
     & {{python}} scripts/check_roster_card_stuck_states.py --decks-dir {{decks}} --board-path {{board}} --card-path {{card}} --setup-path {{setup}} --seed {{seed}} --seed-count {{seed_count}} --max-steps {{max_steps}} --json-out {{json_out}} --ci --expected-blocked-cards {{expected_blocked}}
 
-generate-card-scenarios out="data/scenarios/cards" seed="0" attempts="3" steps="1500":
-    & {{python}} scripts/generate_card_scenarios.py --output-dir {{out}} --base-seed {{seed}} --max-attempts {{attempts}} --max-steps {{steps}}
+generate-card-scenarios workers="1" seed="0" attempts="3" steps="1500":
+    $sw = [System.Diagnostics.Stopwatch]::StartNew(); $outDir = "data/scenarios/batch_card_generation"; & {{python}} scripts/generate_card_scenarios.py --output-dir $outDir --base-seed {{seed}} --max-attempts {{attempts}} --max-steps {{steps}} --workers {{workers}}; $exit = $LASTEXITCODE; $sw.Stop(); $elapsed = [math]::Round($sw.Elapsed.TotalSeconds, 1); Write-Host "Runtime: ${elapsed}s"; Set-Content -Path (Join-Path $outDir "runtime.txt") -Value "Runtime: ${elapsed}s"; if ($exit -ne 0) { exit $exit }
 
-generate-card-scenario card out="data/scenarios/cards" seed="0" attempts="3" steps="1500":
-    & {{python}} scripts/generate_card_scenarios.py --card-id {{card}} --output-dir {{out}} --base-seed {{seed}} --max-attempts {{attempts}} --max-steps {{steps}}
+regenerate-canonical-scenarios:
+    & {{python}} scripts/regenerate_canonical_scenarios.py
 
 random-walk:
     & {{python}} scripts/random_walk.py

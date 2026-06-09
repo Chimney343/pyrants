@@ -10,9 +10,9 @@ from game_view import build_game_view
 from interface.game_renderer import (
     DEFAULT_SITE_OUTLINE,
     EMPTY_ROUTE_FILL,
-    GameBoardRenderer,
     PLAYER_COLORS,
     WHITE_ROUTE_FILL,
+    GameBoardRenderer,
     _derive_control_owner,
     _total_control_owner,
 )

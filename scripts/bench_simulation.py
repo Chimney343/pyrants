@@ -16,6 +16,8 @@ sys.path.insert(0, str(ROOT))
 
 from engine.rules import apply, legal_moves
 from engine.state import GameState
+from game_session import GameSession
+from game_setup.loaders import default_catalog_registry
 from game_setup.scenarios import load_game_state_from_scenario
 from game_simulation import (
     make_random_legal_move_chooser,
@@ -23,7 +25,6 @@ from game_simulation import (
     run_fast_simulation,
     run_simulation,
 )
-from game_session import GameSession
 
 SCENARIO_2P = ROOT / "data" / "scenarios" / "initial_two_player.json"
 
@@ -31,7 +32,7 @@ SCENARIO_2P = ROOT / "data" / "scenarios" / "initial_two_player.json"
 def _make_session_from_scenario(path: Path, player_ids: list[str] | None = None, seed: int = 1) -> GameSession:
     _ = player_ids
     _ = seed
-    state = load_game_state_from_scenario(path)
+    state = load_game_state_from_scenario(path, catalog_registry=default_catalog_registry())
     return GameSession(state)
 
 

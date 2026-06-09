@@ -1,5 +1,6 @@
 {
   "catalog_id": "base_catalog",
+  "version": "1.0.0",
   "cards": [
     {
       "card_id": "aboleth",

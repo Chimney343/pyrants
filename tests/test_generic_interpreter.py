@@ -6,12 +6,11 @@ from random import Random
 
 import pytest
 
-from engine.errors import IllegalMoveError, MissingRuleImplementationError, RuleViolationError
+from engine.errors import IllegalMoveError, MissingRuleImplementationError
 from engine.moves import PlayCardMove, ResolveGenericChoiceMove
 from engine.rules import apply, legal_moves
 from engine.state import build_initial_game_state
 from game_setup.loaders import build_game_definition_from_dicts
-
 
 WHITE_TROOP_OWNER = "white"
 
@@ -136,7 +135,7 @@ def _state_for_cards(cards: list[dict[str, object]], starter_entries: list[dict[
             },
         ],
     }
-    card_data = {"catalog_id": "generic_test_catalog", "cards": cards}
+    card_data = {"catalog_id": "generic_test_catalog", "version": "1.0.0", "cards": cards}
     setup_data = {
         "setup_id": "generic_test_setup",
         "starter_deck": {"deck_id": "starter", "entries": starter_entries},

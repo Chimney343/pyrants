@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from pathlib import Path
 from collections import Counter
+from pathlib import Path
 from random import Random
 
 import pytest
@@ -78,7 +78,7 @@ def test_rejects_unknown_card_reference() -> None:
             }
         ],
     }
-    card_data = {"catalog_id": "cards", "cards": []}
+    card_data = {"catalog_id": "cards", "version": "1.0.0", "cards": []}
     setup_data = {
         "setup_id": "setup",
         "starter_deck": {
@@ -110,6 +110,7 @@ def test_create_game_state_rejects_duplicate_player_ids() -> None:
 def _minimal_card_and_setup_payload() -> tuple[dict[str, object], dict[str, object]]:
     card_data: dict[str, object] = {
         "catalog_id": "cards",
+        "version": "1.0.0",
         "cards": [
             {
                 "card_id": "starter_card",

@@ -9,6 +9,7 @@ from pathlib import Path
 from engine.moves import PlayCardMove
 from engine.rules import is_terminal, legal_moves
 from engine.state import TurnPhase
+from game_setup.loaders import load_card_catalog
 from game_setup.scenarios import load_game_state_from_scenario
 from game_setup.state_generator import (
     FORCED_INJECTIONS_FILENAME,
@@ -25,6 +26,12 @@ from game_setup.state_generator import (
 )
 
 ROSTERS_PATH = Path(__file__).resolve().parents[1] / "data" / "decks"
+CARD_PATH = Path(__file__).resolve().parents[1] / "data" / "cards" / "catalog.json"
+
+
+def _catalog_registry() -> dict[str, object]:
+    catalog = load_card_catalog(CARD_PATH)
+    return {catalog.catalog_id: catalog}
 
 
 def test_find_state_returns_matching_state() -> None:
@@ -198,10 +205,10 @@ def test_generate_card_scenarios_small_subset() -> None:
         assert noble_path.exists()
         assert soldier_path.exists()
 
-        noble_state = load_game_state_from_scenario(noble_path)
+        noble_state = load_game_state_from_scenario(noble_path, catalog_registry=_catalog_registry())
         assert "noble" in noble_state.players[noble_state.current_player_id].hand
 
-        soldier_state = load_game_state_from_scenario(soldier_path)
+        soldier_state = load_game_state_from_scenario(soldier_path, catalog_registry=_catalog_registry())
         assert "soldier" in soldier_state.players[soldier_state.current_player_id].hand
 
         notes = json.loads((out / FORCED_INJECTIONS_FILENAME).read_text(encoding="utf-8"))
@@ -222,7 +229,7 @@ def test_generate_card_scenarios_writes_forced_injection_notes() -> None:
         assert len(saved) == 1
         assert missing == []
 
-        scenario_state = load_game_state_from_scenario(saved[0])
+        scenario_state = load_game_state_from_scenario(saved[0], catalog_registry=_catalog_registry())
         assert "aboleth" in scenario_state.players[scenario_state.current_player_id].hand
 
         notes = json.loads((out / FORCED_INJECTIONS_FILENAME).read_text(encoding="utf-8"))

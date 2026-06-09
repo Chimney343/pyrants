@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 import tkinter as tk
+from typing import Any
 
 from engine.state import NodeKind
 from game_setup.board_package import BoardPackageDefinition

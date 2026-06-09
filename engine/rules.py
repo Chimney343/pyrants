@@ -8,39 +8,14 @@ from engine.errors import (
     RuleViolationError,
     UnknownCardEffectError,
 )
-from engine.moves import (
-    ActivateCardAbilityMove,
-    AssassinateMove,
-    DeclineCardAbilityMove,
-    DeployMove,
-    EndMainPhaseMove,
-    Move,
-    PlayCardMove,
-    PromoteCardMove,
-    RecruitMove,
-    ResolveCleanupMove,
-    ResolveGenericChoiceMove,
-    ResolveEndOfTurnMove,
-    ReturnSpyMove,
-    SkipPromoteMove,
-    HOUSE_GUARD_RECRUIT_SLOT,
-    INSANE_OUTCAST_RECRUIT_SLOT,
-    PRIESTESS_RECRUIT_SLOT,
+from engine.generic_runtime import (
+    _apply_resolve_generic_choice,
+    _legal_pending_generic_choice_moves,
+    _resolve_generic_execution,
 )
-from engine.phases import advance_phase
-from engine.scoring import award_end_of_turn_site_vp, compute_final_scores
-from engine.state import (
-    CardDefinition,
-    GameState,
-    PendingAbilityState,
-    PendingPromotionState,
-    TurnPhase,
-    card_index,
-)
-
 from engine.helpers import (
-    SPECIAL_RECRUIT_STACKS,
     _EFFECT_REGISTRY,
+    SPECIAL_RECRUIT_STACKS,
     _apply_effect_with_wrappers,
     _apply_recruit,
     _apply_return_spy,
@@ -53,16 +28,34 @@ from engine.helpers import (
     _remaining_special_stack_count,
     _reshuffle_discard_into_deck,
     _scaled_vp_award_count,
-    _special_stack_config,
     has_presence,
     register_effect,
 )
-
-from engine.generic_runtime import (
-    _action_requires_selection,
-    _apply_resolve_generic_choice,
-    _legal_pending_generic_choice_moves,
-    _resolve_generic_execution,
+from engine.moves import (
+    ActivateCardAbilityMove,
+    AssassinateMove,
+    DeclineCardAbilityMove,
+    DeployMove,
+    EndMainPhaseMove,
+    Move,
+    PlayCardMove,
+    PromoteCardMove,
+    RecruitMove,
+    ResolveCleanupMove,
+    ResolveEndOfTurnMove,
+    ResolveGenericChoiceMove,
+    ReturnSpyMove,
+    SkipPromoteMove,
+)
+from engine.phases import advance_phase
+from engine.scoring import award_end_of_turn_site_vp, compute_final_scores
+from engine.state import (
+    CardDefinition,
+    GameState,
+    PendingAbilityState,
+    PendingPromotionState,
+    TurnPhase,
+    card_index,
 )
 
 # ── public API ──────────────────────────────────────────────────────────────

@@ -4,13 +4,12 @@ from __future__ import annotations
 
 import argparse
 import json
-from pathlib import Path
 import tkinter as tk
+from pathlib import Path
 from tkinter import ttk
 
-from game_simulation import replay_views_from_payload
-from game_view import GameView
 from game_setup.loaders import build_board_package_from_files
+from game_simulation import replay_views_from_payload
 from interface.game_renderer import GameBoardRenderer
 
 ROOT_DIR = Path(__file__).resolve().parents[1]

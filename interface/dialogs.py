@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import tkinter as tk
+from collections.abc import Sequence
 from tkinter import ttk
-from typing import Sequence
 
 
 class TabularInputDialog(tk.Toplevel):

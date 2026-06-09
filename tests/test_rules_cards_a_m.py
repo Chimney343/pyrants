@@ -37,7 +37,7 @@ def _ability_state(cards: list[dict[str, object]], starter_entries: list[dict[st
             }
         ],
     }
-    card_data = {"catalog_id": "ability_test_catalog", "cards": cards}
+    card_data = {"catalog_id": "ability_test_catalog", "version": "1.0.0", "cards": cards}
     setup_data = {
         "setup_id": "ability_test_setup",
         "starter_deck": {"deck_id": "starter", "entries": starter_entries},
