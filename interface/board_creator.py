@@ -17,7 +17,7 @@ from game_setup.loaders import _read_json, _write_json
 from interface.background_manager import BackgroundImageManager
 from interface.board_renderer import BoardRenderer
 from interface._canvas_scroll import bind_canvas_scrolling
-from interface.camera import compute_fit_zoom
+from interface.view_fit import compute_fit_zoom
 from interface.dialogs import TabularInputDialog
 from interface.interaction_state import EditorInteractionState
 from interface.package_manager import BoardPackageManager

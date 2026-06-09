@@ -1,8 +1,8 @@
-"""Tests for the shared camera fit-zoom helper."""
+"""Tests for the shared view fit-zoom helper."""
 
 from __future__ import annotations
 
-from interface.camera import FitZoomResult, compute_fit_zoom
+from interface.view_fit import compute_fit_zoom
 
 
 def test_fit_zoom_empty_bboxes_returns_none() -> None:

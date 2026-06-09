@@ -1,4 +1,4 @@
-"""Shared camera helpers for fit-to-board zoom calculations."""
+"""Fit-to-viewport zoom calculations."""
 
 from __future__ import annotations
 
