@@ -43,6 +43,7 @@ from engine.helpers import (
     _EFFECT_REGISTRY,
     _apply_effect_with_wrappers,
     _apply_recruit,
+    _apply_return_spy,
     _can_activate_pending_ability,
     _can_deploy_to_node,
     _deferred_promotion_target_ids,
@@ -151,7 +152,9 @@ def apply(state: GameState, move: Move) -> GameState:
         return _apply_recruit(state, move)
 
     if isinstance(move, ReturnSpyMove):
-        raise IllegalMoveError("return_spy can only be resolved through a card effect")
+        if move.spy_owner_id == move.player_id:
+            raise IllegalMoveError("return your own spy can only be done through a card effect")
+        return _apply_return_spy(state, move)
 
     if isinstance(move, ActivateCardAbilityMove):
         return _apply_activate_card_ability(state, move)
@@ -332,6 +335,17 @@ def _legal_main_phase_actions(state: GameState, player_id: str) -> list[Move]:
                         player_id=player_id,
                         target_node_id=node_id,
                         target_slot_index=slot_index,
+                    )
+                )
+
+            for spy_owner_id in sorted(node_state.spies):
+                if spy_owner_id == player_id:
+                    continue
+                moves.append(
+                    ReturnSpyMove(
+                        player_id=player_id,
+                        node_id=node_id,
+                        spy_owner_id=spy_owner_id,
                     )
                 )
 

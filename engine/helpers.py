@@ -7,8 +7,8 @@ helpers, effect wrappers, free actions, and the effect registry.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from random import Random
-from typing import Any, Callable
 
 from engine.errors import (
     IllegalMoveError,
@@ -28,11 +28,9 @@ from engine.state import (
     CardDefinition,
     GameState,
     NodeKind,
-    PendingAbilityState,
     PendingPromotionState,
-    TurnPhase,
-    card_index,
     board_index,
+    card_index,
 )
 
 WHITE_TROOP_OWNER = "white"
