@@ -132,7 +132,6 @@ def main() -> None:
     state = build_initial_game_state(
         definition,
         player_ids=player_ids,
-        rng=rng,
         shuffle_seed=args.seed,
     )
 

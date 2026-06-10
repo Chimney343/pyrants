@@ -454,23 +454,34 @@ def create_board_state(board_definition: BoardDefinition) -> BoardState:
     return BoardState(nodes=nodes)
 
 
-def draw_cards(player_state: PlayerState, count: int, rng: Random) -> PlayerState:
-    """Draw cards, reshuffling discard into deck when needed."""
+def _shuffle_deck(deck: list[str], seed: int, counter: int) -> list[str]:
+    """Deterministic shuffle using seed and counter (same pattern as _reshuffle_discard_into_deck)."""
+    rng = Random((seed << 16) ^ counter)
+    result = list(deck)
+    rng.shuffle(result)
+    return result
+
+
+def draw_cards(player_state: PlayerState, count: int, shuffle_seed: int, shuffle_counter: int) -> tuple[PlayerState, int]:
+    """Draw cards, reshuffling discard into deck when needed.
+
+    Returns (updated_state, new_shuffle_counter).
+    """
 
     updated = player_state.model_copy(deep=True)
+    counter = shuffle_counter
     for _ in range(count):
         if not updated.deck and updated.discard_pile:
-            new_deck = list(updated.discard_pile)
-            rng.shuffle(new_deck)
-            updated.deck = new_deck
+            updated.deck = _shuffle_deck(updated.discard_pile, shuffle_seed, counter)
             updated.discard_pile = []
+            counter += 1
 
         if not updated.deck:
             break
 
         updated.hand.append(updated.deck.pop())
 
-    return updated
+    return updated, counter
 
 
 def create_player_state(
@@ -478,12 +489,16 @@ def create_player_state(
     starter_cards: list[str],
     starting_troops: int,
     starting_spies: int,
-    rng: Random,
-) -> PlayerState:
-    """Build a player's initial runtime state from setup definitions."""
+    shuffle_seed: int,
+    shuffle_counter: int,
+) -> tuple[PlayerState, int]:
+    """Build a player's initial runtime state from setup definitions.
 
-    deck = list(starter_cards)
-    rng.shuffle(deck)
+    Returns (player_state, new_shuffle_counter).
+    """
+
+    deck = _shuffle_deck(starter_cards, shuffle_seed, shuffle_counter)
+    counter = shuffle_counter + 1
 
     initial_state = PlayerState(
         player_id=player_id,
@@ -491,25 +506,28 @@ def create_player_state(
         barracks=starting_troops,
         spies_available=starting_spies,
     )
-    return draw_cards(initial_state, count=5, rng=rng)
+    return draw_cards(initial_state, count=5, shuffle_seed=shuffle_seed, shuffle_counter=counter)
 
 
-def create_market_state(setup_definition: SetupDefinition, rng: Random) -> MarketState:
-    """Initialize market deck and visible row from setup definitions."""
+def create_market_state(setup_definition: SetupDefinition, shuffle_seed: int, shuffle_counter: int) -> tuple[MarketState, int]:
+    """Initialize market deck and visible row from setup definitions.
+
+    Returns (market_state, new_shuffle_counter).
+    """
 
     market_deck = expand_deck(setup_definition.market_deck)
-    rng.shuffle(market_deck)
+    shuffled = _shuffle_deck(market_deck, shuffle_seed, shuffle_counter)
+    counter = shuffle_counter + 1
 
-    row_count = min(setup_definition.market_row_size, len(market_deck))
-    row = [market_deck.pop() for _ in range(row_count)]
+    row_count = min(setup_definition.market_row_size, len(shuffled))
+    row = [shuffled.pop() for _ in range(row_count)]
 
-    return MarketState(deck=market_deck, row=row)
+    return MarketState(deck=shuffled, row=row), counter
 
 
 def build_initial_game_state(
     definition: GameDefinition,
     player_ids: Iterable[str],
-    rng: Random,
     shuffle_seed: int = 0,
 ) -> GameState:
     """Create a full initial runtime state from immutable game definitions."""
@@ -522,15 +540,20 @@ def build_initial_game_state(
 
     starter_cards = expand_deck(definition.setup.starter_deck)
     players: dict[str, PlayerState] = {}
+    counter = 0
 
     for player_id in turn_order:
-        players[player_id] = create_player_state(
+        player_state, counter = create_player_state(
             player_id=player_id,
             starter_cards=starter_cards,
             starting_troops=definition.default_player_troops,
             starting_spies=definition.default_player_spies,
-            rng=rng,
+            shuffle_seed=shuffle_seed,
+            shuffle_counter=counter,
         )
+        players[player_id] = player_state
+
+    market_state, counter = create_market_state(definition.setup, shuffle_seed, counter)
 
     return GameState(
         definition=definition,
@@ -539,6 +562,7 @@ def build_initial_game_state(
         turn_order=turn_order,
         current_player_id=turn_order[0],
         phase=TurnPhase.MAIN,
-        market=create_market_state(definition.setup, rng),
+        market=market_state,
         shuffle_seed=shuffle_seed,
+        shuffle_count=counter,
     )

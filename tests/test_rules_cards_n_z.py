@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-from random import Random
 
 from engine.moves import (
     EndMainPhaseMove,
@@ -47,7 +46,7 @@ def _ability_state(cards: list[dict[str, object]], starter_entries: list[dict[st
     }
 
     definition = build_game_definition_from_dicts(board_data, card_data, setup_data, definition_id="ability_test")
-    return build_initial_game_state(definition, ["p1", "p2"], Random(0), shuffle_seed=0)
+    return build_initial_game_state(definition, ["p1", "p2"], shuffle_seed=0)
 
 
 def test_white_wyrmling_deploys_two_before_market_devour_choice() -> None:

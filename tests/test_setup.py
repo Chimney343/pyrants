@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from collections import Counter
 from pathlib import Path
-from random import Random
 
 import pytest
 
@@ -161,7 +160,7 @@ def test_build_initial_state_applies_initial_white_troop_slots() -> None:
     card_data, setup_data = _minimal_card_and_setup_payload()
 
     definition = build_game_definition_from_dicts(board_data, card_data, setup_data)
-    state = build_initial_game_state(definition, player_ids=["p1"], rng=Random(7))
+    state = build_initial_game_state(definition, player_ids=["p1"], shuffle_seed=7)
 
     assert state.board.nodes["site_a"].troop_slots == ["white", None]
     assert state.board.nodes["route_ab"].troop_slots == ["white"]

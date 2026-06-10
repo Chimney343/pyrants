@@ -8,7 +8,6 @@ helpers, effect wrappers, free actions, and the effect registry.
 from __future__ import annotations
 
 from collections.abc import Callable
-from random import Random
 
 from engine.errors import (
     IllegalMoveError,
@@ -29,6 +28,7 @@ from engine.state import (
     GameState,
     NodeKind,
     PendingPromotionState,
+    _shuffle_deck,
     board_index,
     card_index,
 )
@@ -506,11 +506,8 @@ def _apply_recruit(state: GameState, move: RecruitMove) -> GameState:
 
 def _reshuffle_discard_into_deck(state: GameState, player_id: str) -> None:
     player = state.players[player_id]
-    shuffled_deck = list(player.discard_pile)
-    shuffler = Random((state.shuffle_seed << 16) ^ state.shuffle_count)
-    shuffler.shuffle(shuffled_deck)
+    player.deck = _shuffle_deck(player.discard_pile, state.shuffle_seed, state.shuffle_count)
     state.shuffle_count += 1
-    player.deck = shuffled_deck
     player.discard_pile = []
 
 

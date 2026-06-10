@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from random import Random
-
 import pytest
 
 from engine.errors import IllegalMoveError, MissingRuleImplementationError
@@ -143,7 +141,7 @@ def _state_for_cards(cards: list[dict[str, object]], starter_entries: list[dict[
         "market_row_size": 1,
     }
     definition = build_game_definition_from_dicts(board_data, card_data, setup_data)
-    return build_initial_game_state(definition, ["p1", "p2"], Random(0), shuffle_seed=0)
+    return build_initial_game_state(definition, ["p1", "p2"], shuffle_seed=0)
 
 
 def test_generic_sequence_requires_explicit_target_selection() -> None:

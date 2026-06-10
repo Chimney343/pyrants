@@ -5,9 +5,6 @@ from __future__ import annotations
 import json
 from collections.abc import Iterable
 from pathlib import Path
-from random import Random
-from typing import Any
-
 from engine.state import (
     BoardDefinition,
     CardCatalog,
@@ -110,11 +107,9 @@ def create_game_state_from_files(
         setup_path=setup_path,
         definition_id=definition_id,
     )
-    rng = Random(seed)
     return build_initial_game_state(
         definition,
         player_ids=player_ids,
-        rng=rng,
         shuffle_seed=seed or 0,
     )
 

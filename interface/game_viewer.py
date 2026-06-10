@@ -10,9 +10,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from random import Random
 from tkinter import filedialog, messagebox, ttk
-from typing import Any
 
 from engine.moves import (
     HOUSE_GUARD_RECRUIT_SLOT,
@@ -352,7 +350,6 @@ def create_hotseat_session(
     state = build_initial_game_state(
         definition,
         player_ids=player_ids,
-        rng=Random(seed),
         shuffle_seed=seed,
     )
     return GameSession(state)
@@ -897,6 +894,7 @@ class GameViewerApp:
                 if layout_node_ids != board_node_ids:
                     continue
                 layout_def = BoardLayoutDefinition.model_validate(layout_data)
+                self.map_var.set(profile.label)
                 break
             except Exception:
                 continue
@@ -910,6 +908,7 @@ class GameViewerApp:
             width=min(self.package.layout.canvas.width, MAP_VIEWPORT_MAX_WIDTH),
             height=min(self.package.layout.canvas.height, MAP_VIEWPORT_MAX_HEIGHT),
         )
+        self.player_count_var.set(str(len(state.players)))
 
     def _derive_market_deck_metadata(self, state: GameState) -> None:
         """Derive market deck labels and aberrations flag from loaded state."""
@@ -943,8 +942,12 @@ class GameViewerApp:
                 deck_b_label = profile_ids[did]
                 break
 
-        self._deck_a_label = deck_a_label or deck_a_id
-        self._deck_b_label = deck_b_label or deck_b_id
+        if deck_a_label or deck_a_id:
+            self._deck_a_label = deck_a_label or deck_a_id
+            self.deck_a_var.set(self._deck_a_label)
+        if deck_b_label or deck_b_id:
+            self._deck_b_label = deck_b_label or deck_b_id
+            self.deck_b_var.set(self._deck_b_label)
         self._aberrations_in_market = (
             deck_a_id == ABERRATIONS_DECK_ID or deck_b_id == ABERRATIONS_DECK_ID
         )
