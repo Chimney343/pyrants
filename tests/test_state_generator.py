@@ -171,7 +171,7 @@ def test_find_card_scenario_returns_none_for_impossible() -> None:
 
 
 def test_ensure_card_scenario_force_injects_after_exhausted_search() -> None:
-    state, note = ensure_card_scenario(
+    state, note, market_deck_ids, special_stacks_present = ensure_card_scenario(
         "aboleth",
         base_seed=0,
         max_attempts=1,
@@ -184,6 +184,10 @@ def test_ensure_card_scenario_force_injects_after_exhausted_search() -> None:
     assert "aboleth" in state.players[state.current_player_id].hand
     assert state.phase == TurnPhase.MAIN
     assert not is_terminal(state)
+    assert len(market_deck_ids) == 2
+    assert "aberrations" in market_deck_ids
+    assert "house_guard" in special_stacks_present
+    assert "priestess_of_lolth" in special_stacks_present
 
 
 def test_generate_card_scenarios_small_subset() -> None:
@@ -211,6 +215,14 @@ def test_generate_card_scenarios_small_subset() -> None:
         soldier_state = load_game_state_from_scenario(soldier_path, catalog_registry=_catalog_registry())
         assert "soldier" in soldier_state.players[soldier_state.current_player_id].hand
 
+        for path in (noble_path, soldier_path):
+            scenario = json.loads(path.read_text(encoding="utf-8"))
+            meta = scenario["metadata"]
+            assert len(meta["market_deck_ids"]) == 2
+            assert meta["market_deck_ids"][0] != meta["market_deck_ids"][1]
+            assert "house_guard" in meta["special_stacks_present"]
+            assert "priestess_of_lolth" in meta["special_stacks_present"]
+
         notes = json.loads((out / FORCED_INJECTIONS_FILENAME).read_text(encoding="utf-8"))
         assert notes == []
 
@@ -231,6 +243,11 @@ def test_generate_card_scenarios_writes_forced_injection_notes() -> None:
 
         scenario_state = load_game_state_from_scenario(saved[0], catalog_registry=_catalog_registry())
         assert "aboleth" in scenario_state.players[scenario_state.current_player_id].hand
+
+        scenario = json.loads(saved[0].read_text(encoding="utf-8"))
+        meta = scenario["metadata"]
+        assert len(meta["market_deck_ids"]) == 2
+        assert "aberrations" in meta["market_deck_ids"]
 
         notes = json.loads((out / FORCED_INJECTIONS_FILENAME).read_text(encoding="utf-8"))
         assert len(notes) == 1

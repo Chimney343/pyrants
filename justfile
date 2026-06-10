@@ -49,3 +49,15 @@ random-walk-run seed policy_seed max_steps run_id:
 
 review-workbook:
     & {{python}} scripts/build_review_workbook.py
+
+openspiel-test:
+    & {{python}} -m pytest openspiel_pyrants/tests/ -q
+
+openspiel-smoke:
+    & {{python}} -c "import openspiel_pyrants; import pyspiel; g = pyspiel.load_game('python_pyrants'); print('Registered:', g.get_type().short_name); s = g.new_initial_state(); print('State created, chance_node:', s.is_chance_node()); actions = s.legal_actions(); print('Chance actions:', len(actions)); s._apply_action(42); print('After chance:', str(s)[:120])"
+
+ismcts num_sims="200" num_games="4" seed="42" output_dir="artifacts/ismcts":
+    & {{python}} -m scripts.run_ismcts --num-sims {{num_sims}} --num-games {{num_games}} --seed {{seed}} --output-dir {{output_dir}}
+
+ismcts-quick:
+    & {{python}} -m scripts.run_ismcts --num-sims 50 --num-games 2 --seed 42

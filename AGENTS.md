@@ -14,12 +14,14 @@ Last HEAD: `e7791be` (chore: add game manual, dev dependencies, just task, and l
 |-----------|---------|
 | `engine/` | Pure game logic: state, rules, moves, phases, scoring, helpers, errors |
 | `engine/generic_runtime/` | Card effect interpreter (resolve, actions, selection, custom effects, promotion) |
+| `engine/player_view.py` | Public/private information projection for IS-MCTS |
 | `interface/` | Terminal UI: board renderer, game viewer, replay viewer, board creator, CLI parser |
+| `openspiel_pyrants/` | OpenSpiel wrapper: game, state, action encoding, observer, determinization |
 | `game_setup/` | Loaders, state generator, board package, scenarios, random state search |
 | `game_setup/scenario_generation/` | Card scenario discovery and injection |
 | `data/` | JSON content: boards, cards (catalog, effect families, schemas), decks (11 rosters), layouts (2), scenarios (125+ card scenarios) |
 | `tests/` | pytest suite: 32 test files covering rules, state, scoring, CLI, scenarios, board, renderer, viewer, simulation, session, engine purity, card model, generic interpreter |
-| `scripts/` | Utilities: benchmark, random walk, catalog audit, scenario generation, deck artifact generation, review workbook, execution audit |
+| `scripts/` | Utilities: benchmark, random walk, catalog audit, scenario generation, deck artifact generation, review workbook, execution audit, IS-MCTS runner |
 | `docs/` | Game manual, engine/cards/board-creator status docs |
 | `assets/` | Board/map images |
 | `artifacts/` | Run outputs: replay logs, profiler data, card stuck reports, catalog consistency reports |
@@ -34,6 +36,7 @@ Last HEAD: `e7791be` (chore: add game manual, dev dependencies, just task, and l
 | `interface/game_viewer.py` | Interactive terminal game viewer | `just game-viewer` |
 | `interface/replay_viewer.py` | Step through saved replays | `just replay-viewer` |
 | `interface/board_creator.py` | Interactive board creator | `just board-creator` |
+| `scripts/run_ismcts.py` | IS-MCTS bot runner against OpenSpiel wrapper | `just ismcts` or `python -m scripts.run_ismcts` |
 
 ## Commands
 
@@ -45,6 +48,8 @@ just game-viewer           # Interactive terminal viewer
 just replay-viewer         # Replay viewer
 just card-stuck-check      # Detect card stuck states
 just generate-card-scenarios  # Generate card scenario data
+just ismcts               # IS-MCTS runner (default 200 sims)
+just ismcts-quick         # IS-MCTS quick run (50 sims, 2 games)
 ```
 
 - **Test:** `pytest` (from `just test`)

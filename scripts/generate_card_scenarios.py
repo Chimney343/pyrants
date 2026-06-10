@@ -51,6 +51,7 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--quiet", action="store_true", help="Suppress per-card output")
     parser.add_argument("--workers", type=int, default=1, help="Number of parallel workers (default: 1)")
     parser.add_argument("--pretty", action="store_true", help="Write pretty-printed JSON (indent=2)")
+    parser.add_argument("--legacy-market", action="store_true", help="Use legacy market-scoping (ad-hoc filtering)")
     return parser.parse_args(argv)
 
 
@@ -70,7 +71,7 @@ def _run_single_card_mode(args: argparse.Namespace, player_ids: list[str]) -> No
     card_id = args.card_id
     logger.info("Searching for card scenario card_id=%s seed=%d", card_id, args.base_seed)
 
-    state, injection_note = ensure_card_scenario(
+    state, injection_note, market_deck_ids, special_stacks_present = ensure_card_scenario(
         card_id,
         board_path=args.board_path,
         card_path=args.card_path,
@@ -81,6 +82,7 @@ def _run_single_card_mode(args: argparse.Namespace, player_ids: list[str]) -> No
         max_attempts=args.max_attempts,
         max_steps_per_attempt=args.max_steps,
         verbose=True,
+        legacy_market=args.legacy_market,
     )
 
     filename = f"{card_id}_seed_{args.base_seed}.json"
@@ -102,6 +104,8 @@ def _run_single_card_mode(args: argparse.Namespace, player_ids: list[str]) -> No
         description=description,
         tags=tags,
         card_under_test=card_id,
+        market_deck_ids=market_deck_ids,
+        special_stacks_present=special_stacks_present,
     )
     notes_path = write_forced_injection_notes(args.output_dir, forced_notes)
 
@@ -142,6 +146,7 @@ def _run_batch_mode(args: argparse.Namespace, player_ids: list[str]) -> None:
         max_steps_per_attempt=args.max_steps,
         workers=args.workers,
         pretty=args.pretty,
+        legacy_market=args.legacy_market,
     )
 
     notes_path = args.output_dir / FORCED_INJECTIONS_FILENAME

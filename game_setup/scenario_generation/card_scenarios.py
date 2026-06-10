@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import contextlib
+import hashlib
 import json
+import logging
 import os
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from dataclasses import dataclass
@@ -26,6 +28,8 @@ from engine.state import (
 from game_setup.loaders import load_deck_rosters
 from game_setup.scenarios import save_game_state
 
+logger = logging.getLogger(__name__)
+
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_BOARD_PATH = ROOT / "data" / "boards" / "tyrants_of_the_underdark.json"
 DEFAULT_CARD_PATH = ROOT / "data" / "cards" / "catalog.json"
@@ -34,6 +38,60 @@ DEFAULT_ROSTERS_PATH = ROOT / "data" / "decks"
 FORCED_INJECTIONS_FILENAME = "forced_injections.json"
 
 SPECIAL_RECRUIT_IDS = frozenset({"house_guard", "priestess_of_lolth", "insane_outcast"})
+
+
+def _stable_hash(s: str) -> int:
+    return int.from_bytes(hashlib.blake2b(s.encode(), digest_size=8).digest(), "big")
+
+
+def _resolve_two_deck_pairing(
+    *,
+    rosters_path: Path,
+    target_card_id: str,
+    base_seed: int,
+) -> tuple[str, str, list[str]]:
+    roster_decks = _cached_roster_decks(str(rosters_path))
+    full_decks: list[dict[str, Any]] = [
+        d for d in roster_decks
+        if isinstance(d, dict) and d.get("kind") == "full_deck" and d.get("deck_id") not in SPECIAL_RECRUIT_IDS
+    ]
+
+    if not full_decks:
+        raise ValueError("No full_deck rosters found for market construction")
+
+    pair_rng = Random(base_seed ^ _stable_hash(target_card_id))
+
+    roster_a_id = ""
+    if target_card_id not in SPECIAL_RECRUIT_IDS:
+        for deck in full_decks:
+            deck_card_ids = {
+                str(e.get("card_id", "")).strip()
+                for e in deck.get("entries", ())
+                if isinstance(e, dict)
+            }
+            if target_card_id in deck_card_ids:
+                roster_a_id = str(deck["deck_id"])
+                break
+
+    if not roster_a_id:
+        roster_a_id = str(pair_rng.choice(full_decks)["deck_id"])
+
+    eligible_b = [d for d in full_decks if str(d["deck_id"]) != roster_a_id]
+    if eligible_b:
+        roster_b_id = str(pair_rng.choice(eligible_b)["deck_id"])
+    else:
+        logger.warning(
+            "Only one full_deck roster (%s) available; duplicating for two-deck market",
+            roster_a_id,
+        )
+        roster_b_id = roster_a_id
+
+    aberrations_in_market = "aberrations" in {roster_a_id, roster_b_id}
+    special_stacks = ["house_guard", "priestess_of_lolth"]
+    if aberrations_in_market:
+        special_stacks.append("insane_outcast")
+
+    return roster_a_id, roster_b_id, special_stacks
 
 
 def _json_loads(text: str) -> Any:
@@ -101,9 +159,66 @@ def _build_card_scenario_setup(
     rosters_path: Path = DEFAULT_ROSTERS_PATH,
     player_ids: list[str],
     seed: int,
+    roster_a_id: str,
+    roster_b_id: str,
+) -> GameState:
+    """Build an initial state with the specified two-deck market."""
+    board = _cached_board(str(board_path))
+    catalog = _cached_catalog(str(card_path))
+    base_setup_data = _cached_base_setup(str(setup_path))
+    roster_decks = _cached_roster_decks(str(rosters_path))
+
+    deck_map: dict[str, dict[str, Any]] = {}
+    for deck in roster_decks:
+        if isinstance(deck, dict) and deck.get("kind") == "full_deck":
+            did = str(deck.get("deck_id", ""))
+            if did:
+                deck_map[did] = deck
+
+    combined: dict[str, int] = {}
+    for did in (roster_a_id, roster_b_id):
+        deck = deck_map.get(did)
+        if deck is None:
+            continue
+        for entry in deck.get("entries", ()):
+            if not isinstance(entry, dict):
+                continue
+            card_id = str(entry.get("card_id", "")).strip()
+            count = int(entry.get("count", 0))
+            if card_id and count > 0:
+                combined[card_id] = combined.get(card_id, 0) + count
+
+    setup_data: dict[str, object] = {
+        "setup_id": "card_scenario_setup",
+        "starter_deck": base_setup_data["starter_deck"],
+        "market_deck": {
+            "deck_id": f"market_{roster_a_id}_{roster_b_id}",
+            "entries": [{"card_id": card_id, "count": count} for card_id, count in combined.items()],
+        },
+        "market_row_size": base_setup_data.get("market_row_size", 6),
+    }
+
+    setup_definition = SetupDefinition.model_validate(setup_data)
+    definition = GameDefinition(
+        definition_id="card_scenario",
+        board=board,
+        catalog=catalog,
+        setup=setup_definition,
+    )
+    return build_initial_game_state(definition, player_ids, shuffle_seed=seed)
+
+
+def _build_card_scenario_setup_legacy(
+    *,
+    board_path: Path = DEFAULT_BOARD_PATH,
+    card_path: Path = DEFAULT_CARD_PATH,
+    setup_path: Path = DEFAULT_SETUP_PATH,
+    rosters_path: Path = DEFAULT_ROSTERS_PATH,
+    player_ids: list[str],
+    seed: int,
     target_card_id: str | None = None,
 ) -> GameState:
-    """Build an initial state with roster market coverage.
+    """Build an initial state with roster market coverage (legacy filter policy).
 
     If `target_card_id` is provided, only roster decks containing that card
     are included in the market. For special-recruit cards a fallback deck is used.
@@ -166,7 +281,7 @@ def _build_card_scenario_setup(
         catalog=catalog,
         setup=setup_definition,
     )
-    return build_initial_game_state(definition, player_ids, Random(seed), shuffle_seed=seed)
+    return build_initial_game_state(definition, player_ids, shuffle_seed=seed)
 
 
 def _classify_moves(
@@ -221,23 +336,62 @@ def _search_card_scenario(
     max_attempts: int = 20,
     max_steps_per_attempt: int = 1000,
     verbose: bool = False,
-) -> tuple[GameState | None, GameState]:
+    legacy_market: bool = False,
+) -> tuple[GameState | None, GameState, list[str], list[str]]:
     players = player_ids or ["p1", "p2", "p3", "p4"]
     board_id = _cached_board(str(board_path)).board_id
     fallback_state: GameState | None = None
 
-    for attempt in range(max_attempts):
-        attempt_seed = base_seed + attempt * 10000
-        rng = Random(attempt_seed)
+    market_deck_ids: list[str]
+    special_stacks_present: list[str]
+    if legacy_market:
+        market_deck_ids = []
+        special_stacks_present = []
+    else:
+        roster_a_id, roster_b_id, special_stacks_present = _resolve_two_deck_pairing(
+            rosters_path=rosters_path,
+            target_card_id=target_card_id,
+            base_seed=base_seed,
+        )
+        market_deck_ids = [roster_a_id, roster_b_id]
+
+    if not legacy_market and target_card_id in SPECIAL_RECRUIT_IDS:
         state = _build_card_scenario_setup(
             board_path=board_path,
             card_path=card_path,
             setup_path=setup_path,
             rosters_path=rosters_path,
             player_ids=players,
-            seed=attempt_seed,
-            target_card_id=target_card_id,
+            seed=base_seed,
+            roster_a_id=roster_a_id,
+            roster_b_id=roster_b_id,
         )
+        return None, state, market_deck_ids, special_stacks_present
+
+    for attempt in range(max_attempts):
+        attempt_seed = base_seed + attempt * 10000
+        rng = Random(attempt_seed)
+        if legacy_market:
+            state = _build_card_scenario_setup_legacy(
+                board_path=board_path,
+                card_path=card_path,
+                setup_path=setup_path,
+                rosters_path=rosters_path,
+                player_ids=players,
+                seed=attempt_seed,
+                target_card_id=target_card_id,
+            )
+        else:
+            state = _build_card_scenario_setup(
+                board_path=board_path,
+                card_path=card_path,
+                setup_path=setup_path,
+                rosters_path=rosters_path,
+                player_ids=players,
+                seed=attempt_seed,
+                roster_a_id=roster_a_id,
+                roster_b_id=roster_b_id,
+            )
 
         for step in range(max_steps_per_attempt):
             moves = list(legal_moves(state))
@@ -247,7 +401,7 @@ def _search_card_scenario(
             if playable_now:
                 if verbose:
                     print(f"  found at attempt {attempt + 1}, step {step}")
-                return state, state
+                return state, state, market_deck_ids, special_stacks_present
             if injectable:
                 fallback_state = state
             state = apply(state, _pick_weighted(moves, weights, rng))
@@ -256,17 +410,30 @@ def _search_card_scenario(
             print(f"  attempt {attempt + 1}/{max_attempts} exhausted ({max_steps_per_attempt} steps)")
 
     if fallback_state is None:
-        fallback_state = _build_card_scenario_setup(
-            board_path=board_path,
-            card_path=card_path,
-            setup_path=setup_path,
-            rosters_path=rosters_path,
-            player_ids=players,
-            seed=base_seed + max_attempts * 10000,
-            target_card_id=target_card_id,
-        )
+        seed = base_seed + max_attempts * 10000
+        if legacy_market:
+            fallback_state = _build_card_scenario_setup_legacy(
+                board_path=board_path,
+                card_path=card_path,
+                setup_path=setup_path,
+                rosters_path=rosters_path,
+                player_ids=players,
+                seed=seed,
+                target_card_id=target_card_id,
+            )
+        else:
+            fallback_state = _build_card_scenario_setup(
+                board_path=board_path,
+                card_path=card_path,
+                setup_path=setup_path,
+                rosters_path=rosters_path,
+                player_ids=players,
+                seed=seed,
+                roster_a_id=roster_a_id,
+                roster_b_id=roster_b_id,
+            )
 
-    return None, fallback_state
+    return None, fallback_state, market_deck_ids, special_stacks_present
 
 
 def _force_inject_card_into_current_hand(
@@ -313,7 +480,7 @@ def find_card_scenario(
     verbose: bool = False,
 ) -> GameState | None:
     """Search for a reachable state where `target_card_id` is playable."""
-    found_state, _fallback_state = _search_card_scenario(
+    found_state, _fallback_state, _market_deck_ids, _special_stacks_present = _search_card_scenario(
         target_card_id,
         board_path=board_path,
         card_path=card_path,
@@ -340,8 +507,9 @@ def ensure_card_scenario(
     max_attempts: int = 20,
     max_steps_per_attempt: int = 1000,
     verbose: bool = False,
-) -> tuple[GameState, dict[str, object] | None]:
-    found_state, fallback_state = _search_card_scenario(
+    legacy_market: bool = False,
+) -> tuple[GameState, dict[str, object] | None, list[str], list[str]]:
+    found_state, fallback_state, market_deck_ids, special_stacks_present = _search_card_scenario(
         target_card_id,
         board_path=board_path,
         card_path=card_path,
@@ -352,9 +520,10 @@ def ensure_card_scenario(
         max_attempts=max_attempts,
         max_steps_per_attempt=max_steps_per_attempt,
         verbose=verbose,
+        legacy_market=legacy_market,
     )
     if found_state is not None:
-        return found_state, None
+        return found_state, None, market_deck_ids, special_stacks_present
 
     injected_state, note = _force_inject_card_into_current_hand(
         fallback_state,
@@ -365,7 +534,7 @@ def ensure_card_scenario(
     )
     if verbose:
         print("  injected into current player hand")
-    return injected_state, note
+    return injected_state, note, market_deck_ids, special_stacks_present
 
 
 def write_forced_injection_notes(output_dir: Path, notes: list[dict[str, object]]) -> Path:
@@ -376,10 +545,11 @@ def write_forced_injection_notes(output_dir: Path, notes: list[dict[str, object]
 
 def _worker_generate_card(args: tuple) -> dict[str, object]:
     (index, card_id, board_path_str, card_path_str, setup_path_str, rosters_path_str,
-     player_ids, base_seed, max_attempts, max_steps_per_attempt, out_dir_str, pretty) = args
+     player_ids, base_seed, max_attempts, max_steps_per_attempt, out_dir_str, pretty,
+     legacy_market) = args
 
     card_seed = base_seed
-    state, injection_note = ensure_card_scenario(
+    state, injection_note, market_deck_ids, special_stacks_present = ensure_card_scenario(
         card_id,
         board_path=Path(board_path_str),
         card_path=Path(card_path_str),
@@ -390,6 +560,7 @@ def _worker_generate_card(args: tuple) -> dict[str, object]:
         max_attempts=max_attempts,
         max_steps_per_attempt=max_steps_per_attempt,
         verbose=False,
+        legacy_market=legacy_market,
     )
 
     padded_index = str(index + 1).zfill(3)
@@ -409,6 +580,8 @@ def _worker_generate_card(args: tuple) -> dict[str, object]:
         description=description,
         tags=tags,
         card_under_test=card_id,
+        market_deck_ids=market_deck_ids,
+        special_stacks_present=special_stacks_present,
         pretty=pretty,
     )
     return {
@@ -434,6 +607,7 @@ def generate_card_scenarios(
     card_ids: list[str] | None = None,
     workers: int = 1,
     pretty: bool = False,
+    legacy_market: bool = False,
 ) -> tuple[list[Path], list[str]]:
     """Generate one scenario per card id and save to `output_dir`."""
     players = tuple(player_ids or ["p1", "p2", "p3", "p4"])
@@ -456,7 +630,7 @@ def generate_card_scenarios(
 
         for index, card_id in enumerate(card_iter):
             card_seed = base_seed
-            state, injection_note = ensure_card_scenario(
+            state, injection_note, market_deck_ids, special_stacks_present = ensure_card_scenario(
                 target_card_id=card_id,
                 board_path=board_path,
                 card_path=card_path,
@@ -467,6 +641,7 @@ def generate_card_scenarios(
                 max_attempts=max_attempts,
                 max_steps_per_attempt=max_steps_per_attempt,
                 verbose=False,
+                legacy_market=legacy_market,
             )
             with contextlib.suppress(AttributeError):
                 card_iter.set_postfix_str(card_id)
@@ -488,6 +663,8 @@ def generate_card_scenarios(
                 description=description,
                 tags=tags,
                 card_under_test=card_id,
+                market_deck_ids=market_deck_ids,
+                special_stacks_present=special_stacks_present,
                 pretty=pretty,
             )
             saved.append(path)
@@ -499,7 +676,7 @@ def generate_card_scenarios(
         (i, card_id,
          str(board_path), str(card_path), str(setup_path), str(rosters_path),
          players, base_seed, max_attempts, max_steps_per_attempt,
-         str(output_dir), pretty)
+         str(output_dir), pretty, legacy_market)
         for i, card_id in enumerate(target_ids)
     ]
 
@@ -540,6 +717,7 @@ class CardScenarioGenerator:
     base_seed: int = 0
     max_attempts: int = 20
     max_steps_per_attempt: int = 1000
+    legacy_market: bool = False
 
     def find(self, target_card_id: str, *, verbose: bool = False) -> GameState | None:
         return find_card_scenario(
@@ -555,7 +733,7 @@ class CardScenarioGenerator:
             verbose=verbose,
         )
 
-    def ensure(self, target_card_id: str, *, verbose: bool = False) -> tuple[GameState, dict[str, object] | None]:
+    def ensure(self, target_card_id: str, *, verbose: bool = False) -> tuple[GameState, dict[str, object] | None, list[str], list[str]]:
         return ensure_card_scenario(
             target_card_id,
             board_path=self.board_path,
@@ -567,6 +745,7 @@ class CardScenarioGenerator:
             max_attempts=self.max_attempts,
             max_steps_per_attempt=self.max_steps_per_attempt,
             verbose=verbose,
+            legacy_market=self.legacy_market,
         )
 
     def generate(
@@ -590,6 +769,7 @@ class CardScenarioGenerator:
             card_ids=card_ids,
             workers=workers,
             pretty=pretty,
+            legacy_market=self.legacy_market,
         )
 
     def iter_card_ids(self) -> list[str]:

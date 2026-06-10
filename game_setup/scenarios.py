@@ -63,6 +63,8 @@ class ScenarioMetadata(BaseModel):
     source_catalog_id: str = ""
     source_catalog_version: str = ""
     source_setup_id: str = ""
+    market_deck_ids: list[str] = Field(default_factory=list)
+    special_stacks_present: list[str] = Field(default_factory=list)
     move_count: int = 0
     is_terminal: bool = False
 
@@ -82,6 +84,8 @@ class Scenario(BaseModel):
         description: str = "",
         tags: list[str] | None = None,
         card_under_test: str | None = None,
+        market_deck_ids: list[str] | None = None,
+        special_stacks_present: list[str] | None = None,
         move_count: int = 0,
         is_terminal: bool = False,
         catalog_version: str | None = None,
@@ -97,6 +101,8 @@ class Scenario(BaseModel):
                 source_catalog_id=state.definition.catalog.catalog_id,
                 source_catalog_version=catalog_version or state.definition.catalog.version,
                 source_setup_id=state.definition.setup.setup_id,
+                market_deck_ids=market_deck_ids or [],
+                special_stacks_present=special_stacks_present or [],
                 move_count=move_count,
                 is_terminal=is_terminal,
             ),
@@ -163,6 +169,8 @@ def save_game_state(
     description: str = "",
     tags: list[str] | None = None,
     card_under_test: str | None = None,
+    market_deck_ids: list[str] | None = None,
+    special_stacks_present: list[str] | None = None,
     move_count: int = 0,
     is_terminal: bool = False,
     catalog_version: str | None = None,
@@ -175,6 +183,8 @@ def save_game_state(
         description=description,
         tags=tags,
         card_under_test=card_under_test,
+        market_deck_ids=market_deck_ids,
+        special_stacks_present=special_stacks_present,
         move_count=move_count,
         is_terminal=is_terminal,
         catalog_version=catalog_version,
