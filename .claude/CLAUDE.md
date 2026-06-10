@@ -11,37 +11,52 @@
 > (documentation, ownership, history, decisions). **Always verify against
 > actual source files before making changes** — the index may be stale.
 
-Last indexed: 2026-06-09 (commit 8464ff4). Confidence: 100%.
+Last indexed: 2026-06-09 (commit 0263d73). Confidence: 100%.
 ### Architecture
-Repo is a turn‑based card/board game engine: it ingests scenario and card definitions from JSON catalogs, processes player moves through a rule‑driven state machine, and outputs serialised game state and rendered board views for both human‑facing viewers and simulation runners. After loading a scenario and its card catalog, the engine validates moves against a rule set (engine/rules.py), updates engine/state.py, applies scoring via engine/scoring.py, and pushes the resulting board to interface/board_view.py or to a simulation recorder (game_simulation.py). The game_session.py file orchestrates a full game loop, while the .kilo package (written in TypeScript) likely provides a web or desktop front‑end for interactivity. | Layer           | Technology                                |
-|-----------------|-------------------------------------------|
-| Core engine     | Python 3.10+                              |
-| Data storage    | JSON (catalog files), TOML (config), YAML |
-| Front‑end       | TypeScript (.kilo package)             |
-| Documentation   | Markdown (43 % of repo)                   |
-| Build/tooling   | justfile for automation                 |
-| Test & audit    | Python scripts under scripts/           |
+Repowise is a configurable board-game simulation engine: it ingests scenario definitions and board layouts (JSON), validates them against a rule catalog, drives game state through a turn-based move resolution pipeline, and produces observable game states and visualizations via a Python simulation runtime and a TypeScript web viewer. | Layer       | Technologies                                                                 |
+|-------------|------------------------------------------------------------------------------|
+| **Runtime** | Python 3.11+ (core engine, CLI, simulation)                                  |
+| **Config & Data** | JSON (scenarios, rules, board packages), TOML (project metadata)        |
+| **Analysis** | Internal linting and rule‑consistency audits (scripts/catalog_audit.py)       |
+| **Frontend** | TypeScript (.kilo package), HTML/CSS (board views)                        |
+| **Docs**    | Markdown, JSON schemas (artifacts/)                                          |
 
-**Language breakdown (by LOC):** Python 35.5 %, Markdown 43 %, JSON 14 %, YAML 1.2 %, TOML 0.4 %, JavaScript 5.8 % (likely within the .kilo package).
+
+
+| File                               | Role                                                                         |
+|-----------------------------------|------------------------------------------------------------------------------|
+| game_simulation.py              | Main entry for running a full game simulation (turn‑by‑turn)                 |
+| game_session.py                 | Manages a single game session, holding state and history                     |
+| game_view.py                    | Generates a human‑readable board view from game state                        |
+| scripts/catalog_audit.py        | CLI tool to audit consistency between rules, scenarios, and board packages   |
+| interface/game_viewer.py        | Launch a live viewer (likely web‑based) for a game session                   |
+| interface/board_view.py         | Renders board geometry and piece placement                                   |
+
+
+
+The system is split into three horizontal layers:
+
+1. **Game Setup** (package game_setup/)  
+   - Loads board packages (tiles, positions, adjacency) from JSON. - Interprets scenario definitions (card_scenarios.py) that specify initial piece layout, turn order, and victory conditions.
 ### Key Modules
 | Module | Purpose | Owner |
 |--------|---------|-------|
-| `community-1` | The tests module is repowise's validation subsystem — it consumes game state sch | — |
+| `community-1` | The tests module is the verification and validation layer of the repowise game e | — |
 | `community-0` | The skills/impeccable module is the **skill lifecycle and injection subsystem**  | — |
 | `community-3` | The tests module is the **validation subsystem** of repowise — it consumes engin | — |
 | `community-2` | The tests module is the verification and validation layer of the repowise system | — |
 | `community-248` | The **tests** module is the verification subsystem of repowise — it consumes gen | — |
 ### Entry Points
-- `.agents/skills/impeccable/scripts/cleanup-deprecated.mjs`
-- `.agents/skills/impeccable/scripts/design-parser.mjs`
-- `.agents/skills/impeccable/scripts/detect-csp.mjs`
-- `.agents/skills/impeccable/scripts/is-generated.mjs`
-- `.agents/skills/impeccable/scripts/live-accept.mjs`
-- `.agents/skills/impeccable/scripts/live-browser.js`
-- `.agents/skills/impeccable/scripts/live-inject.mjs`
-- `.agents/skills/impeccable/scripts/live-poll.mjs`
-- `.agents/skills/impeccable/scripts/live-server.mjs`
-- `.agents/skills/impeccable/scripts/live-wrap.mjs`
+- `.augment/skills/impeccable/scripts/cleanup-deprecated.mjs`
+- `.augment/skills/impeccable/scripts/design-parser.mjs`
+- `.augment/skills/impeccable/scripts/detect-csp.mjs`
+- `.augment/skills/impeccable/scripts/is-generated.mjs`
+- `.augment/skills/impeccable/scripts/live-accept.mjs`
+- `.augment/skills/impeccable/scripts/live-browser.js`
+- `.augment/skills/impeccable/scripts/live-inject.mjs`
+- `.augment/skills/impeccable/scripts/live-poll.mjs`
+- `.augment/skills/impeccable/scripts/live-server.mjs`
+- `.augment/skills/impeccable/scripts/live-wrap.mjs`
 ### Tech Stack
 **Languages:** Python
 **Frameworks:** Pydantic
@@ -71,23 +86,22 @@ Repo is a turn‑based card/board game engine: it ingests scenario and card defi
 ### Hotspots (High Churn)
 | File | Churn | 90d Commits | Owner |
 |------|-------|-------------|-------|
-| `engine/rules.py` | 100.0th %ile | 4 | Chimney343 |
-| `data/cards/catalog.json` | 99.8th %ile | 3 | Chimney343 |
-| `tests/test_rules.py` | 99.6th %ile | 3 | Chimney343 |
-| `interface/game_viewer.py` | 99.4th %ile | 5 | Chimney343 |
+| `engine/rules.py` | 100.0th %ile | 6 | Chimney343 |
+| `tests/test_rules.py` | 99.8th %ile | 4 | Chimney343 |
+| `interface/game_viewer.py` | 99.6th %ile | 7 | Chimney343 |
+| `data/cards/catalog.json` | 99.4th %ile | 4 | Chimney343 |
 | `tests/test_scoring.py` | 99.2th %ile | 3 | Chimney343 |
 
 ## Code health
-Hotspot health: 6.64/10 (stable) ·
-Average: 7.14/10 ·
-Worst: 2.42/10 (`scripts/generate_first_deck_artifacts.py`)
+Hotspot health: 6.25/10 (stable) ·
+Average: 7.1/10 ·
+Worst: 1.0/10 (`engine/rules.py`)
 
 ### Critical biomarkers
-- `engine/state.py` — untested hotspot — impact −2.0
-- `.agents/skills/impeccable/scripts/live-browser.js` — large method (<anonymous>) — impact −1.1
-- `game_view.py` — complex method (describe_move) — impact −0.5
-- `.agents/skills/impeccable/scripts/live-server.mjs` — complex method (createRequestHandler) — impact −0.5
-- `.agents/skills/impeccable/scripts/live-server.mjs` — complex method (validateEvent) — impact −0.5
+- `engine/rules.py` — untested hotspot — impact −2.0
+- `interface/game_viewer.py` — large method (_build_ui) — impact −0.2
+- `engine/generic_runtime.py` — complex method (_apply_generic_conditional_bonus) — impact −0.1
+- `engine/generic_runtime.py` — complex method (_apply_generic_promote_card) — impact −0.1
 
 ### Repowise MCP Tools
 
