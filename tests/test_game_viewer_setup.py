@@ -9,9 +9,11 @@ from engine.moves import (
     HOUSE_GUARD_RECRUIT_SLOT,
     INSANE_OUTCAST_RECRUIT_SLOT,
     PRIESTESS_RECRUIT_SLOT,
+    InitialPlacementMove,
     RecruitMove,
 )
 from engine.rules import legal_moves
+from engine.state import TurnPhase
 from interface.game_viewer import (
     ABERRATIONS_DECK_ID,
     build_setup_from_market_selection,
@@ -30,6 +32,18 @@ LAYOUT_PATH = DATA_DIR / "layouts" / "tyrants_of_the_underdark_layout.json"
 CARD_PATH = DATA_DIR / "cards" / "catalog.json"
 SETUP_PATH = DATA_DIR / "decks" / "base_setup.json"
 DECKS_DIR = DATA_DIR / "decks"
+
+
+def _resolve_session_setup(session) -> None:
+    from engine.helpers import _legal_initial_placement_node_ids
+
+    while session.state.phase == TurnPhase.SETUP:
+        node_ids = _legal_initial_placement_node_ids(session.state)
+        move = InitialPlacementMove(
+            player_id=session.state.current_player_id,
+            target_node_id=node_ids[0],
+        )
+        session.submit_move(move)
 
 
 def test_discover_map_profiles_includes_default_pair() -> None:
@@ -104,6 +118,7 @@ def test_special_recruit_slots_include_house_guard_and_priestess() -> None:
         seed=11,
     )
 
+    _resolve_session_setup(session)
     session.state.resource_pool.influence = 3
     recruit_slots = {
         move.market_slot
@@ -130,6 +145,7 @@ def test_special_recruit_slots_include_outcasts_with_aberrations_market() -> Non
         seed=11,
     )
 
+    _resolve_session_setup(session)
     session.state.resource_pool.influence = 3
     recruit_slots = {
         move.market_slot

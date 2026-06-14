@@ -23,7 +23,9 @@ from engine.helpers import (
     _can_deploy_to_node,
     _deferred_promotion_target_ids,
     _is_aberrations_enabled,
+    _legal_initial_placement_node_ids,
     _pay_ability_cost,
+    _player_has_any_troops_on_board,
     _promote_card,
     _remaining_special_stack_count,
     _reshuffle_discard_into_deck,
@@ -37,6 +39,7 @@ from engine.moves import (
     DeclineCardAbilityMove,
     DeployMove,
     EndMainPhaseMove,
+    InitialPlacementMove,
     Move,
     PlayCardMove,
     PromoteCardMove,
@@ -52,9 +55,14 @@ from engine.scoring import award_end_of_turn_site_vp, compute_final_scores
 from engine.state import (
     CardDefinition,
     GameState,
+    NodeKind,
     PendingAbilityState,
     PendingPromotionState,
     TurnPhase,
+    _cow_node,
+    _cow_player,
+    _cow_resource_pool,
+    board_index,
     card_index,
 )
 
@@ -69,6 +77,18 @@ def legal_moves(state: GameState) -> list[Move]:
 
     player_id = state.current_player_id
     player = state.players[player_id]
+
+    if state.phase == TurnPhase.SETUP:
+        if player_id in state.setup_complete:
+            return []
+        valid_node_ids = _legal_initial_placement_node_ids(state)
+        return [
+            InitialPlacementMove(player_id=player_id, target_node_id=node_id)
+            for node_id in valid_node_ids
+        ]
+
+    if state.phase == TurnPhase.DRAW:
+        return []
 
     if state.phase == TurnPhase.MAIN:
         if state.pending_immediate_promotions:
@@ -122,7 +142,7 @@ def apply(state: GameState, move: Move) -> GameState:
             raise IllegalMoveError("resolve_end_of_turn can only be used during end_of_turn")
         if state.pending_end_of_turn_promotions:
             raise IllegalMoveError("resolve end of turn requires all pending promotions to be resolved first")
-        updated = state.model_copy(deep=True)
+        updated = state._cow_clone()
         _apply_end_of_turn_generic_effects(updated, include_force_discard=False, include_scaled_vp=True)
         scored = award_end_of_turn_site_vp(updated, player_id=updated.current_player_id)
         return advance_phase(scored)
@@ -160,6 +180,9 @@ def apply(state: GameState, move: Move) -> GameState:
 
     if isinstance(move, SkipPromoteMove):
         return _apply_skip_promote(state, move)
+
+    if isinstance(move, InitialPlacementMove):
+        return _apply_initial_placement(state, move)
 
     raise IllegalMoveError(f"Unsupported move type: {move}")
 
@@ -207,8 +230,8 @@ def _apply_play_card(state: GameState, move: PlayCardMove) -> GameState:
     if state.pending_generic_choice is not None:
         raise IllegalMoveError("resolve the pending generic card choices before playing another card")
 
-    updated = state.model_copy(deep=True)
-    player = updated.players[updated.current_player_id]
+    updated = state._cow_clone()
+    player = _cow_player(updated, updated.current_player_id)
 
     hand_index = move.hand_index
     if hand_index is None:
@@ -311,8 +334,9 @@ def _legal_main_phase_actions(state: GameState, player_id: str) -> list[Move]:
     cards_by_id = card_index(state.definition.catalog)
 
     if state.resource_pool.power >= 1:
+        has_any_troops = _player_has_any_troops_on_board(state, player_id)
         for node_id in state.board.nodes:
-            if _can_deploy_to_node(state, player_id, node_id):
+            if _can_deploy_to_node(state, player_id, node_id, has_any_troops):
                 moves.append(DeployMove(player_id=player_id, target_node_id=node_id, troop_count=1))
 
     if state.resource_pool.power >= 3:
@@ -371,14 +395,14 @@ def _apply_assassinate(state: GameState, move: AssassinateMove) -> GameState:
     if move.target_node_id not in state.board.nodes:
         raise IllegalMoveError(f"Unknown node id: {move.target_node_id}")
 
-    updated = state.model_copy(deep=True)
-    if updated.resource_pool.power < 3:
+    updated = state._cow_clone()
+    if _cow_resource_pool(updated).power < 3:
         raise IllegalMoveError("assassinate requires 3 power")
 
     if not has_presence(updated, move.player_id, move.target_node_id):
         raise IllegalMoveError("assassinate requires presence at the target node")
 
-    node_state = updated.board.nodes[move.target_node_id]
+    node_state = _cow_node(updated, move.target_node_id)
     if move.target_slot_index >= len(node_state.troop_slots):
         raise IllegalMoveError("target_slot_index is out of range")
 
@@ -388,9 +412,9 @@ def _apply_assassinate(state: GameState, move: AssassinateMove) -> GameState:
     if occupant == move.player_id:
         raise IllegalMoveError("cannot assassinate your own troop")
 
-    updated.resource_pool.power -= 3
+    _cow_resource_pool(updated).power -= 3
     node_state.troop_slots[move.target_slot_index] = None
-    updated.players[move.player_id].trophy_hall.append(occupant)
+    _cow_player(updated, move.player_id).trophy_hall.append(occupant)
     return updated
 
 
@@ -403,19 +427,20 @@ def _apply_deploy(state: GameState, move: DeployMove) -> GameState:
     if move.troop_count != 1:
         raise IllegalMoveError("deploy currently places exactly one troop per action")
 
-    updated = state.model_copy(deep=True)
-    if updated.resource_pool.power < 1:
+    updated = state._cow_clone()
+    pool = _cow_resource_pool(updated)
+    if pool.power < 1:
         raise IllegalMoveError("deploy requires 1 power")
     if not _can_deploy_to_node(updated, move.player_id, move.target_node_id):
         raise IllegalMoveError("deploy target must have an empty slot and satisfy presence rules")
 
-    updated.resource_pool.power -= 1
-    player = updated.players[move.player_id]
+    pool.power -= 1
+    player = _cow_player(updated, move.player_id)
     if player.barracks == 0:
         player.score += 1
         return updated
 
-    node_state = updated.board.nodes[move.target_node_id]
+    node_state = _cow_node(updated, move.target_node_id)
     for slot_index, occupant in enumerate(node_state.troop_slots):
         if occupant is None:
             node_state.troop_slots[slot_index] = move.player_id
@@ -423,6 +448,37 @@ def _apply_deploy(state: GameState, move: DeployMove) -> GameState:
             return updated
 
     raise IllegalMoveError("deploy target has no empty troop slot")
+
+
+def _apply_initial_placement(state: GameState, move: InitialPlacementMove) -> GameState:
+    if state.phase != TurnPhase.SETUP:
+        raise IllegalMoveError("initial_placement can only be used during the setup phase")
+    if move.player_id in state.setup_complete:
+        raise IllegalMoveError("player has already placed their initial troop")
+    if move.target_node_id not in state.board.nodes:
+        raise IllegalMoveError(f"Unknown node id: {move.target_node_id}")
+
+    node_def = board_index(state.definition.board).get(move.target_node_id)
+    if node_def is None or node_def.kind != NodeKind.SITE:
+        raise IllegalMoveError("initial placement can only target site nodes")
+
+    node_state = state.board.nodes[move.target_node_id]
+    empty_slot_index = next(
+        (i for i, slot in enumerate(node_state.troop_slots) if slot is None),
+        None,
+    )
+    if empty_slot_index is None:
+        raise IllegalMoveError("site has no empty troop slots")
+
+    updated = state._cow_clone()
+    player = _cow_player(updated, move.player_id)
+    if player.barracks <= 0:
+        raise IllegalMoveError("no troops left in barracks")
+
+    _cow_node(updated, move.target_node_id).troop_slots[empty_slot_index] = move.player_id
+    player.barracks -= 1
+    updated.setup_complete.add(move.player_id)
+    return advance_phase(updated)
 
 
 def _apply_activate_card_ability(state: GameState, move: ActivateCardAbilityMove) -> GameState:
@@ -435,7 +491,7 @@ def _apply_activate_card_ability(state: GameState, move: ActivateCardAbilityMove
     if pending.card_id != move.card_id or pending.ability_key != move.ability_key:
         raise IllegalMoveError("requested ability does not match the pending ability")
 
-    updated = state.model_copy(deep=True)
+    updated = state._cow_clone()
     definition = card_index(updated.definition.catalog).get(move.card_id)
     if definition is None:
         raise IllegalMoveError(f"Unknown card id: {move.card_id}")
@@ -477,13 +533,13 @@ def _apply_decline_card_ability(state: GameState, move: DeclineCardAbilityMove) 
     if pending.card_id != move.card_id or pending.ability_key != move.ability_key:
         raise IllegalMoveError("requested decline does not match the pending ability")
 
-    updated = state.model_copy(deep=True)
+    updated = state._cow_clone()
     updated.pending_ability = None
     return updated
 
 
 def _apply_promote_card(state: GameState, move: PromoteCardMove) -> GameState:
-    updated = state.model_copy(deep=True)
+    updated = state._cow_clone()
 
     if state.phase == TurnPhase.MAIN:
         pending_list = updated.pending_immediate_promotions
@@ -518,7 +574,7 @@ def _apply_promote_card(state: GameState, move: PromoteCardMove) -> GameState:
 
 
 def _apply_skip_promote(state: GameState, move: SkipPromoteMove) -> GameState:
-    updated = state.model_copy(deep=True)
+    updated = state._cow_clone()
 
     if state.phase == TurnPhase.MAIN:
         pending_list = updated.pending_immediate_promotions
@@ -554,7 +610,7 @@ def _enter_end_of_turn(state: GameState) -> GameState:
     if state.pending_immediate_promotions:
         raise IllegalMoveError("resolve pending immediate promotions before ending the main phase")
 
-    updated = state.model_copy(deep=True)
+    updated = state._cow_clone()
     updated.pending_ability = None
     mandatory_promotions = [
         pending
@@ -585,7 +641,8 @@ def _apply_end_of_turn_generic_effects(
 ) -> None:
     current_player_id = state.current_player_id
     cards_by_id = card_index(state.definition.catalog)
-    played_card_ids = list(state.players[current_player_id].played_cards)
+    current_player = state.players[current_player_id]
+    played_card_ids = list(current_player.played_cards)
 
     for played_card_id in played_card_ids:
         definition = cards_by_id.get(played_card_id)
@@ -600,9 +657,10 @@ def _apply_end_of_turn_generic_effects(
                 and action.op == "force_discard"
                 and action.source_fragment.strip().lower() == "end_of_turn_mass_discard"
             ):
-                for target_player_id, target_player in state.players.items():
+                for target_player_id in state.players:
                     if target_player_id == current_player_id:
                         continue
+                    target_player = _cow_player(state, target_player_id)
                     if not target_player.hand:
                         continue
                     target_player.discard_pile.append(target_player.hand.pop(0))
@@ -613,12 +671,12 @@ def _apply_end_of_turn_generic_effects(
                 and action.op == "grant_vp"
                 and action.source_fragment.strip().lower().startswith("scaled_vp")
             ):
-                state.players[current_player_id].score += _scaled_vp_award_count(state, current_player_id, action)
+                _cow_player(state, current_player_id).score += _scaled_vp_award_count(state, current_player_id, action)
 
 
 def _apply_cleanup(state: GameState) -> GameState:
-    cleaned = state.model_copy(deep=True)
-    player = cleaned.players[cleaned.current_player_id]
+    cleaned = state._cow_clone()
+    player = _cow_player(cleaned, cleaned.current_player_id)
 
     player.discard_pile.extend(player.hand)
     player.discard_pile.extend(player.played_cards)
@@ -640,21 +698,21 @@ def _apply_cleanup(state: GameState) -> GameState:
 
 @register_effect("gain_power")
 def _effect_gain_power(state: GameState, player_id: str, card: CardDefinition) -> GameState:
-    updated = state.model_copy(deep=True)
-    updated.resource_pool.power += int(card.effect_payload.get("power", 0))
+    updated = state._cow_clone()
+    _cow_resource_pool(updated).power += int(card.effect_payload.get("power", 0))
     return updated
 
 
 @register_effect("gain_influence")
 def _effect_gain_influence(state: GameState, player_id: str, card: CardDefinition) -> GameState:
-    updated = state.model_copy(deep=True)
-    updated.resource_pool.influence += int(card.effect_payload.get("influence", 0))
+    updated = state._cow_clone()
+    _cow_resource_pool(updated).influence += int(card.effect_payload.get("influence", 0))
     return updated
 
 
 @register_effect("noop")
 def _effect_noop(state: GameState, player_id: str, card: CardDefinition) -> GameState:
-    return state.model_copy(deep=True)
+    return state._cow_clone()
 
 
 @register_effect("todo_assassinate")

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from engine.generic_runtime._utils import _action_requires_selection
 from engine.moves import (
     EndMainPhaseMove,
     PlayCardMove,
@@ -11,9 +12,10 @@ from engine.moves import (
     ResolveGenericChoiceMove,
     SkipPromoteMove,
 )
-from engine.rules import _action_requires_selection, apply, legal_moves
+from engine.rules import apply, legal_moves
 from engine.state import PendingPromotionState, TurnPhase, build_initial_game_state
 from game_setup.loaders import build_game_definition_from_dicts, create_game_state_from_files
+from tests.scenario_helpers import advance_past_setup
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 BOARD_PATH = BASE_DIR / "data" / "boards" / "tyrants_of_the_underdark.json"
@@ -22,7 +24,9 @@ SETUP_PATH = BASE_DIR / "data" / "decks" / "base_setup.json"
 
 
 def _base_state(seed: int = 11):
-    return create_game_state_from_files(BOARD_PATH, CARD_PATH, SETUP_PATH, ["p1", "p2"], seed=seed)
+    return advance_past_setup(
+        create_game_state_from_files(BOARD_PATH, CARD_PATH, SETUP_PATH, ["p1", "p2"], seed=seed)
+    )
 
 
 def _ability_state(cards: list[dict[str, object]], starter_entries: list[dict[str, object]]) -> object:
@@ -48,7 +52,7 @@ def _ability_state(cards: list[dict[str, object]], starter_entries: list[dict[st
     }
 
     definition = build_game_definition_from_dicts(board_data, card_data, setup_data, definition_id="ability_test")
-    return build_initial_game_state(definition, ["p1", "p2"], shuffle_seed=0)
+    return advance_past_setup(build_initial_game_state(definition, ["p1", "p2"], shuffle_seed=0))
 
 
 def test_immediate_optional_promote_blocks_further_play_until_resolved() -> None:

@@ -7,6 +7,7 @@ from pathlib import Path
 from engine.moves import PlayCardMove, ResolveGenericChoiceMove
 from engine.rules import apply, legal_moves
 from game_setup.loaders import create_game_state_from_files
+from tests.scenario_helpers import advance_past_setup
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 BOARD_PATH = BASE_DIR / "data" / "boards" / "tyrants_of_the_underdark.json"
@@ -15,12 +16,14 @@ SETUP_PATH = BASE_DIR / "data" / "decks" / "base_setup.json"
 
 
 def _fresh_state(seed: int = 13):
-    state = create_game_state_from_files(
-        board_path=BOARD_PATH,
-        card_path=CARD_PATH,
-        setup_path=SETUP_PATH,
-        player_ids=["p1", "p2"],
-        seed=seed,
+    state = advance_past_setup(
+        create_game_state_from_files(
+            board_path=BOARD_PATH,
+            card_path=CARD_PATH,
+            setup_path=SETUP_PATH,
+            player_ids=["p1", "p2"],
+            seed=seed,
+        )
     )
     state.players["p1"].hand = []
     state.players["p1"].deck = []

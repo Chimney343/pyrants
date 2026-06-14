@@ -41,9 +41,10 @@ def test_create_game_state_from_files() -> None:
     )
 
     assert state.current_player_id == "p1"
-    assert state.phase.value == "main"
-    assert len(state.players["p1"].hand) == 5
-    assert len(state.players["p2"].hand) == 5
+    assert state.phase.value == "setup"
+    assert state.setup_complete == set()
+    assert len(state.players["p1"].hand) == 0
+    assert len(state.players["p2"].hand) == 0
     assert len(state.market.row) == 6
     assert len(state.market.deck) == 4
 

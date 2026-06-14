@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from engine.state import CardDefinition, GameState, NodeKind, board_index, card_index
+from engine.state import CardDefinition, GameState, NodeKind, _cow_player, board_index, card_index
 
 
 def _count_troops(node_troop_slots: list[str | None], player_id: str) -> int:
@@ -27,7 +27,7 @@ def _site_control_owner(state: GameState, node_id: str) -> str | None:
 
 def _is_total_control(state: GameState, node_id: str, player_id: str) -> bool:
     node_state = state.board.nodes[node_id]
-    has_enemy_spies = any(spy_owner != player_id for spy_owner in node_state.spies)
+    has_enemy_spies = bool(node_state.spies - {player_id})
     all_troops_owned = all(slot_owner == player_id for slot_owner in node_state.troop_slots)
     return all_troops_owned and not has_enemy_spies
 
@@ -45,7 +45,7 @@ def _cards_vp(cards: list[str], index: dict[str, CardDefinition], field_name: st
 def award_end_of_turn_site_vp(state: GameState, player_id: str) -> GameState:
     """Add end-of-turn VP from sites where the player has total control."""
 
-    updated = state.model_copy(deep=True)
+    updated = state._cow_clone()
     board_definition_index = board_index(updated.definition.board)
 
     site_vp = 0
@@ -56,7 +56,7 @@ def award_end_of_turn_site_vp(state: GameState, player_id: str) -> GameState:
         if _is_total_control(updated, node_id, player_id):
             site_vp += node_definition.total_control_vp_per_turn
 
-    updated.players[player_id].score += site_vp
+    _cow_player(updated, player_id).score += site_vp
     return updated
 
 

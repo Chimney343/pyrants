@@ -103,4 +103,4 @@ def test_replay_views_from_payload_reconstructs_step_sequence(tmp_path: Path) ->
 
     assert len(views) == result.step_count + 1
     assert views[0].round_number >= 1
-    assert views[-1].phase in {"main", "end_of_turn", "cleanup", "game_over"}
+    assert views[-1].phase in {"setup", "draw", "main", "end_of_turn", "cleanup", "game_over"}

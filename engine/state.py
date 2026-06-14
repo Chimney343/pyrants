@@ -3,13 +3,93 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
-from copy import copy, deepcopy
+from copy import deepcopy
 from enum import Enum
 from random import Random
 from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
-from pydantic._internal._fields import PydanticUndefined
+
+# Fast type-dispatch table for _copy_field.
+# Maps exact types to dispatch codes: 0=share, 1=list, 2=set, 3=dict.
+_COPY_SHARE = 0
+_COPY_LIST = 1
+_COPY_SET = 2
+_COPY_DICT = 3
+_TYPE_DISPATCH: dict[type, int] = {
+    type(None): _COPY_SHARE,
+    str: _COPY_SHARE,
+    int: _COPY_SHARE,
+    bool: _COPY_SHARE,
+    float: _COPY_SHARE,
+    list: _COPY_LIST,
+    set: _COPY_SET,
+    dict: _COPY_DICT,
+}
+
+
+def _copy_field(value: Any, memo: dict[int, Any]) -> Any:
+    """Copy a single field value, dispatching by type.
+
+    Uses ``type()`` dict lookup for the common primitive and collection
+    types, falling back to ``isinstance`` for BaseModel and Enum.
+    Empty collections are returned as-is (they carry no mutable state).
+    """
+    action = _TYPE_DISPATCH.get(type(value))
+    if action is not None:
+        if action is _COPY_SHARE:
+            return value
+        if action is _COPY_LIST:
+            # Empty list short-circuit — strings/int are immutable so a
+            # shallow list() copy is equivalent to recursive _copy_field.
+            # For lists that may contain BaseModel instances we must
+            # recurse, but the hot path (list[str]) is fast-tracked.
+            if not value:
+                return []
+            first = value[0]
+            if type(first) is str or first is None or isinstance(first, (int, bool, float)):
+                return list(value)
+            return [_copy_field(v, memo) for v in value]
+        if action is _COPY_SET:
+            if not value:
+                return set()
+            # Set elements are always immutable in our domain (strings).
+            return set(value)
+        # action is _COPY_DICT
+        if not value:
+            return {}
+        return {_copy_field(k, memo): _copy_field(v, memo) for k, v in value.items()}
+    if isinstance(value, BaseModel):
+        if type(value).model_config.get("frozen", False):
+            return value
+        return value.__deepcopy__(memo)
+    if isinstance(value, Enum):
+        return value
+    return deepcopy(value, memo)
+
+
+def _model_deepcopy_fields(self: BaseModel, memo: dict[int, Any] | None = None) -> BaseModel:
+    """Fast structural clone for Pydantic v2 mutable models.
+
+    Builds via ``cls.__new__`` + ``object.__setattr__`` to bypass
+    ``pydantic.main.__deepcopy__`` overhead.  Assumes the model has
+    no ``PrivateAttr`` fields (sets ``__pydantic_private__`` to ``None``).
+    """
+    cls = type(self)
+    m = cls.__new__(cls)
+    if memo is None:
+        memo = {}
+    memo[id(self)] = m
+
+    d = {key: _copy_field(value, memo) for key, value in self.__dict__.items()}
+
+    object.__setattr__(m, "__dict__", d)
+    extra = self.__pydantic_extra__
+    object.__setattr__(m, "__pydantic_extra__", {} if not extra else dict(extra))
+    object.__setattr__(m, "__pydantic_fields_set__", self.__pydantic_fields_set__.copy())
+    object.__setattr__(m, "__pydantic_private__", None)
+
+    return m
 
 
 class NodeKind(str, Enum):
@@ -23,6 +103,7 @@ class TurnPhase(str, Enum):
     """Explicit turn and lifecycle phases for the game loop."""
 
     SETUP = "setup"
+    DRAW = "draw"
     MAIN = "main"
     END_OF_TURN = "end_of_turn"
     CLEANUP = "cleanup"
@@ -273,11 +354,49 @@ class NodeState(BaseModel):
     spies: set[str] = Field(default_factory=set)
     vp_tokens: int = Field(default=0, ge=0)
 
+    def clone_fast(self) -> NodeState:
+        m = NodeState.__new__(NodeState)
+        d = {
+            "node_id": self.node_id,
+            "troop_slots": list(self.troop_slots),
+            "spies": set(self.spies),
+            "vp_tokens": self.vp_tokens,
+        }
+        object.__setattr__(m, "__dict__", d)
+        object.__setattr__(m, "__pydantic_extra__", {})
+        object.__setattr__(m, "__pydantic_fields_set__", self.__pydantic_fields_set__.copy())
+        object.__setattr__(m, "__pydantic_private__", None)
+        return m
+
+    __deepcopy__ = _model_deepcopy_fields
+
 
 class BoardState(BaseModel):
     """Mutable board-wide state."""
 
     nodes: dict[str, NodeState] = Field(default_factory=dict)
+
+    def clone_fast(self) -> BoardState:
+        m = BoardState.__new__(BoardState)
+        d = {
+            "nodes": {nid: node.clone_fast() for nid, node in self.nodes.items()},
+        }
+        object.__setattr__(m, "__dict__", d)
+        object.__setattr__(m, "__pydantic_extra__", {})
+        object.__setattr__(m, "__pydantic_fields_set__", self.__pydantic_fields_set__.copy())
+        object.__setattr__(m, "__pydantic_private__", None)
+        return m
+
+    def clone_fast_shallow(self) -> BoardState:
+        m = BoardState.__new__(BoardState)
+        d = {"nodes": dict(self.nodes)}
+        object.__setattr__(m, "__dict__", d)
+        object.__setattr__(m, "__pydantic_extra__", {})
+        object.__setattr__(m, "__pydantic_fields_set__", self.__pydantic_fields_set__.copy())
+        object.__setattr__(m, "__pydantic_private__", None)
+        return m
+
+    __deepcopy__ = _model_deepcopy_fields
 
 
 class PlayerState(BaseModel):
@@ -295,12 +414,49 @@ class PlayerState(BaseModel):
     vp_tokens: int = Field(default=0, ge=0)
     score: int = 0
 
+    def clone_fast(self) -> PlayerState:
+        m = PlayerState.__new__(PlayerState)
+        d = {
+            "player_id": self.player_id,
+            "deck": list(self.deck),
+            "hand": list(self.hand),
+            "discard_pile": list(self.discard_pile),
+            "played_cards": list(self.played_cards),
+            "inner_circle": list(self.inner_circle),
+            "trophy_hall": list(self.trophy_hall),
+            "barracks": self.barracks,
+            "spies_available": self.spies_available,
+            "vp_tokens": self.vp_tokens,
+            "score": self.score,
+        }
+        object.__setattr__(m, "__dict__", d)
+        object.__setattr__(m, "__pydantic_extra__", {})
+        object.__setattr__(m, "__pydantic_fields_set__", self.__pydantic_fields_set__.copy())
+        object.__setattr__(m, "__pydantic_private__", None)
+        return m
+
+    __deepcopy__ = _model_deepcopy_fields
+
 
 class ResourcePool(BaseModel):
     """Transient resources that reset as turns progress."""
 
     power: int = Field(default=0, ge=0)
     influence: int = Field(default=0, ge=0)
+
+    def clone_fast(self) -> ResourcePool:
+        m = ResourcePool.__new__(ResourcePool)
+        d = {
+            "power": self.power,
+            "influence": self.influence,
+        }
+        object.__setattr__(m, "__dict__", d)
+        object.__setattr__(m, "__pydantic_extra__", {})
+        object.__setattr__(m, "__pydantic_fields_set__", self.__pydantic_fields_set__.copy())
+        object.__setattr__(m, "__pydantic_private__", None)
+        return m
+
+    __deepcopy__ = _model_deepcopy_fields
 
 
 class MarketState(BaseModel):
@@ -310,12 +466,41 @@ class MarketState(BaseModel):
     row: list[str] = Field(default_factory=list)
     discard_pile: list[str] = Field(default_factory=list)
 
+    def clone_fast(self) -> MarketState:
+        m = MarketState.__new__(MarketState)
+        d = {
+            "deck": list(self.deck),
+            "row": list(self.row),
+            "discard_pile": list(self.discard_pile),
+        }
+        object.__setattr__(m, "__dict__", d)
+        object.__setattr__(m, "__pydantic_extra__", {})
+        object.__setattr__(m, "__pydantic_fields_set__", self.__pydantic_fields_set__.copy())
+        object.__setattr__(m, "__pydantic_private__", None)
+        return m
+
+    __deepcopy__ = _model_deepcopy_fields
+
 
 class PendingAbilityState(BaseModel):
     """One unresolved paid ability on a played card."""
 
     card_id: str = Field(min_length=1)
     ability_key: str = Field(min_length=1)
+
+    def clone_fast(self) -> PendingAbilityState:
+        m = PendingAbilityState.__new__(PendingAbilityState)
+        d = {
+            "card_id": self.card_id,
+            "ability_key": self.ability_key,
+        }
+        object.__setattr__(m, "__dict__", d)
+        object.__setattr__(m, "__pydantic_extra__", {})
+        object.__setattr__(m, "__pydantic_fields_set__", self.__pydantic_fields_set__.copy())
+        object.__setattr__(m, "__pydantic_private__", None)
+        return m
+
+    __deepcopy__ = _model_deepcopy_fields
 
 
 class PendingPromotionState(BaseModel):
@@ -330,6 +515,27 @@ class PendingPromotionState(BaseModel):
     required_aspect: str | None = None
     required_secondary_aspect: str | None = None
     repeat_while_targets: bool = False
+
+    def clone_fast(self) -> PendingPromotionState:
+        m = PendingPromotionState.__new__(PendingPromotionState)
+        d = {
+            "card_id": self.card_id,
+            "timing": self.timing,
+            "optional": self.optional,
+            "deferred_choice": self.deferred_choice,
+            "source_card_id": self.source_card_id,
+            "requires_another_played_card": self.requires_another_played_card,
+            "required_aspect": self.required_aspect,
+            "required_secondary_aspect": self.required_secondary_aspect,
+            "repeat_while_targets": self.repeat_while_targets,
+        }
+        object.__setattr__(m, "__dict__", d)
+        object.__setattr__(m, "__pydantic_extra__", {})
+        object.__setattr__(m, "__pydantic_fields_set__", self.__pydantic_fields_set__.copy())
+        object.__setattr__(m, "__pydantic_private__", None)
+        return m
+
+    __deepcopy__ = _model_deepcopy_fields
 
 
 class PendingGenericChoiceState(BaseModel):
@@ -348,6 +554,31 @@ class PendingGenericChoiceState(BaseModel):
     last_selection: dict[str, Any] = Field(default_factory=dict)
     action_counters: dict[str, int] = Field(default_factory=dict)
     action_repeat_limits: dict[str, int] = Field(default_factory=dict)
+
+    def clone_fast(self) -> PendingGenericChoiceState:
+        m = PendingGenericChoiceState.__new__(PendingGenericChoiceState)
+        d = {
+            "source_card_id": self.source_card_id,
+            "execution_kind": self.execution_kind,
+            "option_ids": list(self.option_ids),
+            "selected_option_ids": list(self.selected_option_ids),
+            "current_option_id": self.current_option_id,
+            "current_actions": list(self.current_actions),
+            "next_action_index": self.next_action_index,
+            "awaiting_option": self.awaiting_option,
+            "remaining_repeats": self.remaining_repeats,
+            "allow_repeat": self.allow_repeat,
+            "last_selection": dict(self.last_selection),
+            "action_counters": dict(self.action_counters),
+            "action_repeat_limits": dict(self.action_repeat_limits),
+        }
+        object.__setattr__(m, "__dict__", d)
+        object.__setattr__(m, "__pydantic_extra__", {})
+        object.__setattr__(m, "__pydantic_fields_set__", self.__pydantic_fields_set__.copy())
+        object.__setattr__(m, "__pydantic_private__", None)
+        return m
+
+    __deepcopy__ = _model_deepcopy_fields
 
 
 class GameState(BaseModel):
@@ -368,44 +599,48 @@ class GameState(BaseModel):
     pending_end_of_turn_promotions: list[PendingPromotionState] = Field(default_factory=list)
     pending_generic_choice: PendingGenericChoiceState | None = None
     devour_pile: list[str] = Field(default_factory=list)
+    setup_complete: set[str] = Field(default_factory=set)
     shuffle_seed: int = 0
     shuffle_count: int = Field(default=0, ge=0)
 
-    def __deepcopy__(self, memo: dict[int, Any] | None = None) -> GameState:
-        """Deep-copy the state while sharing the immutable definition tree.
+    def clone_fast(self) -> GameState:
+        """Fast specialized deep copy — no type dispatch, no per-field function calls.
 
-        ``GameDefinition`` and all sub-models (CardCatalog, BoardDefinition,
-        etc.) are frozen.  Skipping them avoids ~10 ms of wasted allocation
-        per card play — a measurable saving over a 1000+ step simulation.
+        See ``.kilo/plans/optimize-deepcopy-perf.md`` for the field
+        classification and copy strategy.
         """
-        cls = type(self)
-        m = cls.__new__(cls)
-        if memo is None:
-            memo = {}
-        memo[id(self)] = m
-
-        # Build __dict__ without deep-copying the immutable definition
-        d: dict[str, Any] = {}
-        for key, value in self.__dict__.items():
-            if key == "definition":
-                d[key] = value  # immutable → share reference
-            else:
-                d[key] = deepcopy(value, memo)
-
+        m = GameState.__new__(GameState)
+        d = {
+            "definition": self.definition,
+            "board": self.board.clone_fast(),
+            "players": {pid: ps.clone_fast() for pid, ps in self.players.items()},
+            "turn_order": list(self.turn_order),
+            "current_player_id": self.current_player_id,
+            "phase": self.phase,
+            "round_number": self.round_number,
+            "resource_pool": self.resource_pool.clone_fast(),
+            "market": self.market.clone_fast(),
+            "final_scores": dict(self.final_scores),
+            "pending_ability": self.pending_ability.clone_fast() if self.pending_ability is not None else None,
+            "pending_immediate_promotions": [p.clone_fast() for p in self.pending_immediate_promotions],
+            "pending_end_of_turn_promotions": [p.clone_fast() for p in self.pending_end_of_turn_promotions],
+            "pending_generic_choice": self.pending_generic_choice.clone_fast() if self.pending_generic_choice is not None else None,
+            "devour_pile": list(self.devour_pile),
+            "setup_complete": set(self.setup_complete),
+            "shuffle_seed": self.shuffle_seed,
+            "shuffle_count": self.shuffle_count,
+        }
         object.__setattr__(m, "__dict__", d)
-        object.__setattr__(m, "__pydantic_extra__", deepcopy(self.__pydantic_extra__, memo=memo))
-        object.__setattr__(m, "__pydantic_fields_set__", copy(self.__pydantic_fields_set__))
-
-        if not hasattr(self, "__pydantic_private__") or self.__pydantic_private__ is None:
-            object.__setattr__(m, "__pydantic_private__", None)
-        else:
-            object.__setattr__(
-                m,
-                "__pydantic_private__",
-                deepcopy({k: v for k, v in self.__pydantic_private__.items() if v is not PydanticUndefined}, memo=memo),
-            )
-
+        object.__setattr__(m, "__pydantic_extra__", {})
+        object.__setattr__(m, "__pydantic_fields_set__", self.__pydantic_fields_set__.copy())
+        object.__setattr__(m, "__pydantic_private__", None)
         return m
+
+    def __deepcopy__(self, memo: dict[int, Any] | None = None) -> GameState:
+        result = self.clone_fast()
+        if memo is not None:
+            memo[id(self)] = result
+        return result
 
     @model_validator(mode="after")
     def _validate_turn_owner(self) -> GameState:
@@ -413,17 +648,134 @@ class GameState(BaseModel):
             raise ValueError("current_player_id must be present in players")
         return self
 
+    def _cow_clone(self) -> GameState:
+        """Create a shallow copy-on-write clone of the game state.
+
+        Mutable containers (board.nodes, players, market, resource_pool)
+        are shared by reference.  Individual nodes and players are
+        deep-copied lazily on first write via ``_cow_node`` /
+        ``_cow_player`` accessors, avoiding the full O(all-nodes) clone
+        cost for moves that touch only 1–2 locations.
+
+        Exception: ``pending_generic_choice`` is eager-deep-copied because
+        the generic-card resolver mutates it in-place at 21 sites without
+        a COW accessor.
+        """
+        cls = type(self)
+        m = cls.__new__(cls)
+        d = {
+            "definition": self.definition,
+            "board": self.board.clone_fast_shallow(),
+            "players": dict(self.players),
+            "turn_order": list(self.turn_order) if isinstance(self.turn_order, list) else self.turn_order,
+            "current_player_id": self.current_player_id,
+            "phase": self.phase,
+            "round_number": self.round_number,
+            "resource_pool": self.resource_pool,
+            "market": self.market,
+            "final_scores": dict(self.final_scores) if self.final_scores else {},
+            "pending_ability": self.pending_ability,
+            "pending_immediate_promotions": list(self.pending_immediate_promotions),
+            "pending_end_of_turn_promotions": list(self.pending_end_of_turn_promotions),
+            "pending_generic_choice": self.pending_generic_choice.model_copy(deep=True) if self.pending_generic_choice is not None else None,
+            "devour_pile": list(self.devour_pile),
+            "setup_complete": set(self.setup_complete),
+            "shuffle_seed": self.shuffle_seed,
+            "shuffle_count": self.shuffle_count,
+            "_presence_cache": dict(pc) if (pc := self.__dict__.get("_presence_cache")) is not None else None,
+        }
+        object.__setattr__(m, "__dict__", d)
+        object.__setattr__(m, "__pydantic_extra__", {} if not self.__pydantic_extra__ else dict(self.__pydantic_extra__))
+        object.__setattr__(m, "__pydantic_fields_set__", self.__pydantic_fields_set__.copy())
+        object.__setattr__(m, "__pydantic_private__", None)
+        object.__setattr__(m, "_cow_dirty", set())
+        return m
+
+
+# ── COW accessors ──────────────────────────────────────────────────────────
+
+
+def _cow_node(state: GameState, node_id: str) -> NodeState:
+    """Return a mutable NodeState, lazily copying from the shared reference."""
+    node = state.board.nodes[node_id]
+    dirty_key = ("n", node_id)
+    if dirty_key not in state._cow_dirty:  # type: ignore[attr-defined]
+        node = node.clone_fast()
+        state.board.nodes[node_id] = node
+        state._cow_dirty.add(dirty_key)  # type: ignore[attr-defined]
+        state.__dict__["_presence_cache"] = None
+    return node
+
+
+def _cow_player(state: GameState, player_id: str) -> PlayerState:
+    """Return a mutable PlayerState, lazily copying from the shared reference."""
+    player = state.players[player_id]
+    dirty_key = ("p", player_id)
+    if dirty_key not in state._cow_dirty:  # type: ignore[attr-defined]
+        player = player.clone_fast()
+        state.players[player_id] = player
+        state._cow_dirty.add(dirty_key)  # type: ignore[attr-defined]
+    return player
+
+
+def _cow_market_state(state: GameState) -> MarketState:
+    """Return a mutable MarketState, lazily copying from the shared reference."""
+    dirty_key = "market"
+    if dirty_key not in state._cow_dirty:  # type: ignore[attr-defined]
+        state.market = state.market.clone_fast()
+        state._cow_dirty.add(dirty_key)  # type: ignore[attr-defined]
+    return state.market
+
+
+def _cow_resource_pool(state: GameState) -> ResourcePool:
+    """Return a mutable ResourcePool, lazily copying from the shared reference."""
+    dirty_key = "pool"
+    if dirty_key not in state._cow_dirty:  # type: ignore[attr-defined]
+        state.resource_pool = state.resource_pool.clone_fast()
+        state._cow_dirty.add(dirty_key)  # type: ignore[attr-defined]
+    return state.resource_pool
+
+
+# ── index caches (identity-checked single-entry) ──────────────────────────
+_board_index_cache_obj: BoardDefinition | None = None
+_board_index_cache_result: dict[str, NodeDefinition] | None = None
+_card_index_cache_obj: CardCatalog | None = None
+_card_index_cache_result: dict[str, CardDefinition] | None = None
+
 
 def board_index(board_definition: BoardDefinition) -> dict[str, NodeDefinition]:
-    """Return board definitions by node id."""
+    """Return board definitions by node id.
 
-    return {node.node_id: node for node in board_definition.nodes}
+    Results are cached using object-identity (``is``) against the last
+    ``BoardDefinition`` seen.  Since definitions are frozen and shared
+    by reference across all state copies, the cache is invalidated only
+    when a different definition object is passed — safe against ``id()``
+    reuse after garbage collection.
+    """
+    global _board_index_cache_obj, _board_index_cache_result
+    if _board_index_cache_obj is board_definition and _board_index_cache_result is not None:
+        return _board_index_cache_result
+    result = {node.node_id: node for node in board_definition.nodes}
+    _board_index_cache_obj = board_definition
+    _board_index_cache_result = result
+    return result
 
 
 def card_index(catalog: CardCatalog) -> dict[str, CardDefinition]:
-    """Return card definitions by card id."""
+    """Return card definitions by card id.
 
-    return {card.card_id: card for card in catalog.cards}
+    Results are cached using object-identity (``is``) against the last
+    ``CardCatalog`` seen.  Since catalogs are frozen and shared by
+    reference across all state copies, the cache is invalidated only
+    when a different catalog object is passed.
+    """
+    global _card_index_cache_obj, _card_index_cache_result
+    if _card_index_cache_obj is catalog and _card_index_cache_result is not None:
+        return _card_index_cache_result
+    result = {card.card_id: card for card in catalog.cards}
+    _card_index_cache_obj = catalog
+    _card_index_cache_result = result
+    return result
 
 
 def expand_deck(deck_definition: DeckDefinition) -> list[str]:
@@ -543,15 +895,14 @@ def build_initial_game_state(
     counter = 0
 
     for player_id in turn_order:
-        player_state, counter = create_player_state(
+        deck = _shuffle_deck(starter_cards, shuffle_seed, counter)
+        counter += 1
+        players[player_id] = PlayerState(
             player_id=player_id,
-            starter_cards=starter_cards,
-            starting_troops=definition.default_player_troops,
-            starting_spies=definition.default_player_spies,
-            shuffle_seed=shuffle_seed,
-            shuffle_counter=counter,
+            deck=deck,
+            barracks=definition.default_player_troops,
+            spies_available=definition.default_player_spies,
         )
-        players[player_id] = player_state
 
     market_state, counter = create_market_state(definition.setup, shuffle_seed, counter)
 
@@ -561,7 +912,8 @@ def build_initial_game_state(
         players=players,
         turn_order=turn_order,
         current_player_id=turn_order[0],
-        phase=TurnPhase.MAIN,
+        phase=TurnPhase.SETUP,
+        setup_complete=set(),
         market=market_state,
         shuffle_seed=shuffle_seed,
         shuffle_count=counter,

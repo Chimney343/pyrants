@@ -128,6 +128,13 @@ class ResolveGenericChoiceMove(MoveBase):
     selection: dict[str, object] = Field(default_factory=dict)
 
 
+class InitialPlacementMove(MoveBase):
+    """Place one free troop on a site during setup phase."""
+
+    move_type: Literal["initial_placement"] = "initial_placement"
+    target_node_id: str = Field(min_length=1)
+
+
 Move = Annotated[
     PlayCardMove
     | EndMainPhaseMove
@@ -141,7 +148,8 @@ Move = Annotated[
     | DeclineCardAbilityMove
     | PromoteCardMove
     | SkipPromoteMove
-    | ResolveGenericChoiceMove,
+    | ResolveGenericChoiceMove
+    | InitialPlacementMove,
     Field(discriminator="move_type"),
 ]
 

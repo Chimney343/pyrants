@@ -52,6 +52,9 @@ from engine.state import (
     GameState,
     NodeKind,
     PendingPromotionState,
+    _cow_market_state,
+    _cow_node,
+    _cow_player,
     board_index,
     card_index,
 )
@@ -65,8 +68,8 @@ def _apply_devour_once(
     *,
     selection: dict[str, object] | None,
 ) -> GameState:
-    updated = state.model_copy(deep=True)
-    player = updated.players[player_id]
+    updated = state._cow_clone()
+    player = _cow_player(updated, player_id)
     selection = selection or {}
 
     def _record(card_id: str) -> GameState:
@@ -96,13 +99,14 @@ def _apply_devour_once(
         return _record(player.played_cards.pop(played_index))
 
     if source_zone == "market":
-        if not updated.market.row:
+        market = _cow_market_state(updated)
+        if not market.row:
             raise IllegalMoveError("Cannot devour from market because market row is empty")
         market_slot = _require_selection_int(selection, "market_slot") if "market_slot" in selection else 0
-        _validate_slot_bounds(updated.market.row, market_slot, "market")
-        devoured = updated.market.row.pop(market_slot)
-        if updated.market.deck:
-            updated.market.row.insert(market_slot, updated.market.deck.pop())
+        _validate_slot_bounds(market.row, market_slot, "market")
+        devoured = market.row.pop(market_slot)
+        if market.deck:
+            market.row.insert(market_slot, market.deck.pop())
         return _record(devoured)
 
     raise IllegalMoveError(f"Unsupported devour source_zone '{source_zone}'")
@@ -136,9 +140,9 @@ def _apply_generic_draw_cards(
     selection: dict[str, object] | None,
 ) -> GameState:
     count = _resolve_runtime_action_count(state, player_id, action)
-    updated = state.model_copy(deep=True)
+    updated = state._cow_clone()
     for _ in range(count):
-        player = updated.players[player_id]
+        player = _cow_player(updated, player_id)
         if not player.deck and player.discard_pile:
             _reshuffle_discard_into_deck(updated, player_id)
         if not player.deck:
@@ -157,11 +161,11 @@ def _apply_generic_grant_vp(
     selection: dict[str, object] | None,
 ) -> GameState:
     count = _resolve_runtime_action_count(state, player_id, action)
-    updated = state.model_copy(deep=True)
+    updated = state._cow_clone()
     if action.source_fragment.strip().lower().startswith("scaled_vp") or str(action.metadata.get("count_from", "")).strip():
-        updated.players[player_id].score += _scaled_vp_award_count(updated, player_id, action)
+        _cow_player(updated, player_id).score += _scaled_vp_award_count(updated, player_id, action)
     else:
-        updated.players[player_id].score += count
+        _cow_player(updated, player_id).score += count
     return updated
 
 
@@ -304,8 +308,8 @@ def _apply_generic_supplant_troop(
         elif not target_anywhere and not has_presence(updated, player_id, target_node_id):
             raise IllegalMoveError("supplant requires presence at the target node")
 
-        working = updated.model_copy(deep=True)
-        node_state = working.board.nodes[target_node_id]
+        working = updated._cow_clone()
+        node_state = _cow_node(working, target_node_id)
         _validate_slot_bounds(node_state.troop_slots, target_slot_index, "target_slot")
 
         removed_owner = node_state.troop_slots[target_slot_index]
@@ -319,7 +323,7 @@ def _apply_generic_supplant_troop(
             raise IllegalMoveError("selection target cannot be a white troop for this action")
 
         node_state.troop_slots[target_slot_index] = None
-        player = working.players[player_id]
+        player = _cow_player(working, player_id)
         if removed_owner != WHITE_TROOP_OWNER:
             player.trophy_hall.append(removed_owner)
 
@@ -349,7 +353,7 @@ def _apply_generic_place_spy(
     updated = state
 
     for _ in range(count):
-        working = updated.model_copy(deep=True)
+        working = updated._cow_clone()
         board_definitions = board_index(working.definition.board)
         _validate_node_exists(working, target_node_id)
         if board_definitions[target_node_id].kind == NodeKind.ROUTE:
@@ -357,7 +361,7 @@ def _apply_generic_place_spy(
         if player_id in working.board.nodes[target_node_id].spies:
             raise IllegalMoveError("cannot place a second spy of the same owner on one node")
 
-        player = working.players[player_id]
+        player = _cow_player(working, player_id)
         if player.spies_available > 0:
             player.spies_available -= 1
         else:
@@ -368,9 +372,9 @@ def _apply_generic_place_spy(
             _validate_node_exists(working, source_node_id)
             if player_id not in working.board.nodes[source_node_id].spies:
                 raise IllegalMoveError("selection source_node_id has no movable spy for this player")
-            working.board.nodes[source_node_id].spies.remove(player_id)
+            _cow_node(working, source_node_id).spies.remove(player_id)
 
-        working.board.nodes[target_node_id].spies.add(player_id)
+        _cow_node(working, target_node_id).spies.add(player_id)
         updated = working
 
     return updated
@@ -406,12 +410,12 @@ def _apply_generic_return_spy(
             if not has_presence(updated, player_id, node_id):
                 raise IllegalMoveError("returning an enemy spy requires presence at the node")
 
-            working = updated.model_copy(deep=True)
-            node_state = working.board.nodes[node_id]
+            working = updated._cow_clone()
+            node_state = _cow_node(working, node_id)
             if spy_owner_id not in node_state.spies:
                 raise IllegalMoveError("target spy is not present at the chosen node")
             node_state.spies.remove(spy_owner_id)
-            working.players[spy_owner_id].spies_available += 1
+            _cow_player(working, spy_owner_id).spies_available += 1
             updated = working
             continue
 
@@ -445,8 +449,8 @@ def _apply_generic_return_unit(
     updated = state
     for _ in range(count):
         _validate_node_exists(updated, node_id)
-        working = updated.model_copy(deep=True)
-        node_state = working.board.nodes[node_id]
+        working = updated._cow_clone()
+        node_state = _cow_node(working, node_id)
 
         if unit_type == "troop":
             target_slot_index = _require_selection_int(selection, "target_slot_index")
@@ -462,7 +466,7 @@ def _apply_generic_return_unit(
                 raise IllegalMoveError("selection must target an active player unit")
             node_state.troop_slots[target_slot_index] = None
             if owner_id in working.players:
-                working.players[owner_id].barracks += 1
+                _cow_player(working, owner_id).barracks += 1
             updated = working
             continue
 
@@ -476,7 +480,7 @@ def _apply_generic_return_unit(
                 raise IllegalMoveError("selection must target an active player unit")
             node_state.spies.remove(spy_owner_id)
             if spy_owner_id in working.players:
-                working.players[spy_owner_id].spies_available += 1
+                _cow_player(working, spy_owner_id).spies_available += 1
             updated = working
             continue
 
@@ -509,9 +513,9 @@ def _apply_generic_move_troop(
         if target_node_id not in board_definitions[source_node_id].adjacent_to:
             raise IllegalMoveError("selection target_node_id is not adjacent to source_node_id")
 
-        working = updated.model_copy(deep=True)
-        source_state = working.board.nodes[source_node_id]
-        target_state = working.board.nodes[target_node_id]
+        working = updated._cow_clone()
+        source_state = _cow_node(working, source_node_id)
+        target_state = _cow_node(working, target_node_id)
 
         _validate_slot_bounds(source_state.troop_slots, source_slot_index, "source_slot")
         _validate_slot_bounds(target_state.troop_slots, target_slot_index, "target_slot")
@@ -549,13 +553,13 @@ def _apply_generic_force_discard(
 
     updated = state
     for _ in range(count):
-        working = updated.model_copy(deep=True)
+        working = updated._cow_clone()
         if target_player_id == player_id:
             raise IllegalMoveError("selection target_player_id must be an opponent")
         if target_player_id not in working.players:
             raise IllegalMoveError("selection target_player_id is unknown")
 
-        target_player = working.players[target_player_id]
+        target_player = _cow_player(working, target_player_id)
         _validate_slot_bounds(target_player.hand, hand_index, "hand")
 
         target_player.discard_pile.append(target_player.hand.pop(hand_index))
@@ -579,8 +583,8 @@ def _apply_generic_promote_card(
     if _promote_from_deck_top(action):
         updated = state
         for _ in range(count):
-            working = updated.model_copy(deep=True)
-            player = working.players[player_id]
+            working = updated._cow_clone()
+            player = _cow_player(working, player_id)
             if not player.deck and player.discard_pile:
                 _reshuffle_discard_into_deck(working, player_id)
             if not player.deck:
@@ -594,8 +598,8 @@ def _apply_generic_promote_card(
         source_zone = _require_selection_string(selection, "source_zone").strip().lower()
         updated = state
         for _ in range(count):
-            working = updated.model_copy(deep=True)
-            player = working.players[player_id]
+            working = updated._cow_clone()
+            player = _cow_player(working, player_id)
 
             if source_zone == "played":
                 target_card_id = _require_selection_string(selection, "target_card_id")
@@ -629,8 +633,8 @@ def _apply_generic_promote_card(
         discard_index = _require_selection_int(selection, "discard_index")
         updated = state
         for _ in range(count):
-            working = updated.model_copy(deep=True)
-            player = working.players[player_id]
+            working = updated._cow_clone()
+            player = _cow_player(working, player_id)
             _validate_slot_bounds(player.discard_pile, discard_index, "discard")
             player.inner_circle.append(player.discard_pile.pop(discard_index))
             updated = working
@@ -639,7 +643,7 @@ def _apply_generic_promote_card(
     if action.source_fragment.strip().lower() == "threshold_self_promote":
         if not _threshold_self_promote_enabled(state, player_id, action):
             return state
-        updated = state.model_copy(deep=True)
+        updated = state._cow_clone()
         _promote_card(updated, player_id, source_card_id)
         return updated
 
@@ -651,7 +655,7 @@ def _apply_generic_promote_card(
     if action.timing == "end_of_turn":
         updated = state
         for _ in range(count):
-            working = updated.model_copy(deep=True)
+            working = updated._cow_clone()
             working.pending_end_of_turn_promotions.append(
                 PendingPromotionState(
                     card_id=source_card_id,
@@ -683,7 +687,7 @@ def _apply_generic_promote_card(
             definition = cards_by_id.get(target_card_id)
             if definition is None or required_secondary_aspect not in definition.secondary_aspects:
                 raise IllegalMoveError("selection target_card_id does not satisfy required secondary aspect")
-        working = updated.model_copy(deep=True)
+        working = updated._cow_clone()
         _promote_card(working, player_id, target_card_id)
         updated = working
     return updated
@@ -748,7 +752,7 @@ def _apply_generic_play_card(
             f"Card '{nested_card_id}' references unregistered effect '{nested_definition.effect_key}'"
         )
 
-    working = state.model_copy(deep=True)
+    working = state._cow_clone()
     outer_pending = working.pending_generic_choice.model_copy(deep=True)
     working.pending_generic_choice = None
     working.pending_ability = None

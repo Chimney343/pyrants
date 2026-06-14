@@ -7,6 +7,7 @@ from pathlib import Path
 from engine.moves import EndMainPhaseMove, ResolveCleanupMove, ResolveEndOfTurnMove
 from engine.rules import apply
 from game_setup.loaders import create_game_state_from_files
+from tests.scenario_helpers import advance_past_setup
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 BOARD_PATH = BASE_DIR / "data" / "boards" / "tyrants_of_the_underdark.json"
@@ -15,7 +16,9 @@ SETUP_PATH = BASE_DIR / "data" / "decks" / "base_setup.json"
 
 
 def _base_state(seed: int = 23):
-    return create_game_state_from_files(BOARD_PATH, CARD_PATH, SETUP_PATH, ["p1", "p2"], seed=seed)
+    return advance_past_setup(
+        create_game_state_from_files(BOARD_PATH, CARD_PATH, SETUP_PATH, ["p1", "p2"], seed=seed)
+    )
 
 
 def test_turn_phases_advance_in_order() -> None:

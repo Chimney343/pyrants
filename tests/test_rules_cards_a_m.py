@@ -9,8 +9,9 @@ from engine.moves import (
     ResolveGenericChoiceMove,
 )
 from engine.rules import apply, legal_moves
-from engine.state import build_initial_game_state
+from engine.state import TurnPhase, build_initial_game_state
 from game_setup.loaders import build_game_definition_from_dicts, create_game_state_from_files
+from tests.scenario_helpers import advance_past_setup
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 BOARD_PATH = BASE_DIR / "data" / "boards" / "tyrants_of_the_underdark.json"
@@ -19,7 +20,9 @@ SETUP_PATH = BASE_DIR / "data" / "decks" / "base_setup.json"
 
 
 def _base_state(seed: int = 11):
-    return create_game_state_from_files(BOARD_PATH, CARD_PATH, SETUP_PATH, ["p1", "p2"], seed=seed)
+    return advance_past_setup(
+        create_game_state_from_files(BOARD_PATH, CARD_PATH, SETUP_PATH, ["p1", "p2"], seed=seed)
+    )
 
 
 def _ability_state(cards: list[dict[str, object]], starter_entries: list[dict[str, object]]) -> object:
@@ -45,7 +48,7 @@ def _ability_state(cards: list[dict[str, object]], starter_entries: list[dict[st
     }
 
     definition = build_game_definition_from_dicts(board_data, card_data, setup_data, definition_id="ability_test")
-    return build_initial_game_state(definition, ["p1", "p2"], shuffle_seed=0)
+    return advance_past_setup(build_initial_game_state(definition, ["p1", "p2"], shuffle_seed=0))
 
 
 def test_bounty_hunter_grants_three_power() -> None:
@@ -508,6 +511,7 @@ def test_gar_shatterkeel_recruit_respects_aspect_and_cost_cap() -> None:
 
 def test_gibbering_mouther_targets_only_opponents_with_presence_and_adds_insane_outcast() -> None:
     state = create_game_state_from_files(BOARD_PATH, CARD_PATH, SETUP_PATH, ["p1", "p2", "p3"], seed=62).model_copy(deep=True)
+    state.phase = TurnPhase.MAIN
     state.players["p1"].hand = ["gibbering_mouther"]
     state.players["p1"].deck = []
     state.players["p1"].discard_pile = []
@@ -553,6 +557,7 @@ def test_gibbering_mouther_targets_only_opponents_with_presence_and_adds_insane_
 
 def test_ghoul_gives_insane_outcast_to_each_opponent() -> None:
     state = create_game_state_from_files(BOARD_PATH, CARD_PATH, SETUP_PATH, ["p1", "p2", "p3"], seed=620).model_copy(deep=True)
+    state.phase = TurnPhase.MAIN
     state.players["p1"].hand = ["ghoul"]
     state.players["p1"].deck = []
     state.players["p1"].discard_pile = []
@@ -571,6 +576,7 @@ def test_ghoul_gives_insane_outcast_to_each_opponent() -> None:
 
 def test_myconid_adult_targets_one_opponent_for_insane_outcast() -> None:
     state = create_game_state_from_files(BOARD_PATH, CARD_PATH, SETUP_PATH, ["p1", "p2", "p3"], seed=621).model_copy(deep=True)
+    state.phase = TurnPhase.MAIN
     state.players["p1"].hand = ["myconid_adult"]
     state.players["p1"].deck = []
     state.players["p1"].discard_pile = []

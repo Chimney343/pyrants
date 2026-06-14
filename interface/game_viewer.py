@@ -24,7 +24,13 @@ from engine.state import GameState, NodeKind, board_index, build_initial_game_st
 from engine.state import card_index as state_card_index
 from game_session import GameSession
 from game_setup.board_package import BoardLayoutDefinition, BoardPackageDefinition, make_default_layout
-from game_setup.loaders import build_board_package_from_files, build_game_definition_from_dicts, load_deck_rosters
+from game_setup.loaders import build_board_package_from_files, build_game_definition_from_dicts
+from game_setup.market_setup import (
+    ABERRATIONS_DECK_ID,
+    DeckProfile,
+    combine_two_deck_market_setup,
+    discover_full_deck_profiles,
+)
 from game_setup.scenarios import save_game_state
 from game_view import CardView, GameView, LegalMoveView, build_game_view, filter_legal_moves
 from interface._canvas_scroll import bind_canvas_scrolling
@@ -33,8 +39,8 @@ from interface.view_fit import compute_fit_zoom
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
 DATA_DIR = ROOT_DIR / "data"
-DEFAULT_BOARD_PATH = ROOT_DIR / "data" / "boards" / "base_game.json"
-DEFAULT_LAYOUT_PATH = ROOT_DIR / "data" / "layouts" / "base_game_layout.json"
+DEFAULT_BOARD_PATH = ROOT_DIR / "data" / "boards" / "tyrants_of_the_underdark.json"
+DEFAULT_LAYOUT_PATH = ROOT_DIR / "data" / "layouts" / "tyrants_of_the_underdark_layout.json"
 DEFAULT_CARD_PATH = ROOT_DIR / "data" / "cards" / "catalog.json"
 DEFAULT_SETUP_PATH = ROOT_DIR / "data" / "decks" / "base_setup.json"
 DECKS_DIR = ROOT_DIR / "data" / "decks"
@@ -60,7 +66,6 @@ TOP_DECK_SPECIAL_SLOTS = 3
 HOUSE_GUARD_CARD_ID = "house_guard"
 PRIESTESS_CARD_ID = "priestess_of_lolth"
 INSANE_OUTCAST_CARD_ID = "insane_outcast"
-ABERRATIONS_DECK_ID = "aberrations"
 
 HOUSE_GUARD_STACK_TOTAL = 15
 PRIESTESS_STACK_TOTAL = 15
@@ -194,14 +199,7 @@ class MapProfile:
     layout_path: Path
 
 
-@dataclass(frozen=True)
-class DeckProfile:
-    """One selectable market half deck from roster data."""
-
-    deck_id: str
-    label: str
-    total_cards: int
-    entries: tuple[tuple[str, int], ...]
+# DeckProfile re-exported from game_setup.market_setup for backward compatibility
 
 
 def discover_map_profiles(
@@ -250,53 +248,10 @@ def discover_map_profiles(
 
 def load_market_deck_profiles(decks_dir: Path) -> tuple[DeckProfile, ...]:
     """Load selectable 40-card market deck profiles from roster files."""
-
-    raw_decks = load_deck_rosters(decks_dir)
-    if not raw_decks:
-        raise ValueError(f"No deck roster files found in {decks_dir}")
-
-    profiles: list[DeckProfile] = []
-    for raw_deck in raw_decks:
-        if not isinstance(raw_deck, dict):
-            continue
-        kind = raw_deck.get("kind")
-        total_cards = raw_deck.get("total_cards")
-        if kind != "full_deck" or total_cards != 40:
-            continue
-
-        deck_id = raw_deck.get("deck_id")
-        name = raw_deck.get("name")
-        entries = raw_deck.get("entries")
-        if not isinstance(deck_id, str) or not isinstance(name, str) or not isinstance(entries, list):
-            continue
-
-        normalized_entries: list[tuple[str, int]] = []
-        for entry in entries:
-            if not isinstance(entry, dict):
-                continue
-            card_id = entry.get("card_id")
-            count = entry.get("count")
-            if not isinstance(card_id, str) or not isinstance(count, int):
-                continue
-            normalized_entries.append((card_id, count))
-
-        if sum(count for _, count in normalized_entries) != 40:
-            continue
-
-        profiles.append(
-            DeckProfile(
-                deck_id=deck_id,
-                label=f"{name} ({deck_id})",
-                total_cards=40,
-                entries=tuple(normalized_entries),
-            )
-        )
-
+    profiles = discover_full_deck_profiles(decks_dir)
     if not profiles:
-        raise ValueError("No 40-card full decks found in roster file")
-
-    profiles.sort(key=lambda profile: profile.label.casefold())
-    return tuple(profiles)
+        raise ValueError("No 40-card full decks found in roster files")
+    return profiles
 
 
 def build_setup_from_market_selection(
@@ -313,20 +268,8 @@ def build_setup_from_market_selection(
     if not isinstance(starter_deck, dict) or not isinstance(market_row_size, int):
         raise ValueError("Base setup file must define starter_deck and market_row_size")
 
-    combined_counts: dict[str, int] = {}
-    for card_id, count in (*deck_a.entries, *deck_b.entries):
-        combined_counts[card_id] = combined_counts.get(card_id, 0) + count
-
-    market_entries = [{"card_id": card_id, "count": count} for card_id, count in combined_counts.items()]
-    return {
-        "setup_id": f"{deck_a.deck_id}_{deck_b.deck_id}",
-        "starter_deck": starter_deck,
-        "market_deck": {
-            "deck_id": f"market_{deck_a.deck_id}_{deck_b.deck_id}",
-            "entries": market_entries,
-        },
-        "market_row_size": market_row_size,
-    }
+    market_setup = combine_two_deck_market_setup(base_setup, deck_a, deck_b)
+    return market_setup.to_setup_data()
 
 
 def create_hotseat_session(

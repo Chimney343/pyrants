@@ -15,7 +15,7 @@ InputFn = Callable[[str], str]
 OutputFn = Callable[[str], None]
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
-DEFAULT_BOARD_PATH = ROOT_DIR / "data" / "boards" / "base_game.json"
+DEFAULT_BOARD_PATH = ROOT_DIR / "data" / "boards" / "tyrants_of_the_underdark.json"
 DEFAULT_CARD_PATH = ROOT_DIR / "data" / "cards" / "catalog.json"
 DEFAULT_SETUP_PATH = ROOT_DIR / "data" / "decks" / "base_setup.json"
 

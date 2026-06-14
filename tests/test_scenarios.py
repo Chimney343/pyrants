@@ -7,8 +7,9 @@ from pathlib import Path
 
 import pytest
 
-from engine.moves import PlayCardMove, ResolveGenericChoiceMove
+from engine.moves import InitialPlacementMove, PlayCardMove, ResolveGenericChoiceMove
 from engine.rules import apply, legal_moves
+from engine.state import TurnPhase
 from game_session import GameSession
 from game_setup.loaders import load_card_catalog
 from game_setup.scenarios import (
@@ -33,13 +34,27 @@ def _catalog_registry() -> dict[str, object]:
 
 
 def _session(seed: int = 41) -> GameSession:
-    return GameSession.from_files(
+    session = GameSession.from_files(
         board_path=BOARD_PATH,
         card_path=CARD_PATH,
         setup_path=SETUP_PATH,
         player_ids=["p1", "p2"],
         seed=seed,
     )
+    _resolve_setup(session)
+    return session
+
+
+def _resolve_setup(session: GameSession) -> None:
+    from engine.helpers import _legal_initial_placement_node_ids
+
+    while session.state.phase == TurnPhase.SETUP:
+        node_ids = _legal_initial_placement_node_ids(session.state)
+        move = InitialPlacementMove(
+            player_id=session.state.current_player_id,
+            target_node_id=node_ids[0],
+        )
+        session.submit_move(move)
 
 
 # ---------------------------------------------------------------------------

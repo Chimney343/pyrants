@@ -14,7 +14,7 @@ from pathlib import Path
 from random import Random
 from typing import Any
 
-from engine.moves import PlayCardMove, RecruitMove
+from engine.moves import InitialPlacementMove, PlayCardMove, RecruitMove
 from engine.rules import apply, is_terminal, legal_moves
 from engine.state import (
     BoardDefinition,
@@ -26,6 +26,14 @@ from engine.state import (
     build_initial_game_state,
 )
 from game_setup.loaders import load_deck_rosters
+from game_setup.market_setup import (
+    SPECIAL_RECRUIT_IDS,
+    DeckProfile,
+    combine_two_deck_market_setup,
+    compute_special_stacks,
+    discover_full_deck_profiles,
+    pick_pair_for_target,
+)
 from game_setup.scenarios import save_game_state
 
 logger = logging.getLogger(__name__)
@@ -36,8 +44,6 @@ DEFAULT_CARD_PATH = ROOT / "data" / "cards" / "catalog.json"
 DEFAULT_SETUP_PATH = ROOT / "data" / "decks" / "base_setup.json"
 DEFAULT_ROSTERS_PATH = ROOT / "data" / "decks"
 FORCED_INJECTIONS_FILENAME = "forced_injections.json"
-
-SPECIAL_RECRUIT_IDS = frozenset({"house_guard", "priestess_of_lolth", "insane_outcast"})
 
 
 def _stable_hash(s: str) -> int:
@@ -50,47 +56,15 @@ def _resolve_two_deck_pairing(
     target_card_id: str,
     base_seed: int,
 ) -> tuple[str, str, list[str]]:
-    roster_decks = _cached_roster_decks(str(rosters_path))
-    full_decks: list[dict[str, Any]] = [
-        d for d in roster_decks
-        if isinstance(d, dict) and d.get("kind") == "full_deck" and d.get("deck_id") not in SPECIAL_RECRUIT_IDS
-    ]
-
-    if not full_decks:
+    profiles = discover_full_deck_profiles(rosters_path)
+    if not profiles:
         raise ValueError("No full_deck rosters found for market construction")
 
     pair_rng = Random(base_seed ^ _stable_hash(target_card_id))
-
-    roster_a_id = ""
-    if target_card_id not in SPECIAL_RECRUIT_IDS:
-        for deck in full_decks:
-            deck_card_ids = {
-                str(e.get("card_id", "")).strip()
-                for e in deck.get("entries", ())
-                if isinstance(e, dict)
-            }
-            if target_card_id in deck_card_ids:
-                roster_a_id = str(deck["deck_id"])
-                break
-
-    if not roster_a_id:
-        roster_a_id = str(pair_rng.choice(full_decks)["deck_id"])
-
-    eligible_b = [d for d in full_decks if str(d["deck_id"]) != roster_a_id]
-    if eligible_b:
-        roster_b_id = str(pair_rng.choice(eligible_b)["deck_id"])
-    else:
-        logger.warning(
-            "Only one full_deck roster (%s) available; duplicating for two-deck market",
-            roster_a_id,
-        )
-        roster_b_id = roster_a_id
-
-    aberrations_in_market = "aberrations" in {roster_a_id, roster_b_id}
-    special_stacks = ["house_guard", "priestess_of_lolth"]
-    if aberrations_in_market:
-        special_stacks.append("insane_outcast")
-
+    deck_a, deck_b = pick_pair_for_target(profiles, target_card_id, pair_rng)
+    roster_a_id = deck_a.deck_id
+    roster_b_id = deck_b.deck_id
+    special_stacks = list(compute_special_stacks(roster_a_id, roster_b_id))
     return roster_a_id, roster_b_id, special_stacks
 
 
@@ -166,37 +140,18 @@ def _build_card_scenario_setup(
     board = _cached_board(str(board_path))
     catalog = _cached_catalog(str(card_path))
     base_setup_data = _cached_base_setup(str(setup_path))
-    roster_decks = _cached_roster_decks(str(rosters_path))
 
-    deck_map: dict[str, dict[str, Any]] = {}
-    for deck in roster_decks:
-        if isinstance(deck, dict) and deck.get("kind") == "full_deck":
-            did = str(deck.get("deck_id", ""))
-            if did:
-                deck_map[did] = deck
+    profiles = discover_full_deck_profiles(rosters_path)
+    profile_map: dict[str, DeckProfile] = {p.deck_id: p for p in profiles}
 
-    combined: dict[str, int] = {}
-    for did in (roster_a_id, roster_b_id):
-        deck = deck_map.get(did)
-        if deck is None:
-            continue
-        for entry in deck.get("entries", ()):
-            if not isinstance(entry, dict):
-                continue
-            card_id = str(entry.get("card_id", "")).strip()
-            count = int(entry.get("count", 0))
-            if card_id and count > 0:
-                combined[card_id] = combined.get(card_id, 0) + count
+    deck_a = profile_map.get(roster_a_id)
+    deck_b = profile_map.get(roster_b_id)
+    if deck_a is None or deck_b is None:
+        raise ValueError(f"Deck profile not found: {roster_a_id=}, {roster_b_id=}")
 
-    setup_data: dict[str, object] = {
-        "setup_id": "card_scenario_setup",
-        "starter_deck": base_setup_data["starter_deck"],
-        "market_deck": {
-            "deck_id": f"market_{roster_a_id}_{roster_b_id}",
-            "entries": [{"card_id": card_id, "count": count} for card_id, count in combined.items()],
-        },
-        "market_row_size": base_setup_data.get("market_row_size", 6),
-    }
+    market_setup = combine_two_deck_market_setup(base_setup_data, deck_a, deck_b)
+    setup_data = market_setup.to_setup_data()
+    setup_data["setup_id"] = "card_scenario_setup"
 
     setup_definition = SetupDefinition.model_validate(setup_data)
     definition = GameDefinition(
@@ -436,6 +391,26 @@ def _search_card_scenario(
     return None, fallback_state, market_deck_ids, special_stacks_present
 
 
+def _advance_through_setup(state: GameState) -> GameState:
+    """Apply initial placements and draw starting hands until the state reaches MAIN phase."""
+    from engine.helpers import _legal_initial_placement_node_ids
+    from engine.phases import advance_phase
+
+    current = state.model_copy(deep=True)
+    while current.phase == TurnPhase.SETUP:
+        node_ids = _legal_initial_placement_node_ids(current)
+        if not node_ids:
+            break
+        move = InitialPlacementMove(
+            player_id=current.current_player_id,
+            target_node_id=node_ids[0],
+        )
+        current = apply(current, move)
+    if current.phase == TurnPhase.DRAW:
+        current = advance_phase(current)
+    return current
+
+
 def _force_inject_card_into_current_hand(
     state: GameState,
     *,
@@ -444,26 +419,32 @@ def _force_inject_card_into_current_hand(
     max_attempts: int,
     max_steps_per_attempt: int,
 ) -> tuple[GameState, dict[str, object]]:
-    updated = state.model_copy(deep=True)
-    player = updated.players[updated.current_player_id]
-    if not player.hand:
-        raise ValueError("cannot force inject into an empty current-player hand")
-
+    updated = _advance_through_setup(state)
     rng = Random(injection_seed)
-    hand_index = rng.randrange(len(player.hand))
-    replaced_card_id = player.hand[hand_index]
-    player.hand[hand_index] = target_card_id
 
-    note = {
-        "card_id": target_card_id,
-        "current_player_id": updated.current_player_id,
-        "replaced_card_id": replaced_card_id,
-        "replaced_hand_index": hand_index,
-        "attempts_exhausted": max_attempts,
-        "max_steps_per_attempt": max_steps_per_attempt,
-        "note": "Target card was force-injected after reachable search exhausted all attempts.",
-    }
-    return updated, note
+    for cycle in range(len(updated.turn_order)):
+        candidate_id = updated.turn_order[
+            (updated.turn_order.index(updated.current_player_id) + cycle) % len(updated.turn_order)
+        ]
+        player = updated.players[candidate_id]
+        if player.hand:
+            hand_index = rng.randrange(len(player.hand))
+            replaced_card_id = player.hand[hand_index]
+            player.hand[hand_index] = target_card_id
+
+            note = {
+                "card_id": target_card_id,
+                "target_player_id": candidate_id,
+                "original_current_player_id": updated.current_player_id,
+                "replaced_card_id": replaced_card_id,
+                "replaced_hand_index": hand_index,
+                "attempts_exhausted": max_attempts,
+                "max_steps_per_attempt": max_steps_per_attempt,
+                "note": "Target card was force-injected after reachable search exhausted all attempts.",
+            }
+            return updated, note
+
+    raise ValueError("cannot force inject — no player has a non-empty hand")
 
 
 def find_card_scenario(

@@ -200,7 +200,7 @@ def _apply_resolve_generic_choice(state: GameState, move: ResolveGenericChoiceMo
     if pending.source_card_id != move.source_card_id:
         raise IllegalMoveError("source_card_id does not match the pending generic choice")
 
-    updated = state.model_copy(deep=True)
+    updated = state._cow_clone()
     pending = updated.pending_generic_choice
     if pending is None:
         raise IllegalMoveError("pending generic choice vanished unexpectedly")
@@ -324,6 +324,6 @@ def _resolve_generic_execution(
             f"Unsupported execution model kind for card '{card.card_id}'"
         )
 
-    updated = state.model_copy(deep=True)
+    updated = state._cow_clone()
     updated.pending_generic_choice = pending
     return _auto_resolve_pending_generic(updated, player_id)

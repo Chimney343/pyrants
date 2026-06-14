@@ -10,6 +10,7 @@ from engine.moves import (
     DeclineCardAbilityMove,
     DeployMove,
     EndMainPhaseMove,
+    InitialPlacementMove,
     Move,
     PlayCardMove,
     PromoteCardMove,
@@ -298,6 +299,8 @@ def describe_move(state: GameState, move: Move, *, node_names: dict[str, str] | 
         return "Resolve cleanup"
     if isinstance(move, DeployMove):
         return f"Deploy to {_node_display_name(move.target_node_id, node_names)}"
+    if isinstance(move, InitialPlacementMove):
+        return f"Place free troop at {_node_display_name(move.target_node_id, node_names)}"
     if isinstance(move, AssassinateMove):
         owner = _troop_owner_label(state, move.target_node_id, move.target_slot_index)
         site_name = _node_display_name(move.target_node_id, node_names)
@@ -651,6 +654,8 @@ def _move_targets_node(move: Move, node_id: str) -> bool:
         return move.target_node_id == node_id
     if isinstance(move, ReturnSpyMove):
         return move.node_id == node_id
+    if isinstance(move, InitialPlacementMove):
+        return move.target_node_id == node_id
     if isinstance(move, ResolveGenericChoiceMove):
         if not move.selection:
             return False

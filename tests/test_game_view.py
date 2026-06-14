@@ -6,7 +6,7 @@ from pathlib import Path
 
 from engine.moves import AssassinateMove, DeployMove, PlayCardMove, ResolveGenericChoiceMove
 from engine.rules import apply, legal_moves
-from engine.state import PendingPromotionState
+from engine.state import PendingPromotionState, TurnPhase
 from game_session import GameSession
 from game_view import LegalMoveView, build_game_view, describe_move, filter_legal_moves
 
@@ -17,13 +17,28 @@ SETUP_PATH = BASE_DIR / "data" / "decks" / "base_setup.json"
 
 
 def _session(seed: int = 7) -> GameSession:
-    return GameSession.from_files(
+    session = GameSession.from_files(
         board_path=BOARD_PATH,
         card_path=CARD_PATH,
         setup_path=SETUP_PATH,
         player_ids=["p1", "p2"],
         seed=seed,
     )
+    _resolve_setup(session)
+    return session
+
+
+def _resolve_setup(session: GameSession) -> None:
+    from engine.helpers import _legal_initial_placement_node_ids
+    from engine.moves import InitialPlacementMove
+
+    while session.state.phase == TurnPhase.SETUP:
+        node_ids = _legal_initial_placement_node_ids(session.state)
+        move = InitialPlacementMove(
+            player_id=session.state.current_player_id,
+            target_node_id=node_ids[0],
+        )
+        session.submit_move(move)
 
 
 def test_build_game_view_contains_core_state_shapes() -> None:

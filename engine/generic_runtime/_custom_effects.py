@@ -21,6 +21,9 @@ from engine.state import (
     CardAction,
     CardDefinition,
     GameState,
+    _cow_market_state,
+    _cow_node,
+    _cow_player,
 )
 
 
@@ -79,8 +82,8 @@ def _custom_effect_give_insane_outcast_to_player_with_presence(
     if not has_presence(state, target_player_id, selected_node_id):
         raise IllegalMoveError("selection target_player_id does not have presence at selected_node_id")
 
-    updated = state.model_copy(deep=True)
-    updated.players[target_player_id].discard_pile.append("insane_outcast")
+    updated = state._cow_clone()
+    _cow_player(updated, target_player_id).discard_pile.append("insane_outcast")
     return updated
 
 
@@ -98,8 +101,8 @@ def _custom_effect_give_insane_outcast_to_selected_player(
     if target_player_id not in state.players:
         raise IllegalMoveError("selection target_player_id is unknown")
 
-    updated = state.model_copy(deep=True)
-    updated.players[target_player_id].discard_pile.append("insane_outcast")
+    updated = state._cow_clone()
+    _cow_player(updated, target_player_id).discard_pile.append("insane_outcast")
     return updated
 
 
@@ -111,11 +114,11 @@ def _custom_effect_give_insane_outcast_to_each_opponent(
     action: CardAction,
     selection: dict[str, object],
 ) -> GameState:
-    updated = state.model_copy(deep=True)
+    updated = state._cow_clone()
     for target_player_id in sorted(updated.players):
         if target_player_id == player_id:
             continue
-        updated.players[target_player_id].discard_pile.append("insane_outcast")
+        _cow_player(updated, target_player_id).discard_pile.append("insane_outcast")
     return updated
 
 
@@ -127,8 +130,8 @@ def _custom_effect_mill_deck_to_discard(
     action: CardAction,
     selection: dict[str, object],
 ) -> GameState:
-    updated = state.model_copy(deep=True)
-    player = updated.players[player_id]
+    updated = state._cow_clone()
+    player = _cow_player(updated, player_id)
     player.discard_pile.extend(player.deck)
     player.deck = []
     return updated
@@ -164,14 +167,14 @@ def _custom_effect_steal_white_trophy_to_board(
     if target_node_id not in state.board.nodes:
         raise IllegalMoveError("selection target_node_id is unknown")
 
-    updated = state.model_copy(deep=True)
-    target_player = updated.players[target_player_id]
+    updated = state._cow_clone()
+    target_player = _cow_player(updated, target_player_id)
     try:
         trophy_index = target_player.trophy_hall.index(WHITE_TROOP_OWNER)
     except ValueError as error:
         raise IllegalMoveError("selection target_player_id has no white trophy") from error
 
-    node_state = updated.board.nodes[target_node_id]
+    node_state = _cow_node(updated, target_node_id)
     if target_slot_index < 0 or target_slot_index >= len(node_state.troop_slots):
         raise IllegalMoveError("selection target_slot_index is out of range")
     if node_state.troop_slots[target_slot_index] is not None:
@@ -197,8 +200,8 @@ def _custom_effect_discard_selected_hand_card_from_self(
     player = state.players[player_id]
     if hand_index < 0 or hand_index >= len(player.hand):
         raise IllegalMoveError("selection hand_index is out of range")
-    updated = state.model_copy(deep=True)
-    target_player = updated.players[player_id]
+    updated = state._cow_clone()
+    target_player = _cow_player(updated, player_id)
     discarded = target_player.hand.pop(hand_index)
     target_player.discard_pile.append(discarded)
     return updated
@@ -212,11 +215,11 @@ def _custom_effect_return_source_card_to_recruit_deck(
     action: CardAction,
     selection: dict[str, object],
 ) -> GameState:
-    updated = state.model_copy(deep=True)
-    player = updated.players[player_id]
+    updated = state._cow_clone()
+    player = _cow_player(updated, player_id)
     if source_card_id in player.played_cards:
         player.played_cards.remove(source_card_id)
-        updated.market.deck.append(source_card_id)
+        _cow_market_state(updated).deck.append(source_card_id)
     return updated
 
 

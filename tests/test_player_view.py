@@ -12,6 +12,7 @@ from engine.player_view import (
 )
 from engine.rules import apply as apply_move
 from game_setup.loaders import build_game_definition_from_files
+from tests.scenario_helpers import advance_past_setup
 
 _DATA_DIR = Path(__file__).resolve().parents[1] / "data"
 
@@ -27,11 +28,12 @@ def _make_definition():
 def _initial_state():
     from engine.state import build_initial_game_state
 
-    return build_initial_game_state(
+    state = build_initial_game_state(
         _make_definition(),
         player_ids=["p0", "p1"],
         shuffle_seed=42,
     )
+    return advance_past_setup(state)
 
 
 class TestPublicView:

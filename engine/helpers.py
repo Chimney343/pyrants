@@ -28,6 +28,10 @@ from engine.state import (
     GameState,
     NodeKind,
     PendingPromotionState,
+    _cow_market_state,
+    _cow_node,
+    _cow_player,
+    _cow_resource_pool,
     _shuffle_deck,
     board_index,
     card_index,
@@ -62,16 +66,25 @@ def has_presence(state: GameState, player_id: str, node_id: str) -> bool:
     if node_id not in board_definitions:
         raise RuleViolationError(f"Unknown node id: {node_id}")
 
-    node_state = state.board.nodes[node_id]
-    if player_id in node_state.spies or any(slot == player_id for slot in node_state.troop_slots):
-        return True
+    cache = state.__dict__.get("_presence_cache")
+    if cache is None or player_id not in cache:
+        present = set()
+        node_states = state.board.nodes
+        for nid, ns in node_states.items():
+            if player_id in ns.spies or player_id in ns.troop_slots:
+                present.add(nid)
+            else:
+                for adj_id in board_definitions[nid].adjacent_to:
+                    adj_ns = node_states[adj_id]
+                    if player_id in adj_ns.troop_slots:
+                        present.add(nid)
+                        break
+        if cache is None:
+            cache = {}
+        cache[player_id] = present
+        state.__dict__["_presence_cache"] = cache
 
-    for adjacent_id in board_definitions[node_id].adjacent_to:
-        adjacent_state = state.board.nodes[adjacent_id]
-        if any(slot == player_id for slot in adjacent_state.troop_slots):
-            return True
-
-    return False
+    return node_id in cache[player_id]
 
 
 def _action_targets_anywhere(action: CardAction) -> bool:
@@ -83,23 +96,45 @@ def _action_targets_anywhere(action: CardAction) -> bool:
 
 def _player_has_any_troops_on_board(state: GameState, player_id: str) -> bool:
     for node_state in state.board.nodes.values():
-        if any(slot_owner == player_id for slot_owner in node_state.troop_slots):
+        if player_id in node_state.troop_slots:
             return True
     return False
 
 
-def _can_deploy_to_node(state: GameState, player_id: str, node_id: str) -> bool:
+def _can_deploy_to_node(
+    state: GameState,
+    player_id: str,
+    node_id: str,
+    has_troops_on_board: bool | None = None,
+) -> bool:
     if node_id not in state.board.nodes:
         return False
 
     node_state = state.board.nodes[node_id]
-    if not any(slot_owner is None for slot_owner in node_state.troop_slots):
+    if None not in node_state.troop_slots:
         return False
 
-    if not _player_has_any_troops_on_board(state, player_id):
+    if has_troops_on_board is None:
+        has_troops_on_board = _player_has_any_troops_on_board(state, player_id)
+    if not has_troops_on_board:
         return True
 
     return has_presence(state, player_id, node_id)
+
+
+def _legal_initial_placement_node_ids(state: GameState) -> list[str]:
+    """Return sorted site node ids with at least one empty troop slot."""
+    board_defs = board_index(state.definition.board)
+    result: list[str] = []
+    for node_id, node_def in board_defs.items():
+        if node_def.kind != NodeKind.SITE:
+            continue
+        node_state = state.board.nodes.get(node_id)
+        if node_state is None:
+            continue
+        if None in node_state.troop_slots:
+            result.append(node_id)
+    return sorted(result)
 
 
 # ── counting helpers ───────────────────────────────────────────────────────
@@ -309,7 +344,7 @@ def _apply_effect_with_wrappers(
     *,
     source_card_id: str,
 ) -> GameState:
-    updated = state.model_copy(deep=True)
+    updated = state._cow_clone()
     payload = card.effect_payload
 
     if bool(payload.get("focus_required", False)) and not _focus_requirement_met(updated, player_id, card, source_card_id):
@@ -332,7 +367,7 @@ def _apply_effect_with_wrappers(
 
 
 def _promote_card(state: GameState, player_id: str, card_id: str) -> None:
-    player = state.players[player_id]
+    player = _cow_player(state, player_id)
     try:
         played_index = player.played_cards.index(card_id)
     except ValueError as error:
@@ -358,7 +393,7 @@ def _apply_promote_instruction(
     if timing not in {"immediate", "end_of_turn"}:
         raise RuleViolationError("promote timing must be 'immediate' or 'end_of_turn'")
 
-    updated = state.model_copy(deep=True)
+    updated = state._cow_clone()
     pending = PendingPromotionState(
         card_id=card_id,
         timing=timing,
@@ -380,11 +415,12 @@ def _apply_promote_instruction(
 
 
 def _grant_resource(state: GameState, resource: str, amount: int) -> GameState:
-    updated = state.model_copy(deep=True)
+    updated = state._cow_clone()
+    pool = _cow_resource_pool(updated)
     if resource == "power":
-        updated.resource_pool.power += amount
+        pool.power += amount
     elif resource == "influence":
-        updated.resource_pool.influence += amount
+        pool.influence += amount
     else:
         raise RuleViolationError(f"Unknown resource '{resource}'")
     return updated
@@ -399,8 +435,8 @@ def _apply_free_assassinate(state: GameState, player_id: str, target_node_id: st
     if not has_presence(state, player_id, target_node_id):
         raise IllegalMoveError("assassinate requires presence at the target node")
 
-    updated = state.model_copy(deep=True)
-    node_state = updated.board.nodes[target_node_id]
+    updated = state._cow_clone()
+    node_state = _cow_node(updated, target_node_id)
     if target_slot_index < 0 or target_slot_index >= len(node_state.troop_slots):
         raise IllegalMoveError("target_slot_index is out of range")
 
@@ -411,7 +447,7 @@ def _apply_free_assassinate(state: GameState, player_id: str, target_node_id: st
         raise IllegalMoveError("cannot assassinate your own troop")
 
     node_state.troop_slots[target_slot_index] = None
-    updated.players[player_id].trophy_hall.append(occupant)
+    _cow_player(updated, player_id).trophy_hall.append(occupant)
     return updated
 
 
@@ -421,13 +457,13 @@ def _apply_free_deploy(state: GameState, player_id: str, target_node_id: str) ->
     if not _can_deploy_to_node(state, player_id, target_node_id):
         raise IllegalMoveError("deploy target must have an empty slot and satisfy presence rules")
 
-    updated = state.model_copy(deep=True)
-    player = updated.players[player_id]
+    updated = state._cow_clone()
+    player = _cow_player(updated, player_id)
     if player.barracks == 0:
         player.score += 1
         return updated
 
-    node_state = updated.board.nodes[target_node_id]
+    node_state = _cow_node(updated, target_node_id)
     for slot_index, occupant in enumerate(node_state.troop_slots):
         if occupant is None:
             node_state.troop_slots[slot_index] = player_id
@@ -445,20 +481,21 @@ def _apply_return_spy(state: GameState, move: ReturnSpyMove) -> GameState:
     if board_index(state.definition.board)[move.node_id].kind == NodeKind.ROUTE:
         raise IllegalMoveError("routes cannot hold spies")
 
-    updated = state.model_copy(deep=True)
-    node_state = updated.board.nodes[move.node_id]
+    updated = state._cow_clone()
+    node_state = _cow_node(updated, move.node_id)
     if move.spy_owner_id not in node_state.spies:
         raise IllegalMoveError("target spy is not present at the chosen node")
 
     if move.spy_owner_id != move.player_id:
-        if updated.resource_pool.power < 3:
+        pool = _cow_resource_pool(updated)
+        if pool.power < 3:
             raise IllegalMoveError("returning an enemy spy requires 3 power")
         if not has_presence(updated, move.player_id, move.node_id):
             raise IllegalMoveError("returning an enemy spy requires presence at the node")
-        updated.resource_pool.power -= 3
+        pool.power -= 3
 
     node_state.spies.remove(move.spy_owner_id)
-    updated.players[move.spy_owner_id].spies_available += 1
+    _cow_player(updated, move.spy_owner_id).spies_available += 1
     return updated
 
 
@@ -471,41 +508,44 @@ def _apply_recruit(state: GameState, move: RecruitMove) -> GameState:
         if _remaining_special_stack_count(state, card_id, stack_total) <= 0:
             raise IllegalMoveError("special recruit stack is empty")
 
-        updated = state.model_copy(deep=True)
+        updated = state._cow_clone()
         definition = card_index(updated.definition.catalog).get(card_id)
         if definition is None:
             raise IllegalMoveError(f"Unknown special stack card id: {card_id}")
-        if updated.resource_pool.influence < definition.cost:
+        pool = _cow_resource_pool(updated)
+        if pool.influence < definition.cost:
             raise IllegalMoveError("recruit requires enough influence to pay the card cost")
 
-        updated.resource_pool.influence -= definition.cost
-        updated.players[move.player_id].discard_pile.append(card_id)
+        pool.influence -= definition.cost
+        _cow_player(updated, move.player_id).discard_pile.append(card_id)
         return updated
 
     if move.market_slot >= len(state.market.row):
         raise IllegalMoveError("market_slot is out of range")
 
-    updated = state.model_copy(deep=True)
-    card_id = updated.market.row[move.market_slot]
+    updated = state._cow_clone()
+    market = _cow_market_state(updated)
+    card_id = market.row[move.market_slot]
     definition = card_index(updated.definition.catalog).get(card_id)
     if definition is None:
         raise IllegalMoveError(f"Unknown market card id: {card_id}")
-    if updated.resource_pool.influence < definition.cost:
+    pool = _cow_resource_pool(updated)
+    if pool.influence < definition.cost:
         raise IllegalMoveError("recruit requires enough influence to pay the card cost")
 
-    updated.resource_pool.influence -= definition.cost
-    updated.players[move.player_id].discard_pile.append(card_id)
+    pool.influence -= definition.cost
+    _cow_player(updated, move.player_id).discard_pile.append(card_id)
 
-    if updated.market.deck:
-        updated.market.row[move.market_slot] = updated.market.deck.pop()
+    if market.deck:
+        market.row[move.market_slot] = market.deck.pop()
     else:
-        updated.market.row.pop(move.market_slot)
+        market.row.pop(move.market_slot)
 
     return updated
 
 
 def _reshuffle_discard_into_deck(state: GameState, player_id: str) -> None:
-    player = state.players[player_id]
+    player = _cow_player(state, player_id)
     player.deck = _shuffle_deck(player.discard_pile, state.shuffle_seed, state.shuffle_count)
     state.shuffle_count += 1
     player.discard_pile = []
@@ -549,15 +589,16 @@ def _pay_ability_cost(
     if len(discard_hand_indices) != discard_count:
         raise IllegalMoveError("discard_hand_indices must satisfy the ability discard cost exactly")
 
-    player = state.players[player_id]
+    player = _cow_player(state, player_id)
     unique_indices = sorted(set(discard_hand_indices), reverse=True)
     if len(unique_indices) != discard_count:
         raise IllegalMoveError("discard_hand_indices must be unique")
     if any(index < 0 or index >= len(player.hand) for index in unique_indices):
         raise IllegalMoveError("discard_hand_indices contains an out-of-range value")
 
-    state.resource_pool.power -= int(cost.get("power", 0))
-    state.resource_pool.influence -= int(cost.get("influence", 0))
+    pool = _cow_resource_pool(state)
+    pool.power -= int(cost.get("power", 0))
+    pool.influence -= int(cost.get("influence", 0))
     for hand_index in unique_indices:
         player.discard_pile.append(player.hand.pop(hand_index))
 

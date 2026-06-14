@@ -9,6 +9,7 @@ from engine.moves import PlayCardMove, ResolveGenericChoiceMove
 from engine.rules import apply, legal_moves
 from engine.state import build_initial_game_state
 from game_setup.loaders import build_game_definition_from_dicts
+from tests.scenario_helpers import advance_past_setup
 
 WHITE_TROOP_OWNER = "white"
 
@@ -141,7 +142,7 @@ def _state_for_cards(cards: list[dict[str, object]], starter_entries: list[dict[
         "market_row_size": 1,
     }
     definition = build_game_definition_from_dicts(board_data, card_data, setup_data)
-    return build_initial_game_state(definition, ["p1", "p2"], shuffle_seed=0)
+    return advance_past_setup(build_initial_game_state(definition, ["p1", "p2"], shuffle_seed=0))
 
 
 def test_generic_sequence_requires_explicit_target_selection() -> None:
