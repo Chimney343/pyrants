@@ -6,6 +6,8 @@ requires-python = ">=3.12"
 dependencies = [
     "pydantic>=2.7,<3.0",
     "open-spiel (>=1.6.15,<2.0.0)",
+    "structlog>=24.1.0",
+    "tqdm>=4.68.0",
 ]
 
 [project.optional-dependencies]
