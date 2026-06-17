@@ -1,0 +1,9 @@
+*.obj
+*.o
+*.dll
+*.exp
+*.lib
+*.exe
+__pycache__/
+build_profile/
+test_intern_perf
