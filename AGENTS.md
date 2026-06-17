@@ -2,10 +2,14 @@
 
 <!-- Add your custom instructions below. Repowise will never modify anything outside the REPOWISE markers. -->
 
+## CRITICAL: Engine Language
+
+When discussing the **engine**, always remember: the engine is written in **C**, located at `/engine_c`. Never treat the Python `engine/` directory as if it is the engine itself — it is an old Python version of the C engine.
+
 ## Project Overview
 
-**pyrants** is a turn-based board game engine (Python 3.12+) for Tyrants of the Underdark.
-Pure engine (no I/O in `engine/`), Pydantic-typed state, headless simulation, terminal UI interface.
+**pyrants** is a turn-based board game engine for Tyrants of the Underdark. The core engine is written in C (`/engine_c`), with a deprecated Python 3.12+ wrapper in `engine/`.
+Pure engine (no I/O in `engine_c/`), Pydantic-typed state, headless simulation, terminal UI interface.
 Last HEAD: `e7791be` (chore: add game manual, dev dependencies, just task, and lockfiles).
 
 ## Directory Map

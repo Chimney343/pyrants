@@ -36,6 +36,12 @@
       "skillPath": "skills/make-interfaces-feel-better/SKILL.md",
       "computedHash": "2c3576e63d8c39d75ed327f1dcf6aab7aec0edf293a55f6cb3f7b8571974a01c"
     },
+    "memory-safety-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "skillPath": "plugins/systems-programming/skills/memory-safety-patterns/SKILL.md",
+      "computedHash": "f516e181e086afa8dbd3e18c27a56c2b1271438968a23e5b3fa9261232626699"
+    },
     "python-code-style": {
       "source": "wshobson/agents",
       "sourceType": "github",
@@ -63,6 +69,12 @@
       "source": "wshobson/agents",
       "sourceType": "github",
       "computedHash": "a16a6d7d7e0a5154a5058fd9aacf8e675368b2a4a0dc5edf0fee775169c6abe0"
+    },
+    "test-driven-development": {
+      "source": "obra/superpowers",
+      "sourceType": "github",
+      "skillPath": "skills/test-driven-development/SKILL.md",
+      "computedHash": "126f1ebf6ccd414f42544f6e83d8cc5adb089e1108eaffb7c400701e37eecd9f"
     },
     "writing-clearly-and-concisely": {
       "source": "softaworks/agent-toolkit",

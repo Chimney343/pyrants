@@ -227,3 +227,6 @@ __marimo__/
 .serena/memories/
 .vscode/
 .kilo/agent-manager.json
+
+# Run outputs (profiler dumps, simulation results, reports)
+artifacts/
