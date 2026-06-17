@@ -1,1 +1,1 @@
-Runtime: 47.7s
+Runtime: 0.3s

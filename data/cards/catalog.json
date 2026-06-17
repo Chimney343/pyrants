@@ -5672,8 +5672,8 @@
             "actions": [
               {
                 "action_id": "option_2_action_1",
-                "op": "devour_cost",
-                "target_scope": "unknown",
+                "op": "return_spy",
+                "target_scope": "board_site",
                 "timing": "immediate",
                 "optional": false,
                 "quantity": {
@@ -5681,16 +5681,15 @@
                   "value": null
                 },
                 "filters": [],
-                "source_fragment": "return_spy",
+                "source_fragment": "return_own_spy",
                 "metadata": {
-                  "source_zone": "unknown",
-                  "self_replace": false
+                  "spy_owner": "self"
                 }
               },
               {
                 "action_id": "option_2_action_2",
-                "op": "devour_cost",
-                "target_scope": "market",
+                "op": "custom_effect",
+                "target_scope": "game_zone",
                 "timing": "immediate",
                 "optional": false,
                 "quantity": {
@@ -5698,10 +5697,9 @@
                   "value": null
                 },
                 "filters": [],
-                "source_fragment": "play_top_devoured_as_market",
+                "source_fragment": "take_from_devour_pile",
                 "metadata": {
-                  "source_zone": "market",
-                  "self_replace": false
+                  "effect_kind": "take_from_devour_pile_to_discard"
                 }
               }
             ]
@@ -5725,8 +5723,8 @@
         },
         {
           "action_id": "option_2_action_1",
-          "op": "devour_cost",
-          "target_scope": "unknown",
+          "op": "return_spy",
+          "target_scope": "board_site",
           "timing": "immediate",
           "optional": false,
           "quantity": {
@@ -5734,16 +5732,15 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "return_spy",
+          "source_fragment": "return_own_spy",
           "metadata": {
-            "source_zone": "unknown",
-            "self_replace": false
+            "spy_owner": "self"
           }
         },
         {
           "action_id": "option_2_action_2",
-          "op": "devour_cost",
-          "target_scope": "market",
+          "op": "custom_effect",
+          "target_scope": "game_zone",
           "timing": "immediate",
           "optional": false,
           "quantity": {
@@ -5751,10 +5748,9 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "play_top_devoured_as_market",
+          "source_fragment": "take_from_devour_pile",
           "metadata": {
-            "source_zone": "market",
-            "self_replace": false
+            "effect_kind": "take_from_devour_pile_to_discard"
           }
         }
       ],
@@ -5763,14 +5759,13 @@
         "reads": [
           "player.spies_available",
           "board.nodes",
-          "source_zone",
-          "devour_rules"
+          "devour_pile"
         ],
         "writes": [
           "board.spies",
           "player.spies_available",
-          "devour_zone_or_equivalent",
-          "source_zone"
+          "devour_pile",
+          "player.discard_pile"
         ]
       },
       "effect_key": "generic_card",

@@ -164,6 +164,7 @@
             "promote_card",
             "recruit_card",
             "devour",
+            "devour_cost",
             "force_discard",
             "move_troop",
             "transfer_trophy",
