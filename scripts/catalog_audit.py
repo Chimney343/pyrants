@@ -27,6 +27,9 @@ SUPPORTED_CUSTOM_EFFECT_KINDS = {
     "mill_deck_to_discard",
     "self_purge_to_supply",
     "steal_white_trophy_to_board",
+    "discard_selected_hand_card_from_self",
+    "return_source_card_to_recruit_deck",
+    "take_from_devour_pile_to_discard",
 }
 SUPPORTED_IMMEDIATE_PROMOTE_FRAGMENTS = {
     "promote_top_of_deck",

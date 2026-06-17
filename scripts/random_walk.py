@@ -13,7 +13,12 @@ sys.path.insert(0, str(ROOT))
 
 from engine.state import build_initial_game_state  # noqa: E402
 from game_session import GameSession  # noqa: E402
-from game_setup.loaders import build_game_definition_from_dicts, load_deck_rosters  # noqa: E402
+from game_setup.loaders import build_game_definition_from_dicts  # noqa: E402
+from game_setup.market_setup import (  # noqa: E402
+    combine_two_deck_market_setup,
+    discover_full_deck_profiles,
+    pick_random_pair,
+)
 from game_setup.scenarios import save_game_state  # noqa: E402
 from game_view import build_game_view  # noqa: E402
 
@@ -48,47 +53,25 @@ def _build_roster_market_setup(
     if decks_dir is None or not decks_dir.is_dir():
         return base_setup, "", ""
 
-    roster_decks = load_deck_rosters(decks_dir)
-    full_decks = [
-        deck
-        for deck in roster_decks
-        if isinstance(deck, dict)
-        and deck.get("kind") == "full_deck"
-        and deck.get("total_cards") == 40
-    ]
-    if len(full_decks) < 2:
+    profiles = discover_full_deck_profiles(decks_dir)
+    if len(profiles) < 2:
         return base_setup, "", ""
 
     if deck_a_id is not None and deck_b_id is not None:
-        selected_a = next((d for d in full_decks if d["deck_id"] == deck_a_id), None)
-        selected_b = next((d for d in full_decks if d["deck_id"] == deck_b_id and d["deck_id"] != deck_a_id), None)
+        selected_a = next((p for p in profiles if p.deck_id == deck_a_id), None)
+        selected_b = next((p for p in profiles if p.deck_id == deck_b_id and p.deck_id != deck_a_id), None)
         if selected_a is None or selected_b is None:
             raise ValueError(f"Invalid deck selection: {deck_a_id} / {deck_b_id}")
     else:
-        selected_a, selected_b = rng.sample(full_decks, 2)
+        selected_a, selected_b = pick_random_pair(profiles, rng)
 
-    combined: dict[str, int] = {}
-    for deck in (selected_a, selected_b):
-        for entry in deck.get("entries", ()):
-            if not isinstance(entry, dict):
-                continue
-            card_id = str(entry.get("card_id", "")).strip()
-            count = int(entry.get("count", 0))
-            if card_id and count > 0:
-                combined[card_id] = combined.get(card_id, 0) + count
+    deck_a_id = selected_a.deck_id
+    deck_b_id = selected_b.deck_id
 
-    deck_a_id = selected_a["deck_id"]
-    deck_b_id = selected_b["deck_id"]
-    setup = {
-        "setup_id": f"random_walk_{deck_a_id}_{deck_b_id}",
-        "starter_deck": base_setup["starter_deck"],
-        "market_deck": {
-            "deck_id": f"market_{deck_a_id}_{deck_b_id}",
-            "entries": [{"card_id": cid, "count": cnt} for cid, cnt in combined.items()],
-        },
-        "market_row_size": base_setup.get("market_row_size", 6),
-    }
-    return setup, deck_a_id, deck_b_id
+    market_setup = combine_two_deck_market_setup(base_setup, selected_a, selected_b)
+    setup_data = market_setup.to_setup_data()
+    setup_data["setup_id"] = f"random_walk_{deck_a_id}_{deck_b_id}"
+    return setup_data, deck_a_id, deck_b_id
 
 
 def main() -> None:

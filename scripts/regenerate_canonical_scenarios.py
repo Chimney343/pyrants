@@ -13,10 +13,23 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from engine.moves import PlayCardMove
+from engine.moves import InitialPlacementMove, PlayCardMove
 from engine.rules import apply, legal_moves
+from engine.state import TurnPhase
 from game_session import GameSession
 from game_setup.scenarios import save_game_state
+
+
+def _resolve_setup(session: GameSession) -> None:
+    from engine.helpers import _legal_initial_placement_node_ids
+
+    while session.state.phase == TurnPhase.SETUP:
+        node_ids = _legal_initial_placement_node_ids(session.state)
+        move = InitialPlacementMove(
+            player_id=session.state.current_player_id,
+            target_node_id=node_ids[0],
+        )
+        session.submit_move(move)
 
 
 def main() -> None:
@@ -32,6 +45,7 @@ def main() -> None:
         player_ids=["p1", "p2"],
         seed=13,
     )
+    _resolve_setup(session)
     save_game_state(
         session.state,
         scenarios_dir / "initial_two_player.json",
@@ -60,6 +74,7 @@ def main() -> None:
         player_ids=["p1", "p2"],
         seed=31,
     )
+    _resolve_setup(session2)
     state = session2.state.model_copy(deep=True)
     state.players["p1"].hand = ["enchanter_of_thay"]
     state.players["p1"].deck = []
@@ -83,6 +98,7 @@ def main() -> None:
         player_ids=["p1", "p2"],
         seed=13,
     )
+    _resolve_setup(session3)
     scoring_state = session3.state.model_copy(deep=True)
     scoring_state.players["p1"].inner_circle = ["card_a", "card_b", "card_c"]
     scoring_state.players["p1"].trophy_hall = ["t1", "t2", "t3"]
