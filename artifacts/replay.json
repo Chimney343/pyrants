@@ -1,12 +1,12 @@
 {
   "stopped_reason": "terminal",
-  "step_count": 27,
+  "step_count": 34,
   "is_terminal": true,
-  "winner_id": "p2",
+  "winner_id": "p3",
   "final_scores": {
     "p1": 2,
-    "p2": 3,
-    "p3": 1,
+    "p2": 1,
+    "p3": 5,
     "p4": 0
   },
   "replay_log": [
@@ -14,68 +14,64 @@
       "step_index": 0,
       "player_id": "p1",
       "round_number": 1,
-      "phase": "main",
+      "phase": "setup",
       "prompts": [
-        "p1 is acting in main."
+        "p1 is acting in setup."
       ],
-      "move_type": "play_card",
-      "label": "Play Noble",
+      "move_type": "initial_placement",
+      "label": "Place free troop at site_blingdenfire",
       "payload": {
         "player_id": "p1",
-        "move_type": "play_card",
-        "card_id": "noble",
-        "hand_index": 0
+        "move_type": "initial_placement",
+        "target_node_id": "site_blingdenfire"
       }
     },
     {
       "step_index": 1,
-      "player_id": "p1",
+      "player_id": "p2",
       "round_number": 1,
-      "phase": "main",
+      "phase": "setup",
       "prompts": [
-        "p1 is acting in main."
+        "p2 is acting in setup."
       ],
-      "move_type": "play_card",
-      "label": "Play Noble",
+      "move_type": "initial_placement",
+      "label": "Place free troop at site_blingdenfire",
       "payload": {
-        "player_id": "p1",
-        "move_type": "play_card",
-        "card_id": "noble",
-        "hand_index": 0
+        "player_id": "p2",
+        "move_type": "initial_placement",
+        "target_node_id": "site_blingdenfire"
       }
     },
     {
       "step_index": 2,
-      "player_id": "p1",
+      "player_id": "p3",
       "round_number": 1,
-      "phase": "main",
+      "phase": "setup",
       "prompts": [
-        "p1 is acting in main."
+        "p3 is acting in setup."
       ],
-      "move_type": "play_card",
-      "label": "Play Noble",
+      "move_type": "initial_placement",
+      "label": "Place free troop at site_buiyrandyn",
       "payload": {
-        "player_id": "p1",
-        "move_type": "play_card",
-        "card_id": "noble",
-        "hand_index": 0
+        "player_id": "p3",
+        "move_type": "initial_placement",
+        "target_node_id": "site_buiyrandyn"
       }
     },
     {
       "step_index": 3,
-      "player_id": "p1",
+      "player_id": "p4",
       "round_number": 1,
-      "phase": "main",
+      "phase": "setup",
       "prompts": [
-        "p1 is acting in main."
+        "p4 is acting in setup."
       ],
-      "move_type": "play_card",
-      "label": "Play Noble",
+      "move_type": "initial_placement",
+      "label": "Place free troop at site_buiyrandyn",
       "payload": {
-        "player_id": "p1",
-        "move_type": "play_card",
-        "card_id": "noble",
-        "hand_index": 0
+        "player_id": "p4",
+        "move_type": "initial_placement",
+        "target_node_id": "site_buiyrandyn"
       }
     },
     {
@@ -103,16 +99,85 @@
       "prompts": [
         "p1 is acting in main."
       ],
-      "move_type": "recruit",
-      "label": "Recruit Priestess of Lolth",
+      "move_type": "play_card",
+      "label": "Play Noble",
       "payload": {
         "player_id": "p1",
-        "move_type": "recruit",
-        "market_slot": 0
+        "move_type": "play_card",
+        "card_id": "noble",
+        "hand_index": 0
       }
     },
     {
       "step_index": 6,
+      "player_id": "p1",
+      "round_number": 1,
+      "phase": "main",
+      "prompts": [
+        "p1 is acting in main."
+      ],
+      "move_type": "play_card",
+      "label": "Play Soldier",
+      "payload": {
+        "player_id": "p1",
+        "move_type": "play_card",
+        "card_id": "soldier",
+        "hand_index": 0
+      }
+    },
+    {
+      "step_index": 7,
+      "player_id": "p1",
+      "round_number": 1,
+      "phase": "main",
+      "prompts": [
+        "p1 is acting in main."
+      ],
+      "move_type": "play_card",
+      "label": "Play Noble",
+      "payload": {
+        "player_id": "p1",
+        "move_type": "play_card",
+        "card_id": "noble",
+        "hand_index": 0
+      }
+    },
+    {
+      "step_index": 8,
+      "player_id": "p1",
+      "round_number": 1,
+      "phase": "main",
+      "prompts": [
+        "p1 is acting in main."
+      ],
+      "move_type": "play_card",
+      "label": "Play Noble",
+      "payload": {
+        "player_id": "p1",
+        "move_type": "play_card",
+        "card_id": "noble",
+        "hand_index": 0
+      }
+    },
+    {
+      "step_index": 9,
+      "player_id": "p1",
+      "round_number": 1,
+      "phase": "main",
+      "prompts": [
+        "p1 is acting in main."
+      ],
+      "move_type": "deploy",
+      "label": "Deploy to route_6",
+      "payload": {
+        "player_id": "p1",
+        "move_type": "deploy",
+        "target_node_id": "route_6",
+        "troop_count": 1
+      }
+    },
+    {
+      "step_index": 10,
       "player_id": "p1",
       "round_number": 1,
       "phase": "main",
@@ -128,7 +193,23 @@
       }
     },
     {
-      "step_index": 7,
+      "step_index": 11,
+      "player_id": "p1",
+      "round_number": 1,
+      "phase": "main",
+      "prompts": [
+        "p1 is acting in main."
+      ],
+      "move_type": "recruit",
+      "label": "Recruit Priestess of Lolth",
+      "payload": {
+        "player_id": "p1",
+        "move_type": "recruit",
+        "market_slot": 0
+      }
+    },
+    {
+      "step_index": 12,
       "player_id": "p1",
       "round_number": 1,
       "phase": "main",
@@ -143,7 +224,7 @@
       }
     },
     {
-      "step_index": 8,
+      "step_index": 13,
       "player_id": "p1",
       "round_number": 1,
       "phase": "end_of_turn",
@@ -158,7 +239,7 @@
       }
     },
     {
-      "step_index": 9,
+      "step_index": 14,
       "player_id": "p1",
       "round_number": 1,
       "phase": "cleanup",
@@ -173,91 +254,6 @@
       }
     },
     {
-      "step_index": 10,
-      "player_id": "p2",
-      "round_number": 1,
-      "phase": "main",
-      "prompts": [
-        "p2 is acting in main."
-      ],
-      "move_type": "play_card",
-      "label": "Play Noble",
-      "payload": {
-        "player_id": "p2",
-        "move_type": "play_card",
-        "card_id": "noble",
-        "hand_index": 0
-      }
-    },
-    {
-      "step_index": 11,
-      "player_id": "p2",
-      "round_number": 1,
-      "phase": "main",
-      "prompts": [
-        "p2 is acting in main."
-      ],
-      "move_type": "play_card",
-      "label": "Play Noble",
-      "payload": {
-        "player_id": "p2",
-        "move_type": "play_card",
-        "card_id": "noble",
-        "hand_index": 0
-      }
-    },
-    {
-      "step_index": 12,
-      "player_id": "p2",
-      "round_number": 1,
-      "phase": "main",
-      "prompts": [
-        "p2 is acting in main."
-      ],
-      "move_type": "play_card",
-      "label": "Play Soldier",
-      "payload": {
-        "player_id": "p2",
-        "move_type": "play_card",
-        "card_id": "soldier",
-        "hand_index": 0
-      }
-    },
-    {
-      "step_index": 13,
-      "player_id": "p2",
-      "round_number": 1,
-      "phase": "main",
-      "prompts": [
-        "p2 is acting in main."
-      ],
-      "move_type": "play_card",
-      "label": "Play Noble",
-      "payload": {
-        "player_id": "p2",
-        "move_type": "play_card",
-        "card_id": "noble",
-        "hand_index": 0
-      }
-    },
-    {
-      "step_index": 14,
-      "player_id": "p2",
-      "round_number": 1,
-      "phase": "main",
-      "prompts": [
-        "p2 is acting in main."
-      ],
-      "move_type": "play_card",
-      "label": "Play Soldier",
-      "payload": {
-        "player_id": "p2",
-        "move_type": "play_card",
-        "card_id": "soldier",
-        "hand_index": 0
-      }
-    },
-    {
       "step_index": 15,
       "player_id": "p2",
       "round_number": 1,
@@ -265,13 +261,13 @@
       "prompts": [
         "p2 is acting in main."
       ],
-      "move_type": "deploy",
-      "label": "Deploy to site_a",
+      "move_type": "play_card",
+      "label": "Play Noble",
       "payload": {
         "player_id": "p2",
-        "move_type": "deploy",
-        "target_node_id": "site_a",
-        "troop_count": 1
+        "move_type": "play_card",
+        "card_id": "noble",
+        "hand_index": 0
       }
     },
     {
@@ -282,17 +278,102 @@
       "prompts": [
         "p2 is acting in main."
       ],
-      "move_type": "deploy",
-      "label": "Deploy to site_a",
+      "move_type": "play_card",
+      "label": "Play Noble",
       "payload": {
         "player_id": "p2",
-        "move_type": "deploy",
-        "target_node_id": "site_a",
-        "troop_count": 1
+        "move_type": "play_card",
+        "card_id": "noble",
+        "hand_index": 0
       }
     },
     {
       "step_index": 17,
+      "player_id": "p2",
+      "round_number": 1,
+      "phase": "main",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "move_type": "play_card",
+      "label": "Play Noble",
+      "payload": {
+        "player_id": "p2",
+        "move_type": "play_card",
+        "card_id": "noble",
+        "hand_index": 0
+      }
+    },
+    {
+      "step_index": 18,
+      "player_id": "p2",
+      "round_number": 1,
+      "phase": "main",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "move_type": "play_card",
+      "label": "Play Soldier",
+      "payload": {
+        "player_id": "p2",
+        "move_type": "play_card",
+        "card_id": "soldier",
+        "hand_index": 0
+      }
+    },
+    {
+      "step_index": 19,
+      "player_id": "p2",
+      "round_number": 1,
+      "phase": "main",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "move_type": "play_card",
+      "label": "Play Soldier",
+      "payload": {
+        "player_id": "p2",
+        "move_type": "play_card",
+        "card_id": "soldier",
+        "hand_index": 0
+      }
+    },
+    {
+      "step_index": 20,
+      "player_id": "p2",
+      "round_number": 1,
+      "phase": "main",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "move_type": "deploy",
+      "label": "Deploy to route_7",
+      "payload": {
+        "player_id": "p2",
+        "move_type": "deploy",
+        "target_node_id": "route_7",
+        "troop_count": 1
+      }
+    },
+    {
+      "step_index": 21,
+      "player_id": "p2",
+      "round_number": 1,
+      "phase": "main",
+      "prompts": [
+        "p2 is acting in main."
+      ],
+      "move_type": "deploy",
+      "label": "Deploy to site_menzoberranzan",
+      "payload": {
+        "player_id": "p2",
+        "move_type": "deploy",
+        "target_node_id": "site_menzoberranzan",
+        "troop_count": 1
+      }
+    },
+    {
+      "step_index": 22,
       "player_id": "p2",
       "round_number": 1,
       "phase": "main",
@@ -308,7 +389,7 @@
       }
     },
     {
-      "step_index": 18,
+      "step_index": 23,
       "player_id": "p2",
       "round_number": 1,
       "phase": "main",
@@ -323,7 +404,7 @@
       }
     },
     {
-      "step_index": 19,
+      "step_index": 24,
       "player_id": "p2",
       "round_number": 1,
       "phase": "end_of_turn",
@@ -338,7 +419,7 @@
       }
     },
     {
-      "step_index": 20,
+      "step_index": 25,
       "player_id": "p2",
       "round_number": 1,
       "phase": "cleanup",
@@ -353,92 +434,126 @@
       }
     },
     {
-      "step_index": 21,
-      "player_id": "p3",
-      "round_number": 1,
-      "phase": "main",
-      "prompts": [
-        "p3 is acting in main."
-      ],
-      "move_type": "play_card",
-      "label": "Play Noble",
-      "payload": {
-        "player_id": "p3",
-        "move_type": "play_card",
-        "card_id": "noble",
-        "hand_index": 0
-      }
-    },
-    {
-      "step_index": 22,
-      "player_id": "p3",
-      "round_number": 1,
-      "phase": "main",
-      "prompts": [
-        "p3 is acting in main."
-      ],
-      "move_type": "play_card",
-      "label": "Play Noble",
-      "payload": {
-        "player_id": "p3",
-        "move_type": "play_card",
-        "card_id": "noble",
-        "hand_index": 0
-      }
-    },
-    {
-      "step_index": 23,
-      "player_id": "p3",
-      "round_number": 1,
-      "phase": "main",
-      "prompts": [
-        "p3 is acting in main."
-      ],
-      "move_type": "play_card",
-      "label": "Play Noble",
-      "payload": {
-        "player_id": "p3",
-        "move_type": "play_card",
-        "card_id": "noble",
-        "hand_index": 0
-      }
-    },
-    {
-      "step_index": 24,
-      "player_id": "p3",
-      "round_number": 1,
-      "phase": "main",
-      "prompts": [
-        "p3 is acting in main."
-      ],
-      "move_type": "play_card",
-      "label": "Play Noble",
-      "payload": {
-        "player_id": "p3",
-        "move_type": "play_card",
-        "card_id": "noble",
-        "hand_index": 0
-      }
-    },
-    {
-      "step_index": 25,
-      "player_id": "p3",
-      "round_number": 1,
-      "phase": "main",
-      "prompts": [
-        "p3 is acting in main."
-      ],
-      "move_type": "play_card",
-      "label": "Play Noble",
-      "payload": {
-        "player_id": "p3",
-        "move_type": "play_card",
-        "card_id": "noble",
-        "hand_index": 0
-      }
-    },
-    {
       "step_index": 26,
+      "player_id": "p3",
+      "round_number": 1,
+      "phase": "main",
+      "prompts": [
+        "p3 is acting in main."
+      ],
+      "move_type": "play_card",
+      "label": "Play Soldier",
+      "payload": {
+        "player_id": "p3",
+        "move_type": "play_card",
+        "card_id": "soldier",
+        "hand_index": 0
+      }
+    },
+    {
+      "step_index": 27,
+      "player_id": "p3",
+      "round_number": 1,
+      "phase": "main",
+      "prompts": [
+        "p3 is acting in main."
+      ],
+      "move_type": "play_card",
+      "label": "Play Noble",
+      "payload": {
+        "player_id": "p3",
+        "move_type": "play_card",
+        "card_id": "noble",
+        "hand_index": 0
+      }
+    },
+    {
+      "step_index": 28,
+      "player_id": "p3",
+      "round_number": 1,
+      "phase": "main",
+      "prompts": [
+        "p3 is acting in main."
+      ],
+      "move_type": "play_card",
+      "label": "Play Noble",
+      "payload": {
+        "player_id": "p3",
+        "move_type": "play_card",
+        "card_id": "noble",
+        "hand_index": 0
+      }
+    },
+    {
+      "step_index": 29,
+      "player_id": "p3",
+      "round_number": 1,
+      "phase": "main",
+      "prompts": [
+        "p3 is acting in main."
+      ],
+      "move_type": "play_card",
+      "label": "Play Soldier",
+      "payload": {
+        "player_id": "p3",
+        "move_type": "play_card",
+        "card_id": "soldier",
+        "hand_index": 0
+      }
+    },
+    {
+      "step_index": 30,
+      "player_id": "p3",
+      "round_number": 1,
+      "phase": "main",
+      "prompts": [
+        "p3 is acting in main."
+      ],
+      "move_type": "play_card",
+      "label": "Play Noble",
+      "payload": {
+        "player_id": "p3",
+        "move_type": "play_card",
+        "card_id": "noble",
+        "hand_index": 0
+      }
+    },
+    {
+      "step_index": 31,
+      "player_id": "p3",
+      "round_number": 1,
+      "phase": "main",
+      "prompts": [
+        "p3 is acting in main."
+      ],
+      "move_type": "deploy",
+      "label": "Deploy to route_13",
+      "payload": {
+        "player_id": "p3",
+        "move_type": "deploy",
+        "target_node_id": "route_13",
+        "troop_count": 1
+      }
+    },
+    {
+      "step_index": 32,
+      "player_id": "p3",
+      "round_number": 1,
+      "phase": "main",
+      "prompts": [
+        "p3 is acting in main."
+      ],
+      "move_type": "deploy",
+      "label": "Deploy to site_jhachalkhyn",
+      "payload": {
+        "player_id": "p3",
+        "move_type": "deploy",
+        "target_node_id": "site_jhachalkhyn",
+        "troop_count": 1
+      }
+    },
+    {
+      "step_index": 33,
       "player_id": "p3",
       "round_number": 1,
       "phase": "main",
@@ -455,7 +570,7 @@
     }
   ],
   "replay_context": {
-    "board_path": "data\\boards\\base_game.json",
+    "board_path": "data\\boards\\tyrants_of_the_underdark.json",
     "card_path": "data\\cards\\catalog.json",
     "setup_path": "data\\decks\\base_setup.json",
     "player_ids": [
