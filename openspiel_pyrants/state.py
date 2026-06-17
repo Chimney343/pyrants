@@ -41,6 +41,16 @@ class PyrantsState(pyspiel.State):
     def _player_index(self, player_id: str) -> int:
         return self._game.get_player_ids().index(player_id)
 
+    def __deepcopy__(self, memo):
+        new = PyrantsState.__new__(PyrantsState)
+        pyspiel.State.__init__(new, self._game)
+        new._game = self._game
+        new._pending_initial_chance = self._pending_initial_chance
+        new._cached_indexed_moves = None
+        new._engine = self._engine.clone_fast() if self._engine is not None else None
+        memo[id(self)] = new
+        return new
+
     def current_player(self):
         if self._engine is not None and engine_is_terminal(self._engine):
             return pyspiel.PlayerId.TERMINAL
@@ -51,7 +61,8 @@ class PyrantsState(pyspiel.State):
     def _legal_actions(self, player):
         if self._pending_initial_chance:
             return list(range(self._game.get_shuffle_seed_count()))
-        self._cached_indexed_moves = compute_action_map(self._engine)
+        if self._cached_indexed_moves is None:
+            self._cached_indexed_moves = compute_action_map(self._engine)
         return list(range(len(self._cached_indexed_moves)))
 
     def _apply_action(self, action):
@@ -85,17 +96,19 @@ class PyrantsState(pyspiel.State):
         return self._engine is not None and engine_is_terminal(self._engine)
 
     def returns(self):
-        if self._engine is None:
-            return [0.0, 0.0]
         player_ids = self._game.get_player_ids()
+        n = len(player_ids)
+        if self._engine is None:
+            return [0.0] * n
         if engine_is_terminal(self._engine):
             scores = compute_final_scores(self._engine)
-            p0_score = scores.get(player_ids[0], 0)
-            p1_score = scores.get(player_ids[1], 0)
         else:
-            p0_score = self._engine.players[player_ids[0]].score
-            p1_score = self._engine.players[player_ids[1]].score
-        return [float(p0_score - p1_score), float(p1_score - p0_score)]
+            scores = {pid: self._engine.players[pid].score for pid in player_ids}
+        if n == 2:
+            s0 = scores.get(player_ids[0], 0)
+            s1 = scores.get(player_ids[1], 0)
+            return [float(s0 - s1), float(s1 - s0)]
+        return [float(scores.get(pid, 0)) for pid in player_ids]
 
     def __str__(self):
         if self._engine is None:
@@ -103,15 +116,14 @@ class PyrantsState(pyspiel.State):
         phase = self._engine.phase.value
         player = self._engine.current_player_id
         round_num = self._engine.round_number
-        p0 = self._engine.players[self._game.get_player_ids()[0]]
-        p1 = self._engine.players[self._game.get_player_ids()[1]]
-        return (
-            f"Round {round_num} | Phase: {phase} | Current: {player}\n"
-            f"  {p0.player_id}: score={p0.score} hand={len(p0.hand)} "
-            f"deck={len(p0.deck)} barracks={p0.barracks}\n"
-            f"  {p1.player_id}: score={p1.score} hand={len(p1.hand)} "
-            f"deck={len(p1.deck)} barracks={p1.barracks}"
-        )
+        lines = [f"Round {round_num} | Phase: {phase} | Current: {player}"]
+        for pid in self._game.get_player_ids():
+            p = self._engine.players[pid]
+            lines.append(
+                f"  {p.player_id}: score={p.score} hand={len(p.hand)} "
+                f"deck={len(p.deck)} barracks={p.barracks}"
+            )
+        return "\n".join(lines)
 
     def chance_outcomes(self):
         if not self._pending_initial_chance:

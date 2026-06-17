@@ -19,16 +19,21 @@ import pytest
 import openspiel_pyrants  # noqa: F401 — registers python_pyrants
 
 
+def _load_game(num_players: int = 2):
+    return pyspiel.load_game("python_pyrants", {"num_players": str(num_players)})
+
+
 @pytest.mark.skipif(
     os.environ.get("PYRANTS_SKIP_ISMCTS") == "1",
     reason="PYRANTS_SKIP_ISMCTS=1 set — skipping expensive IS-MCTS smoke test",
 )
 class TestISMCTSSmoke:
-    def test_one_game_low_sims(self):
+    @pytest.mark.parametrize("num_players", [2, 3, 4])
+    def test_one_game_low_sims(self, num_players):
         from open_spiel.python.algorithms.ismcts import ISMCTSBot, ISMCTSFinalPolicyType
         from open_spiel.python.algorithms.mcts import RandomRolloutEvaluator
 
-        game = pyspiel.load_game("python_pyrants")
+        game = _load_game(num_players)
         rng = np.random.RandomState(42)
 
         bots = [
@@ -40,16 +45,8 @@ class TestISMCTSSmoke:
                 max_world_samples=100,
                 random_state=rng,
                 final_policy_type=ISMCTSFinalPolicyType.NORMALIZED_VISITED_COUNT,
-            ),
-            ISMCTSBot(
-                game=game,
-                evaluator=RandomRolloutEvaluator(n_rollouts=1, random_state=rng),
-                uct_c=1.4,
-                max_simulations=5,
-                max_world_samples=100,
-                random_state=rng,
-                final_policy_type=ISMCTSFinalPolicyType.NORMALIZED_VISITED_COUNT,
-            ),
+            )
+            for _ in range(num_players)
         ]
 
         state = game.new_initial_state()
@@ -58,7 +55,7 @@ class TestISMCTSSmoke:
         decisions = []
         while not state.is_terminal():
             cp = state.current_player()
-            if cp < 0 or cp >= 2:
+            if cp < 0 or cp >= num_players:
                 break
             bot = bots[cp]
             legal_ids = state.legal_actions()
@@ -84,8 +81,9 @@ class TestISMCTSSmoke:
 
         assert len(decisions) > 0
         ret = state.returns()
-        assert len(ret) == 2
-        assert abs(sum(ret)) < 1e-9
+        assert len(ret) == num_players
+        if num_players == 2:
+            assert abs(sum(ret)) < 1e-9
 
     def test_runner_script_outputs_artifacts(self):
         with tempfile.TemporaryDirectory() as tmpdir:

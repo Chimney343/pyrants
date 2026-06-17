@@ -5,9 +5,9 @@ where:
   - The public view is unchanged.
   - The observing player's private zones (hand, deck order, discard, etc.)
     are preserved exactly.
-  - The opponent's hidden zones (hand, deck, discard) are reshuffled from
+  - Every opponent's hidden zones (hand, deck, discard) are reshuffled from
     the same multiset of cards — the observing player knows the counts but
-    not the identities/order of the opponent's hidden cards.
+    not the identities/order of opponents' hidden cards.
 
 Devour pile and played-cards / inner-circle / trophy-hall zones are public
 knowledge and left unchanged.
@@ -49,11 +49,11 @@ def determinize_opponent_hidden_zones(
     observing_player_id: str,
     rng,
 ) -> GameState:
-    """Return a copy of *engine* with the opponent's hidden zones reshuffled.
+    """Return a copy of *engine* with every opponent's hidden zones reshuffled.
 
     The *observing_player_id* is the player who is about to make a decision.
-    Their private state is preserved.  The other player's hand, deck, and
-    discard are reshuffled using *rng* (which must expose ``.uniform()``).
+    Their private state is preserved.  Every other player's hand, deck, and
+    discard are reshuffled independently using *rng*.
 
     Args:
         engine: The current omniscient engine state.
@@ -65,30 +65,25 @@ def determinize_opponent_hidden_zones(
             ``pyspiel.UniformProbabilitySampler`` as passed by the IS-MCTS bot.
 
     Returns:
-        A new ``GameState`` with opponent hidden zones reshuffled.
+        A new ``GameState`` with every opponent's hidden zones reshuffled.
     """
-    result = engine.model_copy(deep=True)
+    result = engine.clone_fast()
 
-    opponent_id: str | None = None
-    for pid in engine.turn_order:
-        if pid != observing_player_id:
-            opponent_id = pid
-            break
+    for opponent_id in engine.turn_order:
+        if opponent_id == observing_player_id:
+            continue
 
-    if opponent_id is None:
-        return result
+        opponent = result.players[opponent_id]
+        hidden: list[str] = list(opponent.hand) + list(opponent.deck) + list(opponent.discard_pile)
+        hand_size = len(opponent.hand)
+        deck_size = len(opponent.deck)
+        discard_size = len(opponent.discard_pile)
 
-    opponent = result.players[opponent_id]
-    hidden: list[str] = list(opponent.hand) + list(opponent.deck) + list(opponent.discard_pile)
-    hand_size = len(opponent.hand)
-    deck_size = len(opponent.deck)
-    discard_size = len(opponent.discard_pile)
+        _shuffle(hidden, rng)
 
-    _shuffle(hidden, rng)
-
-    opponent.hand = hidden[:hand_size]
-    opponent.deck = hidden[hand_size : hand_size + deck_size]
-    opponent.discard_pile = hidden[hand_size + deck_size : hand_size + deck_size + discard_size]
+        opponent.hand = hidden[:hand_size]
+        opponent.deck = hidden[hand_size : hand_size + deck_size]
+        opponent.discard_pile = hidden[hand_size + deck_size : hand_size + deck_size + discard_size]
 
     return result
 

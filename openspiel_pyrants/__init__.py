@@ -11,6 +11,12 @@ Usage:
 
 import pyspiel
 
-from openspiel_pyrants.game import _GAME_TYPE, PyrantsGame
+from openspiel_pyrants.game import _build_game_type, PyrantsGame
 
-pyspiel.register_game(_GAME_TYPE, PyrantsGame)
+pyspiel.register_game(_build_game_type(2), PyrantsGame)
+
+try:
+    from openspiel_pyrants.game_c import _build_c_game_type, PyrantsCGame
+    pyspiel.register_game(_build_c_game_type(2), PyrantsCGame)
+except (ImportError, OSError):
+    pass

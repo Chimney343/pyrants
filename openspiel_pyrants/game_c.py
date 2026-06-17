@@ -1,19 +1,16 @@
-"""PyrantsGame(pyspiel.Game) — registers pyrants as ``python_pyrants``.
+"""PyrantsCGame(pyspiel.Game) — registers the C-engine backend as ``python_pyrants_c``.
 
-Supports 2–4 players. The default is 2 players (zero-sum) for backward
-compatibility.  For 3+ players the game is declared GENERAL_SUM and each
-player's return is their raw score.
+Mirrors ``game.py`` but creates ``PyrantsCState`` and holds a ``CEngine`` instance.
 """
 
 from __future__ import annotations
 
-import json as _json
 from pathlib import Path
 
 import pyspiel
 
-from game_setup.loaders import build_game_definition_from_dicts, build_game_definition_from_files
-from openspiel_pyrants.action_encoding import NUM_DISTINCT_ACTIONS
+from engine_c.bindings.ce_api import CEngine
+from openspiel_pyrants.action_encoding_c import NUM_DISTINCT_ACTIONS
 
 _DATA_DIR = Path(__file__).resolve().parents[1] / "data"
 _DEFAULT_BOARD = _DATA_DIR / "boards" / "tyrants_of_the_underdark.json"
@@ -33,15 +30,15 @@ _DEFAULT_PARAMS = {
 _LEGACY_PLAYER_IDS = _DEFAULT_PARAMS["player_ids"]
 
 
-def _build_game_type(num_players: int) -> pyspiel.GameType:
+def _build_c_game_type(num_players: int) -> pyspiel.GameType:
     utility = (
         pyspiel.GameType.Utility.ZERO_SUM
         if num_players == 2
         else pyspiel.GameType.Utility.GENERAL_SUM
     )
     return pyspiel.GameType(
-        short_name="python_pyrants",
-        long_name="Python Tyrants of the Underdark",
+        short_name="python_pyrants_c",
+        long_name="Pyrants (C engine) — Tyrants of the Underdark",
         dynamics=pyspiel.GameType.Dynamics.SEQUENTIAL,
         chance_mode=pyspiel.GameType.ChanceMode.EXPLICIT_STOCHASTIC,
         information=pyspiel.GameType.Information.IMPERFECT_INFORMATION,
@@ -65,7 +62,7 @@ def _build_game_type(num_players: int) -> pyspiel.GameType:
     )
 
 
-def _build_game_info(num_players: int) -> pyspiel.GameInfo:
+def _build_c_game_info(num_players: int) -> pyspiel.GameInfo:
     max_utility = 200.0 if num_players == 2 else 400.0
     return pyspiel.GameInfo(
         num_distinct_actions=NUM_DISTINCT_ACTIONS,
@@ -97,7 +94,7 @@ def _parse_num_players(resolved: dict) -> int:
     return num_players
 
 
-class PyrantsGame(pyspiel.Game):
+class PyrantsCGame(pyspiel.Game):
     def __init__(self, params=None):
         resolved = dict(_DEFAULT_PARAMS)
         resolved.update(params or dict())
@@ -105,27 +102,21 @@ class PyrantsGame(pyspiel.Game):
         num_players = _parse_num_players(resolved)
         player_ids = _resolve_player_ids(resolved, num_players)
 
-        game_type = _build_game_type(num_players)
-        game_info = _build_game_info(num_players)
+        game_type = _build_c_game_type(num_players)
+        game_info = _build_c_game_info(num_players)
         super().__init__(game_type, game_info, resolved)
 
         self._params = resolved
         self._player_ids = player_ids
         self._num_players = num_players
         self._shuffle_seed_count = int(resolved["shuffle_seed_count"])
-        self._definition = self._build_definition(resolved)
 
-    def _build_definition(self, resolved):
-        setup_json = resolved.get("setup_data_json", "")
-        if setup_json:
-            board_data = _json.loads(Path(resolved["board_path"]).read_text(encoding="utf-8"))
-            card_data = _json.loads(Path(resolved["card_path"]).read_text(encoding="utf-8"))
-            setup_data = _json.loads(setup_json)
-            return build_game_definition_from_dicts(board_data, card_data, setup_data)
-        return build_game_definition_from_files(
-            Path(resolved["board_path"]),
-            Path(resolved["card_path"]),
-            Path(resolved["setup_path"]),
+        self._c_engine = CEngine()
+        self._c_engine.initialize(
+            catalog_path=resolved["card_path"],
+            board_path=resolved["board_path"],
+            setup_path=resolved["setup_path"],
+            setup_data_json=resolved.get("setup_data_json", ""),
         )
 
     def __deepcopy__(self, memo):
@@ -142,12 +133,16 @@ class PyrantsGame(pyspiel.Game):
             self._params = resolved
             self._num_players = _parse_num_players(resolved)
             self._player_ids = _resolve_player_ids(resolved, self._num_players)
-            self._definition = self._build_definition(resolved)
             self._shuffle_seed_count = int(resolved["shuffle_seed_count"])
+            self._c_engine = CEngine()
+            self._c_engine.initialize(
+                catalog_path=resolved["card_path"],
+                board_path=resolved["board_path"],
+                setup_path=resolved["setup_path"],
+            )
 
     def get_definition(self):
-        self._init_attrs()
-        return self._definition
+        return None
 
     def get_player_ids(self):
         self._init_attrs()
@@ -158,11 +153,11 @@ class PyrantsGame(pyspiel.Game):
         return self._shuffle_seed_count
 
     def new_initial_state(self):
-        from openspiel_pyrants.state import PyrantsState
+        from openspiel_pyrants.state_c import PyrantsCState
 
-        return PyrantsState(self)
+        return PyrantsCState(self)
 
     def make_py_observer(self, iig_obs_type=None, params=None):
-        from openspiel_pyrants.observer import PyrantsObserver
+        from openspiel_pyrants.observer_c import PyrantsCObserver
 
-        return PyrantsObserver(params)
+        return PyrantsCObserver(params)
