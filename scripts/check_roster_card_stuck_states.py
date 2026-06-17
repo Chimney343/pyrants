@@ -24,7 +24,7 @@ from engine.moves import EndMainPhaseMove, Move, PlayCardMove
 from game_session import GameSession
 from game_view import build_game_view
 
-DEFAULT_BOARD_PATH = ROOT_DIR / "data" / "boards" / "base_game.json"
+DEFAULT_BOARD_PATH = ROOT_DIR / "data" / "boards" / "tyrants_of_the_underdark.json"
 DEFAULT_CARD_PATH = ROOT_DIR / "data" / "cards" / "catalog.json"
 DEFAULT_SETUP_PATH = ROOT_DIR / "data" / "decks" / "base_setup.json"
 DEFAULT_ROSTERS_PATH = ROOT_DIR / "data" / "decks" / "first_deck_rosters.json"

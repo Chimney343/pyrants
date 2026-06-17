@@ -23,7 +23,7 @@ from game_session import GameSession
 from game_view import GameView, LegalMoveView, build_game_view
 
 ROOT_DIR = Path(__file__).resolve().parent
-DEFAULT_BOARD_PATH = ROOT_DIR / "data" / "boards" / "base_game.json"
+DEFAULT_BOARD_PATH = ROOT_DIR / "data" / "boards" / "tyrants_of_the_underdark.json"
 DEFAULT_CARD_PATH = ROOT_DIR / "data" / "cards" / "catalog.json"
 DEFAULT_SETUP_PATH = ROOT_DIR / "data" / "decks" / "base_setup.json"
 
