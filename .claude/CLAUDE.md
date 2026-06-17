@@ -11,41 +11,32 @@
 > (documentation, ownership, history, decisions). **Always verify against
 > actual source files before making changes** — the index may be stale.
 
-Last indexed: 2026-06-09 (commit 0263d73). Confidence: 100%.
+Last indexed: 2026-06-16. Confidence: 100%.
 ### Architecture
-Repowise is a configurable board-game simulation engine: it ingests scenario definitions and board layouts (JSON), validates them against a rule catalog, drives game state through a turn-based move resolution pipeline, and produces observable game states and visualizations via a Python simulation runtime and a TypeScript web viewer. | Layer       | Technologies                                                                 |
-|-------------|------------------------------------------------------------------------------|
-| **Runtime** | Python 3.11+ (core engine, CLI, simulation)                                  |
-| **Config & Data** | JSON (scenarios, rules, board packages), TOML (project metadata)        |
-| **Analysis** | Internal linting and rule‑consistency audits (scripts/catalog_audit.py)       |
-| **Frontend** | TypeScript (.kilo package), HTML/CSS (board views)                        |
-| **Docs**    | Markdown, JSON schemas (artifacts/)                                          |
+Pyrants is a hybrid Python and C game engine for the game of Pyrants, wrapped as an OpenSpiel game: it reads game definitions from configuration files and board packages through the game_setup loaders, validates and executes moves via a C-based state machine and rule checker, computes scores with the engine scoring modules, and exposes a standard OpenSpiel interface (in openspiel_pyrants) that produces observations, rewards, and terminal states for reinforcement learning agents. | Layer         | Languages / Tools                          | Purpose                                                                 |
+|---------------|-------------------------------------------|-------------------------------------------------------------------------|
+| **Core Engine** | C (35 files, ~15K LOC)                   | High‑performance state management, move validation, RNG, arena logic    |
+| **Python Bindings** | Python + CFFI / ctypes (engine_c/bindings) | Bridges C engine to Python with typed wrappers (ce_api.py, engine_bindings.py) |
+| **Game Logic** | Python (engine/, game_setup/)            | Move generation, scoring, error handling, board configuration loading   |
+| **OpenSpiel Wrapper** | Python (openspiel_pyrants/)           | Adapts the game for OpenSpiel (RL framework) – observations, rewards, actions |
+| **Tooling / CLI** | TypeScript (.kilo package)              | Developer tooling, CLI commands, or UI (details in .kilo source)        |
+| **Configuration & Docs** | JSON, Markdown, YAML, TOML          | Board definitions, test fixtures, documentation, build configs          |
+| **Build System** | Makefile, Shell, Justfile               | Compilation of C code, testing, linting, CI tasks                       |
 
 
 
-| File                               | Role                                                                         |
-|-----------------------------------|------------------------------------------------------------------------------|
-| game_simulation.py              | Main entry for running a full game simulation (turn‑by‑turn)                 |
-| game_session.py                 | Manages a single game session, holding state and history                     |
-| game_view.py                    | Generates a human‑readable board view from game state                        |
-| scripts/catalog_audit.py        | CLI tool to audit consistency between rules, scenarios, and board packages   |
-| interface/game_viewer.py        | Launch a live viewer (likely web‑based) for a game session                   |
-| interface/board_view.py         | Renders board geometry and piece placement                                   |
+No explicit entry points are exported as main modules. The primary interfaces are:
 
-
-
-The system is split into three horizontal layers:
-
-1. **Game Setup** (package game_setup/)  
-   - Loads board packages (tiles, positions, adjacency) from JSON. - Interprets scenario definitions (card_scenarios.py) that specify initial piece layout, turn order, and victory conditions.
+- **openspiel_pyrants/game.py** – Standard OpenSpiel Game and State classes for Pyrants in pure Python. - **openspiel_pyrants/game_c.py** – Alternative Game and State implementations backed by the C engine for performance.
 ### Key Modules
 | Module | Purpose | Owner |
 |--------|---------|-------|
 | `community-1` | The tests module is the verification and validation layer of the repowise game e | — |
 | `community-0` | The skills/impeccable module is the **skill lifecycle and injection subsystem**  | — |
-| `community-3` | The tests module is the **validation subsystem** of repowise — it consumes engin | — |
-| `community-2` | The tests module is the verification and validation layer of the repowise system | — |
+| `community-3` | The **game_setup** module is the **initialization and configuration layer** of t | — |
+| `community-2` | The OpenSpiel integration module is the transport adapter that bridges the Pyran | — |
 | `community-248` | The **tests** module is the verification subsystem of repowise — it consumes gen | — |
+| `community-4` | The engine/generic_runtime module is the **execution subsystem** of the game eng | — |
 ### Entry Points
 - `.augment/skills/impeccable/scripts/cleanup-deprecated.mjs`
 - `.augment/skills/impeccable/scripts/design-parser.mjs`
@@ -86,22 +77,23 @@ The system is split into three horizontal layers:
 ### Hotspots (High Churn)
 | File | Churn | 90d Commits | Owner |
 |------|-------|-------------|-------|
-| `engine/rules.py` | 100.0th %ile | 6 | Chimney343 |
+| `engine/rules.py` | 100.0th %ile | 7 | Chimney343 |
+| `interface/game_viewer.py` | 99.9th %ile | 9 | Chimney343 |
 | `tests/test_rules.py` | 99.8th %ile | 4 | Chimney343 |
-| `interface/game_viewer.py` | 99.6th %ile | 7 | Chimney343 |
-| `data/cards/catalog.json` | 99.4th %ile | 4 | Chimney343 |
-| `tests/test_scoring.py` | 99.2th %ile | 3 | Chimney343 |
+| `game_setup/scenario_generation/card_scenarios.py` | 99.6th %ile | 4 | Chimney343 |
+| `scripts/run_ismcts.py` | 99.5th %ile | 3 | Chimney343 |
 
 ## Code health
-Hotspot health: 6.25/10 (stable) ·
-Average: 7.1/10 ·
+Hotspot health: 6.54/10 (stable) ·
+Average: 7.14/10 ·
 Worst: 1.0/10 (`engine/rules.py`)
 
 ### Critical biomarkers
+- `engine/helpers.py` — untested hotspot — impact −2.0
 - `engine/rules.py` — untested hotspot — impact −2.0
-- `interface/game_viewer.py` — large method (_build_ui) — impact −0.2
-- `engine/generic_runtime.py` — complex method (_apply_generic_conditional_bonus) — impact −0.1
-- `engine/generic_runtime.py` — complex method (_apply_generic_promote_card) — impact −0.1
+- `engine/state.py` — untested hotspot — impact −2.0
+- `.agents/skills/impeccable/scripts/live-browser.js` — large method (<anonymous>) — impact −1.1
+- `scripts/build_review_workbook.py` — large method (main) — impact −0.9
 
 ### Repowise MCP Tools
 

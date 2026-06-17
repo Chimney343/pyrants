@@ -27,11 +27,13 @@ Supporting status files:
 
 ## Done
 
-- The core turn loop exists: main phase, end of turn, cleanup, and draw-up behavior are all in place.
+- The core turn loop exists: setup (mandatory free troop placement), draw, main phase, end of turn, cleanup, and game over are all in place.
+- Each player places one free troop on a site during the SETUP phase before any hand is dealt. Only after every player has placed does the game draw 5 cards per player and enter MAIN.
 - The engine uses pure state models, legal-move generation, and move application as its main control flow.
 - Generic-card execution is live in `engine/rules.py`, including targeted, modal, and repeat selection flows.
 - Headless session, simulation, and replay support are in place through `game_session.py`, `game_simulation.py`, and the viewer tools.
 - The current test suite is green, so the implemented behavior is consistent at the present coverage level.
+- Initial placement moves (`InitialPlacementMove`) are legal only during SETUP and target site nodes with empty troop slots. Routes are excluded.
 
 ## Awaiting
 

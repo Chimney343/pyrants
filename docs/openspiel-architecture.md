@@ -11,9 +11,9 @@ The wrapper translates between two domains: OpenSpiel expects integer actions on
 
 ## Game Object
 
-`PyrantsGame` constructs itself from three JSON files in `data/`: a board definition, a card catalog, and a deck setup. It caches the parsed definition, the player id list (`p0`, `p1`), and the shuffle seed count (1000).
+`PyrantsGame` constructs itself from three JSON files in `data/`: a board definition, a card catalog, and a deck setup. It caches the parsed definition, the player id list (derived from `num_players`, default ``p1, p2`` for 2 players), and the shuffle seed count (1000).
 
-The `GameType` declares two-player, sequential, explicit stochastic, imperfect information, zero-sum. The `GameInfo` sets a ceiling of 1024 distinct actions, 1000 chance outcomes, utility range `[-200, 200]`, and a game length of 4096 decision nodes.
+The `GameType` and `GameInfo` are built per-instance from the resolved `num_players` parameter (2–4). For 2 players the game is declared `ZERO_SUM`; for 3+ players it is `GENERAL_SUM`. The `GameInfo` sets a ceiling of 1024 distinct actions, 1000 chance outcomes, utility range `[-200, 200]` (2p) or `[-400, 400]` (3–4p), and a game length of 4096 decision nodes.
 
 `new_initial_state()` returns a fresh `PyrantsState` with no engine. The engine materializes only after the chance node resolves.
 
@@ -31,7 +31,7 @@ The hash function (`_public_to_seed`) uses a Knuth multiplicative hash: `(id * 2
 
 ### Decision Mode
 
-Once the engine exists, the state delegates all game queries to it. `current_player()` reads `engine.current_player_id`. `is_terminal()` calls `engine.rules.is_terminal(engine)`. `returns()` computes the score difference: `p0_score - p1_score` for player 0, the reverse for player 1.
+Once the engine exists, the state delegates all game queries to it. `current_player()` reads `engine.current_player_id`. `is_terminal()` calls `engine.rules.is_terminal(engine)`. For 2 players `returns()` computes the score difference: `p0_score - p1_score` for player 0, the reverse for player 1. For 3+ players `returns()` reports each player's raw score.
 
 `_legal_actions()` calls `engine.rules.legal_moves(engine)`, sorts the moves deterministically, and assigns each an integer index. It caches the full (index, move) list on `self._cached_indexed_moves` so `_apply_action` and `_action_to_string` can reuse it without re-enumerating. The cache invalidates after each `_apply_action`.
 
@@ -123,5 +123,5 @@ from the original to a third-party observer. The `resample_from_infostate`
 contract:
 1. Public view matches the original exactly.
 2. The observing player's hand and deck order are preserved.
-3. The opponent's hidden zones preserve the same multiset of cards but
-   are reshuffled using the bot's RNG.
+3. Every opponent's hidden zones preserve the same multiset of cards but
+    are reshuffled using the bot's RNG.

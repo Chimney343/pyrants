@@ -71,11 +71,21 @@ You manage two transient resources that refill each turn:
 
 ## 2. Turn Structure
 
-A player's turn follows this fixed sequence:
+A game begins with a mandatory setup phase, followed by the main turn loop for each player:
 
 ```
-MAIN PHASE  →  END OF TURN  →  CLEANUP  →  next player's MAIN PHASE
+SETUP (each player)  →  DRAW  →  MAIN PHASE  →  END OF TURN  →  CLEANUP  →  next player's MAIN PHASE
 ```
+
+### 2.0 Setup Phase
+
+Before any cards are dealt, each player (in turn order) must place **exactly one troop for free** on any **site** node that has an empty troop slot. Routes are not valid targets for initial placement.
+
+- The placement costs 0 power.
+- The troop is real: it consumes 1 from the player's barracks.
+- Once placed, the player is marked as having completed setup.
+
+After every player has placed their free troop, the game draws 5 cards into each player's hand and the first player enters their main phase. Subsequent players follow the normal draw-up pattern at the start of their first main phase (drawing 5 cards during the previous player's cleanup).
 
 ### 2.1 Main Phase
 
@@ -93,8 +103,8 @@ Play one card from your hand into your played area. Its effect resolves immediat
 Place one troop from your barracks onto an empty slot on the board.
 
 - If your barracks is at 0, deploying instead grants 1 VP.
-- Your first deployment can go to any node that has an empty slot.
-- After your first troop is on the board, future deployments must go to a node where you have **presence** (your troop or spy on the node, or your troop on an adjacent node) and that has an empty slot.
+- Deployment requires **presence** at the target node (your troop or spy on the node, or your troop on an adjacent node) and an empty troop slot.
+- The initial free troop placement during the setup phase (2.0) does not require presence and does not cost power.
 
 #### Assassinate (cost: 3 power)
 Remove one enemy troop from a node where you have presence. The removed troop goes to your trophy hall (1 VP at game end). White troops also go to trophies.
@@ -135,7 +145,7 @@ You have presence at a node if any of these are true:
 - You have a spy on that node.
 - You have at least one troop on an adjacent node (across a single route).
 
-Presence is required to deploy troops (after your first deployment) and to assassinate.
+Presence is required to deploy troops and to assassinate.
 
 ### Control
 

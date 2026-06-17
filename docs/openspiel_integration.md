@@ -95,7 +95,7 @@ takes only `shuffle_seed: int`.
 
 | Item | Path forward |
 |------|-------------|
-| 4-player support | Pass `player_ids` as a colon-separated list. Adjust `num_distinct_actions` and `utility_sum`. |
+| 4-player support | **Implemented.** Pass `--num-players` to the runner or `num_players` to `load_game`. The wrapper dynamically builds GameType/GameInfo per instance. |
 | Scenario injection | Add `scenario_path` parameter; resolve a fixed chance action to "load scenario N". |
 | C++ port | Use the Python playthrough as regression oracle. |
 | serialize=True in API test | C++ deserialization path on Windows bypasses Python-level `__init__`; the lazy-init guard in `get_player_ids()` handles the attribute access but full round-trip needs `__reduce__`/`__getstate__` override. |
