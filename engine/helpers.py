@@ -95,10 +95,7 @@ def _action_targets_anywhere(action: CardAction) -> bool:
 
 
 def _player_has_any_troops_on_board(state: GameState, player_id: str) -> bool:
-    for node_state in state.board.nodes.values():
-        if player_id in node_state.troop_slots:
-            return True
-    return False
+    return any(player_id in node_state.troop_slots for node_state in state.board.nodes.values())
 
 
 def _can_deploy_to_node(

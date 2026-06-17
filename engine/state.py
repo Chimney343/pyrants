@@ -607,7 +607,8 @@ class GameState(BaseModel):
         """Fast specialized deep copy — no type dispatch, no per-field function calls.
 
         See ``.kilo/plans/optimize-deepcopy-perf.md`` for the field
-        classification and copy strategy.
+        classification and copy strategy.  Carries version-keyed cache
+        entries so clones in the MCTS tree can reuse computed legal moves.
         """
         m = GameState.__new__(GameState)
         d = {
@@ -629,6 +630,13 @@ class GameState(BaseModel):
             "setup_complete": set(self.setup_complete),
             "shuffle_seed": self.shuffle_seed,
             "shuffle_count": self.shuffle_count,
+            "_version": self.__dict__.get("_version", 0),
+            "_presence_cache": dict(pc) if (pc := self.__dict__.get("_presence_cache")) is not None else None,
+            "_special_stack_cache": dict(ssc) if (ssc := self.__dict__.get("_special_stack_cache")) is not None else None,
+            "_cached_legal_moves": self.__dict__.get("_cached_legal_moves"),
+            "_cached_legal_moves_version": self.__dict__.get("_cached_legal_moves_version"),
+            "_cached_indexed_moves": self.__dict__.get("_cached_indexed_moves"),
+            "_cached_indexed_moves_version": self.__dict__.get("_cached_indexed_moves_version"),
         }
         object.__setattr__(m, "__dict__", d)
         object.__setattr__(m, "__pydantic_extra__", {})
@@ -677,7 +685,7 @@ class GameState(BaseModel):
             "pending_ability": self.pending_ability,
             "pending_immediate_promotions": list(self.pending_immediate_promotions),
             "pending_end_of_turn_promotions": list(self.pending_end_of_turn_promotions),
-            "pending_generic_choice": self.pending_generic_choice.model_copy(deep=True) if self.pending_generic_choice is not None else None,
+            "pending_generic_choice": self.pending_generic_choice.clone_fast() if self.pending_generic_choice is not None else None,
             "devour_pile": list(self.devour_pile),
             "setup_complete": set(self.setup_complete),
             "shuffle_seed": self.shuffle_seed,

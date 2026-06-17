@@ -207,6 +207,22 @@ def _custom_effect_discard_selected_hand_card_from_self(
     return updated
 
 
+def _custom_effect_take_from_devour_pile_to_discard(
+    state: GameState,
+    player_id: str,
+    card: CardDefinition,
+    source_card_id: str,
+    action: CardAction,
+    selection: dict[str, object],
+) -> GameState:
+    if not state.devour_pile:
+        return state
+    updated = state._cow_clone()
+    top = updated.devour_pile.pop()
+    _cow_player(updated, player_id).discard_pile.append(top)
+    return updated
+
+
 def _custom_effect_return_source_card_to_recruit_deck(
     state: GameState,
     player_id: str,
@@ -232,5 +248,6 @@ _CUSTOM_EFFECT_HANDLERS: dict[str, Callable[..., GameState]] = {
     "self_purge_to_supply": _custom_effect_self_purge_to_supply,
     "steal_white_trophy_to_board": _custom_effect_steal_white_trophy_to_board,
     "discard_selected_hand_card_from_self": _custom_effect_discard_selected_hand_card_from_self,
+    "take_from_devour_pile_to_discard": _custom_effect_take_from_devour_pile_to_discard,
     "return_source_card_to_recruit_deck": _custom_effect_return_source_card_to_recruit_deck,
 }

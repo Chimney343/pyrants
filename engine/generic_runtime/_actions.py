@@ -753,7 +753,7 @@ def _apply_generic_play_card(
         )
 
     working = state._cow_clone()
-    outer_pending = working.pending_generic_choice.model_copy(deep=True)
+    outer_pending = working.pending_generic_choice.clone_fast()
     working.pending_generic_choice = None
     working.pending_ability = None
 

@@ -41,7 +41,7 @@ def _resolve_card_option_actions(
         option = next((candidate for candidate in execution_model.options if candidate.option_id == option_id), None)
         if option is None:
             raise IllegalMoveError("selected option_id does not exist on execution model")
-        return [action.model_copy(deep=True) for action in option.actions]
+        return [action for action in option.actions]
 
     raise RuleViolationError("pending generic choice is inconsistent with card execution model")
 
@@ -67,7 +67,7 @@ def _option_is_currently_selectable(
     if first_action.op != "return_spy":
         return True
 
-    probe_pending = pending.model_copy(deep=True)
+    probe_pending = pending.clone_fast()
     probe_pending.awaiting_option = False
     probe_pending.current_actions = option_actions
     probe_pending.next_action_index = 0
@@ -296,7 +296,7 @@ def _resolve_generic_execution(
         pending = PendingGenericChoiceState(
             source_card_id=source_card_id,
             execution_kind="sequence",
-            current_actions=[action.model_copy(deep=True) for action in execution_model.actions],
+            current_actions=[action for action in execution_model.actions],
             next_action_index=0,
             awaiting_option=False,
             action_repeat_limits=repeat_limits,
