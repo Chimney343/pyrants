@@ -22,6 +22,7 @@ from interface.shared_board_renderer import (
 )
 
 PLAYER_COLORS = {
+    "p0": "#c44b2f",
     "p1": "#2f72c4",
     "p2": "#2f9e66",
     "p3": "#a65bb8",
