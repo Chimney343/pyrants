@@ -170,6 +170,22 @@ def _legal_selection_custom_effect(
                 )
             )
         return moves
+    if effect_kind == "select_site":
+        board_idx = board_index(state.definition.board)
+        for node_id in sorted(state.board.nodes):
+            node_def = board_idx.get(node_id)
+            if node_def is None or node_def.kind != NodeKind.SITE:
+                continue
+            if not has_presence(state, player_id, node_id):
+                continue
+            moves.append(
+                _generic_choice_move(
+                    player_id,
+                    pending,
+                    selection={"target_node_id": node_id},
+                )
+            )
+        return moves
     return moves
 
 

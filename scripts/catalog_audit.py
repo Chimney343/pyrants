@@ -30,6 +30,7 @@ SUPPORTED_CUSTOM_EFFECT_KINDS = {
     "discard_selected_hand_card_from_self",
     "return_source_card_to_recruit_deck",
     "take_from_devour_pile_to_discard",
+    "select_site",
 }
 SUPPORTED_IMMEDIATE_PROMOTE_FRAGMENTS = {
     "promote_top_of_deck",

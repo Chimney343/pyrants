@@ -3384,17 +3384,19 @@
         "actions": [
           {
             "action_id": "action_1",
-            "op": "assassinate_troop",
+            "op": "custom_effect",
             "target_scope": "board_site",
             "timing": "immediate",
-            "optional": true,
+            "optional": false,
             "quantity": {
-              "kind": "fixed",
-              "value": 1
+              "kind": "unspecified",
+              "value": null
             },
             "filters": [],
-            "source_fragment": "assassinate_step_1",
-            "metadata": {}
+            "source_fragment": "select_site",
+            "metadata": {
+              "effect_kind": "select_site"
+            }
           },
           {
             "action_id": "action_2",
@@ -3406,9 +3408,12 @@
               "kind": "fixed",
               "value": 1
             },
-            "filters": [],
-            "source_fragment": "assassinate_step_2",
-            "metadata": {}
+            "filters": ["allow_white_troop"],
+            "source_fragment": "assassinate_step_1",
+            "metadata": {
+              "requires_last_selected_node": true,
+              "skip_advance_to_index": 4
+            }
           },
           {
             "action_id": "action_3",
@@ -3420,12 +3425,32 @@
               "kind": "fixed",
               "value": 1
             },
-            "filters": [],
-            "source_fragment": "assassinate_step_3",
-            "metadata": {}
+            "filters": ["allow_white_troop"],
+            "source_fragment": "assassinate_step_2",
+            "metadata": {
+              "requires_last_selected_node": true,
+              "skip_advance_to_index": 4
+            }
           },
           {
             "action_id": "action_4",
+            "op": "assassinate_troop",
+            "target_scope": "board_site",
+            "timing": "immediate",
+            "optional": true,
+            "quantity": {
+              "kind": "fixed",
+              "value": 1
+            },
+            "filters": ["allow_white_troop"],
+            "source_fragment": "assassinate_step_3",
+            "metadata": {
+              "requires_last_selected_node": true,
+              "skip_advance_to_index": 4
+            }
+          },
+          {
+            "action_id": "action_5",
             "op": "gain_resource",
             "target_scope": "self",
             "timing": "immediate",
@@ -3446,17 +3471,19 @@
       "actions": [
         {
           "action_id": "action_1",
-          "op": "assassinate_troop",
+          "op": "custom_effect",
           "target_scope": "board_site",
           "timing": "immediate",
-          "optional": true,
+          "optional": false,
           "quantity": {
-            "kind": "fixed",
-            "value": 1
+            "kind": "unspecified",
+            "value": null
           },
           "filters": [],
-          "source_fragment": "assassinate_step_1",
-          "metadata": {}
+          "source_fragment": "select_site",
+          "metadata": {
+            "effect_kind": "select_site"
+          }
         },
         {
           "action_id": "action_2",
@@ -3468,9 +3495,12 @@
             "kind": "fixed",
             "value": 1
           },
-          "filters": [],
-          "source_fragment": "assassinate_step_2",
-          "metadata": {}
+          "filters": ["allow_white_troop"],
+          "source_fragment": "assassinate_step_1",
+          "metadata": {
+            "requires_last_selected_node": true,
+            "skip_advance_to_index": 4
+          }
         },
         {
           "action_id": "action_3",
@@ -3482,12 +3512,32 @@
             "kind": "fixed",
             "value": 1
           },
-          "filters": [],
-          "source_fragment": "assassinate_step_3",
-          "metadata": {}
+          "filters": ["allow_white_troop"],
+          "source_fragment": "assassinate_step_2",
+          "metadata": {
+            "requires_last_selected_node": true,
+            "skip_advance_to_index": 4
+          }
         },
         {
           "action_id": "action_4",
+          "op": "assassinate_troop",
+          "target_scope": "board_site",
+          "timing": "immediate",
+          "optional": true,
+          "quantity": {
+            "kind": "fixed",
+            "value": 1
+          },
+          "filters": ["allow_white_troop"],
+          "source_fragment": "assassinate_step_3",
+          "metadata": {
+            "requires_last_selected_node": true,
+            "skip_advance_to_index": 4
+          }
+        },
+        {
+          "action_id": "action_5",
           "op": "gain_resource",
           "target_scope": "self",
           "timing": "immediate",

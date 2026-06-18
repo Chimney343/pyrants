@@ -257,6 +257,7 @@ def _apply_generic_assassinate_troop(
     target_node_id = _require_selection_string(selection, "target_node_id")
     target_slot_index = _require_selection_int(selection, "target_slot_index")
     white_only = "white_troop_only" in action.filters
+    allow_white = "allow_white_troop" in action.filters
     requires_last_selected_node = bool(action.metadata.get("requires_last_selected_node", False))
 
     _validate_node_exists(state, target_node_id)
@@ -269,7 +270,7 @@ def _apply_generic_assassinate_troop(
     occupant = node_state.troop_slots[target_slot_index]
     if white_only and occupant != WHITE_TROOP_OWNER:
         raise IllegalMoveError("selection target is not a white troop")
-    if not white_only and occupant == WHITE_TROOP_OWNER:
+    if not white_only and not allow_white and occupant == WHITE_TROOP_OWNER:
         raise IllegalMoveError("selection target cannot be a white troop for this action")
 
     updated = _apply_free_assassinate(state, player_id, target_node_id, target_slot_index)

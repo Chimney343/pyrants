@@ -9,7 +9,7 @@ from engine.moves import (
     ResolveGenericChoiceMove,
 )
 from engine.rules import apply, legal_moves
-from engine.state import TurnPhase, build_initial_game_state
+from engine.state import TurnPhase, board_index, build_initial_game_state
 from game_setup.loaders import build_game_definition_from_dicts, create_game_state_from_files
 from tests.scenario_helpers import advance_past_setup
 
@@ -240,26 +240,36 @@ def test_death_tyrant_gains_influence_per_troop_removed_by_effect() -> None:
     state.board.nodes["site_gauntlgrym"].troop_slots = ["p2", "p2", None]
 
     played = apply(state, PlayCardMove(player_id="p1", card_id="death_tyrant", hand_index=0))
-    first = apply(
+
+    after_site = apply(
         played,
         ResolveGenericChoiceMove(
             player_id="p1",
             source_card_id="death_tyrant",
-            selection={"target_node_id": "site_gauntlgrym", "target_slot_index": 0},
+            selection={"target_node_id": "site_gauntlgrym"},
         ),
     )
-    resolved = apply(
-        first,
-        ResolveGenericChoiceMove(
-            player_id="p1",
-            source_card_id="death_tyrant",
-            selection={"target_node_id": "site_gauntlgrym", "target_slot_index": 1},
-        ),
+
+    first_assassinate = next(
+        move
+        for move in legal_moves(after_site)
+        if isinstance(move, ResolveGenericChoiceMove)
+        and move.source_card_id == "death_tyrant"
+        and move.selection.get("target_slot_index") == 0
     )
+    after_first = apply(after_site, first_assassinate)
+
+    second_assassinate = next(
+        move
+        for move in legal_moves(after_first)
+        if isinstance(move, ResolveGenericChoiceMove)
+        and move.source_card_id == "death_tyrant"
+        and move.selection.get("target_slot_index") == 1
+    )
+    resolved = apply(after_first, second_assassinate)
 
     assert resolved.board.nodes["site_gauntlgrym"].troop_slots == [None, None, None]
     assert resolved.resource_pool.influence == 2
-
 
 
 def test_death_tyrant_can_stop_after_one_assassination() -> None:
@@ -273,14 +283,24 @@ def test_death_tyrant_can_stop_after_one_assassination() -> None:
     state.board.nodes["site_gauntlgrym"].troop_slots = ["p2", "p2", "p2"]
 
     played = apply(state, PlayCardMove(player_id="p1", card_id="death_tyrant", hand_index=0))
-    after_first = apply(
+
+    after_site = apply(
         played,
         ResolveGenericChoiceMove(
             player_id="p1",
             source_card_id="death_tyrant",
-            selection={"target_node_id": "site_gauntlgrym", "target_slot_index": 0},
+            selection={"target_node_id": "site_gauntlgrym"},
         ),
     )
+
+    first_assassinate = next(
+        move
+        for move in legal_moves(after_site)
+        if isinstance(move, ResolveGenericChoiceMove)
+        and move.source_card_id == "death_tyrant"
+        and move.selection.get("target_slot_index") == 0
+    )
+    after_first = apply(after_site, first_assassinate)
 
     first_skip = next(
         move
@@ -289,20 +309,10 @@ def test_death_tyrant_can_stop_after_one_assassination() -> None:
         and move.source_card_id == "death_tyrant"
         and move.selection == {}
     )
-    after_second = apply(after_first, first_skip)
-
-    second_skip = next(
-        move
-        for move in legal_moves(after_second)
-        if isinstance(move, ResolveGenericChoiceMove)
-        and move.source_card_id == "death_tyrant"
-        and move.selection == {}
-    )
-    resolved = apply(after_second, second_skip)
+    resolved = apply(after_first, first_skip)
 
     assert resolved.board.nodes["site_gauntlgrym"].troop_slots == [None, "p2", "p2"]
     assert resolved.resource_pool.influence == 1
-
 
 
 def test_death_tyrant_no_legal_targets_resolves_with_zero_influence() -> None:
@@ -315,14 +325,22 @@ def test_death_tyrant_no_legal_targets_resolves_with_zero_influence() -> None:
     state.board.nodes["site_gauntlgrym"].spies.add("p1")
     state.board.nodes["site_gauntlgrym"].troop_slots = [None, None, None]
 
-    resolved = apply(state, PlayCardMove(player_id="p1", card_id="death_tyrant", hand_index=0))
+    played = apply(state, PlayCardMove(player_id="p1", card_id="death_tyrant", hand_index=0))
+
+    resolved = apply(
+        played,
+        ResolveGenericChoiceMove(
+            player_id="p1",
+            source_card_id="death_tyrant",
+            selection={"target_node_id": "site_gauntlgrym"},
+        ),
+    )
 
     assert resolved.pending_generic_choice is None
     assert resolved.resource_pool.influence == 0
 
 
-
-def test_death_tyrant_can_decline_all_assassinations_even_with_targets() -> None:
+def test_death_tyrant_can_decline_all_assassinations_after_site_selection() -> None:
     state = _base_state(seed=49).model_copy(deep=True)
     state.players["p1"].hand = ["death_tyrant"]
     state.players["p1"].deck = []
@@ -334,36 +352,103 @@ def test_death_tyrant_can_decline_all_assassinations_even_with_targets() -> None
 
     played = apply(state, PlayCardMove(player_id="p1", card_id="death_tyrant", hand_index=0))
 
+    after_site = apply(
+        played,
+        ResolveGenericChoiceMove(
+            player_id="p1",
+            source_card_id="death_tyrant",
+            selection={"target_node_id": "site_gauntlgrym"},
+        ),
+    )
+
     skip_first = next(
         move
-        for move in legal_moves(played)
+        for move in legal_moves(after_site)
         if isinstance(move, ResolveGenericChoiceMove)
         and move.source_card_id == "death_tyrant"
         and move.selection == {}
     )
-    after_first = apply(played, skip_first)
-
-    skip_second = next(
-        move
-        for move in legal_moves(after_first)
-        if isinstance(move, ResolveGenericChoiceMove)
-        and move.source_card_id == "death_tyrant"
-        and move.selection == {}
-    )
-    after_second = apply(after_first, skip_second)
-
-    skip_third = next(
-        move
-        for move in legal_moves(after_second)
-        if isinstance(move, ResolveGenericChoiceMove)
-        and move.source_card_id == "death_tyrant"
-        and move.selection == {}
-    )
-    resolved = apply(after_second, skip_third)
+    resolved = apply(after_site, skip_first)
 
     assert resolved.board.nodes["site_gauntlgrym"].troop_slots == ["p2", "p2", "p2"]
     assert resolved.resource_pool.influence == 0
 
+
+def test_death_tyrant_assassinate_moves_locked_to_selected_site() -> None:
+    state = _base_state(seed=50).model_copy(deep=True)
+    state.players["p1"].hand = ["death_tyrant"]
+    state.players["p1"].deck = []
+    state.players["p1"].discard_pile = []
+    state.players["p1"].played_cards = []
+    state.resource_pool.influence = 0
+    state.board.nodes["site_gauntlgrym"].spies.add("p1")
+    state.board.nodes["site_blingdenfire"].spies.add("p1")
+    state.board.nodes["site_gauntlgrym"].troop_slots = ["p2", "p2", None]
+    state.board.nodes["site_blingdenfire"].troop_slots = ["p2", None, None]
+
+    played = apply(state, PlayCardMove(player_id="p1", card_id="death_tyrant", hand_index=0))
+
+    after_site = apply(
+        played,
+        ResolveGenericChoiceMove(
+            player_id="p1",
+            source_card_id="death_tyrant",
+            selection={"target_node_id": "site_gauntlgrym"},
+        ),
+    )
+
+    assassinate_moves = [
+        move
+        for move in legal_moves(after_site)
+        if isinstance(move, ResolveGenericChoiceMove)
+        and move.source_card_id == "death_tyrant"
+        and "target_node_id" in move.selection
+    ]
+
+    assert assassinate_moves
+    assert {str(move.selection["target_node_id"]) for move in assassinate_moves} == {"site_gauntlgrym"}
+
+
+def test_death_tyrant_can_assassinate_white_troops() -> None:
+    state = _base_state(seed=53).model_copy(deep=True)
+    state.players["p1"].hand = ["death_tyrant"]
+    state.players["p1"].deck = []
+    state.players["p1"].discard_pile = []
+    state.players["p1"].played_cards = []
+    state.resource_pool.influence = 0
+    state.board.nodes["site_gauntlgrym"].spies.add("p1")
+    state.board.nodes["site_gauntlgrym"].troop_slots = ["white", "p2", None]
+
+    played = apply(state, PlayCardMove(player_id="p1", card_id="death_tyrant", hand_index=0))
+
+    after_site = apply(
+        played,
+        ResolveGenericChoiceMove(
+            player_id="p1",
+            source_card_id="death_tyrant",
+            selection={"target_node_id": "site_gauntlgrym"},
+        ),
+    )
+
+    white_move = next(
+        move
+        for move in legal_moves(after_site)
+        if isinstance(move, ResolveGenericChoiceMove)
+        and move.source_card_id == "death_tyrant"
+        and move.selection.get("target_slot_index") == 0
+    )
+    after_kill = apply(after_site, white_move)
+
+    skip1 = next(
+        move for move in legal_moves(after_kill)
+        if isinstance(move, ResolveGenericChoiceMove)
+        and move.source_card_id == "death_tyrant"
+        and move.selection == {}
+    )
+    resolved = apply(after_kill, skip1)
+
+    assert resolved.board.nodes["site_gauntlgrym"].troop_slots == [None, "p2", None]
+    assert resolved.resource_pool.influence == 1
 
 
 def test_dragonclaw_grants_two_power_when_non_white_trophy_threshold_met() -> None:

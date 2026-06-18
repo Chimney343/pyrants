@@ -156,6 +156,8 @@ def _action_requires_selection(action: CardAction) -> bool:
             return True
         if effect_kind == "discard_selected_hand_card_from_self":
             return True
+        if effect_kind == "select_site":
+            return True
 
     if (
         action.op == "force_discard"

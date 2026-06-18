@@ -244,7 +244,11 @@ def _apply_resolve_generic_choice(state: GameState, move: ResolveGenericChoiceMo
                 next_pending = updated.pending_generic_choice
                 if next_pending is None:
                     raise RuleViolationError("pending generic state disappeared before action step advanced")
-                next_pending.next_action_index += 1
+                skip_to = action.metadata.get("skip_advance_to_index")
+                if skip_to is not None:
+                    next_pending.next_action_index = int(skip_to)
+                else:
+                    next_pending.next_action_index += 1
                 return _auto_resolve_pending_generic(updated, move.player_id)
             pending.last_selection = dict(move.selection)
             updated = _apply_generic_action(
