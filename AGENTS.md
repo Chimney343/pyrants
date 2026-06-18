@@ -2,29 +2,50 @@
 
 <!-- Add your custom instructions below. Repowise will never modify anything outside the REPOWISE markers. -->
 
+> **READ THIS FIRST — AGENT DIRECTIVE**
+>
+> 1. **The engine you must work on is written in C and lives in `/engine_c`.** All engine logic, rules, state, and simulation work should target the C codebase under `/engine_c`. The Python `engine/` directory is a **deprecated legacy port** — do not treat it as the engine, do not extend it, and only touch it when explicitly asked. Before editing anything engine-related, orient yourself in `/engine_c` first.
+> 2. **Use the Repowise MCP tools everywhere possible.** This repo is indexed by Repowise. Prefer Repowise tools (`get_answer`, `get_context`, `get_symbol`, `search_codebase`, `get_why`, `get_risk`, `get_dead_code`, `get_overview`) over manual `grep`/`Read` loops for orientation, discovery, rationale, and risk assessment. See the **Repowise MCP Tools** section below for the full tool guide. Always verify Repowise output against the actual source files before making changes, and heed any `stale_warning` in `_meta`.
+
 ## CRITICAL: Engine Language
 
 When discussing the **engine**, always remember: the engine is written in **C**, located at `/engine_c`. Never treat the Python `engine/` directory as if it is the engine itself — it is an old Python version of the C engine.
 
 ## Project Overview
 
-**pyrants** is a turn-based board game engine for Tyrants of the Underdark. The core engine is written in C (`/engine_c`), with a deprecated Python 3.12+ wrapper in `engine/`.
-Pure engine (no I/O in `engine_c/`), Pydantic-typed state, headless simulation, terminal UI interface.
-Last HEAD: `e7791be` (chore: add game manual, dev dependencies, just task, and lockfiles).
+**pyrants** is a turn-based board game engine for *Tyrants of the Underdark*. The active engine is written in **C** and lives in `/engine_c`; it is a pure library (no I/O) exposing state, rules, moves, phases, scoring, a card-effect runtime, player-view projection, save/load, and JSON loading via cJSON. A Python package wraps the C engine (bindings in `engine_c/bindings/`) and provides the terminal UI, simulation, OpenSpiel integration, and tooling. The legacy `engine/` directory is a **deprecated Python port** — do not extend it.
+
+Python side: Python 3.12+, Pydantic-typed state, headless simulation, terminal UI interface.
+
+## Architecture
+
+```
+/engine_c              C engine (source of truth): *.c/*.h, compile.bat, Makefile, engine_c.dll
+/engine_c/bindings     Python ctypes/CPython bindings to engine_c.dll
+/engine_c/tests        C unit tests (test_view, test_describe, test_saveload, test_generic_actions)
+/engine                DEPRECATED legacy Python engine — do not extend
+/interface             Terminal UI (renderer, viewers, board creator, CLI)
+/openspiel_pyrants     OpenSpiel pyspiel wrapper + determinization
+/game_setup            Loaders, state generator, board package, scenarios
+/data                  JSON content: boards, cards, decks, layouts, scenarios
+/tests                 pytest suite (Python side, incl. C-binding tests)
+/scripts               Benchmarks, random walk, scenario/deck generation, IS-MCTS runner
+```
 
 ## Directory Map
 
 | Directory | Purpose |
 |-----------|---------|
-| `engine/` | Pure game logic: state, rules, moves, phases, scoring, helpers, errors |
-| `engine/generic_runtime/` | Card effect interpreter (resolve, actions, selection, custom effects, promotion) |
-| `engine/player_view.py` | Public/private information projection for IS-MCTS |
+| `engine_c/` | **Active C engine**: state, rules, moves, phases, scoring, generic_runtime, actions, selection, player_view, loader, view, describe, saveload |
+| `engine_c/bindings/` | Python bindings to `engine_c.dll` (session runner, etc.) |
+| `engine_c/tests/` | C unit tests (`test_view.c`, `test_describe.c`, `test_saveload.c`, `test_generic_actions.c`) |
+| `engine/` | **DEPRECATED** legacy Python port — only touch when explicitly asked |
 | `interface/` | Terminal UI: board renderer, game viewer, replay viewer, board creator, CLI parser |
 | `openspiel_pyrants/` | OpenSpiel wrapper: game, state, action encoding, observer, determinization |
 | `game_setup/` | Loaders, state generator, board package, scenarios, random state search |
 | `game_setup/scenario_generation/` | Card scenario discovery and injection |
 | `data/` | JSON content: boards, cards (catalog, effect families, schemas), decks (11 rosters), layouts (2), scenarios (125+ card scenarios) |
-| `tests/` | pytest suite: 32 test files covering rules, state, scoring, CLI, scenarios, board, renderer, viewer, simulation, session, engine purity, card model, generic interpreter |
+| `tests/` | pytest suite: 40 test files covering rules, state, scoring, CLI, scenarios, board, renderer, viewer, simulation, session, engine purity, card model, generic interpreter, C bindings |
 | `scripts/` | Utilities: benchmark, random walk, catalog audit, scenario generation, deck artifact generation, review workbook, execution audit, IS-MCTS runner |
 | `docs/` | Game manual, engine/cards/board-creator status docs |
 | `assets/` | Board/map images |
@@ -37,41 +58,84 @@ Last HEAD: `e7791be` (chore: add game manual, dev dependencies, just task, and l
 | `game_session.py` | Shared session controller (state + move log snapshots) | `python game_session.py` |
 | `game_simulation.py` | Headless simulation runner | `just game-simulate` or `python game_simulation.py --players 2 --seed 42 --policy random` |
 | `game_view.py` | Structured game state projection (no I/O) | Import only |
-| `interface/game_viewer.py` | Interactive terminal game viewer | `just game-viewer` |
+| `interface/game_viewer.py` | Interactive terminal game viewer (defaults to `--engine c`) | `just game-viewer` (C) / `just game-viewer-py` (legacy Python) |
 | `interface/replay_viewer.py` | Step through saved replays | `just replay-viewer` |
 | `interface/board_creator.py` | Interactive board creator | `just board-creator` |
-| `scripts/run_ismcts.py` | IS-MCTS bot runner against OpenSpiel wrapper | `just ismcts` or `python -m scripts.run_ismcts` |
+| `scripts/run_ismcts.py` | IS-MCTS bot runner against OpenSpiel wrapper | `just ismcts` (Python backend) / `just ismcts-c` (C backend) |
+| `engine_c/bindings/` | C engine Python bindings | `just simulate-c` |
 
-## Commands
+## Setup Commands
 
-```bash
-just test                  # pytest -q
-just board-creator         # Interactive board creator
-just game-simulate         # Headless simulation
-just game-viewer           # Interactive terminal viewer
-just replay-viewer         # Replay viewer
-just card-stuck-check      # Detect card stuck states
-just generate-card-scenarios  # Generate card scenario data
-just ismcts               # IS-MCTS runner (default 200 sims)
-just ismcts-quick         # IS-MCTS quick run (50 sims, 2 games)
-```
+- **Python (required):** Python 3.12+
+- **Install dependencies:** `uv sync` (preferred; uses `uv.lock`) or `poetry install` (uses `poetry.lock`). Both lockfiles are present; pick one and stick with it.
+- **Run anything via the venv Python:** commands use `.venv/Scripts/python.exe` (see `justfile`). Create the venv with `uv venv` or `python -m venv .venv` then sync.
+- **C toolchain (Windows):** Visual Studio 2022 Build Tools with the C++ workload (needed for `engine_c/compile.bat`). On Linux/macOS/MinGW use `make` in `engine_c/`.
+- **Just:** install the `just` command runner to use the `just <task>` shortcuts below.
 
-- **Test:** `pytest` (from `just test`)
-- **Lint:** `ruff check .`
+## Development Workflow
 
-## Tech Stack
+- Build the C engine + run its tests + produce `engine_c.dll`:
+  ```bash
+  just build-c        # runs engine_c/compile.bat (Windows/MSVC)
+  # or, on GCC platforms:
+  cd engine_c && make && make test
+  ```
+- Interactive terminal viewer (C backend by default): `just game-viewer`
+- Headless simulation: `just game-simulate` (override `players`, `seed`, `policy`, `max_steps`)
+- Replay viewer: `just replay-viewer`
+- Board creator: `just board-creator`
+- IS-MCTS: `just ismcts` (Python backend) or `just ismcts-c` (C backend); quick smoke: `just ismcts-quick`
+- Hot-reload is not used; this is a CLI/library project — re-run the relevant command after edits.
+- After editing C sources, **rebuild** (`just build-c`) before running Python tools that load `engine_c.dll`.
 
-- **Runtime:** Python 3.12+, Pydantic >=2.7
-- **Dev:** pytest >=8.4.2, jsonschema >=4.26.0
-- **Package manager:** uv (uv.lock), poetry (poetry.lock) — both present
-- **Linter:** ruff (line-length 120, py312 target)
+## Testing Instructions
 
-## Conventions
+**Python tests** (pytest, `testpaths = ["tests"]`, naming `tests/test_*.py`):
+- Run all: `just test` (== `.venv/Scripts/python.exe -m pytest -q`)
+- Run one file: `python -m pytest tests/test_rules_basics.py`
+- Run by name/keyword: `python -m pytest -k "promotion"` ; by node id: `python -m pytest tests/test_rules_basics.py::test_name`
+- OpenSpiel wrapper tests: `just openspiel-test`
+- Coverage: `python -m pytest --cov` (no fixed threshold; keep new code covered)
 
-- `engine/` must stay pure — no I/O, no side effects. Enforced by `tests/test_engine_purity.py`.
-- Pydantic models for all domain types.
-- Pure-function state transitions: `engine.rules.apply(state, move) -> state'`.
-- `ruff check .` before committing.
+**C engine tests** (`engine_c/`):
+- Build + run the C suite: `just build-c` (compiles and runs `test_engine`, `test_view`, `test_describe`, `test_generic_actions`, `test_saveload`)
+- Run already-built C test binaries: `just test-c`
+- Python-side C-binding tests: `just test-c-python` (runs `tests/test_engine_c.py -v`)
+- C test sources live in `engine_c/tests/` (`test_view.c`, `test_describe.c`, `test_saveload.c`, `test_generic_actions.c`) plus top-level `engine_c/test_engine.c`, `test_generic.c`, `test_intern_c.c`.
+
+**Always run both `ruff check .` and the relevant test suite before committing.** Add or update tests for any code you change.
+
+## Code Style
+
+- **Python:** ruff (line-length 120, target `py312`); selected rules `E,F,I,B,UP,SIM` (E501 ignored). Run `ruff check .` before committing.
+- **C:** `-Wall -Wextra -std=c11` (GCC) / `/W3 /std:c11 /MT` (MSVC). Keep the engine pure — no I/O, no platform-specific calls in library sources.
+- **Engine purity:** `engine_c/` (and the legacy `engine/`) must contain no I/O and no side effects. Enforced on the Python side by `tests/test_engine_purity.py`.
+- **Domain types:** Pydantic models for Python domain types; pure-function state transitions on the C side (`apply(state, move) -> state'`).
+- **File organization:** headers (`*.h`) declare public surfaces; implementations in matching `*.c`. New engine features go in `/engine_c`, never in `/engine`.
+
+## Build and Deployment
+
+- **C build (Windows/MSVC):** `just build-c` → `engine_c/compile.bat [debug|release]` produces `libengine.lib`, `test_*.exe`, and `engine_c.dll` (exports per `engine_c.def`).
+- **C build (GCC/MinGW/Linux/macOS):** `cd engine_c && make` → `libengine.a`; `make test` builds and runs `test_engine`.
+- **Python:** no separate build step; install deps and run. The C `engine_c.dll` must be built and present for any `--engine c` tooling or C-binding tests to work.
+- **CI:** no `.github/workflows` present in the repo; validation is local (`just test`, `just build-c`, `just test-c-python`, `ruff check .`).
+- **Artifacts:** generated outputs (replays, profiler, stuck reports) go under `artifacts/` and are not shipped.
+
+## Pull Request Guidelines
+
+- Title format: `[area] Brief description` (e.g. `[engine-c] fix promotion edge case`, `[ui] add replay scrubber`).
+- Required pre-commit checks: `ruff check .`, `just test`, `just build-c` + `just test-c` / `just test-c-python` (when touching `/engine_c` or bindings).
+- Engine changes must keep `tests/test_engine_purity.py` green and add/extend C or Python tests covering the new behavior.
+- Do not extend the deprecated `engine/` Python port in a PR unless explicitly scoped.
+- Keep commits focused; do not mix engine, UI, and data-format changes in one PR.
+
+## Debugging and Troubleshooting
+
+- **`engine_c.dll` not found / import errors from bindings:** rebuild with `just build-c` and ensure the DLL is in `engine_c/` on the loader's path.
+- **C tests fail to link:** rerun `just build-c` from a clean state (`cd engine_c && nmake /f Makefile clean` or delete `*.obj`/`*.lib`); confirm VS 2022 Build Tools + C++ workload are installed.
+- **Stale Repowise index:** the auto-generated block below may lag HEAD; trust source files first and heed any `stale_warning` in `_meta` from Repowise tools.
+- **Card-stuck states:** `just card-stuck-check` (and CI variant `just card-stuck-check-ci`) detect rosters that deadlock; reports written to `artifacts/card_stuck_report.json`.
+- **Performance profiling:** `just ismcts-perf` / `just ismcts-c-perf` produce cProfile output under `artifacts/ismcts/`.
 
 > **Note:** The Repowise index below was last generated 2026-06-04 (commit `2a60abe`).
 > Current HEAD is `e7791be` (3 commits ahead). The index is stale.

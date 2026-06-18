@@ -65,7 +65,7 @@ openspiel-smoke:
 ismcts num_sims="200" num_games="4" seed="42" output_dir="artifacts/ismcts" workers="16" num_players="4":
     & {{python}} -m scripts.run_ismcts --num-sims {{num_sims}} --num-games {{num_games}} --seed {{seed}} --output-dir {{output_dir}} --workers {{workers}} --num-players {{num_players}}
 
-ismtcs-quick workers="1" num_players="2":
+ismcts-quick workers="1" num_players="2":
     & {{python}} -m scripts.run_ismcts --num-sims 2 --num-games 1 --seed 42 --workers {{workers}} --num-players {{num_players}}
 
 ismcts-perf num_players="2" *args:
