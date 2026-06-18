@@ -25,6 +25,12 @@ def _base_state(seed: int = 11):
     )
 
 
+def _base_state_4p(seed: int = 11):
+    return advance_past_setup(
+        create_game_state_from_files(BOARD_PATH, CARD_PATH, SETUP_PATH, ["p1", "p2", "p3", "p4"], seed=seed)
+    )
+
+
 def _ability_state(cards: list[dict[str, object]], starter_entries: list[dict[str, object]]) -> object:
     board_data = {
         "board_id": "ability_test_board",
@@ -227,6 +233,426 @@ def test_ettin_modal_assassinate_option_removes_two_white_troops() -> None:
     assert resolved.board.nodes["site_gauntlgrym"].troop_slots == [None, None, None]
     assert resolved.players["p1"].trophy_hall == ["white", "white"]
 
+
+# ── Aboleth ─────────────────────────────────────────────────────────────────
+
+
+def test_aboleth_option_one_places_two_spies() -> None:
+    state = _base_state(seed=101).model_copy(deep=True)
+    state.players["p1"].hand = ["aboleth"]
+    state.players["p1"].deck = []
+    state.players["p1"].discard_pile = []
+    state.players["p1"].played_cards = []
+    state.players["p1"].spies_available = 2
+    state.board.nodes["site_gauntlgrym"].spies.discard("p1")
+    state.board.nodes["site_blingdenfire"].spies.discard("p1")
+
+    played = apply(state, PlayCardMove(player_id="p1", card_id="aboleth", hand_index=0))
+
+    option_1 = apply(
+        played,
+        ResolveGenericChoiceMove(player_id="p1", source_card_id="aboleth", option_id="option_1"),
+    )
+
+    after_first = apply(
+        option_1,
+        ResolveGenericChoiceMove(
+            player_id="p1", source_card_id="aboleth",
+            selection={"target_node_id": "site_gauntlgrym"},
+        ),
+    )
+    resolved = apply(
+        after_first,
+        ResolveGenericChoiceMove(
+            player_id="p1", source_card_id="aboleth",
+            selection={"target_node_id": "site_blingdenfire"},
+        ),
+    )
+
+    assert "p1" in resolved.board.nodes["site_gauntlgrym"].spies
+    assert "p1" in resolved.board.nodes["site_blingdenfire"].spies
+    assert resolved.pending_generic_choice is None
+
+
+def test_aboleth_option_two_draws_cards_per_spy_on_board() -> None:
+    state = _base_state(seed=102).model_copy(deep=True)
+    state.players["p1"].hand.insert(0, "aboleth")
+    state.players["p1"].deck = ["noble", "noble", "noble", "noble"]
+    state.players["p1"].discard_pile = []
+    state.players["p1"].played_cards = []
+    state.board.nodes["site_gauntlgrym"].spies.add("p1")
+    state.board.nodes["site_blingdenfire"].spies.add("p1")
+
+    hand_before = len(state.players["p1"].hand)
+    played = apply(state, PlayCardMove(player_id="p1", card_id="aboleth", hand_index=0))
+
+    resolved = apply(
+        played,
+        ResolveGenericChoiceMove(player_id="p1", source_card_id="aboleth", option_id="option_2"),
+    )
+
+    assert resolved.pending_generic_choice is None
+    assert len(resolved.players["p1"].hand) == (hand_before - 1) + 2  # drew 2 cards for 2 spies
+
+
+def test_aboleth_option_two_draws_no_cards_when_no_spies_on_board() -> None:
+    state = _base_state(seed=103).model_copy(deep=True)
+    state.players["p1"].hand.insert(0, "aboleth")
+    state.players["p1"].deck = ["noble", "noble"]
+    state.players["p1"].discard_pile = []
+    state.players["p1"].played_cards = []
+    for node_id in state.board.nodes:
+        state.board.nodes[node_id].spies.discard("p1")
+
+    hand_before = len(state.players["p1"].hand)
+    played = apply(state, PlayCardMove(player_id="p1", card_id="aboleth", hand_index=0))
+
+    resolved = apply(
+        played,
+        ResolveGenericChoiceMove(player_id="p1", source_card_id="aboleth", option_id="option_2"),
+    )
+
+    assert resolved.pending_generic_choice is None
+    assert len(resolved.players["p1"].hand) == hand_before - 1  # no draws
+
+
+# ── Ambassador ──────────────────────────────────────────────────────────────
+
+
+def test_ambassador_promotes_another_played_card_at_end_of_turn() -> None:
+    state = _base_state(seed=104).model_copy(deep=True)
+    state.players["p1"].hand = ["ambassador"]
+    state.players["p1"].deck = []
+    state.players["p1"].discard_pile = []
+    state.players["p1"].played_cards = ["noble"]
+
+    played = apply(state, PlayCardMove(player_id="p1", card_id="ambassador", hand_index=0))
+
+    assert played.pending_generic_choice is None
+    assert "ambassador" in played.players["p1"].played_cards
+    assert len(played.players["p1"].played_cards) >= 2
+
+
+def test_ambassador_with_no_other_played_card_skips_promotion() -> None:
+    state = _base_state(seed=105).model_copy(deep=True)
+    state.players["p1"].hand = ["ambassador"]
+    state.players["p1"].deck = []
+    state.players["p1"].discard_pile = []
+    state.players["p1"].played_cards = []
+
+    played = apply(state, PlayCardMove(player_id="p1", card_id="ambassador", hand_index=0))
+
+    assert played.pending_generic_choice is None
+
+
+# ── Beholder ────────────────────────────────────────────────────────────────
+
+
+def test_beholder_assassinates_troop_and_grants_scaled_power() -> None:
+    state = _base_state(seed=106).model_copy(deep=True)
+    state.players["p1"].hand = ["beholder"]
+    state.players["p1"].deck = []
+    state.players["p1"].discard_pile = []
+    state.players["p1"].played_cards = []
+    state.players["p1"].trophy_hall = ["p2", "p2", "p2", "p2", "p2", "p2"]
+    state.resource_pool.power = 0
+    state.board.nodes["site_gauntlgrym"].spies.add("p1")
+    state.board.nodes["site_gauntlgrym"].troop_slots = ["p2", None, None]
+
+    played = apply(state, PlayCardMove(player_id="p1", card_id="beholder", hand_index=0))
+    resolved = apply(
+        played,
+        ResolveGenericChoiceMove(
+            player_id="p1", source_card_id="beholder",
+            selection={"target_node_id": "site_gauntlgrym", "target_slot_index": 0},
+        ),
+    )
+
+    assert resolved.resource_pool.power == 2  # 6 trophy troops / 3 = 2
+    assert resolved.pending_generic_choice is None
+
+
+def test_beholder_no_legal_targets_resolves_with_power_only() -> None:
+    state = _base_state(seed=107).model_copy(deep=True)
+    state.players["p1"].hand = ["beholder"]
+    state.players["p1"].deck = []
+    state.players["p1"].discard_pile = []
+    state.players["p1"].played_cards = []
+    state.players["p1"].trophy_hall = ["p2", "p2", "p2"]
+    state.resource_pool.power = 0
+    state.board.nodes["site_gauntlgrym"].spies.add("p1")
+    state.board.nodes["site_gauntlgrym"].troop_slots = [None, None, None]
+
+    resolved = apply(state, PlayCardMove(player_id="p1", card_id="beholder", hand_index=0))
+
+    assert resolved.resource_pool.power == 1  # 3 trophy troops / 3 = 1
+    assert resolved.pending_generic_choice is None
+
+
+# ── Brainwashed Slave ───────────────────────────────────────────────────────
+
+
+def test_brainwashed_slave_option_one_places_spy() -> None:
+    state = _base_state(seed=108).model_copy(deep=True)
+    state.players["p1"].hand = ["brainwashed_slave"]
+    state.players["p1"].deck = []
+    state.players["p1"].discard_pile = []
+    state.players["p1"].played_cards = []
+    state.players["p1"].spies_available = 1
+    state.board.nodes["site_gauntlgrym"].spies.discard("p1")
+
+    played = apply(state, PlayCardMove(player_id="p1", card_id="brainwashed_slave", hand_index=0))
+    option_1 = apply(
+        played,
+        ResolveGenericChoiceMove(player_id="p1", source_card_id="brainwashed_slave", option_id="option_1"),
+    )
+    resolved = apply(
+        option_1,
+        ResolveGenericChoiceMove(
+            player_id="p1", source_card_id="brainwashed_slave",
+            selection={"target_node_id": "site_gauntlgrym"},
+        ),
+    )
+
+    assert "p1" in resolved.board.nodes["site_gauntlgrym"].spies
+    assert resolved.pending_generic_choice is None
+
+
+def test_brainwashed_slave_option_two_returns_spy_and_grants_resources() -> None:
+    state = _base_state(seed=109).model_copy(deep=True)
+    state.players["p1"].hand = ["brainwashed_slave"]
+    state.players["p1"].deck = []
+    state.players["p1"].discard_pile = []
+    state.players["p1"].played_cards = []
+    state.resource_pool.power = 0
+    state.resource_pool.influence = 0
+    state.board.nodes["site_gauntlgrym"].spies.add("p1")
+
+    played = apply(state, PlayCardMove(player_id="p1", card_id="brainwashed_slave", hand_index=0))
+    option_2 = apply(
+        played,
+        ResolveGenericChoiceMove(player_id="p1", source_card_id="brainwashed_slave", option_id="option_2"),
+    )
+    resolved = apply(
+        option_2,
+        ResolveGenericChoiceMove(
+            player_id="p1", source_card_id="brainwashed_slave",
+            selection={"node_id": "site_gauntlgrym", "spy_owner_id": "p1"},
+        ),
+    )
+
+    assert "p1" not in resolved.board.nodes["site_gauntlgrym"].spies
+    assert resolved.resource_pool.power == 2
+    assert resolved.resource_pool.influence == 2
+    assert resolved.pending_generic_choice is None
+
+
+# ── Chuul ───────────────────────────────────────────────────────────────────
+
+
+def test_chuul_places_spy_and_discards_from_opponents_at_same_site() -> None:
+    state = _base_state_4p(seed=110).model_copy(deep=True)
+    state.players["p1"].hand = ["chuul"]
+    state.players["p1"].deck = []
+    state.players["p1"].discard_pile = []
+    state.players["p1"].played_cards = []
+    state.players["p1"].spies_available = 1
+    state.current_player_id = "p1"
+    state.players["p2"].hand = ["noble", "noble", "noble", "noble"]
+    state.players["p2"].deck = []
+    state.players["p2"].discard_pile = []
+    state.players["p3"].hand = ["noble", "noble"]
+    state.board.nodes["site_gauntlgrym"].spies.discard("p1")
+    state.board.nodes["site_gauntlgrym"].troop_slots = ["p2", None, None]
+
+    played = apply(state, PlayCardMove(player_id="p1", card_id="chuul", hand_index=0))
+    resolved = apply(
+        played,
+        ResolveGenericChoiceMove(
+            player_id="p1", source_card_id="chuul",
+            selection={"target_node_id": "site_gauntlgrym"},
+        ),
+    )
+
+    assert "p1" in resolved.board.nodes["site_gauntlgrym"].spies
+    assert resolved.pending_generic_choice is None
+    assert len(resolved.players["p2"].hand) == 3  # p2 had 4, discards 1
+    assert len(resolved.players["p3"].hand) == 2  # p3 had 2 (< 3), not affected
+
+
+def test_chuul_only_affects_opponents_at_same_site() -> None:
+    state = _base_state_4p(seed=111).model_copy(deep=True)
+    state.players["p1"].hand = ["chuul"]
+    state.players["p1"].deck = []
+    state.players["p1"].discard_pile = []
+    state.players["p1"].played_cards = []
+    state.players["p1"].spies_available = 1
+    state.current_player_id = "p1"
+    state.players["p2"].hand = ["noble", "noble", "noble", "noble"]
+    state.players["p2"].deck = []
+    state.players["p3"].hand = ["noble", "noble", "noble", "noble"]
+    state.board.nodes["site_gauntlgrym"].spies.discard("p1")
+    state.board.nodes["site_gauntlgrym"].troop_slots = ["p2", None, None]
+    for node_id in state.board.nodes:
+        state.board.nodes[node_id].spies.discard("p3")
+
+    played = apply(state, PlayCardMove(player_id="p1", card_id="chuul", hand_index=0))
+    resolved = apply(
+        played,
+        ResolveGenericChoiceMove(
+            player_id="p1", source_card_id="chuul",
+            selection={"target_node_id": "site_gauntlgrym"},
+        ),
+    )
+
+    assert len(resolved.players["p2"].hand) == 3  # p2 affected (presence at site)
+    assert len(resolved.players["p3"].hand) == 4  # p3 not affected (no presence)
+
+
+# ── Cloaker ─────────────────────────────────────────────────────────────────
+
+
+def test_cloaker_option_one_places_spy() -> None:
+    state = _base_state(seed=112).model_copy(deep=True)
+    state.players["p1"].hand = ["cloaker"]
+    state.players["p1"].deck = []
+    state.players["p1"].discard_pile = []
+    state.players["p1"].played_cards = []
+    state.players["p1"].spies_available = 1
+    state.board.nodes["site_gauntlgrym"].spies.discard("p1")
+
+    played = apply(state, PlayCardMove(player_id="p1", card_id="cloaker", hand_index=0))
+    option_1 = apply(
+        played,
+        ResolveGenericChoiceMove(player_id="p1", source_card_id="cloaker", option_id="option_1"),
+    )
+    resolved = apply(
+        option_1,
+        ResolveGenericChoiceMove(
+            player_id="p1", source_card_id="cloaker",
+            selection={"target_node_id": "site_gauntlgrym"},
+        ),
+    )
+
+    assert "p1" in resolved.board.nodes["site_gauntlgrym"].spies
+    assert resolved.pending_generic_choice is None
+
+
+def test_cloaker_option_two_returns_spy_and_assassinates() -> None:
+    state = _base_state(seed=113).model_copy(deep=True)
+    state.players["p1"].hand = ["cloaker"]
+    state.players["p1"].deck = []
+    state.players["p1"].discard_pile = []
+    state.players["p1"].played_cards = []
+    state.board.nodes["site_gauntlgrym"].spies.add("p1")
+    state.board.nodes["site_gauntlgrym"].troop_slots = ["p1", "p2", None]  # p1 has troop for presence
+
+    played = apply(state, PlayCardMove(player_id="p1", card_id="cloaker", hand_index=0))
+
+    option_2 = apply(
+        played,
+        ResolveGenericChoiceMove(player_id="p1", source_card_id="cloaker", option_id="option_2"),
+    )
+    after_return = apply(
+        option_2,
+        ResolveGenericChoiceMove(
+            player_id="p1", source_card_id="cloaker",
+            selection={"node_id": "site_gauntlgrym", "spy_owner_id": "p1"},
+        ),
+    )
+    resolved = apply(
+        after_return,
+        ResolveGenericChoiceMove(
+            player_id="p1", source_card_id="cloaker",
+            selection={"target_node_id": "site_gauntlgrym", "target_slot_index": 1},
+        ),
+    )
+
+    assert "p1" not in resolved.board.nodes["site_gauntlgrym"].spies
+    assert resolved.board.nodes["site_gauntlgrym"].troop_slots[1] is None  # assassinated p2
+    assert resolved.players["p1"].trophy_hall == ["p2"]
+    assert resolved.pending_generic_choice is None
+
+
+# ── Cranium Rats ────────────────────────────────────────────────────────────
+
+
+def test_cranium_rats_deploys_two_troops_and_targeted_discard() -> None:
+    state = _base_state(seed=114).model_copy(deep=True)
+    state.players["p1"].hand = ["cranium_rats"]
+    state.players["p1"].deck = []
+    state.players["p1"].discard_pile = []
+    state.players["p1"].played_cards = []
+    state.players["p1"].barracks = 5
+    state.players["p2"].hand = ["noble", "noble", "noble", "noble"]
+    state.players["p2"].deck = []
+    state.board.nodes["site_gauntlgrym"].spies.add("p1")
+
+    played = apply(state, PlayCardMove(player_id="p1", card_id="cranium_rats", hand_index=0))
+
+    deploy_move = next(
+        m for m in legal_moves(played)
+        if isinstance(m, ResolveGenericChoiceMove) and m.source_card_id == "cranium_rats"
+        and "target_node_id" in m.selection
+    )
+    first_deploy = apply(played, deploy_move)
+
+    deploy_move2 = next(
+        m for m in legal_moves(first_deploy)
+        if isinstance(m, ResolveGenericChoiceMove) and m.source_card_id == "cranium_rats"
+        and "target_node_id" in m.selection
+    )
+    after_deploy = apply(first_deploy, deploy_move2)
+
+    discard_move = next(
+        m for m in legal_moves(after_deploy)
+        if isinstance(m, ResolveGenericChoiceMove) and m.source_card_id == "cranium_rats"
+        and "target_player_id" in m.selection
+    )
+    resolved = apply(after_deploy, discard_move)
+
+    assert resolved.pending_generic_choice is None
+    assert len(resolved.players["p2"].hand) == 3  # p2 had 4, discards 1
+
+
+def test_cranium_rats_no_opponent_with_three_cards_skips_discard() -> None:
+    """When no opponent has presence at the site, targeted_discard still offers
+    all opponents as targets since hand-size is not filtered at selection time."""
+    state = _base_state(seed=115).model_copy(deep=True)
+    state.players["p1"].hand = ["cranium_rats"]
+    state.players["p1"].deck = []
+    state.players["p1"].discard_pile = []
+    state.players["p1"].played_cards = []
+    state.players["p1"].barracks = 5
+    state.players["p2"].hand = ["noble", "noble"]
+    state.players["p2"].deck = []
+    state.board.nodes["site_gauntlgrym"].spies.add("p1")
+
+    played = apply(state, PlayCardMove(player_id="p1", card_id="cranium_rats", hand_index=0))
+
+    deploy_move = next(
+        m for m in legal_moves(played)
+        if isinstance(m, ResolveGenericChoiceMove) and m.source_card_id == "cranium_rats"
+        and "target_node_id" in m.selection
+    )
+    after_first = apply(played, deploy_move)
+
+    deploy_move2 = next(
+        m for m in legal_moves(after_first)
+        if isinstance(m, ResolveGenericChoiceMove) and m.source_card_id == "cranium_rats"
+        and "target_node_id" in m.selection
+    )
+    after_deploy = apply(after_first, deploy_move2)
+
+    discard_move = next(
+        m for m in legal_moves(after_deploy)
+        if isinstance(m, ResolveGenericChoiceMove) and m.source_card_id == "cranium_rats"
+        and "target_player_id" in m.selection
+    )
+    resolved = apply(after_deploy, discard_move)
+
+    assert resolved.pending_generic_choice is None
+    assert len(resolved.players["p2"].hand) == 1  # p2 had 2, discards 1
 
 
 def test_death_tyrant_gains_influence_per_troop_removed_by_effect() -> None:

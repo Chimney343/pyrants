@@ -18,7 +18,7 @@ from engine.generic_runtime._utils import (
     _pending_generic_card_definition,
     _resolve_runtime_action_count,
 )
-from engine.helpers import _apply_promote_instruction
+from engine.helpers import _apply_promote_instruction, _cow_player, has_presence
 from engine.moves import Move, ResolveGenericChoiceMove
 from engine.state import (
     CardAction,
@@ -161,6 +161,29 @@ def _auto_resolve_pending_generic(state: GameState, player_id: str) -> GameState
             return _apply_promote_instruction(updated, player_id, source_card_id, promote_payload)
 
         if not _action_focus_requirement_met(updated, player_id, card, pending.source_card_id, action):
+            pending.next_action_index += 1
+            continue
+
+        # Intercept local_discard: force_discard with opponent scope auto-applies
+        # to each opponent with presence on the last-selected site and 3+ cards.
+        if (
+            action.op == "force_discard"
+            and action.target_scope.strip().lower() == "opponent"
+            and action.source_fragment.strip().lower() == "local_discard"
+        ):
+            last_node_id = str(pending.last_selection.get("target_node_id", "")).strip()
+            if last_node_id:
+                import random
+                for opp_id, opp in updated.players.items():
+                    if opp_id == player_id:
+                        continue
+                    if not has_presence(updated, opp_id, last_node_id):
+                        continue
+                    if len(opp.hand) < 3:
+                        continue
+                    discarded_idx = random.randint(0, len(opp.hand) - 1)
+                    target_player = _cow_player(updated, opp_id)
+                    target_player.discard_pile.append(target_player.hand.pop(discarded_idx))
             pending.next_action_index += 1
             continue
 
