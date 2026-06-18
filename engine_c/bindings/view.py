@@ -116,13 +116,14 @@ class CGameViewData:
 class CLegalMoveView:
     """Lightweight LegalMoveView-compatible wrapper for C engine moves."""
 
-    __slots__ = ("move", "move_type", "label", "payload")
+    __slots__ = ("move", "move_type", "label", "payload", "available")
 
-    def __init__(self, move, move_type: str, label: str):
+    def __init__(self, move, move_type: str, label: str, *, available: bool = True):
         self.move = move
         self.move_type = move_type
         self.label = label
         self.payload = {}
+        self.available = available
 
 
 def _load_catalog() -> dict[str, dict]:
@@ -164,17 +165,61 @@ def _make_card_view(card_id: str) -> CardView:
     )
 
 
-def _build_c_legal_moves(session, state_ptr, *, node_names=None) -> tuple:
+def _build_c_legal_moves(session, state_ptr, *, node_names=None, player_spy_count=0) -> tuple:
     try:
         moves = session.legal_moves()
     except Exception:
         return ()
 
+    from .engine_bindings import _lib as _elib
+
     result = []
     for mw in moves:
         raw_label = _describe_c_move(state_ptr, mw, node_names_dict=node_names)
-        final_label = enrich_label(mw.move_type, raw_label, mw.data)
-        result.append(CLegalMoveView(mw, mw.move_type, final_label))
+        source_card_id = ""
+        card_action_id = ""
+        is_option_choice = False
+        if mw.move_type == "resolve_generic":
+            try:
+                pg_ptr = state_ptr.contents.pending_generic
+                if pg_ptr:
+                    pg = pg_ptr.contents
+                    source_card_id = _elib.intern_str(pg.source_card_id).decode()
+                    is_option_choice = bool(pg.awaiting_option)
+                    if not is_option_choice:
+                        idx = pg.next_action_index
+                        if 0 <= idx < pg.current_action_count:
+                            current_action = pg.current_actions[idx]
+                            if current_action.action_id:
+                                card_action_id = _elib.intern_str(current_action.action_id).decode()
+            except Exception:
+                pass
+        promotion_source_card_id = ""
+        if mw.move_type == "promote_card":
+            try:
+                s = state_ptr.contents
+                if s.pending_eot_count > 0:
+                    promotion_source_card_id = _elib.intern_str(
+                        s.pending_eot[0].source_card_id
+                    ).decode()
+                elif s.pending_immediate_count > 0:
+                    promotion_source_card_id = _elib.intern_str(
+                        s.pending_immediate[0].source_card_id
+                    ).decode()
+            except Exception:
+                pass
+        final_label = enrich_label(
+            mw.move_type, raw_label, mw.data,
+            source_card_id=source_card_id,
+            card_action_id=card_action_id,
+            is_option_choice=is_option_choice,
+            player_spy_count=player_spy_count,
+            promotion_source_card_id=promotion_source_card_id,
+        )
+        available = mw.data.get("target_id") != "unavailable"
+        if not available:
+            final_label += " [ILLEGAL MOVE]"
+        result.append(CLegalMoveView(mw, mw.move_type, final_label, available=available))
     return tuple(result)
 
 
@@ -233,6 +278,15 @@ def build_c_game_view(
 
     c_view = CGameView()
     _lib.engine_build_view(state_ptr, ctypes.byref(c_view))
+
+    # Count current player's spies on the board for label enrichment
+    player_spy_count = 0
+    current_player_sym = c_view.current_player_id
+    for i in range(c_view.node_count):
+        nv = c_view.nodes[i]
+        for j in range(nv.spy_count):
+            if nv.spies[j] == current_player_sym:
+                player_spy_count += 1
 
     current_player_id = _sym_str(c_view.current_player_id) or ""
 
@@ -346,5 +400,5 @@ def build_c_game_view(
         player_summaries=tuple(player_summaries),
         board_nodes=tuple(board_nodes),
         prompts=(f"{current_player_id} is acting in {_PHASE_MAP.get(c_view.phase, 'unknown').replace('_', ' ')}.",),
-        legal_moves=_build_c_legal_moves(session, state_ptr, node_names=node_names),
+        legal_moves=_build_c_legal_moves(session, state_ptr, node_names=node_names, player_spy_count=player_spy_count),
     )

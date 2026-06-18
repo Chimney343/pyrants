@@ -105,7 +105,7 @@ int engine_describe_move(const GameState *state, const Move *move,
                                                    move->data.assassinate.slot_index);
             const char *nid = intern_str(move->data.assassinate.target_node_id);
             const char *label = node_label(nid, node_ids, node_labels, node_pair_count);
-            snprintf(buf, sizeof(buf), "Remove %s troop at %s", owner, label);
+            snprintf(buf, sizeof(buf), "Remove %s troop from %s", owner, label);
             break;
         }
         case MOVE_RECRUIT: {
