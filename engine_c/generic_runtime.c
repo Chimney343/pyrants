@@ -120,12 +120,15 @@ int action_requires_selection(const CardAction *action) {
     if (!op) return 0;
     /* force_discard with target_scope "opponent" auto-applies to all
      * opponents at the last-selected site (Chuul's local_discard).
+     * conditional_owner_discard auto-applies to the last-assassinated
+     * troop's owner (Mindwitness).
      * Other source_fragments (e.g. targeted_discard) require selection. */
     if (strcmp(op, "force_discard") == 0) {
         const char *ts = intern_str(action->target_scope);
         if (ts && strcmp(ts, "opponent") == 0) {
             const char *sf = intern_str(action->source_fragment);
             if (sf && strcmp(sf, "local_discard") == 0) return 0;
+            if (sf && strcmp(sf, "conditional_owner_discard") == 0) return 0;
         }
     }
     for (int i = 0; selection_ops[i]; i++)
@@ -299,6 +302,51 @@ GameState *auto_resolve_pending_generic(GameState *state, Sym player_id) {
             }
         }
 
+        /* Intercept conditional_owner_discard opponent-scoped force_discard:
+         * the owner of the last-assassinated troop discards a random card
+         * if they have 3+ cards in hand (Mindwitness). The owner is
+         * captured as target_owner_id during the assassinate resolve step,
+         * before the troop is removed from the board. */
+        {
+            const char *op_str = intern_str(action->op);
+            if (op_str && strcmp(op_str, "force_discard") == 0) {
+                const char *ts = intern_str(action->target_scope);
+                const char *sf_str = intern_str(action->source_fragment);
+                if (ts && strcmp(ts, "opponent") == 0
+                    && sf_str && strcmp(sf_str, "conditional_owner_discard") == 0) {
+                    Sym target_owner = SYM_NULL;
+                    for (int i = 0; i < p->last_selection_count; i++) {
+                        const char *k = intern_str(p->last_selection_keys[i]);
+                        if (k && strcmp(k, "target_owner_id") == 0) {
+                            target_owner = p->last_selection_values[i];
+                            break;
+                        }
+                    }
+                    if (target_owner != SYM_NULL && target_owner != player_id) {
+                        const char *os = intern_str(target_owner);
+                        if (os && strcmp(os, "white") != 0) {
+                            PlayerState *ps = cow_player(state, target_owner);
+                            if (ps && ps->hand_count >= 3) {
+                                RNG rng;
+                                rng_seed(&rng, state->shuffle_seed);
+                                for (int c = 0; c < state->shuffle_counter; c++)
+                                    rng_next(&rng);
+                                int idx = rng_randint(&rng, 0, ps->hand_count - 1);
+                                if (ps->discard_pile_count < MAX_ZONE_SIZE)
+                                    ps->discard_pile[ps->discard_pile_count++] = ps->hand[idx];
+                                for (int h = idx; h < ps->hand_count - 1; h++)
+                                    ps->hand[h] = ps->hand[h + 1];
+                                ps->hand_count--;
+                                state->shuffle_counter++;
+                            }
+                        }
+                    }
+                    p->next_action_index++;
+                    continue;
+                }
+            }
+        }
+
         /* Intercept local_discard opponent-scoped force_discard: each
          * opponent with presence on the last-selected node and 3+ cards
          * discards a random card (Chuul's local_discard). */
@@ -409,8 +457,8 @@ GameState *apply_resolve_generic_choice(GameState *src, const Move *move) {
                 else p->next_action_index++;
                 return auto_resolve_pending_generic(state, pid);
             }
-            int sk[3] = {0};
-            Sym sv[3] = {0};
+            int sk[4] = {0};
+            Sym sv[4] = {0};
             int sc = 0;
             Sym aid = move->data.resolve_generic.action_id;
             Sym tid = move->data.resolve_generic.target_id;
@@ -422,6 +470,21 @@ GameState *apply_resolve_generic_choice(GameState *src, const Move *move) {
                            strcmp(op, "supplant_troop") == 0) {
                     if (aid != SYM_NULL) { sk[sc] = intern("target_node_id"); sv[sc] = aid; sc++; }
                     if (tid != SYM_NULL) { sk[sc] = intern("target_slot_index"); sv[sc] = tid; sc++; }
+                    if (aid != SYM_NULL && tid != SYM_NULL && sc < 4) {
+                        const char *tid_str = intern_str(tid);
+                        int si = tid_str ? atoi(tid_str) : 0;
+                        for (int ni = 0; ni < state->node_count; ni++) {
+                            if (state->nodes[ni].node_id == aid) {
+                                if (si >= 0 && si < state->nodes[ni].troop_slot_count) {
+                                    Sym occ = state->nodes[ni].troop_slots[si];
+                                    if (occ != SYM_NULL) {
+                                        sk[sc] = intern("target_owner_id"); sv[sc] = occ; sc++;
+                                    }
+                                }
+                                break;
+                            }
+                        }
+                    }
                 } else if (strcmp(op, "return_spy") == 0) {
                     if (aid != SYM_NULL) { sk[sc] = intern("node_id"); sv[sc] = aid; sc++; }
                 } else if (strcmp(op, "promote_card") == 0) {
@@ -433,7 +496,7 @@ GameState *apply_resolve_generic_choice(GameState *src, const Move *move) {
                 } else if (strcmp(op, "force_discard") == 0) {
                     if (aid != SYM_NULL) {
                         const char *sf2 = intern_str(action->source_fragment);
-                        if (sf2 && strcmp(sf2, "targeted_discard") == 0) {
+                        if (sf2 && (strcmp(sf2, "targeted_discard") == 0 || strcmp(sf2, "conditional_owner_discard") == 0)) {
                             sk[sc] = intern("target_player_id"); sv[sc] = aid; sc++;
                         } else {
                             sk[sc] = intern("target_card_id"); sv[sc] = aid; sc++;

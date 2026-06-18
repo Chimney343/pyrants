@@ -3,6 +3,7 @@
 #include "intern.h"
 #include <ctype.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 static const char *card_name_for(const GameState *state, Sym card_id) {
@@ -155,6 +156,16 @@ int engine_describe_move(const GameState *state, const Move *move,
                     } else if (op && strcmp(op, "recruit_card") == 0) {
                         const char *name = card_name_for(state, aid);
                         snprintf(buf, sizeof(buf), "Recruit %s", name);
+                    } else if (op && (strcmp(op, "assassinate_troop") == 0 || strcmp(op, "supplant_troop") == 0)) {
+                        Sym tid = move->data.resolve_generic.target_id;
+                        int slot_idx = 0;
+                        if (tid != SYM_NULL) {
+                            const char *ts = intern_str(tid);
+                            if (ts) slot_idx = atoi(ts);
+                        }
+                        const char *owner = troop_owner_label(state, aid, slot_idx);
+                        const char *label = node_label(intern_str(aid), node_ids, node_labels, node_pair_count);
+                        snprintf(buf, sizeof(buf), "Remove %s troop from %s", owner, label);
                     } else {
                         const char *name = card_name_for(state, aid);
                         snprintf(buf, sizeof(buf), "Resolve %s", name);
