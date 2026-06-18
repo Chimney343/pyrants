@@ -2,6 +2,7 @@
 #include "helpers.h"
 #include "phases.h"
 #include "moves.h"
+#include "rng.h"
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -27,9 +28,6 @@ static int find_sel_int(int *keys, Sym *vals, int count, const char *key, int de
 }
 
 static int resolve_count(GameState *state, Sym player_id, const CardAction *action) {
-    if (action->quantity_kind == QUANT_FIXED && action->quantity_value > 0)
-        return action->quantity_value;
-
     for (int i = 0; i < action->metadata_count; i++) {
         const char *k = intern_str(action->metadata[i].key);
         const char *v = intern_str(action->metadata[i].value);
@@ -43,8 +41,21 @@ static int resolve_count(GameState *state, Sym player_id, const CardAction *acti
                         if (state->nodes[ni].spies[si] == player_id) c++;
                 return c;
             }
+            if (strcmp(v, "assassinations_by_source_effect") == 0) {
+                PendingGenericChoiceState *p = state->pending_generic;
+                if (!p) return 0;
+                int total = 0;
+                for (int ci = 0; ci < p->counter_count; ci++) {
+                    const char *ck = intern_str(p->counter_keys[ci]);
+                    if (ck && strncmp(ck, "assassinate_troop:", 17) == 0)
+                        total += p->counter_values[ci];
+                }
+                return total;
+            }
         }
     }
+    if (action->quantity_kind == QUANT_FIXED && action->quantity_value > 0)
+        return action->quantity_value;
     return 1;
 }
 
@@ -124,6 +135,24 @@ static GameState *apply_assassinate_troop(GameState *state, Sym player_id, const
     Sym target = find_sel(sk, sv, sc, "target_node_id");
     int slot = find_sel_int(sk, sv, sc, "target_slot_index", -1);
     if (target == SYM_NULL || slot < 0) return state;
+    for (int i = 0; i < action->metadata_count; i++) {
+        const char *k = intern_str(action->metadata[i].key);
+        const char *v = intern_str(action->metadata[i].value);
+        if (k && strcmp(k, "requires_last_selected_node") == 0 && v) {
+            PendingGenericChoiceState *p = state->pending_generic;
+            if (!p) return state;
+            Sym required = SYM_NULL;
+            for (int j = 0; j < p->last_selection_count; j++) {
+                const char *lsk = intern_str(p->last_selection_keys[j]);
+                if (lsk && strcmp(lsk, "target_node_id") == 0) {
+                    required = p->last_selection_values[j];
+                    break;
+                }
+            }
+            if (required == SYM_NULL || target != required) return state;
+            break;
+        }
+    }
     if (apply_free_assassinate(state, player_id, target, slot) != 0) return state;
     if (state->pending_generic)
         increment_pending_counter(state->pending_generic, action);
@@ -267,9 +296,20 @@ static GameState *apply_force_discard(GameState *state, Sym player_id, const Car
     (void)card; (void)source;
     Sym target = find_sel(sk, sv, sc, "target_player_id");
     int hand_idx = find_sel_int(sk, sv, sc, "hand_index", -1);
-    if (target == SYM_NULL || hand_idx < 0 || target == player_id) return state;
+    if (target == SYM_NULL || target == player_id) return state;
     PlayerState *ps = cow_player(state, target);
-    if (!ps || hand_idx >= ps->hand_count) return state;
+    if (!ps) return state;
+    /* targeted_discard: no hand_index → pick a random card (3+ card guard). */
+    if (hand_idx < 0) {
+        if (ps->hand_count < 3) return state;
+        RNG rng;
+        rng_seed(&rng, state->shuffle_seed);
+        for (int c = 0; c < state->shuffle_counter; c++)
+            rng_next(&rng);
+        hand_idx = rng_randint(&rng, 0, ps->hand_count - 1);
+        state->shuffle_counter++;
+    }
+    if (hand_idx < 0 || hand_idx >= ps->hand_count) return state;
     if (ps->discard_pile_count < MAX_ZONE_SIZE)
         ps->discard_pile[ps->discard_pile_count++] = ps->hand[hand_idx];
     for (int i = hand_idx; i < ps->hand_count - 1; i++)
@@ -476,6 +516,28 @@ static GameState *apply_custom_effect(GameState *state, Sym player_id, const Car
                 ps->discard_pile[ps->discard_pile_count++] = ps->deck[i];
             ps->deck_count = 0;
         }
+    } else if (strcmp(ek, "scaled_resource_from_player_zone") == 0) {
+        Sym zone = SYM_NULL, resource_sym = SYM_NULL;
+        int per = 1;
+        for (int i = 0; i < action->metadata_count; i++) {
+            const char *k = intern_str(action->metadata[i].key);
+            const char *v = intern_str(action->metadata[i].value);
+            if (k && strcmp(k, "source_zone") == 0 && v) zone = intern(v);
+            if (k && strcmp(k, "resource") == 0 && v) resource_sym = intern(v);
+            if (k && strcmp(k, "per") == 0 && v) per = atoi(v);
+        }
+        if (zone == SYM_NULL || resource_sym == SYM_NULL) return state;
+        if (per <= 0) per = 1;
+        int pi = -1;
+        for (int i = 0; i < state->player_count; i++)
+            if (state->players[i].player_id == player_id) { pi = i; break; }
+        if (pi < 0) return state;
+        int count = 0;
+        const char *zs = intern_str(zone);
+        if (zs && strcmp(zs, "trophy_hall") == 0)
+            count = state->players[pi].trophy_hall_count;
+        int amount = count / per;
+        if (amount > 0) grant_resource(state, resource_sym, amount);
     }
     return state;
 }

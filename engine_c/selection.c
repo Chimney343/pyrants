@@ -1,6 +1,7 @@
 #include "generic_runtime.h"
 #include "helpers.h"
 #include <string.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 static Sym find_ls_sym(const PendingGenericChoiceState *p, const char *key) {
@@ -50,23 +51,70 @@ static int sel_assassinate_supplant(const GameState *state, Sym player_id,
                                      Move *out, int max_out) {
     int w = 0;
     int white_only = 0, allow_white = 0;
+    int requires_last = 0;
+    Sym last_site = SYM_NULL;
     for (int i = 0; i < action->filter_count; i++) {
         const char *f = intern_str(action->filters[i]);
         if (f && strcmp(f, "white_troop_only") == 0) white_only = 1;
         if (f && strcmp(f, "allow_white_troop") == 0) allow_white = 1;
     }
+    for (int i = 0; i < action->metadata_count; i++) {
+        const char *k = intern_str(action->metadata[i].key);
+        const char *v = intern_str(action->metadata[i].value);
+        if (k && strcmp(k, "requires_last_selected_node") == 0 && v) {
+            requires_last = 1;
+        }
+    }
+    if (requires_last) last_site = find_ls_sym(pending, "target_node_id");
     for (int i = 0; i < state->node_count && w < max_out; i++) {
         Sym nid = state->nodes[i].node_id;
-        if (!has_presence(state, player_id, nid)) continue;
+        if (requires_last) {
+            if (last_site == SYM_NULL || nid != last_site) continue;
+        } else {
+            if (!has_presence(state, player_id, nid)) continue;
+        }
         for (int s = 0; s < state->nodes[i].troop_slot_count && w < max_out; s++) {
             Sym occ = state->nodes[i].troop_slots[s];
             if (occ == SYM_NULL || occ == player_id) continue;
             if (white_only && strcmp(intern_str(occ) ? intern_str(occ) : "", "white") != 0) continue;
             if (!white_only && !allow_white && strcmp(intern_str(occ) ? intern_str(occ) : "", "white") == 0) continue;
+            char buf[16];
+            snprintf(buf, sizeof(buf), "%d", s);
             out[w].type = MOVE_RESOLVE_GENERIC;
             out[w].data.resolve_generic.action_id = nid;
+            out[w].data.resolve_generic.target_id = intern(buf);
+            out[w].data.resolve_generic.selection_index = 0;
             out[w].player_index = 0;
             w++;
+        }
+    }
+    return w;
+}
+
+static int sel_custom_effect(const GameState *state, Sym player_id,
+                             const PendingGenericChoiceState *pending,
+                             const CardDefinition *card, const CardAction *action,
+                             Move *out, int max_out) {
+    int w = 0;
+    for (int i = 0; i < action->metadata_count; i++) {
+        const char *k = intern_str(action->metadata[i].key);
+        const char *v = intern_str(action->metadata[i].value);
+        if (k && strcmp(k, "effect_kind") == 0 && v && strcmp(v, "select_site") == 0) {
+            for (int ni = 0; ni < state->node_count && w < max_out; ni++) {
+                Sym nid = state->nodes[ni].node_id;
+                const NodeDefinition *nd = NULL;
+                for (int j = 0; j < state->definition->board.node_count; j++)
+                    if (state->definition->board.nodes[j].node_id == nid)
+                        { nd = &state->definition->board.nodes[j]; break; }
+                if (!nd || strcmp(intern_str(nd->kind), "site") != 0) continue;
+                if (!has_presence(state, player_id, nid)) continue;
+                out[w].type = MOVE_RESOLVE_GENERIC;
+                out[w].data.resolve_generic.action_id = nid;
+                out[w].data.resolve_generic.target_id = SYM_NULL;
+                out[w].data.resolve_generic.selection_index = 0;
+                out[w].player_index = 0;
+                w++;
+            }
         }
     }
     return w;
@@ -192,6 +240,23 @@ static int sel_force_discard(const GameState *state, Sym player_id,
                               const PendingGenericChoiceState *pending,
                               const CardDefinition *card, const CardAction *action,
                               Move *out, int max_out) {
+    const char *sf = intern_str(action->source_fragment);
+    /* targeted_discard: player picks an opponent (with 3+ cards),
+     * then that opponent discards one random card. */
+    if (sf && strcmp(sf, "targeted_discard") == 0) {
+        int w = 0;
+        for (int p = 0; p < state->player_count && w < max_out; p++) {
+            if (state->players[p].player_id == player_id) continue;
+            if (state->players[p].hand_count >= 3) {
+                out[w].type = MOVE_RESOLVE_GENERIC;
+                out[w].data.resolve_generic.action_id = state->players[p].player_id;
+                out[w].player_index = 0;
+                w++;
+            }
+        }
+        return w;
+    }
+    /* Default: one move per card in each opponent's hand (original behaviour). */
     int w = 0;
     for (int p = 0; p < state->player_count && w < max_out; p++) {
         if (state->players[p].player_id == player_id) continue;
@@ -361,4 +426,5 @@ void register_selection_handlers(void) {
     register_sel(intern("devour"), sel_devour);
     register_sel(intern("devour_cost"), sel_devour);
     register_sel(intern("play_card"), sel_play_card);
+    register_sel(intern("custom_effect"), sel_custom_effect);
 }
