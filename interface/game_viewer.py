@@ -1667,7 +1667,10 @@ class GameViewerApp:
         selected_indices = self.legal_moves_listbox.curselection()
         selected_index = selected_indices[0] if selected_indices else 0
         selected_index = max(0, min(selected_index, len(self._visible_legal_moves) - 1))
-        self.session.submit_move(self._visible_legal_moves[selected_index].move)
+        legal_move = self._visible_legal_moves[selected_index]
+        if not getattr(legal_move, "available", True):
+            return   # reject unavailable (greyed-out) moves
+        self.session.submit_move(legal_move.move)
         self._clear_filters()
         self._refresh_view()
 

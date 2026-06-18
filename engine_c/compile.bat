@@ -63,6 +63,14 @@ echo Running describe tests...
 test_describe.exe
 if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 
+echo Building test_generic_actions.exe...
+cl %CFLAGS% /I. /Fe:test_generic_actions.exe tests\test_generic_actions.c libengine.lib
+if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
+
+echo Running generic action tests...
+test_generic_actions.exe
+if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
+
 echo Building test_saveload.exe...
 cl %CFLAGS% /I. /Fe:test_saveload.exe tests\test_saveload.c libengine.lib
 if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
@@ -73,7 +81,7 @@ if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 
 echo Building engine_c.dll...
 REM Remove test object files so DLL only links library objects
-del /Q test_engine.obj test_intern_c.obj test_view.obj test_describe.obj 2>nul
+del /Q test_engine.obj test_intern_c.obj test_view.obj test_describe.obj test_generic_actions.obj test_saveload.obj 2>nul
 link /DLL /DEF:engine_c.def /OUT:engine_c.dll *.obj
 if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 
