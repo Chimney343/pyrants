@@ -5268,9 +5268,9 @@
             "value": 2
           },
           "filters": [],
-          "source_fragment": "gain_power",
+          "source_fragment": "gain_influence",
           "metadata": {
-            "resource": "power"
+            "resource": "influence"
           }
         },
         {
@@ -5284,7 +5284,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "triggered_promote_aspect_filtered",
+          "source_fragment": "triggered_promote",
           "metadata": {}
         }
       ],
@@ -10916,7 +10916,9 @@
             },
             "filters": [],
             "source_fragment": "triggered_promote",
-            "metadata": {}
+            "metadata": {
+              "requires_another_played_card": true
+            }
           }
         ]
       },
@@ -10949,7 +10951,9 @@
           },
           "filters": [],
           "source_fragment": "triggered_promote",
-          "metadata": {}
+          "metadata": {
+            "requires_another_played_card": true
+          }
         }
       ],
       "global_conditions": [

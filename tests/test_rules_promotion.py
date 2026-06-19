@@ -337,3 +337,73 @@ def test_ambassador_with_no_other_played_card_does_not_soft_lock() -> None:
     assert any(isinstance(move, SkipPromoteMove) for move in end_moves)
 
 
+def test_puppeteer_requires_another_played_card_flag() -> None:
+    state = _base_state(seed=42)
+    updated = state.model_copy(deep=True)
+    updated.players["p1"].hand = ["puppeteer", "noble"]
+    updated.players["p1"].played_cards = []
+    updated.players["p1"].deck = []
+
+    after_puppeteer = apply(
+        updated,
+        PlayCardMove(player_id="p1", card_id="puppeteer", hand_index=0),
+    )
+
+    assert after_puppeteer.pending_generic_choice is None
+    assert len(after_puppeteer.pending_end_of_turn_promotions) == 1
+    pending = after_puppeteer.pending_end_of_turn_promotions[0]
+    assert pending.deferred_choice
+    assert pending.requires_another_played_card
+
+
+def test_puppeteer_cannot_promote_itself() -> None:
+    state = _base_state(seed=43)
+    updated = state.model_copy(deep=True)
+    updated.players["p1"].hand = ["puppeteer", "noble"]
+    updated.players["p1"].played_cards = []
+    updated.players["p1"].deck = []
+
+    after_puppeteer = apply(
+        updated,
+        PlayCardMove(player_id="p1", card_id="puppeteer", hand_index=0),
+    )
+    after_second_card = apply(
+        after_puppeteer,
+        PlayCardMove(player_id="p1", card_id="noble", hand_index=0),
+    )
+    end_of_turn = apply(after_second_card, EndMainPhaseMove(player_id="p1"))
+
+    assert end_of_turn.phase == TurnPhase.END_OF_TURN
+    end_moves = legal_moves(end_of_turn)
+    promote_targets = [move.card_id for move in end_moves if isinstance(move, PromoteCardMove)]
+    assert "noble" in promote_targets
+    assert "puppeteer" not in promote_targets
+
+    promoted = apply(end_of_turn, PromoteCardMove(player_id="p1", card_id="noble"))
+    assert "noble" in promoted.players["p1"].inner_circle
+    assert "noble" not in promoted.players["p1"].played_cards
+    assert promoted.pending_end_of_turn_promotions == []
+    assert any(move.move_type == "resolve_end_of_turn" for move in legal_moves(promoted))
+
+
+def test_puppeteer_with_no_other_played_card_does_not_soft_lock() -> None:
+    state = _base_state(seed=44)
+    updated = state.model_copy(deep=True)
+    updated.players["p1"].hand = ["puppeteer"]
+    updated.players["p1"].played_cards = []
+    updated.players["p1"].deck = []
+
+    played = apply(
+        updated,
+        PlayCardMove(player_id="p1", card_id="puppeteer", hand_index=0),
+    )
+
+    assert played.pending_generic_choice is None
+    assert len(played.pending_end_of_turn_promotions) == 1
+    assert played.pending_end_of_turn_promotions[0].deferred_choice
+    assert any(isinstance(move, EndMainPhaseMove) for move in legal_moves(played))
+
+    end_of_turn = apply(played, EndMainPhaseMove(player_id="p1"))
+    end_moves = legal_moves(end_of_turn)
+    assert any(isinstance(move, SkipPromoteMove) for move in end_moves)
+
