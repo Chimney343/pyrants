@@ -89,9 +89,9 @@ void engine_build_view(const GameState *state, CGameView *out) {
     for (int i = 0; i < state->node_count && i < MAX_NODES; i++) {
         const NodeDefinition *nd = &board->nodes[i];
         if (nd->kind != site_sym) continue;
-        if (site_control_owner(state, nd->node_id) >= 0) {
-            Sym controller = state->player_ids[site_control_owner(state, nd->node_id)];
-            if (controller == state->current_player_id)
+        {
+            int owner = site_control_owner(state, nd->node_id);
+            if (owner >= 0 && (Sym)owner == state->current_player_id)
                 controlled_sites++;
         }
         if (is_total_control(state, nd->node_id, state->current_player_id))

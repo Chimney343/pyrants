@@ -473,3 +473,33 @@ def test_resource_after_card_play(py_def, c_create):
     _lib.engine_destroy(c_state)
     if c_result != c_state:
         _lib.engine_destroy(c_result)
+
+
+def test_quaggoth_assassinate_count_snapshotted():
+    from engine_c.bindings.session import CSession
+    from engine_c.bindings.ce_api import CEngine
+
+    engine = CEngine()
+    engine.initialize()
+    session = CSession.load(
+        "data/scenarios/batch_card_generation/017_seed_4_quaggoth.json", engine
+    )
+
+    moves = session.legal_moves()
+    qmove = next(
+        m for m in moves
+        if m.move_type == "play_card" and m.data.get("card_id") == "quaggoth"
+    )
+    session.submit_move(qmove)
+
+    total = 0
+    while True:
+        moves = session.legal_moves()
+        gen = [m for m in moves if m.move_type == "resolve_generic"]
+        if not gen:
+            break
+        result = session.submit_move(gen[0])
+        assert result is not None, f"Assassinate #{total + 1} failed"
+        total += 1
+
+    assert total == 2, f"Expected 2 assassinations (snapshotted controlled sites), got {total}"

@@ -161,10 +161,32 @@ int action_requires_selection(const CardAction *action) {
     return 0;
 }
 
+static Sym pending_action_limit_key(const CardAction *action) {
+    char buf[128];
+    snprintf(buf, sizeof(buf), "limit:%s:%s",
+             intern_str(action->op), intern_str(action->action_id));
+    return intern(buf);
+}
+
+static int get_or_store_pending_action_limit(PendingGenericChoiceState *p,
+                                              const CardAction *action,
+                                              GameState *state, Sym player_id) {
+    Sym key = pending_action_limit_key(action);
+    for (int i = 0; i < p->limit_count; i++)
+        if (p->limit_keys[i] == key) return p->limit_values[i];
+    int count = resolve_runtime_action_count(state, player_id, action);
+    if (p->limit_count < 8) {
+        p->limit_keys[p->limit_count] = key;
+        p->limit_values[p->limit_count] = count;
+        p->limit_count++;
+    }
+    return count;
+}
+
 static int action_requires_additional_choice(GameState *state, Sym player_id, const CardAction *action) {
     PendingGenericChoiceState *p = state->pending_generic;
     if (!p) return 0;
-    int count = resolve_runtime_action_count(state, player_id, action);
+    int count = get_or_store_pending_action_limit(p, action, state, player_id);
     if (count <= 1) return 0;
     return pending_action_counter_value(p, action) < count;
 }
@@ -272,6 +294,7 @@ GameState *auto_resolve_pending_generic(GameState *state, Sym player_id) {
             Move sel[64];
             int nc = legal_generic_target_selection_moves(state, player_id, p, card, action, sel, 64);
             if (nc == 0) { p->next_action_index++; continue; }
+            get_or_store_pending_action_limit(p, action, state, player_id);
             return state;
         }
 

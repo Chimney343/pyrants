@@ -90,6 +90,9 @@ ismcts-c-perf top_n="30":
 build-c:
     cmd /c "engine_c\\compile.bat"
 
+build-game players="p1,p2" board="data/boards/tyrants_of_the_underdark.json" layout="data/layouts/tyrants_of_the_underdark_layout.json" card="data/cards/catalog.json" setup="data/decks/base_setup.json": build-c
+    & {{python}} -m interface.game_viewer --players {{players}} --board-path {{board}} --layout-path {{layout}} --card-path {{card}} --setup-path {{setup}} --engine c
+
 test-c:
     & engine_c/test_engine.exe
     & engine_c/test_view.exe
