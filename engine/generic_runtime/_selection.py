@@ -442,6 +442,23 @@ def _legal_selection_force_discard(
     card: CardDefinition,
     action: CardAction,
 ) -> list[Move]:
+    sf = action.source_fragment.strip().lower()
+    if sf == "targeted_discard":
+        moves = []
+        for target_player_id, target_player in state.players.items():
+            if target_player_id == player_id:
+                continue
+            if len(target_player.hand) < 3:
+                continue
+            moves.append(
+                _generic_choice_move(
+                    player_id,
+                    pending,
+                    selection={"target_player_id": target_player_id},
+                )
+            )
+        return moves
+
     moves: list[Move] = []
     for target_player_id, target_player in state.players.items():
         if target_player_id == player_id:

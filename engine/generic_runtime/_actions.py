@@ -550,7 +550,7 @@ def _apply_generic_force_discard(
     count = _resolve_runtime_action_count(state, player_id, action)
     selection = selection or {}
     target_player_id = _require_selection_string(selection, "target_player_id")
-    hand_index = _require_selection_int(selection, "hand_index")
+    sf = action.source_fragment.strip().lower()
 
     updated = state
     for _ in range(count):
@@ -561,6 +561,14 @@ def _apply_generic_force_discard(
             raise IllegalMoveError("selection target_player_id is unknown")
 
         target_player = _cow_player(working, target_player_id)
+        if sf == "targeted_discard":
+            import random
+            if not target_player.hand:
+                raise IllegalMoveError("targeted_discard target has no cards in hand")
+            hand_index = random.randint(0, len(target_player.hand) - 1)
+        else:
+            hand_index = _require_selection_int(selection, "hand_index")
+
         _validate_slot_bounds(target_player.hand, hand_index, "hand")
 
         target_player.discard_pile.append(target_player.hand.pop(hand_index))

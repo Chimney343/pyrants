@@ -119,7 +119,8 @@ int action_requires_selection(const CardAction *action) {
     const char *op = intern_str(action->op);
     if (!op) return 0;
     /* force_discard with target_scope "opponent" auto-applies to all
-     * opponents at the last-selected site (Chuul's local_discard).
+     * opponents at the last-selected site (Chuul's local_discard),
+     * opponents with 3+ cards (Nothic's mass_discard).
      * conditional_owner_discard auto-applies to the last-assassinated
      * troop's owner (Mindwitness).
      * Other source_fragments (e.g. targeted_discard) require selection. */
@@ -130,6 +131,7 @@ int action_requires_selection(const CardAction *action) {
             if (sf && strcmp(sf, "local_discard") == 0) return 0;
             if (sf && strcmp(sf, "conditional_owner_discard") == 0) return 0;
             if (sf && strcmp(sf, "end_of_turn_mass_discard") == 0) return 0;
+            if (sf && strcmp(sf, "mass_discard") == 0) return 0;
         }
     }
     for (int i = 0; selection_ops[i]; i++)
@@ -403,6 +405,41 @@ GameState *auto_resolve_pending_generic(GameState *state, Sym player_id) {
                         if (state->players[o].player_id == player_id) continue;
                         if (state->players[o].hand_count >= 3
                             && (site_id == SYM_NULL || has_presence(state, state->players[o].player_id, site_id))) {
+                            RNG rng;
+                            rng_seed(&rng, state->shuffle_seed);
+                            for (int c = 0; c < state->shuffle_counter; c++)
+                                rng_next(&rng);
+                            int idx = rng_randint(&rng, 0, state->players[o].hand_count - 1);
+                            PlayerState *ps = cow_player(state, state->players[o].player_id);
+                            if (ps && idx >= 0 && idx < ps->hand_count) {
+                                if (ps->discard_pile_count < MAX_ZONE_SIZE)
+                                    ps->discard_pile[ps->discard_pile_count++] = ps->hand[idx];
+                                for (int h = idx; h < ps->hand_count - 1; h++)
+                                    ps->hand[h] = ps->hand[h + 1];
+                                ps->hand_count--;
+                                state->shuffle_counter++;
+                            }
+                        }
+                    }
+                    p->next_action_index++;
+                    continue;
+                }
+            }
+        }
+
+        /* Intercept mass_discard opponent-scoped force_discard:
+         * each opponent with 3+ cards in hand discards a random card
+         * immediately (Nothic). */
+        {
+            const char *op_str = intern_str(action->op);
+            if (op_str && strcmp(op_str, "force_discard") == 0) {
+                const char *ts = intern_str(action->target_scope);
+                const char *sf_str = intern_str(action->source_fragment);
+                if (ts && strcmp(ts, "opponent") == 0
+                    && sf_str && strcmp(sf_str, "mass_discard") == 0) {
+                    for (int o = 0; o < state->player_count; o++) {
+                        if (state->players[o].player_id == player_id) continue;
+                        if (state->players[o].hand_count >= 3) {
                             RNG rng;
                             rng_seed(&rng, state->shuffle_seed);
                             for (int c = 0; c < state->shuffle_counter; c++)

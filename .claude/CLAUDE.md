@@ -11,32 +11,30 @@
 > (documentation, ownership, history, decisions). **Always verify against
 > actual source files before making changes** — the index may be stale.
 
-Last indexed: 2026-06-16. Confidence: 100%.
+Last indexed: 2026-06-19 (commit bf88dd9). Confidence: 100%.
 ### Architecture
-Pyrants is a hybrid Python and C game engine for the game of Pyrants, wrapped as an OpenSpiel game: it reads game definitions from configuration files and board packages through the game_setup loaders, validates and executes moves via a C-based state machine and rule checker, computes scores with the engine scoring modules, and exposes a standard OpenSpiel interface (in openspiel_pyrants) that produces observations, rewards, and terminal states for reinforcement learning agents. | Layer         | Languages / Tools                          | Purpose                                                                 |
-|---------------|-------------------------------------------|-------------------------------------------------------------------------|
-| **Core Engine** | C (35 files, ~15K LOC)                   | High‑performance state management, move validation, RNG, arena logic    |
-| **Python Bindings** | Python + CFFI / ctypes (engine_c/bindings) | Bridges C engine to Python with typed wrappers (ce_api.py, engine_bindings.py) |
-| **Game Logic** | Python (engine/, game_setup/)            | Move generation, scoring, error handling, board configuration loading   |
-| **OpenSpiel Wrapper** | Python (openspiel_pyrants/)           | Adapts the game for OpenSpiel (RL framework) – observations, rewards, actions |
-| **Tooling / CLI** | TypeScript (.kilo package)              | Developer tooling, CLI commands, or UI (details in .kilo source)        |
-| **Configuration & Docs** | JSON, Markdown, YAML, TOML          | Board definitions, test fixtures, documentation, build configs          |
-| **Build System** | Makefile, Shell, Justfile               | Compilation of C code, testing, linting, CI tasks                       |
+Repo is a board game engine and AI-playground framework: it consumes game definitions (rules, cards, board layouts) and player moves, processes them through a Python state machine with a C‑accelerated core and typed bindings, and produces legal‑move enumerations, state transitions, and scoring results, all exposed for use by game‑theory and reinforcement‑learning libraries such as OpenSpiel. | Layer          | Technology                                | Purpose                             |
+|----------------|-------------------------------------------|-------------------------------------|
+| **Language**   | Python (29.8%), C (5.2%), C++ (3.4%), JavaScript (2.5%) | Core logic, accelerated engine, scripting, possibly UI |
+| **Core Engine**| C (engine_c/) with Python bindings (engine_c/bindings/) | High‑performance state management, rules, RNG     |
+| **Game Logic** | Python (engine/)                        | Moves, rules, scoring, errors      |
+| **Game Setup** | Python (game_setup/)                    | Board generation, loader routines, card catalog |
+| **AI Interface**| Python (openspiel_pyrants/)            | OpenSpiel game wrapper for RL/tree‑search |
+| **Data**       | JSON (data/cards/catalog.json)         | Static card and board definitions   |
+| **Build & CI** | Makefile, YAML, TOML                     | Compilation, testing, configuration |
 
 
 
-No explicit entry points are exported as main modules. The primary interfaces are:
-
-- **openspiel_pyrants/game.py** – Standard OpenSpiel Game and State classes for Pyrants in pure Python. - **openspiel_pyrants/game_c.py** – Alternative Game and State implementations backed by the C engine for performance.
+- openspiel_pyrants/game.py – Primary Python entry point for OpenSpiel integration (implements the game interface). - openspiel_pyrants/game_c.py – Alternative entry point that uses the C‑accelerated backend. - engine/state.py – Core state machine; can be invoked directly for manual testing or custom simulations.
 ### Key Modules
 | Module | Purpose | Owner |
 |--------|---------|-------|
-| `community-1` | The tests module is the verification and validation layer of the repowise game e | — |
-| `community-0` | The skills/impeccable module is the **skill lifecycle and injection subsystem**  | — |
+| `community-1` | The engine_c module is the **C-accelerated action and move-processing layer** of | — |
+| `community-0` | The engine_c module is the **core runtime layer** of the game engine’s C impleme | — |
 | `community-3` | The **game_setup** module is the **initialization and configuration layer** of t | — |
 | `community-2` | The OpenSpiel integration module is the transport adapter that bridges the Pyran | — |
 | `community-248` | The **tests** module is the verification subsystem of repowise — it consumes gen | — |
-| `community-4` | The engine/generic_runtime module is the **execution subsystem** of the game eng | — |
+| `community-4` | The **c_adapter** module is the bridge layer between repowise’s C game engine an | — |
 ### Entry Points
 - `.augment/skills/impeccable/scripts/cleanup-deprecated.mjs`
 - `.augment/skills/impeccable/scripts/design-parser.mjs`
@@ -77,23 +75,23 @@ No explicit entry points are exported as main modules. The primary interfaces ar
 ### Hotspots (High Churn)
 | File | Churn | 90d Commits | Owner |
 |------|-------|-------------|-------|
-| `engine/rules.py` | 100.0th %ile | 7 | Chimney343 |
-| `interface/game_viewer.py` | 99.9th %ile | 9 | Chimney343 |
-| `tests/test_rules.py` | 99.8th %ile | 4 | Chimney343 |
+| `interface/game_viewer.py` | 100.0th %ile | 11 | Chimney343 |
+| `engine/rules.py` | 99.9th %ile | 7 | Chimney343 |
+| `data/cards/catalog.json` | 99.8th %ile | 7 | Chimney343 |
+| `tests/test_rules.py` | 99.7th %ile | 4 | Chimney343 |
 | `game_setup/scenario_generation/card_scenarios.py` | 99.6th %ile | 4 | Chimney343 |
-| `scripts/run_ismcts.py` | 99.5th %ile | 3 | Chimney343 |
 
 ## Code health
-Hotspot health: 6.54/10 (stable) ·
-Average: 7.14/10 ·
+Hotspot health: 6.5/10 (stable) ·
+Average: 7.16/10 ·
 Worst: 1.0/10 (`engine/rules.py`)
 
 ### Critical biomarkers
-- `engine/helpers.py` — untested hotspot — impact −2.0
 - `engine/rules.py` — untested hotspot — impact −2.0
+- `engine/helpers.py` — untested hotspot — impact −2.0
 - `engine/state.py` — untested hotspot — impact −2.0
+- `engine_c/bindings/view.py` — nested complexity (_build_c_legal_moves) — impact −1.3
 - `.agents/skills/impeccable/scripts/live-browser.js` — large method (<anonymous>) — impact −1.1
-- `scripts/build_review_workbook.py` — large method (main) — impact −0.9
 
 ### Repowise MCP Tools
 

@@ -344,6 +344,8 @@ def describe_move(state: GameState, move: Move, *, node_names: dict[str, str] | 
                     return _describe_return_unit_label(state, cards_by_id, move.selection, node_names)
                 if action.op == "place_spy":
                     return _describe_place_spy_label(state, cards_by_id, move.selection, node_names)
+                if action.op == "force_discard":
+                    return _describe_force_discard_label(state, move.selection, action)
                 selection_parts = _format_selection_parts(cards_by_id, move.selection, node_names=node_names)
                 preposition = "in" if node_names else "to"
                 return f"{action_desc} {preposition} {', '.join(selection_parts)}"
@@ -470,6 +472,17 @@ def _describe_devour_label(state: GameState, cards_by_id: dict[str, object], sel
 
     card_label = _card_name(cards_by_id, card_id) if card_id is not None else "Unknown Card"
     return f"Devour {card_label} from {zone_label}"
+
+
+def _describe_force_discard_label(
+    state: GameState, selection: dict[str, object], action: CardAction,
+) -> str:
+    target_player_id = str(selection.get("target_player_id", "")).strip()
+    player_label = target_player_id.upper().lstrip("P") if target_player_id else "?"
+    if "hand_index" not in selection:
+        return f"Force Player {player_label} to discard a random card"
+    hand_index = selection.get("hand_index")
+    return f"Force Player {player_label} to discard card {hand_index}"
 
 
 def _describe_return_unit_label(

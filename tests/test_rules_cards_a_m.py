@@ -616,8 +616,8 @@ def test_cranium_rats_deploys_two_troops_and_targeted_discard() -> None:
 
 
 def test_cranium_rats_no_opponent_with_three_cards_skips_discard() -> None:
-    """When no opponent has presence at the site, targeted_discard still offers
-    all opponents as targets since hand-size is not filtered at selection time."""
+    """targeted_discard filters opponents with fewer than 3 cards.
+    When no opponent has 3+ cards, the discard auto-skips."""
     state = _base_state(seed=115).model_copy(deep=True)
     state.players["p1"].hand = ["cranium_rats"]
     state.players["p1"].deck = []
@@ -644,15 +644,165 @@ def test_cranium_rats_no_opponent_with_three_cards_skips_discard() -> None:
     )
     after_deploy = apply(after_first, deploy_move2)
 
-    discard_move = next(
-        m for m in legal_moves(after_deploy)
-        if isinstance(m, ResolveGenericChoiceMove) and m.source_card_id == "cranium_rats"
-        and "target_player_id" in m.selection
-    )
-    resolved = apply(after_deploy, discard_move)
+    assert after_deploy.pending_generic_choice is None
+    assert len(after_deploy.players["p2"].hand) == 2  # unchanged — p2 had <3 cards
 
+
+def test_gauth_option_two_filters_opponents_with_fewer_than_three_cards() -> None:
+    """Gauth option 2 (draw + force_discard) must only allow choosing
+    opponents with 3 or more cards in hand."""
+    state = _base_state(seed=142).model_copy(deep=True)
+    state.players["p1"].hand = ["gauth"]
+    state.players["p1"].deck = ["noble", "soldier"]
+    state.players["p1"].discard_pile = []
+    state.players["p1"].played_cards = []
+    state.players["p2"].hand = ["advance_scout", "soldier"]
+    state.players["p2"].deck = []
+    state.players["p2"].discard_pile = []
+
+    played = apply(state, PlayCardMove(player_id="p1", card_id="gauth", hand_index=0))
+
+    after_option = apply(
+        played,
+        ResolveGenericChoiceMove(
+            player_id="p1",
+            source_card_id="gauth",
+            option_id="option_2",
+        ),
+    )
+
+    assert len(after_option.players["p1"].hand) == 1  # drew 1 card
+    assert len(after_option.players["p2"].hand) == 2  # unchanged — p2 had <3 cards, not a valid target
+    assert after_option.pending_generic_choice is None
+
+
+def test_gauth_option_two_allows_discard_from_opponent_with_three_plus_cards() -> None:
+    """Gauth option 2 must allow choosing which opponent (with 3+ cards)
+    discards a random card — the active player does not see or pick the card."""
+    state = _base_state(seed=241).model_copy(deep=True)
+    state.players["p1"].hand = ["gauth"]
+    state.players["p1"].deck = ["noble"]
+    state.players["p1"].discard_pile = []
+    state.players["p1"].played_cards = []
+    state.players["p2"].hand = ["soldier", "advance_scout", "noble", "malice_adept"]
+    state.players["p2"].deck = []
+    state.players["p2"].discard_pile = []
+
+    played = apply(state, PlayCardMove(player_id="p1", card_id="gauth", hand_index=0))
+
+    after_option = apply(
+        played,
+        ResolveGenericChoiceMove(
+            player_id="p1",
+            source_card_id="gauth",
+            option_id="option_2",
+        ),
+    )
+
+    discard_moves = [
+        m for m in legal_moves(after_option)
+        if isinstance(m, ResolveGenericChoiceMove)
+        and m.source_card_id == "gauth"
+        and "target_player_id" in m.selection
+    ]
+    assert len(discard_moves) == 1  # only target_player_id, no hand_index
+
+    assert "hand_index" not in discard_moves[0].selection
+    assert discard_moves[0].selection == {"target_player_id": "p2"}
+
+    resolved = apply(after_option, discard_moves[0])
+
+    assert len(resolved.players["p1"].hand) == 1  # drew 1
+    assert len(resolved.players["p2"].hand) == 3  # p2 had 4, discarded 1 (random)
+    assert len(resolved.players["p2"].discard_pile) == 1
     assert resolved.pending_generic_choice is None
-    assert len(resolved.players["p2"].hand) == 1  # p2 had 2, discards 1
+
+
+def test_gauth_option_one_grants_two_influence() -> None:
+    """Gauth option 1 immediately grants 2 influence."""
+    state = _base_state(seed=77).model_copy(deep=True)
+    state.players["p1"].hand = ["gauth"]
+    state.players["p1"].deck = []
+    state.players["p1"].discard_pile = []
+    state.players["p1"].played_cards = []
+    state.resource_pool.influence = 0
+
+    played = apply(state, PlayCardMove(player_id="p1", card_id="gauth", hand_index=0))
+
+    resolved = apply(
+        played,
+        ResolveGenericChoiceMove(
+            player_id="p1",
+            source_card_id="gauth",
+            option_id="option_1",
+        ),
+    )
+
+    assert resolved.resource_pool.influence == 2
+    assert resolved.pending_generic_choice is None
+
+
+def test_gauth_option_two_only_opponents_with_three_plus_cards_are_targets() -> None:
+    """In a 4-player game, only opponents with ≥3 cards appear as force_discard
+    targets. Opponents with <3 cards are excluded."""
+    state = _base_state_4p(seed=331).model_copy(deep=True)
+    state.players["p1"].hand = ["gauth"]
+    state.players["p1"].deck = ["noble"]
+    state.players["p1"].discard_pile = []
+    state.players["p1"].played_cards = []
+    state.players["p2"].hand = ["soldier", "advance_scout", "noble", "malice_adept"]
+    state.players["p2"].deck = []
+    state.players["p3"].hand = ["noble", "noble", "noble"]
+    state.players["p4"].hand = ["soldier"]
+
+    played = apply(state, PlayCardMove(player_id="p1", card_id="gauth", hand_index=0))
+
+    after_option = apply(
+        played,
+        ResolveGenericChoiceMove(
+            player_id="p1",
+            source_card_id="gauth",
+            option_id="option_2",
+        ),
+    )
+
+    discard_moves = [
+        m for m in legal_moves(after_option)
+        if isinstance(m, ResolveGenericChoiceMove)
+        and m.source_card_id == "gauth"
+        and "target_player_id" in m.selection
+    ]
+    target_ids = {m.selection["target_player_id"] for m in discard_moves}
+
+    assert target_ids == {"p2", "p3"}  # p4 excluded (<3 cards)
+    assert len(discard_moves) == 2
+
+
+def test_gauth_option_two_draw_reshuffles_discard_pile() -> None:
+    """Gauth option 2 draw reshuffles discard pile into deck when deck is empty."""
+    state = _base_state(seed=51).model_copy(deep=True)
+    state.players["p1"].hand = ["gauth"]
+    state.players["p1"].deck = []
+    state.players["p1"].discard_pile = ["malice_adept", "noble"]
+    state.players["p1"].played_cards = []
+    state.players["p2"].hand = ["soldier", "advance_scout", "noble", "malice_adept"]
+    state.players["p2"].deck = []
+    state.players["p2"].discard_pile = []
+
+    played = apply(state, PlayCardMove(player_id="p1", card_id="gauth", hand_index=0))
+
+    after_option = apply(
+        played,
+        ResolveGenericChoiceMove(
+            player_id="p1",
+            source_card_id="gauth",
+            option_id="option_2",
+        ),
+    )
+
+    assert len(after_option.players["p1"].hand) == 1  # drew 1 after reshuffle
+    assert len(after_option.players["p1"].discard_pile) in (0, 1)
+    assert after_option.players["p1"].deck or after_option.players["p1"].discard_pile
 
 
 def test_death_tyrant_gains_influence_per_troop_removed_by_effect() -> None:
