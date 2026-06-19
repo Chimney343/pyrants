@@ -292,21 +292,18 @@ def test_neogi_model_has_deploy_four_and_end_of_turn_discard() -> None:
     assert deploy_action.quantity.kind == "fixed"
     assert deploy_action.quantity.value == 4
     assert discard_action.op == "force_discard"
-    assert discard_action.timing == "end_of_turn"
+    assert discard_action.timing == "immediate"
 
 
 
-def test_neogi_end_of_turn_forces_each_opponent_to_discard_one() -> None:
-    state = _base_state(seed=794).model_copy(deep=True)
-    state.phase = TurnPhase.MAIN
-    state.players["p1"].played_cards = ["neogi"]
-    state.players["p2"].hand = ["soldier", "advance_scout"]
-    state.players["p2"].discard_pile = []
-
-    ended_main = apply(state, EndMainPhaseMove(player_id="p1"))
-
-    assert len(ended_main.players["p2"].hand) == 1
-    assert ended_main.players["p2"].discard_pile == ["soldier"]
+def test_neogi_discard_is_immediate_not_end_of_turn() -> None:
+    state = _base_state(seed=86)
+    card = next(card for card in state.definition.catalog.cards if card.card_id == "neogi")
+    discard_action = card.execution_model.actions[1]
+    assert discard_action.op == "force_discard"
+    assert discard_action.timing == "immediate"
+    assert discard_action.target_scope == "opponent"
+    assert discard_action.source_fragment == "end_of_turn_mass_discard"
 
 
 

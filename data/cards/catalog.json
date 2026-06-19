@@ -227,17 +227,17 @@
         "options": [
           {
             "option_id": "gain_influence",
-            "actions": [
-              {
-                "action_id": "action_1",
-                "op": "gain_resource",
-                "target_scope": "self",
-                "timing": "immediate",
-                "optional": false,
-                "quantity": {
-                  "kind": "fixed",
-                  "value": 2
-                },
+      "actions": [
+        {
+          "action_id": "action_1",
+          "op": "deploy_troops",
+          "target_scope": "board_site",
+          "timing": "immediate",
+          "optional": false,
+          "quantity": {
+            "kind": "fixed",
+            "value": 4
+          },
                 "filters": [],
                 "source_fragment": "gain_influence",
                 "metadata": {
@@ -5610,7 +5610,7 @@
                   "value": null
                 },
                 "filters": [],
-                "source_fragment": "force_discard",
+                "source_fragment": "targeted_discard",
                 "metadata": {}
               }
             ]
@@ -5659,7 +5659,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "force_discard",
+          "source_fragment": "targeted_discard",
           "metadata": {}
         }
       ],
@@ -9840,8 +9840,8 @@
       ],
       "deck_vp": 4,
       "inner_circle_vp": 8,
-      "rules_text": "Deploy 4 troops. At end of turn, each opponent discards a card.",
-      "notes": "Multi-deploy means four free troop placements using normal deploy legality. If the player cannot place all four troops, the action is illegal. The end-of-turn discard makes each opponent discard 1 card from hand.",
+      "rules_text": "Deploy 4 troops. Each opponent discards a random card.",
+      "notes": "Multi-deploy means four free troop placements using normal deploy legality. If the player cannot place all four troops, the action is illegal. Immediately after deploying, each opponent discards 1 random card from hand (no minimum hand size requirement).",
       "execution_model": {
         "kind": "sequence",
         "actions": [
@@ -9863,7 +9863,7 @@
             "action_id": "action_2",
             "op": "force_discard",
             "target_scope": "opponent",
-            "timing": "end_of_turn",
+            "timing": "immediate",
             "optional": false,
             "quantity": {
               "kind": "variable_repeat",
@@ -9894,7 +9894,7 @@
           "action_id": "action_2",
           "op": "force_discard",
           "target_scope": "opponent",
-          "timing": "end_of_turn",
+          "timing": "immediate",
           "optional": false,
           "quantity": {
             "kind": "variable_repeat",

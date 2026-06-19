@@ -499,11 +499,17 @@ static void apply_end_of_turn_effects(GameState *state, int include_force_discar
                     if (tpid == pid) continue;
                     PlayerState *tps = cow_player(state, tpid);
                     if (!tps || tps->hand_count == 0) continue;
+                    RNG rng;
+                    rng_seed(&rng, state->shuffle_seed);
+                    for (int c = 0; c < state->shuffle_counter; c++)
+                        rng_next(&rng);
+                    int idx = rng_randint(&rng, 0, tps->hand_count - 1);
                     if (tps->discard_pile_count < MAX_ZONE_SIZE)
-                        tps->discard_pile[tps->discard_pile_count++] = tps->hand[0];
-                    for (int h = 0; h < tps->hand_count - 1; h++)
+                        tps->discard_pile[tps->discard_pile_count++] = tps->hand[idx];
+                    for (int h = idx; h < tps->hand_count - 1; h++)
                         tps->hand[h] = tps->hand[h + 1];
                     tps->hand_count--;
+                    state->shuffle_counter++;
                 }
             }
 
