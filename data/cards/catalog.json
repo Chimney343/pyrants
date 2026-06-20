@@ -3885,8 +3885,8 @@
           },
           {
             "action_id": "action_2",
-            "op": "recruit_card",
-            "target_scope": "market",
+            "op": "custom_effect",
+            "target_scope": "self",
             "timing": "immediate",
             "optional": false,
             "quantity": {
@@ -3894,8 +3894,10 @@
               "value": null
             },
             "filters": [],
-            "source_fragment": "recruit_card",
-            "metadata": {}
+            "source_fragment": "custom_effect",
+            "metadata": {
+              "effect_kind": "give_insane_outcast_to_self"
+            }
           }
         ]
       },
@@ -3921,8 +3923,8 @@
         },
         {
           "action_id": "action_2",
-          "op": "recruit_card",
-          "target_scope": "market",
+          "op": "custom_effect",
+          "target_scope": "self",
           "timing": "immediate",
           "optional": false,
           "quantity": {
@@ -3930,24 +3932,22 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "recruit_card",
-          "metadata": {}
+          "source_fragment": "custom_effect",
+          "metadata": {
+            "effect_kind": "give_insane_outcast_to_self"
+          }
         }
       ],
       "global_conditions": [],
       "state_contract": {
         "reads": [
           "board.troop_slots",
-          "presence_or_target_rules",
-          "market.row",
-          "card_catalog"
+          "presence_or_target_rules"
         ],
         "writes": [
           "board.troop_slots",
           "player.trophy_hall",
-          "player.discard_pile",
-          "market.row",
-          "market.deck"
+          "player.discard_pile"
         ]
       },
       "effect_key": "generic_card",

@@ -510,6 +510,13 @@ static GameState *apply_custom_effect(GameState *state, Sym player_id, const Car
             for (int c = 0; c < count && ps->discard_pile_count < MAX_ZONE_SIZE; c++)
                 ps->discard_pile[ps->discard_pile_count++] = intern("insane_outcast");
         }
+    } else if (strcmp(ek, "give_insane_outcast_to_self") == 0) {
+        int count = resolve_count(state, player_id, action);
+        PlayerState *ps = cow_player(state, player_id);
+        if (ps) {
+            for (int c = 0; c < count && ps->discard_pile_count < MAX_ZONE_SIZE; c++)
+                ps->discard_pile[ps->discard_pile_count++] = intern("insane_outcast");
+        }
     } else if (strcmp(ek, "mill_deck_to_discard") == 0) {
         PlayerState *ps = cow_player(state, player_id);
         if (ps) {

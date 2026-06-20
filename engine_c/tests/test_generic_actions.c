@@ -114,6 +114,51 @@ static void test_action_requires_selection_custom_effect(void) {
     intern_destroy();
 }
 
+static void test_action_requires_selection_custom_effect_give_insane_outcast_to_self(void) {
+    intern_init(4096);
+    CardAction a;
+    memset(&a, 0, sizeof(a));
+    a.op = intern("custom_effect");
+    a.metadata[0].key = intern("effect_kind");
+    a.metadata[0].value = intern("give_insane_outcast_to_self");
+    a.metadata_count = 1;
+
+    int r = action_requires_selection(&a);
+    assert(r == 0);
+    printf("PASS: custom_effect+give_insane_outcast_to_self → no selection\n");
+    intern_destroy();
+}
+
+static void test_action_requires_selection_custom_effect_selected_player(void) {
+    intern_init(4096);
+    CardAction a;
+    memset(&a, 0, sizeof(a));
+    a.op = intern("custom_effect");
+    a.metadata[0].key = intern("effect_kind");
+    a.metadata[0].value = intern("give_insane_outcast_to_selected_player");
+    a.metadata_count = 1;
+
+    int r = action_requires_selection(&a);
+    assert(r == 1);
+    printf("PASS: custom_effect+selected_player → requires selection\n");
+    intern_destroy();
+}
+
+static void test_action_requires_selection_custom_effect_presence_on_last_selected(void) {
+    intern_init(4096);
+    CardAction a;
+    memset(&a, 0, sizeof(a));
+    a.op = intern("custom_effect");
+    a.metadata[0].key = intern("effect_kind");
+    a.metadata[0].value = intern("give_insane_outcast_to_player_with_presence_on_last_selected_node");
+    a.metadata_count = 1;
+
+    int r = action_requires_selection(&a);
+    assert(r == 1);
+    printf("PASS: custom_effect+presence_on_last_selected → requires selection\n");
+    intern_destroy();
+}
+
 int main(void) {
     test_action_requires_selection_force_discard_local();
     test_action_requires_selection_force_discard_targeted();
@@ -123,6 +168,9 @@ int main(void) {
     test_action_requires_selection_promote_end_of_turn();
     test_action_requires_selection_promote_immediate();
     test_action_requires_selection_custom_effect();
+    test_action_requires_selection_custom_effect_give_insane_outcast_to_self();
+    test_action_requires_selection_custom_effect_selected_player();
+    test_action_requires_selection_custom_effect_presence_on_last_selected();
     printf("All generic action tests passed.\n");
     return 0;
 }

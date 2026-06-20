@@ -12,23 +12,36 @@ Usage:
     next_state = eng.apply(state, moves[0])
 """
 
-import os
 import ctypes
 from pathlib import Path
-from typing import Optional
 
 from .engine_bindings import (
-    _lib, Sym, Move as CMove, GameStateStruct,
     MAX_PLAYERS,
-    PHASE_SETUP, PHASE_DRAW, PHASE_MAIN, PHASE_END_OF_TURN,
-    PHASE_CLEANUP, PHASE_GAME_OVER,
-    MOVE_PLAY_CARD, MOVE_END_MAIN_PHASE, MOVE_RESOLVE_END_OF_TURN,
-    MOVE_RESOLVE_CLEANUP, MOVE_ASSASSINATE, MOVE_DEPLOY,
-    MOVE_RECRUIT, MOVE_RETURN_SPY, MOVE_ACTIVATE_ABILITY,
-    MOVE_DECLINE_ABILITY, MOVE_PROMOTE_CARD, MOVE_SKIP_PROMOTE,
-    MOVE_RESOLVE_GENERIC, MOVE_INITIAL_PLACEMENT,
+    MOVE_ACTIVATE_ABILITY,
+    MOVE_ASSASSINATE,
+    MOVE_DECLINE_ABILITY,
+    MOVE_DEPLOY,
+    MOVE_END_MAIN_PHASE,
+    MOVE_INITIAL_PLACEMENT,
+    MOVE_PLAY_CARD,
+    MOVE_PROMOTE_CARD,
+    MOVE_RECRUIT,
+    MOVE_RESOLVE_CLEANUP,
+    MOVE_RESOLVE_END_OF_TURN,
+    MOVE_RESOLVE_GENERIC,
+    MOVE_RETURN_SPY,
+    MOVE_SKIP_PROMOTE,
+    PHASE_CLEANUP,
+    PHASE_DRAW,
+    PHASE_END_OF_TURN,
+    PHASE_GAME_OVER,
+    PHASE_MAIN,
+    PHASE_SETUP,
+    _lib,
 )
-
+from .engine_bindings import (
+    Move as CMove,
+)
 
 _PHASE_MAP = {
     PHASE_SETUP: "setup",
@@ -57,7 +70,7 @@ _MOVE_TYPE_MAP = {
 }
 
 
-def _sym_str(sym) -> Optional[str]:
+def _sym_str(sym) -> str | None:
     if sym == 0:
         return None
     return _lib.intern_str(sym).decode()
@@ -198,6 +211,14 @@ class CState:
         p = self._s.players[index]
         return [_sym_str(p.hand[i]) for i in range(p.hand_count)]
 
+    def player_deck(self, index: int) -> list:
+        p = self._s.players[index]
+        return [_sym_str(p.deck[i]) for i in range(p.deck_count)]
+
+    def player_played(self, index: int) -> list:
+        p = self._s.players[index]
+        return [_sym_str(p.played_cards[i]) for i in range(p.played_cards_count)]
+
     def player_barracks(self, index: int) -> int:
         return self._s.players[index].barracks
 
@@ -277,9 +298,9 @@ class CEngine:
 
     def initialize(
         self,
-        catalog_path: Optional[str] = None,
-        board_path: Optional[str] = None,
-        setup_path: Optional[str] = None,
+        catalog_path: str | None = None,
+        board_path: str | None = None,
+        setup_path: str | None = None,
         setup_data_json: str = "",
     ) -> None:
         """Initialize the C engine: intern table, effect registry, game definition.
@@ -341,7 +362,7 @@ class CEngine:
         n = _lib.engine_legal_moves(state.ptr, moves, 128)
         return [CMoveWrapper(moves[i]) for i in range(n)]
 
-    def apply(self, state: CState, move: CMoveWrapper) -> Optional[CState]:
+    def apply(self, state: CState, move: CMoveWrapper) -> CState | None:
         """Apply a move. Mirrors engine.rules.apply(). Returns None on failure."""
         c_move = move._c_move
         result = _lib.engine_apply(state.ptr, ctypes.byref(c_move))
@@ -353,7 +374,7 @@ class CEngine:
         """Check if state is terminal. Mirrors engine.rules.is_terminal()."""
         return bool(_lib.engine_is_terminal(state.ptr))
 
-    def winner(self, state: CState) -> Optional[str]:
+    def winner(self, state: CState) -> str | None:
         """Return winner player id or None. Mirrors engine.rules.winner()."""
         score = ctypes.c_int()
         sym = _lib.engine_winner(state.ptr, ctypes.byref(score))

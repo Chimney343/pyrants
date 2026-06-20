@@ -624,6 +624,7 @@ class GameViewerApp:
             state="readonly",
             textvariable=self.discard_selection_var,
             width=90,
+            height=25,
         )
         self.discard_box.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(8, 0))
 
@@ -1163,28 +1164,40 @@ class GameViewerApp:
                     if card_id and card_id not in cards_by_id:
                         cards_by_id[card_id] = _make_card_view(card_id)
 
-                self.house_guard_var.set("—")
-                self.priestess_var.set("—")
-                self.insane_outcast_var.set("—")
-
                 current_index = cstate.player_index(cstate.current_player_id)
+
+                # Starter pile summaries — compute safely; don't block discard/other updates
+                try:
+                    self.house_guard_var.set(
+                        self._c_starter_pile_summary(cstate, current_index, HOUSE_GUARD_CARD_ID)
+                    )
+                    self.priestess_var.set(
+                        self._c_starter_pile_summary(cstate, current_index, PRIESTESS_CARD_ID)
+                    )
+                    self.insane_outcast_var.set(
+                        self._c_starter_pile_summary(cstate, current_index, INSANE_OUTCAST_CARD_ID)
+                    )
+                except Exception:
+                    self.house_guard_var.set("—")
+                    self.priestess_var.set("—")
+                    self.insane_outcast_var.set("—")
 
                 # Own discard pile
                 current_discard = cstate.player_discard(current_index)
                 for cid in current_discard:
                     _ensure_card(cid)
-                discard_options = format_ordered_card_options(current_discard, cards_by_id)
+                discard_options = format_discard_pile_options(current_discard, cards_by_id)
                 self.discard_box["values"] = discard_options
-                if self.discard_selection_var.get() not in discard_options:
+                if discard_options:
                     self.discard_selection_var.set(discard_options[0])
 
                 # Devour pile
                 devoured = cstate.devour_pile
                 for cid in devoured:
                     _ensure_card(cid)
-                devoured_options = format_ordered_card_options(devoured, cards_by_id)
+                devoured_options = format_discard_pile_options(devoured, cards_by_id)
                 self.devoured_box["values"] = devoured_options
-                if self.devoured_selection_var.get() not in devoured_options:
+                if devoured_options:
                     self.devoured_selection_var.set(devoured_options[0])
 
                 # Other players' discard piles
@@ -2128,6 +2141,19 @@ class GameViewerApp:
         played_count = player.played_cards.count(card_id)
         discard_count = player.discard_pile.count(card_id)
         inner_circle_count = player.inner_circle.count(card_id)
+        owned_total = deck_count + hand_count + played_count + discard_count + inner_circle_count
+        return (
+            f"deck {deck_count:>2} | hand {hand_count:>2} | played {played_count:>2}\n"
+            f"discard {discard_count:>2} | inner {inner_circle_count:>2} | total {owned_total:>2}"
+        )
+
+    @staticmethod
+    def _c_starter_pile_summary(cstate: Any, index: int, card_id: str) -> str:
+        deck_count = cstate.player_deck(index).count(card_id)
+        hand_count = cstate.player_hand(index).count(card_id)
+        played_count = cstate.player_played(index).count(card_id)
+        discard_count = cstate.player_discard(index).count(card_id)
+        inner_circle_count = cstate.player_inner_circle(index).count(card_id)
         owned_total = deck_count + hand_count + played_count + discard_count + inner_circle_count
         return (
             f"deck {deck_count:>2} | hand {hand_count:>2} | played {played_count:>2}\n"

@@ -24,6 +24,7 @@ SUPPORTED_CUSTOM_EFFECT_KINDS = {
     "give_insane_outcast_to_player_with_presence_on_last_selected_node",
     "give_insane_outcast_to_selected_player",
     "give_insane_outcast_to_each_opponent",
+    "give_insane_outcast_to_self",
     "mill_deck_to_discard",
     "self_purge_to_supply",
     "steal_white_trophy_to_board",
