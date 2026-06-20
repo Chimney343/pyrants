@@ -475,9 +475,8 @@ static GameState *apply_play_card_nested(GameState *state, Sym player_id, const 
         if (!ps || idx < 0 || idx >= ps->inner_circle_count) return state;
         nested_id = ps->inner_circle[idx];
     } else if (strcmp(sf, "play") == 0) {
-        int slot = find_sel_int(sk, sv, sc, "market_slot", -1);
-        if (slot < 0 || slot >= state->market.row_count) return state;
-        nested_id = state->market.row[slot];
+        nested_id = find_sel(sk, sv, sc, "target_card_id");
+        if (nested_id == SYM_NULL) return state;
     } else {
         return state;
     }
@@ -488,6 +487,7 @@ static GameState *apply_play_card_nested(GameState *state, Sym player_id, const 
     EffectFn effect = lookup_effect(nested_cd->effect_key);
     if (!effect) return state;
 
+    if (state->pending_generic) state->pending_generic->last_played_card_id = nested_id;
     return effect(state, player_id, nested_cd);
 }
 

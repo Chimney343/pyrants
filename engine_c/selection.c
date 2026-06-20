@@ -185,17 +185,25 @@ static int sel_return_unit(const GameState *state, Sym player_id,
         Sym nid = state->nodes[i].node_id;
         for (int s = 0; s < state->nodes[i].troop_slot_count && w < max_out; s++) {
             Sym occ = state->nodes[i].troop_slots[s];
-            if (occ == SYM_NULL) continue;
-            const char *os = intern_str(occ);
-            if (os && strcmp(os, "white") == 0) continue;
+            if (occ != player_id) continue;
+            char buf[32];
+            snprintf(buf, sizeof(buf), "troop:%d", s);
             out[w].type = MOVE_RESOLVE_GENERIC;
             out[w].data.resolve_generic.action_id = nid;
+            out[w].data.resolve_generic.target_id = intern(buf);
+            out[w].data.resolve_generic.selection_index = 0;
             out[w].player_index = 0;
             w++;
         }
         for (int s = 0; s < state->nodes[i].spy_count && w < max_out; s++) {
+            if (state->nodes[i].spies[s] != player_id) continue;
+            char buf[32];
+            const char *pid_str = intern_str(player_id);
+            snprintf(buf, sizeof(buf), "spy:%s", pid_str ? pid_str : "?");
             out[w].type = MOVE_RESOLVE_GENERIC;
             out[w].data.resolve_generic.action_id = nid;
+            out[w].data.resolve_generic.target_id = intern(buf);
+            out[w].data.resolve_generic.selection_index = 0;
             out[w].player_index = 0;
             w++;
         }
@@ -328,12 +336,31 @@ static int sel_devour(const GameState *state, Sym player_id,
     const char *z = intern_str(zone);
 
     if (z && strcmp(z, "market") == 0) {
-        /* Devour from the market row — one move per market card. */
-        for (int s = 0; s < state->market.row_count && w < max_out; s++) {
-            out[w].type = MOVE_RESOLVE_GENERIC;
-            out[w].data.resolve_generic.action_id = state->market.row[s];
-            out[w].player_index = 0;
-            w++;
+        int slot_locked = 0;
+        for (int i = 0; i < action->metadata_count; i++) {
+            const char *k = intern_str(action->metadata[i].key);
+            const char *v = intern_str(action->metadata[i].value);
+            if (k && strcmp(k, "requires_last_selected_market_slot") == 0 && v
+                && strcmp(v, "true") == 0) {
+                slot_locked = 1;
+                break;
+            }
+        }
+        if (slot_locked) {
+            Sym prev_card = pending->last_played_card_id;
+            if (prev_card != SYM_NULL && w < max_out) {
+                out[w].type = MOVE_RESOLVE_GENERIC;
+                out[w].data.resolve_generic.action_id = prev_card;
+                out[w].player_index = 0;
+                w++;
+            }
+        } else {
+            for (int s = 0; s < state->market.row_count && w < max_out; s++) {
+                out[w].type = MOVE_RESOLVE_GENERIC;
+                out[w].data.resolve_generic.action_id = state->market.row[s];
+                out[w].player_index = 0;
+                w++;
+            }
         }
     } else if (z && strcmp(z, "played_self") == 0) {
         /* Devour the card that was just played (self-devour). */
@@ -375,9 +402,23 @@ static int sel_play_card(const GameState *state, Sym player_id,
         return w;
     }
     if (sf && strcmp(sf, "play") == 0) {
+        int max_cost = 9999;
+        for (int i = 0; i < action->metadata_count; i++) {
+            const char *k = intern_str(action->metadata[i].key);
+            const char *v = intern_str(action->metadata[i].value);
+            if (k && strcmp(k, "max_cost") == 0 && v) max_cost = atoi(v);
+        }
         for (int s = 0; s < state->market.row_count && w < max_out; s++) {
+            Sym cid = state->market.row[s];
+            if (max_cost < 9999) {
+                const CardDefinition *cd = NULL;
+                for (int ci = 0; ci < state->definition->catalog.card_count; ci++)
+                    if (state->definition->catalog.cards[ci].card_id == cid)
+                        { cd = &state->definition->catalog.cards[ci]; break; }
+                if (!cd || cd->cost > max_cost) continue;
+            }
             out[w].type = MOVE_RESOLVE_GENERIC;
-            out[w].data.resolve_generic.action_id = state->market.row[s];
+            out[w].data.resolve_generic.action_id = cid;
             out[w].player_index = 0;
             w++;
         }

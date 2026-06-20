@@ -262,7 +262,7 @@ typedef struct {
     bool repeat_while_targets;
 } PendingPromotionState;
 
-typedef struct {
+typedef struct PendingGenericChoiceState {
     Sym          source_card_id;
     int          exec_kind;
     Sym         *option_ids;
@@ -286,6 +286,8 @@ typedef struct {
     int          limit_values[8];
     int          limit_count;
     int          resolve_depth;
+    struct PendingGenericChoiceState *parent;
+    Sym          last_played_card_id;
 } PendingGenericChoiceState;
 
 typedef struct GameState {

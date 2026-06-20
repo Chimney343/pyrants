@@ -218,6 +218,7 @@ GameState *resolve_generic_execution(GameState *state, Sym player_id,
     Arena *arena = (Arena *)updated->arena;
     PendingGenericChoiceState *pending = arena_calloc(arena, 1, sizeof(PendingGenericChoiceState));
     pending->source_card_id = source_card_id;
+    pending->parent = updated->pending_generic;
 
     int kind = card->execution.kind;
     if (kind == EXEC_SEQUENCE) {
@@ -251,13 +252,15 @@ GameState *auto_resolve_pending_generic(GameState *state, Sym player_id) {
 
         p->resolve_depth++;
         if (p->resolve_depth > 300) {
-            state->pending_generic = NULL;
+            if (p->parent) p->parent->next_action_index++;
+            state->pending_generic = p->parent;
             return state;
         }
 
         local_iter++;
         if (local_iter > 500) {
-            state->pending_generic = NULL;
+            if (p->parent) p->parent->next_action_index++;
+            state->pending_generic = p->parent;
             return state;
         }
 
@@ -266,7 +269,8 @@ GameState *auto_resolve_pending_generic(GameState *state, Sym player_id) {
 
         if (p->awaiting_option) {
             if (p->option_count == 0) {
-                state->pending_generic = NULL;
+                if (p->parent) p->parent->next_action_index++;
+                state->pending_generic = p->parent;
                 return state;
             }
             return state;
@@ -281,7 +285,8 @@ GameState *auto_resolve_pending_generic(GameState *state, Sym player_id) {
                 p->next_action_index = 0;
                 continue;
             }
-            state->pending_generic = NULL;
+            if (p->parent) p->parent->next_action_index++;
+            state->pending_generic = p->parent;
             return state;
         }
 
@@ -531,6 +536,8 @@ GameState *apply_resolve_generic_choice(GameState *src, const Move *move) {
     } else {
         const CardAction *action = pending_generic_active_action(p);
         if (!action) { engine_destroy(state); return NULL; }
+        int pre_idx = state->pending_generic ? state->pending_generic->next_action_index : -1;
+        int nested = 0;
         if (!action_focus_requirement_met(state, pid, card, p->source_card_id, action)) {
             p->next_action_index++;
             return auto_resolve_pending_generic(state, pid);
@@ -596,7 +603,21 @@ GameState *apply_resolve_generic_choice(GameState *src, const Move *move) {
                             sk[sc] = intern("target_card_id"); sv[sc] = aid; sc++;
                         }
                     }
-                } else if (strcmp(op, "return_unit") == 0 || strcmp(op, "move_troop") == 0) {
+                } else if (strcmp(op, "return_unit") == 0) {
+                    if (aid != SYM_NULL) { sk[sc] = intern("node_id"); sv[sc] = aid; sc++; }
+                    if (tid != SYM_NULL) {
+                        const char *ts = intern_str(tid);
+                        if (ts) {
+                            if (strncmp(ts, "troop:", 6) == 0) {
+                                sk[sc] = intern("unit_type"); sv[sc] = intern("troop"); sc++;
+                                sk[sc] = intern("target_slot_index"); sv[sc] = intern(ts + 6); sc++;
+                            } else if (strncmp(ts, "spy:", 4) == 0) {
+                                sk[sc] = intern("unit_type"); sv[sc] = intern("spy"); sc++;
+                                sk[sc] = intern("spy_owner_id"); sv[sc] = intern(ts + 4); sc++;
+                            }
+                        }
+                    }
+                } else if (strcmp(op, "move_troop") == 0) {
                     if (aid != SYM_NULL) { sk[sc] = intern("node_id"); sv[sc] = aid; sc++; }
                 } else if (strcmp(op, "play_card") == 0) {
                     if (aid != SYM_NULL) { sk[sc] = intern("target_card_id"); sv[sc] = aid; sc++; }
@@ -616,13 +637,14 @@ GameState *apply_resolve_generic_choice(GameState *src, const Move *move) {
             }
             state = apply_generic_action(state, pid, card, p->source_card_id, action,
                                           sk, sv, sc);
+            nested = (state != prev_sel);
             if (state != prev_sel) engine_destroy(prev_sel);
             if (!state) return NULL;
             p = state->pending_generic;
         }
         if (p && action_requires_additional_choice(state, pid, action))
             return auto_resolve_pending_generic(state, pid);
-        if (p) p->next_action_index++;
+        if (p && !nested && p->next_action_index == pre_idx) p->next_action_index++;
     }
     return auto_resolve_pending_generic(state, pid);
 }
