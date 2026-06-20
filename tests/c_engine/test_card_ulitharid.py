@@ -133,3 +133,91 @@ def test_ulitharid_play_and_devour_noble() -> None:
     assert "noble" not in market_ids, "Noble should be removed from market row"
 
     session.destroy()
+
+
+def test_ulitharid_play_modal_card_and_devour() -> None:
+    """Play a modal market card (intellect_devourer) via Ulitharid,
+    resolve it, then devour it.  Exercises the parent chain cloning path
+    in engine_clone that was previously broken (crash on
+    legal_moves after nested modal resolution)."""
+    eng = CEngine()
+    eng.initialize(
+        catalog_path=str(DATA_DIR / "cards" / "catalog.json"),
+        board_path=str(DATA_DIR / "boards" / "tyrants_of_the_underdark.json"),
+        setup_path=str(DATA_DIR / "decks" / "base_setup.json"),
+    )
+    session = make_card_test_session(
+        eng,
+        ["p1", "p2"],
+        hand={"p1": ["ulitharid"]},
+        current_player="p1",
+    )
+
+    market_cards = ["intellect_devourer", "soldier"]
+    ms = session._state._ptr.contents.market
+    ms.row_count = min(len(market_cards), MAX_ZONE_SIZE)
+    for j, cid in enumerate(market_cards[:MAX_ZONE_SIZE]):
+        ms.row[j] = _lib.intern(cid.encode())
+
+    for m in session.legal_moves():
+        if m._move_type == "play_card" and m.data.get("card_id") == "ulitharid":
+            session.submit_move(m)
+            break
+    else:
+        session.destroy()
+        raise AssertionError("Ulitharid not in hand")
+
+    s = session._state._ptr.contents
+    inf_before = s.resource_pool.influence
+
+    for m in session.legal_moves():
+        if m._move_type == "resolve_generic" and m.data.get("action_id") == "intellect_devourer":
+            session.submit_move(m)
+            break
+    else:
+        session.destroy()
+        raise AssertionError("intellect_devourer not selectable for play_card")
+
+    for m in session.legal_moves():
+        if m._move_type == "resolve_generic" and m.data.get("action_id") == "option_1":
+            session.submit_move(m)
+            break
+    else:
+        session.destroy()
+        raise AssertionError("option_1 not available for intellect_devourer")
+
+    s = session._state._ptr.contents
+    assert s.resource_pool.influence == inf_before + 3, (
+        f"option_1 should have granted 3 influence: {inf_before} -> {s.resource_pool.influence}"
+    )
+
+    devour_moves = [
+        m for m in session.legal_moves()
+        if m._move_type == "resolve_generic" and m.data.get("action_id") == "intellect_devourer"
+    ]
+    assert len(devour_moves) == 1, (
+        f"Expected 1 devour target (intellect_devourer), got {len(devour_moves)}"
+    )
+
+    dv = session._state._ptr.contents.devour_pile_count
+    session.submit_move(devour_moves[0])
+
+    s = session._state._ptr.contents
+    assert s.devour_pile_count == dv + 1, (
+        f"Devour pile should have grown: {dv} -> {s.devour_pile_count}"
+    )
+    devoured_ids = {
+        _lib.intern_str(s.devour_pile[i]).decode()
+        for i in range(s.devour_pile_count)
+    }
+    assert "intellect_devourer" in devoured_ids, "intellect_devourer should be in devour pile"
+
+    market_ids = {
+        _lib.intern_str(s.market.row[i]).decode()
+        for i in range(s.market.row_count)
+    }
+    assert "intellect_devourer" not in market_ids, (
+        "intellect_devourer should be removed from market row"
+    )
+
+    session.destroy()

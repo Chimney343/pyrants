@@ -59,6 +59,8 @@ int engine_serialize_state(const GameState *state,
                            const char *setup_path,
                            int move_count, int is_terminal,
                            char *out_json, int out_cap) {
+    if (state->pending_generic) return 0;
+
     cJSON *root = cJSON_CreateObject();
 
     add_string(root, "scenario_id", "auto_generated");

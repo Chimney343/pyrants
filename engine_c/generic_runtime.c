@@ -132,6 +132,7 @@ int action_requires_selection(const CardAction *action) {
             if (sf && strcmp(sf, "conditional_owner_discard") == 0) return 0;
             if (sf && strcmp(sf, "end_of_turn_mass_discard") == 0) return 0;
             if (sf && strcmp(sf, "mass_discard") == 0) return 0;
+            if (sf && strcmp(sf, "on_opponent_discard_punish") == 0) return 0;
         }
     }
     for (int i = 0; selection_ops[i]; i++)
@@ -269,9 +270,9 @@ GameState *auto_resolve_pending_generic(GameState *state, Sym player_id) {
 
         if (p->awaiting_option) {
             if (p->option_count == 0) {
-                if (p->parent) p->parent->next_action_index++;
-                state->pending_generic = p->parent;
-                return state;
+    if (p->parent) p->parent->next_action_index++;
+    state->pending_generic = p->parent;
+    return state;
             }
             return state;
         }
@@ -487,6 +488,25 @@ GameState *auto_resolve_pending_generic(GameState *state, Sym player_id) {
                     p->next_action_index++;
                     continue;
                 }
+
+                /* Any force_discard on a card with conditional_gate that
+                 * wasn't handled above is a reactive trigger — skip
+                 * during normal play (e.g. Umber Hulk's
+                 * on_opponent_discard_punish). */
+                {
+                    int skip = 0;
+                    for (int gc = 0; gc < card->global_condition_count; gc++) {
+                        const char *gct = intern_str(card->global_conditions[gc].condition_type);
+                        if (gct && strcmp(gct, "conditional_gate") == 0) {
+                            skip = 1;
+                            break;
+                        }
+                    }
+                    if (skip) {
+                        p->next_action_index++;
+                        continue;
+                    }
+                }
             }
         }
 
@@ -620,7 +640,28 @@ GameState *apply_resolve_generic_choice(GameState *src, const Move *move) {
                 } else if (strcmp(op, "move_troop") == 0) {
                     if (aid != SYM_NULL) { sk[sc] = intern("node_id"); sv[sc] = aid; sc++; }
                 } else if (strcmp(op, "play_card") == 0) {
-                    if (aid != SYM_NULL) { sk[sc] = intern("target_card_id"); sv[sc] = aid; sc++; }
+                    if (aid != SYM_NULL) {
+                        const char *sf2 = intern_str(action->source_fragment);
+                        if (sf2 && strcmp(sf2, "play_from_inner_circle_without_removal") == 0) {
+                            int pi = -1;
+                            for (int i = 0; i < state->player_count; i++)
+                                if (state->players[i].player_id == pid) { pi = i; break; }
+                            if (pi >= 0) {
+                                for (int ii = 0; ii < state->players[pi].inner_circle_count; ii++) {
+                                    if (state->players[pi].inner_circle[ii] == aid) {
+                                        sk[sc] = intern("inner_circle_index");
+                                        char ibuf[16];
+                                        snprintf(ibuf, sizeof(ibuf), "%d", ii);
+                                        sv[sc] = intern(ibuf);
+                                        sc++;
+                                        break;
+                                    }
+                                }
+                            }
+                        } else {
+                            sk[sc] = intern("target_card_id"); sv[sc] = aid; sc++;
+                        }
+                    }
                 } else if (aid != SYM_NULL) {
                     sk[sc] = intern("target_node_id"); sv[sc] = aid; sc++;
                 }

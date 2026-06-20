@@ -155,6 +155,23 @@ GameState *engine_create_game_definition(const GameDefinition *def, const char *
     return gs;
 }
 
+static PendingGenericChoiceState *clone_pending_generic(Arena *arena, const PendingGenericChoiceState *src) {
+    PendingGenericChoiceState *dst = arena_alloc(arena, sizeof(PendingGenericChoiceState));
+    if (!dst) return NULL;
+    memcpy(dst, src, sizeof(PendingGenericChoiceState));
+    if (dst->option_ids && dst->option_count > 0) {
+        size_t sz = (size_t)dst->option_count * sizeof(Sym);
+        Sym *cpy = arena_alloc(arena, sz);
+        if (cpy) { memcpy(cpy, dst->option_ids, sz); dst->option_ids = cpy; }
+    }
+    if (dst->selected_option_ids && dst->selected_count > 0) {
+        size_t sz = (size_t)dst->selected_count * sizeof(Sym);
+        Sym *cpy = arena_alloc(arena, sz);
+        if (cpy) { memcpy(cpy, dst->selected_option_ids, sz); dst->selected_option_ids = cpy; }
+    }
+    return dst;
+}
+
 GameState *engine_clone(const GameState *src) {
     if (!src) return NULL;
     Arena *arena = arena_create(512 * 1024);
@@ -170,19 +187,20 @@ GameState *engine_clone(const GameState *src) {
         memcpy(dst->pending_ability, src->pending_ability, sizeof(PendingAbilityState));
     }
     if (src->pending_generic) {
-        dst->pending_generic = arena_alloc(arena, sizeof(PendingGenericChoiceState));
-        memcpy(dst->pending_generic, src->pending_generic, sizeof(PendingGenericChoiceState));
-        if (dst->pending_generic->option_ids && dst->pending_generic->option_count > 0) {
-            size_t sz = (size_t)dst->pending_generic->option_count * sizeof(Sym);
-            Sym *copy = arena_alloc(arena, sz);
-            memcpy(copy, dst->pending_generic->option_ids, sz);
-            dst->pending_generic->option_ids = copy;
-        }
-        if (dst->pending_generic->selected_option_ids && dst->pending_generic->selected_count > 0) {
-            size_t sz = (size_t)dst->pending_generic->selected_count * sizeof(Sym);
-            Sym *copy = arena_alloc(arena, sz);
-            memcpy(copy, dst->pending_generic->selected_option_ids, sz);
-            dst->pending_generic->selected_option_ids = copy;
+        dst->pending_generic = clone_pending_generic(arena, src->pending_generic);
+        if (dst->pending_generic) {
+            PendingGenericChoiceState *src_parent = src->pending_generic->parent;
+            PendingGenericChoiceState **dst_prev_parent = &dst->pending_generic->parent;
+            int depth = 0;
+            while (src_parent && depth < 16) {
+                PendingGenericChoiceState *copied = clone_pending_generic(arena, src_parent);
+                if (!copied) break;
+                *dst_prev_parent = copied;
+                dst_prev_parent = &copied->parent;
+                src_parent = src_parent->parent;
+                depth++;
+            }
+            *dst_prev_parent = NULL;
         }
     }
     return dst;

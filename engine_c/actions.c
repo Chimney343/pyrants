@@ -490,6 +490,15 @@ static GameState *apply_play_card_nested(GameState *state, Sym player_id, const 
     return effect(state, player_id, nested_cd);
 }
 
+static void give_insane_outcast(GameState *state, Sym player_id, Sym target_id, const CardAction *action) {
+    int count = resolve_count(state, player_id, action);
+    PlayerState *ps = cow_player(state, target_id);
+    if (ps) {
+        for (int c = 0; c < count && ps->discard_pile_count < MAX_ZONE_SIZE; c++)
+            ps->discard_pile[ps->discard_pile_count++] = intern("insane_outcast");
+    }
+}
+
 static GameState *apply_custom_effect(GameState *state, Sym player_id, const CardDefinition *card,
                                        Sym source, const CardAction *action,
                                        int *sk, Sym *sv, int sc) {
@@ -502,21 +511,17 @@ static GameState *apply_custom_effect(GameState *state, Sym player_id, const Car
     if (!ek) return state;
 
     if (strcmp(ek, "give_insane_outcast_to_each_opponent") == 0) {
-        int count = resolve_count(state, player_id, action);
         for (int p = 0; p < state->player_count; p++) {
             if (state->players[p].player_id == player_id) continue;
-            PlayerState *ps = cow_player(state, state->players[p].player_id);
-            if (!ps) continue;
-            for (int c = 0; c < count && ps->discard_pile_count < MAX_ZONE_SIZE; c++)
-                ps->discard_pile[ps->discard_pile_count++] = intern("insane_outcast");
+            give_insane_outcast(state, player_id, state->players[p].player_id, action);
         }
     } else if (strcmp(ek, "give_insane_outcast_to_self") == 0) {
-        int count = resolve_count(state, player_id, action);
-        PlayerState *ps = cow_player(state, player_id);
-        if (ps) {
-            for (int c = 0; c < count && ps->discard_pile_count < MAX_ZONE_SIZE; c++)
-                ps->discard_pile[ps->discard_pile_count++] = intern("insane_outcast");
-        }
+        give_insane_outcast(state, player_id, player_id, action);
+    } else if (strcmp(ek, "give_insane_outcast_to_selected_player") == 0 ||
+               strcmp(ek, "give_insane_outcast_to_player_with_presence_on_last_selected_node") == 0) {
+        Sym target = find_sel(sk, sv, sc, "target_node_id");
+        if (target == SYM_NULL || target == player_id) return state;
+        give_insane_outcast(state, player_id, target, action);
     } else if (strcmp(ek, "mill_deck_to_discard") == 0) {
         PlayerState *ps = cow_player(state, player_id);
         if (ps) {

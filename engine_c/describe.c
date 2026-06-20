@@ -166,6 +166,17 @@ int engine_describe_move(const GameState *state, const Move *move,
                         const char *owner = troop_owner_label(state, aid, slot_idx);
                         const char *label = node_label(intern_str(aid), node_ids, node_labels, node_pair_count);
                         snprintf(buf, sizeof(buf), "Remove %s troop from %s", owner, label);
+                    } else if (op && strcmp(op, "return_unit") == 0) {
+                        Sym tid = move->data.resolve_generic.target_id;
+                        const char *label = node_label(intern_str(aid), node_ids, node_labels, node_pair_count);
+                        const char *ts = tid != SYM_NULL ? intern_str(tid) : NULL;
+                        if (ts && strncmp(ts, "troop:", 6) == 0) {
+                            snprintf(buf, sizeof(buf), "Return troop from %s", label);
+                        } else if (ts && strncmp(ts, "spy:", 4) == 0) {
+                            snprintf(buf, sizeof(buf), "Return spy from %s", label);
+                        } else {
+                            snprintf(buf, sizeof(buf), "Return unit from %s", label);
+                        }
                     } else {
                         const char *name = card_name_for(state, aid);
                         snprintf(buf, sizeof(buf), "Resolve %s", name);

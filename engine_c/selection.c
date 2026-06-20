@@ -104,7 +104,8 @@ static int sel_custom_effect(const GameState *state, Sym player_id,
     for (int i = 0; i < action->metadata_count; i++) {
         const char *k = intern_str(action->metadata[i].key);
         const char *v = intern_str(action->metadata[i].value);
-        if (k && strcmp(k, "effect_kind") == 0 && v && strcmp(v, "select_site") == 0) {
+        if (!k || strcmp(k, "effect_kind") != 0 || !v) continue;
+        if (strcmp(v, "select_site") == 0) {
             for (int ni = 0; ni < state->node_count && w < max_out; ni++) {
                 Sym nid = state->nodes[ni].node_id;
                 const NodeDefinition *nd = NULL;
@@ -115,6 +116,24 @@ static int sel_custom_effect(const GameState *state, Sym player_id,
                 if (!has_presence(state, player_id, nid)) continue;
                 out[w].type = MOVE_RESOLVE_GENERIC;
                 out[w].data.resolve_generic.action_id = nid;
+                out[w].data.resolve_generic.target_id = SYM_NULL;
+                out[w].data.resolve_generic.selection_index = 0;
+                out[w].player_index = 0;
+                w++;
+            }
+        } else if (strstr(v, "selected_player") || strstr(v, "presence_on_last_selected")) {
+            Sym last_site = SYM_NULL;
+            int needs_presence = 0;
+            if (strstr(v, "presence_on_last_selected")) {
+                needs_presence = 1;
+                last_site = find_ls_sym(pending, "target_node_id");
+                if (last_site == SYM_NULL) continue;
+            }
+            for (int p = 0; p < state->player_count && w < max_out; p++) {
+                if (state->players[p].player_id == player_id) continue;
+                if (needs_presence && !has_presence(state, state->players[p].player_id, last_site)) continue;
+                out[w].type = MOVE_RESOLVE_GENERIC;
+                out[w].data.resolve_generic.action_id = state->players[p].player_id;
                 out[w].data.resolve_generic.target_id = SYM_NULL;
                 out[w].data.resolve_generic.selection_index = 0;
                 out[w].player_index = 0;
