@@ -52,6 +52,7 @@ static int sel_assassinate_supplant(const GameState *state, Sym player_id,
     int w = 0;
     int white_only = 0, allow_white = 0;
     int requires_last = 0;
+    int ignore_presence = 0;
     Sym last_site = SYM_NULL;
     for (int i = 0; i < action->filter_count; i++) {
         const char *f = intern_str(action->filters[i]);
@@ -64,13 +65,17 @@ static int sel_assassinate_supplant(const GameState *state, Sym player_id,
         if (k && strcmp(k, "requires_last_selected_node") == 0 && v) {
             requires_last = 1;
         }
+        if (k && strcmp(k, "ignore_presence_requirement") == 0 && v
+            && strcmp(v, "true") == 0) {
+            ignore_presence = 1;
+        }
     }
     if (requires_last) last_site = find_ls_sym(pending, "target_node_id");
     for (int i = 0; i < state->node_count && w < max_out; i++) {
         Sym nid = state->nodes[i].node_id;
         if (requires_last) {
             if (last_site == SYM_NULL || nid != last_site) continue;
-        } else {
+        } else if (!ignore_presence) {
             if (!has_presence(state, player_id, nid)) continue;
         }
         for (int s = 0; s < state->nodes[i].troop_slot_count && w < max_out; s++) {
