@@ -154,7 +154,7 @@ class TestEnrichLabel:
             "Resolve",
             {"action_id": "", "selection_index": 0},
         )
-        assert result == "Resolve pending choice"
+        assert result == "Skip for "
 
     def test_resolve_generic_target_selection_uses_card_action_id(self):
         "For target selection, card_action_id comes from state, not the move."
@@ -251,7 +251,7 @@ class TestEnrichLabel:
         assert result == "Ambassador: Promote card House Guard"
 
     def test_sequence_model_action_without_target(self):
-        "Sequence model action that does not need a target selection."
+        "Sequence model action that does not need a target selection (skip marker)."
         result = enrich_label(
             "resolve_generic",
             "Resolve action_1",
@@ -259,7 +259,7 @@ class TestEnrichLabel:
             source_card_id="ambassador",
             card_action_id="action_1",
         )
-        assert result == "Ambassador: Promote card"
+        assert result == "Skip Promote card for Ambassador"
 
     def test_promote_card_with_source_enrichment(self):
         "promote_card with a known promotion source prepends the source name."
@@ -340,3 +340,25 @@ class TestCDescribeIntegration:
         label = buf.value.decode()
         assert "Site test" in label
         assert "site_test" not in label
+
+    def test_ettin_option1_label(self):
+        """Ettin option 1: deploy 3 troops."""
+        result = enrich_label(
+            "resolve_generic",
+            "Resolve option_1",
+            {"action_id": "option_1", "selection_index": 0},
+            source_card_id="ettin",
+            is_option_choice=True,
+        )
+        assert result == "Ettin: Deploy troops (x3)"
+
+    def test_ettin_option2_label(self):
+        """Ettin option 2: assassinate 2 white troops."""
+        result = enrich_label(
+            "resolve_generic",
+            "Resolve option_2",
+            {"action_id": "option_2", "selection_index": 0},
+            source_card_id="ettin",
+            is_option_choice=True,
+        )
+        assert result == "Ettin: Assassinate white troop (x2)"

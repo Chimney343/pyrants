@@ -21,7 +21,7 @@ _ENRICH_MOVES = frozenset({"activate_ability", "decline_ability", "resolve_gener
 
 _OP_DESCRIPTIONS = {
     "place_spy": "Place spy",
-    "assassinate_troop": "Remove troop",
+    "assassinate_troop": "Assassinate troop",
     "supplant_troop": "Replace troop",
     "deploy_troops": "Deploy troops",
     "return_spy": "Return spy",
@@ -34,6 +34,10 @@ _OP_DESCRIPTIONS = {
     "devour_cost": "Devour (cost)",
     "force_discard": "Force discard",
     "play_card": "Play a card",
+}
+
+_FILTER_DESCRIPTIONS = {
+    "white_troop_only": "white",
 }
 
 
@@ -88,6 +92,12 @@ def _lookup_card_action(card_entry: dict | None, action_id: str) -> dict | None:
 
 def _describe_single_action(action: dict, *, spy_count: int = 0) -> str:
     desc = _describe_action_by_op(action.get("op", ""), action.get("quantity"))
+    filters = action.get("filters", [])
+    if isinstance(filters, list):
+        for f_val in filters:
+            mapped = _FILTER_DESCRIPTIONS.get(f_val)
+            if mapped:
+                desc = desc.replace(" troop", f" {mapped} troop", 1)
     meta = action.get("metadata")
     if isinstance(meta, dict):
         count_from = meta.get("count_from", "")
