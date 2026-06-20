@@ -3710,8 +3710,27 @@
             "timing": "immediate",
             "optional": false,
             "quantity": {
-              "kind": "variable_repeat",
-              "value": null
+              "kind": "fixed",
+              "value": 1
+            },
+            "filters": [
+              "white_troop_only"
+            ],
+            "source_fragment": "supplant_troop_anywhere",
+            "metadata": {
+              "targeting": "anywhere",
+              "ignore_presence_requirement": true
+            }
+          },
+          {
+            "action_id": "action_3",
+            "op": "supplant_troop",
+            "target_scope": "board_site",
+            "timing": "immediate",
+            "optional": false,
+            "quantity": {
+              "kind": "fixed",
+              "value": 2
             },
             "filters": [
               "white_troop_only"
@@ -3720,18 +3739,20 @@
             "metadata": {}
           },
           {
-            "action_id": "action_3",
-            "op": "recruit_card",
-            "target_scope": "market",
+            "action_id": "action_4",
+            "op": "custom_effect",
+            "target_scope": "opponent_player",
             "timing": "immediate",
             "optional": false,
             "quantity": {
-              "kind": "variable_repeat",
-              "value": null
+              "kind": "fixed",
+              "value": 2
             },
             "filters": [],
-            "source_fragment": "recruit_card",
-            "metadata": {}
+            "source_fragment": "custom_effect",
+            "metadata": {
+              "effect_kind": "give_insane_outcast_to_each_opponent"
+            }
           }
         ]
       },
@@ -3760,8 +3781,27 @@
           "timing": "immediate",
           "optional": false,
           "quantity": {
-            "kind": "variable_repeat",
-            "value": null
+            "kind": "fixed",
+            "value": 1
+          },
+          "filters": [
+            "white_troop_only"
+          ],
+          "source_fragment": "supplant_troop_anywhere",
+          "metadata": {
+            "targeting": "anywhere",
+            "ignore_presence_requirement": true
+          }
+        },
+        {
+          "action_id": "action_3",
+          "op": "supplant_troop",
+          "target_scope": "board_site",
+          "timing": "immediate",
+          "optional": false,
+          "quantity": {
+            "kind": "fixed",
+            "value": 2
           },
           "filters": [
             "white_troop_only"
@@ -3770,18 +3810,20 @@
           "metadata": {}
         },
         {
-          "action_id": "action_3",
-          "op": "recruit_card",
-          "target_scope": "market",
+          "action_id": "action_4",
+          "op": "custom_effect",
+          "target_scope": "opponent_player",
           "timing": "immediate",
           "optional": false,
           "quantity": {
-            "kind": "variable_repeat",
-            "value": null
+            "kind": "fixed",
+            "value": 2
           },
           "filters": [],
-          "source_fragment": "recruit_card",
-          "metadata": {}
+          "source_fragment": "custom_effect",
+          "metadata": {
+            "effect_kind": "give_insane_outcast_to_each_opponent"
+          }
         }
       ],
       "global_conditions": [],

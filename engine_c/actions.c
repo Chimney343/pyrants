@@ -163,29 +163,28 @@ static GameState *apply_supplant_troop(GameState *state, Sym player_id, const Ca
                                         Sym source, const CardAction *action,
                                         int *sk, Sym *sv, int sc) {
     (void)card; (void)source;
-    int count = resolve_count(state, player_id, action);
     Sym target = find_sel(sk, sv, sc, "target_node_id");
     int slot = find_sel_int(sk, sv, sc, "target_slot_index", -1);
     if (target == SYM_NULL || slot < 0) return state;
 
-    for (int i = 0; i < count; i++) {
-        NodeState *ns = cow_node(state, target);
-        if (!ns || slot >= ns->troop_slot_count) break;
-        Sym occ = ns->troop_slots[slot];
-        if (occ == SYM_NULL || occ == player_id) break;
-        ns->troop_slots[slot] = SYM_NULL;
-        PlayerState *ps = cow_player(state, player_id);
-        if (ps && occ != intern("white")) {
-            if (ps->trophy_hall_count < MAX_ZONE_SIZE)
-                ps->trophy_hall[ps->trophy_hall_count++] = occ;
-        }
-        if (ps && ps->barracks > 0) {
-            ns->troop_slots[slot] = player_id;
-            ps->barracks--;
-        } else if (ps) {
-            ps->score += 1;
-        }
+    NodeState *ns = cow_node(state, target);
+    if (!ns || slot >= ns->troop_slot_count) return state;
+    Sym occ = ns->troop_slots[slot];
+    if (occ == SYM_NULL || occ == player_id) return state;
+    ns->troop_slots[slot] = SYM_NULL;
+    PlayerState *ps = cow_player(state, player_id);
+    if (ps && occ != intern("white")) {
+        if (ps->trophy_hall_count < MAX_ZONE_SIZE)
+            ps->trophy_hall[ps->trophy_hall_count++] = occ;
     }
+    if (ps && ps->barracks > 0) {
+        ns->troop_slots[slot] = player_id;
+        ps->barracks--;
+    } else if (ps) {
+        ps->score += 1;
+    }
+    if (state->pending_generic)
+        increment_pending_counter(state->pending_generic, action);
     return state;
 }
 
@@ -503,10 +502,12 @@ static GameState *apply_custom_effect(GameState *state, Sym player_id, const Car
     if (!ek) return state;
 
     if (strcmp(ek, "give_insane_outcast_to_each_opponent") == 0) {
+        int count = resolve_count(state, player_id, action);
         for (int p = 0; p < state->player_count; p++) {
             if (state->players[p].player_id == player_id) continue;
             PlayerState *ps = cow_player(state, state->players[p].player_id);
-            if (ps && ps->discard_pile_count < MAX_ZONE_SIZE)
+            if (!ps) continue;
+            for (int c = 0; c < count && ps->discard_pile_count < MAX_ZONE_SIZE; c++)
                 ps->discard_pile[ps->discard_pile_count++] = intern("insane_outcast");
         }
     } else if (strcmp(ek, "mill_deck_to_discard") == 0) {
