@@ -751,21 +751,56 @@ int legal_pending_generic_choice_moves(GameState *state, Sym player_id, Move *ou
     if (p->awaiting_option) {
         int w = 0;
         int pi = -1;
-        for (int p = 0; p < state->player_count; p++)
-            if (state->players[p].player_id == player_id) { pi = p; break; }
+        for (int pi2 = 0; pi2 < state->player_count; pi2++)
+            if (state->players[pi2].player_id == player_id) { pi = pi2; break; }
+        const CardDefinition *opt_card = NULL;
+        pending_generic_card_definition(state, p, &opt_card);
         for (int i = 0; i < p->option_count && w < max_out; i++) {
             Sym oid = p->option_ids[i];
-            /* --- Option viability checks for conditional modal choices --- */
-            if (p->source_card_id != SYM_NULL && oid != SYM_NULL) {
+            int viable = 1;
+            /* --- Generic viability: every non-optional selection-requiring
+             *     action in the option must have at least one legal target. --- */
+            if (opt_card && opt_card->execution.kind == EXEC_MODAL) {
+                const CardOption *opt = NULL;
+                for (int oi = 0; oi < opt_card->execution.option_count; oi++) {
+                    if (opt_card->execution.options[oi].option_id == oid) {
+                        opt = &opt_card->execution.options[oi];
+                        break;
+                    }
+                }
+                if (opt) {
+                    for (int ai = 0; ai < opt->action_count && viable; ai++) {
+                        const CardAction *act = &opt->actions[ai];
+                        if (act->optional) continue;
+                        if (!action_requires_selection(act)) continue;
+                        /* Skip actions that depend on a last_selection from a
+                         * prior action in the same option — those selections
+                         * haven't been made yet, so their handler would
+                         * incorrectly report zero targets here. */
+                        int depends_on_prior = 0;
+                        for (int mi = 0; mi < act->metadata_count; mi++) {
+                            const char *mk = intern_str(act->metadata[mi].key);
+                            const char *mv = intern_str(act->metadata[mi].value);
+                            if (mk && strcmp(mk, "requires_last_selected_node") == 0) depends_on_prior = 1;
+                            if (mk && strcmp(mk, "requires_returned_spy_site") == 0) depends_on_prior = 1;
+                        }
+                        if (depends_on_prior) continue;
+                        Move dummy[1];
+                        int nc = legal_generic_target_selection_moves(
+                            state, player_id, p, opt_card, act, dummy, 1);
+                        if (nc == 0) viable = 0;
+                    }
+                }
+            }
+            /* --- Card-specific viability overrides (more restrictive) --- */
+            if (viable && p->source_card_id != SYM_NULL && oid != SYM_NULL) {
                 const char *cid = intern_str(p->source_card_id);
                 const char *oid_str = intern_str(oid);
                 /* Cloaker option_2: requires a site where the current player
-                 * has a spy deployed AND another (player or white) troop.
-                 * When not viable, mark it unavailable instead of omitting it
-                 * so the UI can grey it out. */
+                 * has a spy deployed AND another (player or white) troop. */
                 if (cid && strcmp(cid, "cloaker") == 0
                     && oid_str && strcmp(oid_str, "option_2") == 0 && pi >= 0) {
-                    int viable = 0;
+                    viable = 0;
                     for (int n = 0; n < state->node_count && !viable; n++) {
                         const NodeState *ns = &state->nodes[n];
                         int has_spy = 0;
@@ -782,18 +817,15 @@ int legal_pending_generic_choice_moves(GameState *state, Sym player_id, Move *ou
                         }
                         if (has_troop) viable = 1;
                     }
-                    if (!viable) {
-                        /* Still emit the move so the UI can grey it out, but
-                         * tag it with target_id "unavailable" so it cannot be
-                         * applied. */
-                        out[w].type = MOVE_RESOLVE_GENERIC;
-                        out[w].data.resolve_generic.action_id = oid;
-                        out[w].data.resolve_generic.target_id = intern("unavailable");
-                        out[w].player_index = 0;
-                        w++;
-                        continue;
-                    }
                 }
+            }
+            if (!viable) {
+                out[w].type = MOVE_RESOLVE_GENERIC;
+                out[w].data.resolve_generic.action_id = oid;
+                out[w].data.resolve_generic.target_id = intern("unavailable");
+                out[w].player_index = 0;
+                w++;
+                continue;
             }
             out[w].type = MOVE_RESOLVE_GENERIC;
             out[w].data.resolve_generic.action_id = oid;
