@@ -223,10 +223,21 @@ static GameState *apply_place_spy(GameState *state, Sym player_id, const CardDef
 static GameState *apply_return_spy_gen(GameState *state, Sym player_id, const CardDefinition *card,
                                         Sym source, const CardAction *action,
                                         int *sk, Sym *sv, int sc) {
-    (void)card; (void)source; (void)action;
+    (void)card; (void)source;
     Sym node_id = find_sel(sk, sv, sc, "node_id");
+    if (node_id == SYM_NULL) return state;
     Sym spy_owner = find_sel(sk, sv, sc, "spy_owner_id");
-    if (node_id == SYM_NULL || spy_owner == SYM_NULL) return state;
+    if (spy_owner == SYM_NULL) {
+        for (int i = 0; i < action->metadata_count; i++) {
+            const char *k = intern_str(action->metadata[i].key);
+            const char *v = intern_str(action->metadata[i].value);
+            if (k && strcmp(k, "spy_owner") == 0 && v && strcmp(v, "self") == 0) {
+                spy_owner = player_id;
+                break;
+            }
+        }
+    }
+    if (spy_owner == SYM_NULL) return state;
     apply_return_spy(state, player_id, node_id, spy_owner);
     return state;
 }

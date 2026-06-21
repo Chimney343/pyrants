@@ -156,7 +156,7 @@ int engine_describe_move(const GameState *state, const Move *move,
                     } else if (op && strcmp(op, "recruit_card") == 0) {
                         const char *name = card_name_for(state, aid);
                         snprintf(buf, sizeof(buf), "Recruit %s", name);
-                    } else if (op && (strcmp(op, "assassinate_troop") == 0 || strcmp(op, "supplant_troop") == 0)) {
+                    } else if (op && strcmp(op, "assassinate_troop") == 0) {
                         Sym tid = move->data.resolve_generic.target_id;
                         int slot_idx = 0;
                         if (tid != SYM_NULL) {
@@ -166,6 +166,16 @@ int engine_describe_move(const GameState *state, const Move *move,
                         const char *owner = troop_owner_label(state, aid, slot_idx);
                         const char *label = node_label(intern_str(aid), node_ids, node_labels, node_pair_count);
                         snprintf(buf, sizeof(buf), "Remove %s troop from %s", owner, label);
+                    } else if (op && strcmp(op, "supplant_troop") == 0) {
+                        Sym tid = move->data.resolve_generic.target_id;
+                        int slot_idx = 0;
+                        if (tid != SYM_NULL) {
+                            const char *ts = intern_str(tid);
+                            if (ts) slot_idx = atoi(ts);
+                        }
+                        const char *owner = troop_owner_label(state, aid, slot_idx);
+                        const char *label = node_label(intern_str(aid), node_ids, node_labels, node_pair_count);
+                        snprintf(buf, sizeof(buf), "Supplant %s troop at %s", owner, label);
                     } else if (op && strcmp(op, "return_unit") == 0) {
                         Sym tid = move->data.resolve_generic.target_id;
                         const char *label = node_label(intern_str(aid), node_ids, node_labels, node_pair_count);

@@ -59,6 +59,7 @@ static int sel_assassinate_supplant(const GameState *state, Sym player_id,
         if (f && strcmp(f, "white_troop_only") == 0) white_only = 1;
         if (f && strcmp(f, "allow_white_troop") == 0) allow_white = 1;
     }
+    int requires_returned_spy = 0;
     for (int i = 0; i < action->metadata_count; i++) {
         const char *k = intern_str(action->metadata[i].key);
         const char *v = intern_str(action->metadata[i].value);
@@ -69,8 +70,16 @@ static int sel_assassinate_supplant(const GameState *state, Sym player_id,
             && strcmp(v, "true") == 0) {
             ignore_presence = 1;
         }
+        if (k && strcmp(k, "requires_returned_spy_site") == 0 && v
+            && strcmp(v, "true") == 0) {
+            requires_returned_spy = 1;
+        }
     }
     if (requires_last) last_site = find_ls_sym(pending, "target_node_id");
+    if (requires_returned_spy && last_site == SYM_NULL) {
+        requires_last = 1;
+        last_site = find_ls_sym(pending, "node_id");
+    }
     for (int i = 0; i < state->node_count && w < max_out; i++) {
         Sym nid = state->nodes[i].node_id;
         if (requires_last) {
@@ -180,6 +189,13 @@ static int sel_return_spy(const GameState *state, Sym player_id,
                            const CardDefinition *card, const CardAction *action,
                            Move *out, int max_out) {
     int w = 0;
+    const char *spy_owner = NULL;
+    for (int mi = 0; mi < action->metadata_count; mi++) {
+        const char *mk = intern_str(action->metadata[mi].key);
+        if (mk && strcmp(mk, "spy_owner") == 0)
+            spy_owner = intern_str(action->metadata[mi].value);
+    }
+    bool only_self = spy_owner && strcmp(spy_owner, "self") == 0;
     for (int i = 0; i < state->node_count && w < max_out; i++) {
         Sym nid = state->nodes[i].node_id;
         for (int s = 0; s < state->nodes[i].spy_count && w < max_out; s++) {
@@ -189,7 +205,7 @@ static int sel_return_spy(const GameState *state, Sym player_id,
                 out[w].data.resolve_generic.action_id = nid;
                 out[w].player_index = 0;
                 w++;
-            } else if (has_presence(state, player_id, nid)) {
+            } else if (!only_self && has_presence(state, player_id, nid)) {
                 out[w].type = MOVE_RESOLVE_GENERIC;
                 out[w].data.resolve_generic.action_id = nid;
                 out[w].player_index = 0;

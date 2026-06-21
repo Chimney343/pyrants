@@ -246,6 +246,27 @@ GameState *resolve_generic_execution(GameState *state, Sym player_id,
     return auto_resolve_pending_generic(updated, player_id);
 }
 
+static int count_player_spies(const GameState *state, Sym player_id) {
+    int count = 0;
+    for (int n = 0; n < state->node_count; n++)
+        for (int s = 0; s < state->nodes[n].spy_count; s++)
+            if (state->nodes[n].spies[s] == player_id) count++;
+    return count;
+}
+
+static bool check_repeat_sequence_while_spies(const GameState *state, Sym player_id,
+                                               const PendingGenericChoiceState *p) {
+    if (!p || p->current_action_count == 0) return false;
+    const CardAction *last_action = &p->current_actions[p->current_action_count - 1];
+    for (int i = 0; i < last_action->metadata_count; i++) {
+        const char *k = intern_str(last_action->metadata[i].key);
+        if (k && strcmp(k, "repeat_sequence_while_spies") == 0) {
+            return count_player_spies(state, player_id) > 0;
+        }
+    }
+    return false;
+}
+
 GameState *auto_resolve_pending_generic(GameState *state, Sym player_id) {
     int local_iter = 0;
     while (state->pending_generic) {
@@ -279,6 +300,10 @@ GameState *auto_resolve_pending_generic(GameState *state, Sym player_id) {
 
         const CardAction *action = pending_generic_active_action(p);
         if (!action) {
+            if (check_repeat_sequence_while_spies(state, player_id, p)) {
+                p->next_action_index = 0;
+                continue;
+            }
             if (p->exec_kind == EXEC_REPEAT && p->remaining_repeats > 0) {
                 p->awaiting_option = 1;
                 p->current_actions = NULL;

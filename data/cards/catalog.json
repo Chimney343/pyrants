@@ -6282,7 +6282,8 @@
                 ],
                 "source_fragment": "supplant_troop",
                 "metadata": {
-                  "requires_returned_spy_site": true
+                  "requires_returned_spy_site": true,
+                  "repeat_sequence_while_spies": true
                 }
               }
             ]
@@ -6349,7 +6350,8 @@
           ],
           "source_fragment": "supplant_troop",
           "metadata": {
-            "requires_returned_spy_site": true
+            "requires_returned_spy_site": true,
+            "repeat_sequence_while_spies": true
           }
         }
       ],
