@@ -58,6 +58,8 @@ typedef struct {
     int node_count;
     int controlled_sites;
     int total_control_sites;
+    int current_player_control_vp;
+    int current_player_total_control_vp;
 } CGameView;
 
 void engine_build_view(const GameState *state, CGameView *out);

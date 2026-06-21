@@ -370,6 +370,20 @@ GameState *auto_resolve_pending_generic(GameState *state, Sym player_id) {
             }
         }
 
+        /* Intercept end-of-turn grant_vp: deferred to end-of-turn effects
+         * (scaled_vp counting). Applying immediately would use the wrong
+         * count resolver. */
+        {
+            const char *op_str = intern_str(action->op);
+            if (op_str && strcmp(op_str, "grant_vp") == 0) {
+                const char *timing_str = intern_str(action->timing);
+                if (timing_str && strcmp(timing_str, "end_of_turn") == 0) {
+                    p->next_action_index++;
+                    continue;
+                }
+            }
+        }
+
         /* Intercept end_of_turn_mass_discard opponent-scoped force_discard:
          * each opponent discards a random card immediately (Neogi).
          * No minimum hand size guard — if they have 1 card, they lose it. */

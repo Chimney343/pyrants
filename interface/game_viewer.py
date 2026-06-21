@@ -1047,6 +1047,7 @@ class GameViewerApp:
                     )
                 )
             else:
+                self._set_vp_breakdown_c(view)
                 for ps in view.player_summaries:
                     if ps.is_current:
                         self.house_guard_var.set("—")
@@ -2131,6 +2132,44 @@ class GameViewerApp:
             f"Score: {running_score:>2} | Controlled sites: {control_vp:>2} | "
             f"Total Control VP/turn: {total_control_vp_per_turn:>2} | "
 
+            f"Trophy: {trophy_vp:>2} | VP tokens: {token_vp:>2} | Deck VP: {deck_vp:>2} | "
+            f"Inner Circle VP: {inner_circle_vp:>2} | Total: {total_vp:>2}"
+        )
+
+    def _set_vp_breakdown_c(self, view: Any) -> None:
+        from engine_c.bindings.view import _make_card_view
+
+        cstate = self.session.state
+        current_index = cstate.player_index(cstate.current_player_id)
+
+        control_vp = view.current_player_control_vp
+        total_control_vp_per_turn = view.current_player_total_control_vp
+
+        trophy_vp = len(view.current_player_trophy_hall)
+
+        token_vp = cstate._s.players[current_index].vp_tokens
+
+        running_score = cstate.player_score(current_index)
+
+        deck_cards = cstate.player_deck(current_index)
+        hand_card_ids = [cv.card_id for cv in view.hand]
+        discard_card_ids = [cv.card_id for cv in view.current_player_discard]
+        all_deck_zone = deck_cards + hand_card_ids + discard_card_ids
+
+        deck_vp = 0
+        seen: dict[str, Any] = {}
+        for cid in all_deck_zone:
+            if cid not in seen:
+                seen[cid] = _make_card_view(cid)
+            deck_vp += seen[cid].deck_vp
+
+        inner_circle_vp = sum(cv.inner_circle_vp for cv in view.current_player_inner_circle)
+
+        total_vp = running_score + control_vp + total_control_vp_per_turn + trophy_vp + token_vp + deck_vp + inner_circle_vp
+
+        self.vp_breakdown_var.set(
+            f"Score: {running_score:>2} | Controlled sites: {control_vp:>2} | "
+            f"Total Control VP/turn: {total_control_vp_per_turn:>2} | "
             f"Trophy: {trophy_vp:>2} | VP tokens: {token_vp:>2} | Deck VP: {deck_vp:>2} | "
             f"Inner Circle VP: {inner_circle_vp:>2} | Total: {total_vp:>2}"
         )

@@ -85,18 +85,26 @@ void engine_build_view(const GameState *state, CGameView *out) {
 
     int controlled_sites = 0;
     int total_control_sites = 0;
+    int control_vp_sum = 0;
+    int total_control_vp_sum = 0;
     Sym site_sym = intern("site");
     for (int i = 0; i < state->node_count && i < MAX_NODES; i++) {
         const NodeDefinition *nd = &board->nodes[i];
         if (nd->kind != site_sym) continue;
         {
             int owner = site_control_owner(state, nd->node_id);
-            if (owner >= 0 && (Sym)owner == state->current_player_id)
+            if (owner >= 0 && (Sym)owner == state->current_player_id) {
                 controlled_sites++;
+                control_vp_sum += nd->control_vp;
+            }
         }
-        if (is_total_control(state, nd->node_id, state->current_player_id))
+        if (is_total_control(state, nd->node_id, state->current_player_id)) {
             total_control_sites++;
+            total_control_vp_sum += nd->total_control_vp_per_turn;
+        }
     }
     out->controlled_sites = controlled_sites;
     out->total_control_sites = total_control_sites;
+    out->current_player_control_vp = control_vp_sum;
+    out->current_player_total_control_vp = total_control_vp_sum;
 }

@@ -97,6 +97,8 @@ class CGameViewData:
     current_player_trophy_hall: tuple[str, ...]
     current_player_controlled_sites: int
     current_player_total_control_sites: int
+    current_player_control_vp: int
+    current_player_total_control_vp: int
     market_row: tuple[CardView, ...]
     market_deck_count: int
     market_discard_count: int
@@ -394,6 +396,8 @@ def build_c_game_view(
         current_player_trophy_hall=tuple(trophy_hall),
         current_player_controlled_sites=c_view.controlled_sites,
         current_player_total_control_sites=c_view.total_control_sites,
+        current_player_control_vp=c_view.current_player_control_vp,
+        current_player_total_control_vp=c_view.current_player_total_control_vp,
         market_row=tuple(market_row),
         market_deck_count=c_view.market_deck_count,
         market_discard_count=c_view.market_discard_count,

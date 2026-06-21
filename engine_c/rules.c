@@ -518,8 +518,20 @@ static void apply_end_of_turn_effects(GameState *state, int include_force_discar
             if (include_scaled_vp && op && strcmp(op, "grant_vp") == 0
                 && sf && strncmp(sf, "scaled_vp", 9) == 0) {
                 PlayerState *cps = cow_player(state, pid);
-                if (cps)
-                    cps->score += scaled_vp_award_count(state, pid, action);
+                if (cps) {
+                    int vp = scaled_vp_award_count(state, pid, action);
+                    int as_tokens = 0;
+                    for (int mi = 0; mi < action->metadata_count; mi++) {
+                        const char *mk = intern_str(action->metadata[mi].key);
+                        const char *mv = intern_str(action->metadata[mi].value);
+                        if (mk && strcmp(mk, "as") == 0 && mv && strcmp(mv, "vp_tokens") == 0)
+                            as_tokens = 1;
+                    }
+                    if (as_tokens)
+                        cps->vp_tokens += vp;
+                    else
+                        cps->score += vp;
+                }
             }
         }
     }

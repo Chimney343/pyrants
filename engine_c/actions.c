@@ -398,7 +398,16 @@ static GameState *apply_grant_vp(GameState *state, Sym player_id, const CardDefi
     (void)card; (void)source; (void)sk; (void)sv; (void)sc;
     int count = resolve_count(state, player_id, action);
     PlayerState *ps = cow_player(state, player_id);
-    if (ps) ps->score += count;
+    if (!ps) return state;
+    for (int i = 0; i < action->metadata_count; i++) {
+        const char *k = intern_str(action->metadata[i].key);
+        const char *v = intern_str(action->metadata[i].value);
+        if (k && strcmp(k, "as") == 0 && v && strcmp(v, "vp_tokens") == 0) {
+            ps->vp_tokens += count;
+            return state;
+        }
+    }
+    ps->score += count;
     return state;
 }
 
