@@ -256,25 +256,30 @@ static int sel_move_troop(const GameState *state, Sym player_id,
                            const CardDefinition *card, const CardAction *action,
                            Move *out, int max_out) {
     int w = 0;
+    int requires_presence = 1;
+    for (int i = 0; i < action->metadata_count; i++) {
+        const char *k = intern_str(action->metadata[i].key);
+        const char *v = intern_str(action->metadata[i].value);
+        if (k && strcmp(k, "ignore_presence_requirement") == 0 && v
+            && strcmp(v, "true") == 0)
+            requires_presence = 0;
+    }
     for (int si = 0; si < state->node_count && w < max_out; si++) {
         Sym src = state->nodes[si].node_id;
-        const NodeDefinition *snd = NULL;
-        for (int j = 0; j < state->definition->board.node_count; j++)
-            if (state->definition->board.nodes[j].node_id == src) { snd = &state->definition->board.nodes[j]; break; }
-        if (!snd) continue;
+        if (requires_presence && !has_presence(state, player_id, src)) continue;
         for (int ss = 0; ss < state->nodes[si].troop_slot_count; ss++) {
             Sym occ = state->nodes[si].troop_slots[ss];
             if (occ == SYM_NULL || occ == player_id) continue;
-            for (int a = 0; a < snd->adjacent_count; a++) {
-                Sym adj = snd->adjacent_to[a];
-                int ti = -1;
-                for (int t = 0; t < state->node_count; t++)
-                    if (state->nodes[t].node_id == adj) { ti = t; break; }
-                if (ti < 0) continue;
-                for (int ts = 0; ts < state->nodes[ti].troop_slot_count && w < max_out; ts++) {
-                    if (state->nodes[ti].troop_slots[ts] != SYM_NULL) continue;
+            for (int di = 0; di < state->node_count && w < max_out; di++) {
+                if (di == si) continue;
+                for (int ts = 0; ts < state->nodes[di].troop_slot_count && w < max_out; ts++) {
+                    if (state->nodes[di].troop_slots[ts] != SYM_NULL) continue;
+                    const char *dst_str = intern_str(state->nodes[di].node_id);
+                    char buf[128];
+                    snprintf(buf, sizeof(buf), "%d:%s:%d", ss, dst_str ? dst_str : "?", ts);
                     out[w].type = MOVE_RESOLVE_GENERIC;
                     out[w].data.resolve_generic.action_id = src;
+                    out[w].data.resolve_generic.target_id = intern(buf);
                     out[w].player_index = 0;
                     w++;
                 }

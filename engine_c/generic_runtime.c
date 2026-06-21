@@ -663,7 +663,36 @@ GameState *apply_resolve_generic_choice(GameState *src, const Move *move) {
                         }
                     }
                 } else if (strcmp(op, "move_troop") == 0) {
-                    if (aid != SYM_NULL) { sk[sc] = intern("node_id"); sv[sc] = aid; sc++; }
+                    if (aid != SYM_NULL) {
+                        sk[sc] = intern("source_node_id"); sv[sc] = aid; sc++;
+                    }
+                    if (tid != SYM_NULL) {
+                        const char *ts = intern_str(tid);
+                        if (ts) {
+                            int src_si = atoi(ts);
+                            const char *colon1 = strchr(ts, ':');
+                            if (colon1) {
+                                const char *dst_str = colon1 + 1;
+                                const char *colon2 = strchr(dst_str, ':');
+                                if (colon2) {
+                                    int dst_si = atoi(colon2 + 1);
+                                    int dst_len = (int)(colon2 - dst_str);
+                                    char dst_buf[64];
+                                    if (dst_len > 0 && dst_len < (int)sizeof(dst_buf)) {
+                                        memcpy(dst_buf, dst_str, (size_t)dst_len);
+                                        dst_buf[dst_len] = '\0';
+                                        char src_si_buf[16];
+                                        snprintf(src_si_buf, sizeof(src_si_buf), "%d", src_si);
+                                        sk[sc] = intern("source_slot_index"); sv[sc] = intern(src_si_buf); sc++;
+                                        sk[sc] = intern("target_node_id"); sv[sc] = intern(dst_buf); sc++;
+                                        char dst_si_buf[16];
+                                        snprintf(dst_si_buf, sizeof(dst_si_buf), "%d", dst_si);
+                                        sk[sc] = intern("target_slot_index"); sv[sc] = intern(dst_si_buf); sc++;
+                                    }
+                                }
+                            }
+                        }
+                    }
                 } else if (strcmp(op, "play_card") == 0) {
                     if (aid != SYM_NULL) {
                         const char *sf2 = intern_str(action->source_fragment);

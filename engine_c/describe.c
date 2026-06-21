@@ -187,6 +187,36 @@ int engine_describe_move(const GameState *state, const Move *move,
                         } else {
                             snprintf(buf, sizeof(buf), "Return unit from %s", label);
                         }
+                    } else if (op && strcmp(op, "move_troop") == 0) {
+                        Sym tid = move->data.resolve_generic.target_id;
+                        const char *owner = troop_owner_label(state, aid, 0);
+                        const char *src_label = node_label(intern_str(aid), node_ids, node_labels, node_pair_count);
+                        if (tid != SYM_NULL) {
+                            const char *ts = intern_str(tid);
+                            if (ts) {
+                                int src_si = atoi(ts);
+                                const char *colon1 = strchr(ts, ':');
+                                char dst_buf[64] = "";
+                                if (colon1) {
+                                    const char *dst_str = colon1 + 1;
+                                    const char *colon2 = strchr(dst_str, ':');
+                                    if (colon2) {
+                                        int dst_len = (int)(colon2 - dst_str);
+                                        if (dst_len > 0 && dst_len < (int)sizeof(dst_buf)) {
+                                            memcpy(dst_buf, dst_str, (size_t)dst_len);
+                                            dst_buf[dst_len] = '\0';
+                                        }
+                                    }
+                                }
+                                const char *dst_label = node_label(dst_buf, node_ids, node_labels, node_pair_count);
+                                const char *real_owner = troop_owner_label(state, aid, src_si);
+                                snprintf(buf, sizeof(buf), "Move %s troop from %s to %s", real_owner, src_label, dst_label);
+                            } else {
+                                snprintf(buf, sizeof(buf), "Move %s troop from %s", owner, src_label);
+                            }
+                        } else {
+                            snprintf(buf, sizeof(buf), "Move %s troop from %s", owner, src_label);
+                        }
                     } else {
                         const char *name = card_name_for(state, aid);
                         snprintf(buf, sizeof(buf), "Resolve %s", name);
