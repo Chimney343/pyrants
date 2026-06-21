@@ -12366,9 +12366,13 @@
               "kind": "unspecified",
               "value": null
             },
-            "filters": [],
+            "filters": [
+              "allow_white_troop"
+            ],
             "source_fragment": "assassinate_troop",
-            "metadata": {}
+            "metadata": {
+              "requires_last_selected_node": true
+            }
           }
         ]
       },
@@ -12414,9 +12418,13 @@
             "kind": "unspecified",
             "value": null
           },
-          "filters": [],
+          "filters": [
+            "allow_white_troop"
+          ],
           "source_fragment": "assassinate_troop",
-          "metadata": {}
+          "metadata": {
+            "requires_last_selected_node": true
+          }
         }
       ],
       "global_conditions": [],
