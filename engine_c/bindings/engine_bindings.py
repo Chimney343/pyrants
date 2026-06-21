@@ -230,6 +230,7 @@ class PendingPromotionState(Structure):
         ("requires_another_played_card", c_bool),
         ("required_aspect", Sym), ("required_secondary_aspect", Sym),
         ("repeat_while_targets", c_bool),
+        ("promotions_remaining", c_int),
     ]
 
 class PendingGenericChoiceState(Structure):
@@ -366,6 +367,7 @@ class CGameView(Structure):
         ("devour_pile", Sym * MAX_ZONE_SIZE), ("devour_pile_count", c_int),
         ("nodes", CNodeOccupancyView * MAX_NODES), ("node_count", c_int),
         ("controlled_sites", c_int), ("total_control_sites", c_int),
+        ("current_player_control_vp", c_int), ("current_player_total_control_vp", c_int),
     ]
 
 

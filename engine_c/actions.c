@@ -467,6 +467,19 @@ static GameState *apply_devour(GameState *state, Sym player_id, const CardDefini
                 break;
             }
         }
+    } else if (strcmp(z, "inner_circle") == 0) {
+        Sym target_card_id = find_sel(sk, sv, sc, "target_card_id");
+        if (target_card_id == SYM_NULL) return state;
+        for (int i = 0; i < ps->inner_circle_count; i++) {
+            if (ps->inner_circle[i] == target_card_id) {
+                if (state->devour_pile_count < MAX_ZONE_SIZE)
+                    state->devour_pile[state->devour_pile_count++] = target_card_id;
+                for (int j = i; j < ps->inner_circle_count - 1; j++)
+                    ps->inner_circle[j] = ps->inner_circle[j + 1];
+                ps->inner_circle_count--;
+                break;
+            }
+        }
     }
     return state;
 }

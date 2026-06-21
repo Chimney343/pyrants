@@ -9613,7 +9613,7 @@
               "value": null
             },
             "filters": [],
-          "source_fragment": "triggered_promote",
+            "source_fragment": "triggered_promote",
             "metadata": {
               "requires_another_played_card": "true"
             }
@@ -14405,14 +14405,17 @@
             "op": "promote_card",
             "target_scope": "self",
             "timing": "end_of_turn",
-            "optional": false,
+            "optional": true,
             "quantity": {
-              "kind": "variable_repeat",
-              "value": null
+              "kind": "fixed",
+              "value": 2
             },
             "filters": [],
             "source_fragment": "triggered_multi_promote",
-            "metadata": {}
+            "metadata": {
+              "requires_another_played_card": true,
+              "repeat_while_targets": true
+            }
           }
         ]
       },
@@ -14455,14 +14458,17 @@
           "op": "promote_card",
           "target_scope": "self",
           "timing": "end_of_turn",
-          "optional": false,
+          "optional": true,
           "quantity": {
-            "kind": "variable_repeat",
-            "value": null
+            "kind": "fixed",
+            "value": 2
           },
           "filters": [],
           "source_fragment": "triggered_multi_promote",
-          "metadata": {}
+          "metadata": {
+            "requires_another_played_card": true,
+            "repeat_while_targets": true
+          }
         }
       ],
       "global_conditions": [

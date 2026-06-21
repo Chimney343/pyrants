@@ -466,6 +466,14 @@ static int sel_devour(const GameState *state, Sym player_id,
                 w++;
             }
         }
+    } else if (z && strcmp(z, "inner_circle") == 0) {
+        /* Devour from the player's inner circle. */
+        for (int ic = 0; ic < state->players[pi].inner_circle_count && w < max_out; ic++) {
+            out[w].type = MOVE_RESOLVE_GENERIC;
+            out[w].data.resolve_generic.action_id = state->players[pi].inner_circle[ic];
+            out[w].player_index = 0;
+            w++;
+        }
     } else if (z && strcmp(z, "played_self") == 0) {
         /* Devour the card that was just played (self-devour). */
         if (pending->source_card_id != SYM_NULL && w < max_out) {

@@ -260,6 +260,7 @@ typedef struct {
     Sym  required_aspect;
     Sym  required_secondary_aspect;
     bool repeat_while_targets;
+    int  promotions_remaining;
 } PendingPromotionState;
 
 typedef struct PendingGenericChoiceState {

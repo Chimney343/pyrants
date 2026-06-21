@@ -344,13 +344,23 @@ GameState *auto_resolve_pending_generic(GameState *state, Sym player_id) {
                         pp->source_card_id = p->source_card_id;
                         pp->timing = intern("end_of_turn");
                         pp->deferred_choice = 1;
-                        pp->optional = 0;
+                        pp->optional = action->optional;
+                        pp->promotions_remaining = resolve_action_count(state, player_id, action);
+                        if (action->quantity_kind != QUANT_FIXED)
+                            pp->promotions_remaining = MAX_ZONE_SIZE;
                         for (int j = 0; j < action->metadata_count; j++) {
                             const char *mk = intern_str(action->metadata[j].key);
                             const char *mv = intern_str(action->metadata[j].value);
                             if (mk && strcmp(mk, "requires_another_played_card") == 0
                                 && mv && strcmp(mv, "true") == 0)
                                 pp->requires_another_played_card = 1;
+                            if (mk && strcmp(mk, "repeat_while_targets") == 0
+                                && mv && strcmp(mv, "true") == 0)
+                                pp->repeat_while_targets = 1;
+                            if (mk && strcmp(mk, "required_aspect") == 0 && mv)
+                                pp->required_aspect = intern(mv);
+                            if (mk && strcmp(mk, "required_secondary_aspect") == 0 && mv)
+                                pp->required_secondary_aspect = intern(mv);
                         }
                         state->pending_eot_count++;
                     }
