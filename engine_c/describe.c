@@ -217,6 +217,90 @@ int engine_describe_move(const GameState *state, const Move *move,
                         } else {
                             snprintf(buf, sizeof(buf), "Move %s troop from %s", owner, src_label);
                         }
+                    } else if (op && strcmp(op, "custom_effect") == 0) {
+                        const char *effect_kind = NULL;
+                        for (int mi = 0; mi < act->metadata_count; mi++) {
+                            const char *mk = intern_str(act->metadata[mi].key);
+                            const char *mv = intern_str(act->metadata[mi].value);
+                            if (mk && strcmp(mk, "effect_kind") == 0 && mv) {
+                                effect_kind = mv;
+                                break;
+                            }
+                        }
+                        if (effect_kind && strcmp(effect_kind, "select_trophy_hall") == 0) {
+                            Sym tid = move->data.resolve_generic.target_id;
+                            int trophy_idx = 0;
+                            if (tid != SYM_NULL) {
+                                const char *ts = intern_str(tid);
+                                if (ts) trophy_idx = atoi(ts);
+                            }
+                            char sp_label_buf[32];
+                            snprintf(sp_label_buf, sizeof(sp_label_buf), "%s", _humanize_id(intern_str(aid)));
+                            const char *trophy_type = "troop";
+                            for (int p = 0; p < state->player_count; p++) {
+                                if (state->players[p].player_id == aid) {
+                                    if (trophy_idx >= 0 && trophy_idx < state->players[p].trophy_hall_count) {
+                                        Sym occ = state->players[p].trophy_hall[trophy_idx];
+                                        const char *oc = intern_str(occ);
+                                        if (oc && strcmp(oc, "white") == 0) trophy_type = "white";
+                                        else if (oc) {
+                                            char tt_buf[32];
+                                            snprintf(tt_buf, sizeof(tt_buf), "%s", _humanize_id(oc));
+                                            trophy_type = tt_buf;
+                                        }
+                                    }
+                                    break;
+                                }
+                            }
+                            snprintf(buf, sizeof(buf), "Take %s trophy from %s trophy hall",
+                                     trophy_type, sp_label_buf);
+                        } else if (effect_kind && strcmp(effect_kind, "steal_from_selected_trophy") == 0) {
+                            Sym tid = move->data.resolve_generic.target_id;
+                            const char *nid_str = intern_str(aid);
+                            char nl_buf[64];
+                            snprintf(nl_buf, sizeof(nl_buf), "%s", node_label(nid_str, node_ids, node_labels, node_pair_count));
+                            char trophy_type_buf[32] = "troop";
+                            if (tid != SYM_NULL) {
+                                const char *ts = intern_str(tid);
+                                if (ts) {
+                                    const char *c1 = strchr(ts, ':');
+                                    const char *c2 = c1 ? strchr(c1 + 1, ':') : NULL;
+                                    if (c1 && c2) {
+                                        int sp_len = (int)(c1 - ts);
+                                        char sp_buf[32];
+                                        if (sp_len > 0 && sp_len < (int)sizeof(sp_buf)) {
+                                            memcpy(sp_buf, ts, (size_t)sp_len);
+                                            sp_buf[sp_len] = '\0';
+                                            Sym sp_sym = intern(sp_buf);
+                                            for (int p = 0; p < state->player_count; p++) {
+                                                if (state->players[p].player_id == sp_sym) {
+                                                    int c1_plus_nul = (int)(c2 - c1 - 1);
+                                                    char idx_buf[16];
+                                                    if (c1_plus_nul > 0 && c1_plus_nul < (int)sizeof(idx_buf)) {
+                                                        memcpy(idx_buf, c1 + 1, (size_t)c1_plus_nul);
+                                                        idx_buf[c1_plus_nul] = '\0';
+                                                        int ti = atoi(idx_buf);
+                                                        if (ti >= 0 && ti < state->players[p].trophy_hall_count) {
+                                                            Sym occ = state->players[p].trophy_hall[ti];
+                                                            const char *oc = intern_str(occ);
+                                                            if (oc && strcmp(oc, "white") == 0)
+                                                                snprintf(trophy_type_buf, sizeof(trophy_type_buf), "white");
+                                                            else if (oc)
+                                                                snprintf(trophy_type_buf, sizeof(trophy_type_buf), "%s", _humanize_id(oc));
+                                                        }
+                                                    }
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            snprintf(buf, sizeof(buf), "Place %s trophy at %s", trophy_type_buf, nl_buf);
+                        } else {
+                            const char *name = card_name_for(state, aid);
+                            snprintf(buf, sizeof(buf), "Resolve %s", name);
+                        }
                     } else {
                         const char *name = card_name_for(state, aid);
                         snprintf(buf, sizeof(buf), "Resolve %s", name);

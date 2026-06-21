@@ -148,6 +148,65 @@ static int sel_custom_effect(const GameState *state, Sym player_id,
                 out[w].player_index = 0;
                 w++;
             }
+        } else if (strcmp(v, "select_trophy_hall") == 0) {
+            int white_only = 0;
+            for (int fi = 0; fi < action->filter_count; fi++) {
+                const char *f = intern_str(action->filters[fi]);
+                if (f && strcmp(f, "white_troop_only") == 0) white_only = 1;
+            }
+            for (int sp = 0; sp < state->player_count && w < max_out; sp++) {
+                Sym sp_id = state->players[sp].player_id;
+                for (int ti = 0; ti < state->players[sp].trophy_hall_count && w < max_out; ti++) {
+                    Sym occ = state->players[sp].trophy_hall[ti];
+                    const char *oc = intern_str(occ);
+                    int is_white = oc && strcmp(oc, "white") == 0;
+                    if (white_only && !is_white) continue;
+                    if (!white_only && is_white) continue;
+                    char idx_buf[16];
+                    snprintf(idx_buf, sizeof(idx_buf), "%d", ti);
+                    out[w].type = MOVE_RESOLVE_GENERIC;
+                    out[w].data.resolve_generic.action_id = sp_id;
+                    out[w].data.resolve_generic.target_id = intern(idx_buf);
+                    out[w].data.resolve_generic.selection_index = 0;
+                    out[w].player_index = 0;
+                    w++;
+                }
+            }
+        } else if (strcmp(v, "steal_from_selected_trophy") == 0) {
+            Sym source_player = find_ls_sym(pending, "source_player_id");
+            Sym trophy_idx_sym = find_ls_sym(pending, "selected_trophy_index");
+            if (source_player == SYM_NULL || trophy_idx_sym == SYM_NULL) continue;
+            int spi = -1;
+            for (int p = 0; p < state->player_count; p++)
+                if (state->players[p].player_id == source_player) { spi = p; break; }
+            if (spi < 0) continue;
+            const char *idx_str = intern_str(trophy_idx_sym);
+            int trophy_idx = idx_str ? atoi(idx_str) : -1;
+            if (trophy_idx < 0 || trophy_idx >= state->players[spi].trophy_hall_count) continue;
+            for (int ni = 0; ni < state->node_count && w < max_out; ni++) {
+                Sym nid = state->nodes[ni].node_id;
+                const NodeDefinition *nd = NULL;
+                for (int j = 0; j < state->definition->board.node_count; j++)
+                    if (state->definition->board.nodes[j].node_id == nid)
+                        { nd = &state->definition->board.nodes[j]; break; }
+                if (!nd || strcmp(intern_str(nd->kind), "site") != 0) continue;
+                for (int s = 0; s < state->nodes[ni].troop_slot_count && w < max_out; s++) {
+                    if (state->nodes[ni].troop_slots[s] != SYM_NULL) continue;
+                    char buf[128];
+                    const char *sp_str = intern_str(source_player);
+                    const char *tn_str = intern_str(trophy_idx_sym);
+                    const char *nid_str = intern_str(nid);
+                    snprintf(buf, sizeof(buf), "%.24s:%.16s:%.48s:%d",
+                             sp_str ? sp_str : "", tn_str ? tn_str : "",
+                             nid_str ? nid_str : "", s);
+                    out[w].type = MOVE_RESOLVE_GENERIC;
+                    out[w].data.resolve_generic.action_id = nid;
+                    out[w].data.resolve_generic.target_id = intern(buf);
+                    out[w].data.resolve_generic.selection_index = 0;
+                    out[w].player_index = 0;
+                    w++;
+                }
+            }
         }
     }
     return w;

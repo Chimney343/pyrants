@@ -540,6 +540,31 @@ static GameState *apply_custom_effect(GameState *state, Sym player_id, const Car
                 ps->discard_pile[ps->discard_pile_count++] = ps->deck[i];
             ps->deck_count = 0;
         }
+    } else if (strcmp(ek, "select_trophy_hall") == 0) {
+        return state;
+    } else if (strcmp(ek, "steal_from_selected_trophy") == 0) {
+        Sym source_player = find_sel(sk, sv, sc, "source_player_id");
+        Sym trophy_idx_sym = find_sel(sk, sv, sc, "selected_trophy_index");
+        Sym target_node = find_sel(sk, sv, sc, "target_node_id");
+        int target_slot = find_sel_int(sk, sv, sc, "target_slot_index", -1);
+        if (source_player == SYM_NULL || trophy_idx_sym == SYM_NULL
+            || target_node == SYM_NULL || target_slot < 0) return state;
+        const char *idx_str = intern_str(trophy_idx_sym);
+        int trophy_idx = idx_str ? atoi(idx_str) : -1;
+        int spi = -1;
+        for (int p = 0; p < state->player_count; p++)
+            if (state->players[p].player_id == source_player) { spi = p; break; }
+        if (spi < 0 || trophy_idx < 0) return state;
+        PlayerState *sp = cow_player(state, source_player);
+        if (!sp || trophy_idx >= sp->trophy_hall_count) return state;
+        Sym trophy_owner = sp->trophy_hall[trophy_idx];
+        for (int t = trophy_idx; t < sp->trophy_hall_count - 1; t++)
+            sp->trophy_hall[t] = sp->trophy_hall[t + 1];
+        sp->trophy_hall_count--;
+        NodeState *ns = cow_node(state, target_node);
+        if (!ns || target_slot < 0 || target_slot >= ns->troop_slot_count) return state;
+        if (ns->troop_slots[target_slot] != SYM_NULL) return state;
+        ns->troop_slots[target_slot] = trophy_owner;
     } else if (strcmp(ek, "scaled_resource_from_player_zone") == 0) {
         Sym zone = SYM_NULL, resource_sym = SYM_NULL;
         int per = 1;

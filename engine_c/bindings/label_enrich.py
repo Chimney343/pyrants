@@ -36,6 +36,12 @@ _OP_DESCRIPTIONS = {
     "play_card": "Play a card",
 }
 
+_EFFECT_KIND_DESCRIPTIONS = {
+    "select_trophy_hall": "Take trophy from a trophy hall",
+    "steal_from_selected_trophy": "Place stolen trophy on the board",
+    "steal_white_trophy_to_board": "Take white trophy and deploy",
+}
+
 _FILTER_DESCRIPTIONS = {
     "white_troop_only": "white",
 }
@@ -91,7 +97,14 @@ def _lookup_card_action(card_entry: dict | None, action_id: str) -> dict | None:
 
 
 def _describe_single_action(action: dict, *, spy_count: int = 0) -> str:
-    desc = _describe_action_by_op(action.get("op", ""), action.get("quantity"))
+    op = action.get("op", "")
+    if op == "custom_effect":
+        meta = action.get("metadata")
+        if isinstance(meta, dict):
+            ek = meta.get("effect_kind", "")
+            if ek in _EFFECT_KIND_DESCRIPTIONS:
+                return _EFFECT_KIND_DESCRIPTIONS[ek]
+    desc = _describe_action_by_op(op, action.get("quantity"))
     filters = action.get("filters", [])
     if isinstance(filters, list):
         for f_val in filters:
@@ -139,6 +152,24 @@ def _humanize_action(action_id: str) -> str:
     if words:
         return words[0].upper() + words[1:]
     return action_id
+
+
+def _humanize_action(action_id: str) -> str:
+    words = action_id.replace("_", " ").strip()
+    if words:
+        return words[0].upper() + words[1:]
+    return action_id
+
+
+def _is_steal_custom_effect(action: dict) -> bool:
+    op = action.get("op", "")
+    if op != "custom_effect":
+        return False
+    meta = action.get("metadata")
+    if isinstance(meta, dict):
+        ek = meta.get("effect_kind", "")
+        return ek in ("select_trophy_hall", "steal_from_selected_trophy", "steal_white_trophy_to_board", "steal_trophy_to_board")
+    return False
 
 
 def _format_action_with_target(card_name: str, action_desc: str, target_id: str) -> str:
@@ -233,6 +264,8 @@ def enrich_label(move_type: str, raw_label: str, move_data: dict, *, source_card
                         if act.get("action_id") == lookup_id:
                             if act.get("op") in ("assassinate_troop", "supplant_troop", "move_troop"):
                                 return raw_label
+                            if _is_steal_custom_effect(act):
+                                return raw_label
                             desc = _describe_single_action(act, spy_count=player_spy_count)
                             if target_display:
                                 return _format_action_with_target(card_name, desc, target_display)
@@ -244,6 +277,8 @@ def enrich_label(move_type: str, raw_label: str, move_data: dict, *, source_card
                 for act in flat_actions:
                     if act.get("action_id") == lookup_id:
                         if act.get("op") in ("assassinate_troop", "supplant_troop", "move_troop"):
+                            return raw_label
+                        if _is_steal_custom_effect(act):
                             return raw_label
                         desc = _describe_single_action(act, spy_count=player_spy_count)
                         if target_display:

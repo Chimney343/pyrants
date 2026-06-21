@@ -10757,8 +10757,25 @@
           },
           {
             "action_id": "action_5",
-            "op": "deploy_troops",
-            "target_scope": "board_site",
+            "op": "custom_effect",
+            "target_scope": "self",
+            "timing": "immediate",
+            "optional": true,
+            "quantity": {
+              "kind": "unspecified",
+              "value": null
+            },
+            "filters": [],
+            "source_fragment": "select_trophy_hall",
+            "metadata": {
+              "effect_kind": "select_trophy_hall",
+              "skip_advance_to_index": "6"
+            }
+          },
+          {
+            "action_id": "action_6",
+            "op": "custom_effect",
+            "target_scope": "self",
             "timing": "immediate",
             "optional": false,
             "quantity": {
@@ -10766,8 +10783,43 @@
               "value": null
             },
             "filters": [],
-            "source_fragment": "deploy_troops",
-            "metadata": {}
+            "source_fragment": "steal_from_selected_trophy",
+            "metadata": {
+              "effect_kind": "steal_from_selected_trophy"
+            }
+          },
+          {
+            "action_id": "action_7",
+            "op": "custom_effect",
+            "target_scope": "self",
+            "timing": "immediate",
+            "optional": true,
+            "quantity": {
+              "kind": "unspecified",
+              "value": null
+            },
+            "filters": [],
+            "source_fragment": "select_trophy_hall",
+            "metadata": {
+              "effect_kind": "select_trophy_hall",
+              "skip_advance_to_index": "8"
+            }
+          },
+          {
+            "action_id": "action_8",
+            "op": "custom_effect",
+            "target_scope": "self",
+            "timing": "immediate",
+            "optional": false,
+            "quantity": {
+              "kind": "unspecified",
+              "value": null
+            },
+            "filters": [],
+            "source_fragment": "steal_from_selected_trophy",
+            "metadata": {
+              "effect_kind": "steal_from_selected_trophy"
+            }
           }
         ]
       },
@@ -10835,8 +10887,25 @@
         },
         {
           "action_id": "action_5",
-          "op": "deploy_troops",
-          "target_scope": "board_site",
+          "op": "custom_effect",
+          "target_scope": "self",
+          "timing": "immediate",
+          "optional": true,
+          "quantity": {
+            "kind": "unspecified",
+            "value": null
+          },
+          "filters": [],
+          "source_fragment": "select_trophy_hall",
+          "metadata": {
+            "effect_kind": "select_trophy_hall",
+            "skip_advance_to_index": "6"
+          }
+        },
+        {
+          "action_id": "action_6",
+          "op": "custom_effect",
+          "target_scope": "self",
           "timing": "immediate",
           "optional": false,
           "quantity": {
@@ -10844,8 +10913,43 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "deploy_troops",
-          "metadata": {}
+          "source_fragment": "steal_from_selected_trophy",
+          "metadata": {
+            "effect_kind": "steal_from_selected_trophy"
+          }
+        },
+        {
+          "action_id": "action_7",
+          "op": "custom_effect",
+          "target_scope": "self",
+          "timing": "immediate",
+          "optional": true,
+          "quantity": {
+            "kind": "unspecified",
+            "value": null
+          },
+          "filters": [],
+          "source_fragment": "select_trophy_hall",
+          "metadata": {
+            "effect_kind": "select_trophy_hall",
+            "skip_advance_to_index": "8"
+          }
+        },
+        {
+          "action_id": "action_8",
+          "op": "custom_effect",
+          "target_scope": "self",
+          "timing": "immediate",
+          "optional": false,
+          "quantity": {
+            "kind": "unspecified",
+            "value": null
+          },
+          "filters": [],
+          "source_fragment": "steal_from_selected_trophy",
+          "metadata": {
+            "effect_kind": "steal_from_selected_trophy"
+          }
         }
       ],
       "global_conditions": [],
@@ -10856,15 +10960,14 @@
           "custom_rules",
           "board.troop_slots",
           "presence_or_target_rules",
-          "player.barracks"
+          "player.trophy_hall"
         ],
         "writes": [
           "devour_zone_or_equivalent",
           "source_zone",
           "custom_state",
           "board.troop_slots",
-          "player.trophy_hall",
-          "player.barracks"
+          "player.trophy_hall"
         ]
       },
       "effect_key": "generic_card",

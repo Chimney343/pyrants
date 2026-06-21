@@ -152,7 +152,8 @@ int action_requires_selection(const CardAction *action) {
             if (k && strcmp(k, "effect_kind") == 0 && v) {
                 if (strstr(v, "presence_on_last_selected") ||
                     strstr(v, "selected_player") ||
-                    strstr(v, "steal_white") ||
+                    strstr(v, "steal") ||
+                    strstr(v, "select_trophy") ||
                     strstr(v, "discard_selected_hand") ||
                     strcmp(v, "select_site") == 0)
                     return 1;
@@ -603,8 +604,8 @@ GameState *apply_resolve_generic_choice(GameState *src, const Move *move) {
                 else p->next_action_index++;
                 return auto_resolve_pending_generic(state, pid);
             }
-            int sk[4] = {0};
-            Sym sv[4] = {0};
+            int sk[8] = {0};
+            Sym sv[8] = {0};
             int sc = 0;
             Sym aid = move->data.resolve_generic.action_id;
             Sym tid = move->data.resolve_generic.target_id;
@@ -715,6 +716,51 @@ GameState *apply_resolve_generic_choice(GameState *src, const Move *move) {
                         } else {
                             sk[sc] = intern("target_card_id"); sv[sc] = aid; sc++;
                         }
+                    }
+                } else if (strcmp(op, "custom_effect") == 0) {
+                    const char *effect_kind = NULL;
+                    for (int mi = 0; mi < action->metadata_count; mi++) {
+                        const char *mk = intern_str(action->metadata[mi].key);
+                        const char *mv = intern_str(action->metadata[mi].value);
+                        if (mk && strcmp(mk, "effect_kind") == 0 && mv) {
+                            effect_kind = mv;
+                            break;
+                        }
+                    }
+                    if (effect_kind && strcmp(effect_kind, "select_trophy_hall") == 0) {
+                        if (aid != SYM_NULL) { sk[sc] = intern("source_player_id"); sv[sc] = aid; sc++; }
+                        if (tid != SYM_NULL) { sk[sc] = intern("selected_trophy_index"); sv[sc] = tid; sc++; }
+                    } else if (effect_kind && strcmp(effect_kind, "steal_from_selected_trophy") == 0) {
+                        if (aid != SYM_NULL) { sk[sc] = intern("target_node_id"); sv[sc] = aid; sc++; }
+                        if (tid != SYM_NULL) {
+                            const char *ts = intern_str(tid);
+                            if (ts) {
+                                const char *c1 = strchr(ts, ':');
+                                const char *c2 = c1 ? strchr(c1 + 1, ':') : NULL;
+                                const char *c3 = c2 ? strchr(c2 + 1, ':') : NULL;
+                                if (c1 && c2 && c3) {
+                                    int sp_len = (int)(c1 - ts);
+                                    int idx_len = (int)(c2 - c1 - 1);
+                                    int nid_len = (int)(c3 - c2 - 1);
+                                    char sp_buf[32], idx_buf[32], nid_buf[64];
+                                    if (sp_len > 0 && sp_len < (int)sizeof(sp_buf)
+                                        && idx_len > 0 && idx_len < (int)sizeof(idx_buf)
+                                        && nid_len > 0 && nid_len < (int)sizeof(nid_buf)) {
+                                        memcpy(sp_buf, ts, (size_t)sp_len); sp_buf[sp_len] = '\0';
+                                        memcpy(idx_buf, c1 + 1, (size_t)idx_len); idx_buf[idx_len] = '\0';
+                                        memcpy(nid_buf, c2 + 1, (size_t)nid_len); nid_buf[nid_len] = '\0';
+                                        if (sc + 4 <= 8) {
+                                            sk[sc] = intern("source_player_id"); sv[sc] = intern(sp_buf); sc++;
+                                            sk[sc] = intern("selected_trophy_index"); sv[sc] = intern(idx_buf); sc++;
+                                            sk[sc] = intern("target_node_id"); sv[sc] = intern(nid_buf); sc++;
+                                            sk[sc] = intern("target_slot_index"); sv[sc] = intern(c3 + 1); sc++;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } else if (aid != SYM_NULL) {
+                        sk[sc] = intern("target_node_id"); sv[sc] = aid; sc++;
                     }
                 } else if (aid != SYM_NULL) {
                     sk[sc] = intern("target_node_id"); sv[sc] = aid; sc++;
