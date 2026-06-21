@@ -9613,8 +9613,10 @@
               "value": null
             },
             "filters": [],
-            "source_fragment": "triggered_promote",
-            "metadata": {}
+          "source_fragment": "triggered_promote",
+            "metadata": {
+              "requires_another_played_card": "true"
+            }
           }
         ]
       },
@@ -9647,7 +9649,9 @@
           },
           "filters": [],
           "source_fragment": "triggered_promote",
-          "metadata": {}
+          "metadata": {
+            "requires_another_played_card": "true"
+          }
         }
       ],
       "global_conditions": [
