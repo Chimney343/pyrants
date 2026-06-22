@@ -189,10 +189,10 @@ class GameBoardRenderer:
             sx_right = (left + w) * scale
             sx_bottom = (top + h) * scale
             spy_corners = {
-                "p0": (sx_left, sx_top, "nw"),
-                "p1": (sx_right, sx_top, "ne"),
-                "p2": (sx_left, sx_bottom, "sw"),
-                "p3": (sx_right, sx_bottom, "se"),
+                "p1": (sx_left, sx_top, "nw"),
+                "p2": (sx_right, sx_top, "ne"),
+                "p3": (sx_left, sx_bottom, "sw"),
+                "p4": (sx_right, sx_bottom, "se"),
             }
             for spy_id in occupancy.spies:
                 info = spy_corners.get(spy_id)
@@ -262,10 +262,10 @@ class GameBoardRenderer:
             center_sy = node.center_y * scale
             rr = max(4, int(round(ROUTE_RADIUS * scale)))
             spy_positions = {
-                "p0": (center_sx - rr, center_sy - rr),
-                "p1": (center_sx + rr, center_sy - rr),
-                "p2": (center_sx - rr, center_sy + rr),
-                "p3": (center_sx + rr, center_sy + rr),
+                "p1": (center_sx - rr, center_sy - rr),
+                "p2": (center_sx + rr, center_sy - rr),
+                "p3": (center_sx - rr, center_sy + rr),
+                "p4": (center_sx + rr, center_sy + rr),
             }
             for spy_id in occupancy.spies:
                 pos = spy_positions.get(spy_id)
