@@ -11490,7 +11490,7 @@
               "kind": "unspecified",
               "value": null
             },
-            "filters": [],
+            "filters": ["allow_white_troop"],
             "source_fragment": "supplant_troop",
             "metadata": {}
           },
@@ -11541,7 +11541,7 @@
             "kind": "unspecified",
             "value": null
           },
-          "filters": [],
+          "filters": ["allow_white_troop"],
           "source_fragment": "supplant_troop",
           "metadata": {}
         },
