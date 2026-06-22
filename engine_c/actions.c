@@ -34,6 +34,8 @@ static int resolve_count(GameState *state, Sym player_id, const CardAction *acti
         if (k && strcmp(k, "count_from") == 0 && v) {
             if (strcmp(v, "controlled_sites") == 0)
                 return count_controlled_sites(state, player_id);
+            if (strcmp(v, "owned_control_markers") == 0)
+                return count_owned_control_markers(state, player_id);
             if (strcmp(v, "spies_on_board") == 0) {
                 int c = 0;
                 for (int ni = 0; ni < state->node_count; ni++)
@@ -237,7 +239,7 @@ static GameState *apply_return_spy_gen(GameState *state, Sym player_id, const Ca
             }
         }
     }
-    if (spy_owner == SYM_NULL) return state;
+    if (spy_owner == SYM_NULL) spy_owner = player_id;
     apply_return_spy(state, player_id, node_id, spy_owner);
     return state;
 }
@@ -632,6 +634,32 @@ static GameState *apply_conditional_bonus(GameState *state, Sym player_id, const
     if (cs && strcmp(cs, "focus_aspect_present") == 0) {
         if (focus_requirement_met(state, player_id, card, source))
             grant_resource(state, resource != SYM_NULL ? resource : intern("influence"), amount);
+    } else if (cs && strcmp(cs, "selected_node_has_other_player_troop") == 0) {
+        PendingGenericChoiceState *p = state->pending_generic;
+        if (p) {
+            Sym node_id = SYM_NULL;
+            for (int j = 0; j < p->last_selection_count; j++) {
+                const char *lsk = intern_str(p->last_selection_keys[j]);
+                if (lsk && strcmp(lsk, "target_node_id") == 0) {
+                    node_id = p->last_selection_values[j];
+                    break;
+                }
+            }
+            if (node_id != SYM_NULL) {
+                NodeState *ns = cow_node(state, node_id);
+                if (ns) {
+                    int has_other = 0;
+                    for (int i = 0; i < ns->troop_slot_count; i++) {
+                        if (ns->troop_slots[i] != SYM_NULL && ns->troop_slots[i] != player_id) {
+                            has_other = 1;
+                            break;
+                        }
+                    }
+                    if (has_other)
+                        grant_resource(state, resource != SYM_NULL ? resource : intern("influence"), amount);
+                }
+            }
+        }
     }
     return state;
 }
