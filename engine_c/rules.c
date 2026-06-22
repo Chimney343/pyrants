@@ -441,7 +441,7 @@ static GameState *apply_promote_card_impl(GameState *state, Sym player_id, Sym c
             promote_card(state, player_id, card_id);
             if (p->promotions_remaining > 0)
                 p->promotions_remaining--;
-            if (!p->repeat_while_targets || p->promotions_remaining <= 0) {
+            if (p->promotions_remaining <= 0) {
                 for (int i = 0; i < state->pending_eot_count - 1; i++)
                     state->pending_eot[i] = state->pending_eot[i + 1];
                 state->pending_eot_count--;

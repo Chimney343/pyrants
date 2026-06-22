@@ -4,24 +4,11 @@
 2. End-of-turn promotes up to 2 OTHER played cards, cannot self-promote Zuggtmoy.
 """
 from __future__ import annotations
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-from engine_c.bindings.ce_api import CEngine
-from engine_c.bindings.engine_bindings import _lib, MAX_ZONE_SIZE, PHASE_MAIN, PHASE_END_OF_TURN
+
+from engine_c.bindings.engine_bindings import PHASE_END_OF_TURN, _lib
 from engine_c.bindings.session import CSession
-from tests.c_engine.card_test_helpers import make_card_test_session
+from tests.c_engine.card_test_helpers import _make_engine, make_card_test_session
 
-DATA_DIR = Path(__file__).resolve().parents[2] / "data"
-
-def _engine() -> CEngine:
-    eng = CEngine()
-    eng.initialize(
-        catalog_path=str(DATA_DIR / "cards" / "catalog.json"),
-        board_path=str(DATA_DIR / "boards" / "tyrants_of_the_underdark.json"),
-        setup_path=str(DATA_DIR / "decks" / "base_setup.json"),
-    )
-    return eng
 
 def _hand_ids(session: CSession, pid: str) -> list[str]:
     s = session._state._ptr.contents
@@ -90,7 +77,7 @@ def _enter_eot(session: CSession):
 def test_zuggtmoy_devour_targets_inner_circle_not_hand():
     """Playing Zuggtmoy should present only inner_circle cards as devour
     targets, never hand cards."""
-    eng = _engine()
+    eng = _make_engine()
     session = make_card_test_session(
         eng, ["p1", "p2"],
         hand={"p1": ["zuggtmoy", "noble"]},
@@ -130,7 +117,7 @@ def test_zuggtmoy_devour_targets_inner_circle_not_hand():
 def test_zuggtmoy_devour_from_inner_circle_grants_influence():
     """Devouring a card from inner_circle removes it to devour pile and
     grants 3 influence."""
-    eng = _engine()
+    eng = _make_engine()
     session = make_card_test_session(
         eng, ["p1", "p2"],
         hand={"p1": ["zuggtmoy"]},
@@ -157,8 +144,8 @@ def test_zuggtmoy_devour_from_inner_circle_grants_influence():
     session.submit_move(devour_moves[0])
 
     # Verify soldier moved from inner_circle to devour pile
-    assert _inner_circle_ids(session, "p1") == [], f"soldier should be removed from inner_circle"
-    assert "soldier" in _devour_pile_ids(session), f"soldier should be in devour pile"
+    assert _inner_circle_ids(session, "p1") == [], "soldier should be removed from inner_circle"
+    assert "soldier" in _devour_pile_ids(session), "soldier should be in devour pile"
     assert _influence(session) == inf_before + 3, f"Influence should be +3, got {_influence(session) - inf_before}"
 
     session.destroy()
@@ -170,7 +157,7 @@ def test_zuggtmoy_devour_from_inner_circle_grants_influence():
 def test_zuggtmoy_eot_promote_two_other_cards_excludes_self():
     """At end of turn with Zuggtmoy and 3 other played cards, promote
     should allow up to 2 promotions and exclude Zuggtmoy itself."""
-    eng = _engine()
+    eng = _make_engine()
     session = make_card_test_session(
         eng, ["p1", "p2"],
         hand={"p1": ["zuggtmoy"]},
@@ -210,9 +197,9 @@ def test_zuggtmoy_eot_promote_two_other_cards_excludes_self():
     promote_targets = {m.data.get("card_id") for m in promote_moves}
 
     assert "zuggtmoy" not in promote_targets, f"Zuggtmoy should NOT be a promote target: {promote_targets}"
-    assert "noble" in promote_targets, f"noble should be a promote target"
-    assert "soldier" in promote_targets, f"soldier should be a promote target"
-    assert "house_guard" in promote_targets, f"house_guard should be a promote target"
+    assert "noble" in promote_targets, "noble should be a promote target"
+    assert "soldier" in promote_targets, "soldier should be a promote target"
+    assert "house_guard" in promote_targets, "house_guard should be a promote target"
 
     # Promote first card
     session.submit_move(promote_moves[0])

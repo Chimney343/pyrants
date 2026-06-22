@@ -2,34 +2,17 @@
 
 from __future__ import annotations
 
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-
 import pytest
 
-from engine_c.bindings.ce_api import CEngine
-from engine_c.bindings.engine_bindings import _lib, Sym, PHASE_MAIN, MAX_TROOP_SLOTS
+from engine_c.bindings.engine_bindings import Sym, _lib
 from engine_c.bindings.session import CSession
 from engine_c.bindings.view import build_c_game_view
-from tests.c_engine.card_test_helpers import make_card_test_session
-
-DATA_DIR = Path(__file__).resolve().parents[2] / "data"
-
-
-def _sptr(session: CSession):
-    """Live pointer to the current C state — always re-read after submit_move."""
-    return session._state._ptr
-
-
-def _player_index(session: CSession, pid: str) -> int:
-    s = _sptr(session).contents
-    for i in range(s.player_count):
-        pname = _lib.intern_str(s.player_ids[i])
-        if pname and pname.decode() == pid:
-            return i
-    return -1
+from tests.c_engine.card_test_helpers import (
+    _make_engine,
+    _session_player_index,
+    _sptr,
+    make_card_test_session,
+)
 
 
 def _node_state(session: CSession, node_id: str):
@@ -64,21 +47,21 @@ def _troops_at_node(session: CSession, node_id: str) -> list[str | None]:
 
 
 def _spies_available(session: CSession, pid: str) -> int:
-    pi = _player_index(session, pid)
+    pi = _session_player_index(session, pid)
     if pi < 0:
         return 0
     return _sptr(session).contents.players[pi].spies_available
 
 
 def _barracks(session: CSession, pid: str) -> int:
-    pi = _player_index(session, pid)
+    pi = _session_player_index(session, pid)
     if pi < 0:
         return 0
     return _sptr(session).contents.players[pi].barracks
 
 
 def _trophy_hall(session: CSession, pid: str) -> list[str]:
-    pi = _player_index(session, pid)
+    pi = _session_player_index(session, pid)
     if pi < 0:
         return []
     s = _sptr(session).contents
@@ -94,23 +77,13 @@ def _has_pending_generic(session: CSession) -> bool:
 # Programmatic session helpers
 # ---------------------------------------------------------------------------
 
-def _engine() -> CEngine:
-    eng = CEngine()
-    eng.initialize(
-        catalog_path=str(DATA_DIR / "cards" / "catalog.json"),
-        board_path=str(DATA_DIR / "boards" / "tyrants_of_the_underdark.json"),
-        setup_path=str(DATA_DIR / "decks" / "base_setup.json"),
-    )
-    return eng
-
-
 _SITES = ["site_gauntlgrym", "site_jhachalkhyn", "site_gracklstugh"]
 _P1 = "p1"
 _P2 = "p2"
 
 
 def _build_grazzt_session() -> CSession:
-    eng = _engine()
+    eng = _make_engine()
     spies = {s: [_P1] for s in _SITES}
     troops = {
         _P2: {
@@ -127,7 +100,7 @@ def _build_grazzt_session() -> CSession:
     )
     # Adjust p1's available spies: 5 base − 3 placed = 2 remaining
     s = _sptr(session).contents
-    pi = _player_index(session, _P1)
+    pi = _session_player_index(session, _P1)
     s.players[pi].spies_available -= 3
     return session
 
@@ -234,7 +207,7 @@ def test_grazzt_option_2_repeats_for_each_spy() -> None:
 
 def test_grazzt_option_2_spy_owner_filtering() -> None:
     """Return-spy selection respects spy_owner='self' — does not offer sites with only opponent spies."""
-    eng = _engine()
+    eng = _make_engine()
     session = make_card_test_session(
         eng,
         [_P1, _P2],

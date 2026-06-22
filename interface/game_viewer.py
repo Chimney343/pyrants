@@ -2264,6 +2264,7 @@ def main() -> None:
 
     root = tk.Tk()
     root.withdraw()
+    root.state("zoomed")
     try:
         GameViewerApp(
             root,

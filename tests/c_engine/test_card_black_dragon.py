@@ -2,44 +2,24 @@
 
 from __future__ import annotations
 
-import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-
-import pytest
-
-from engine_c.bindings.ce_api import CEngine
-from engine_c.bindings.engine_bindings import _lib, Sym, MAX_TROOP_SLOTS
+from engine_c.bindings.engine_bindings import _lib
 from engine_c.bindings.session import CSession
 from engine_c.bindings.view import build_c_game_view
-from tests.c_engine.card_test_helpers import make_card_test_session
+from tests.c_engine.card_test_helpers import (
+    _make_engine,
+    _player_vp_tokens,
+    _session_player_index,
+    _sptr,
+    make_card_test_session,
+)
 
 DATA_DIR = Path(__file__).resolve().parents[2] / "data"
 
 
-def _sptr(session: CSession):
-    return session._state._ptr
-
-
-def _player_index(session: CSession, pid: str) -> int:
-    s = _sptr(session).contents
-    for i in range(s.player_count):
-        pname = _lib.intern_str(s.player_ids[i])
-        if pname and pname.decode() == pid:
-            return i
-    return -1
-
-
-def _player_vp_tokens(session: CSession, pid: str) -> int:
-    pi = _player_index(session, pid)
-    if pi < 0:
-        return 0
-    return _sptr(session).contents.players[pi].vp_tokens
-
-
 def _player_score(session: CSession, pid: str) -> int:
-    pi = _player_index(session, pid)
+    pi = _session_player_index(session, pid)
     if pi < 0:
         return 0
     return _sptr(session).contents.players[pi].score
@@ -49,23 +29,13 @@ def _has_pending_generic(session: CSession) -> bool:
     return bool(_sptr(session).contents.pending_generic)
 
 
-def _engine() -> CEngine:
-    eng = CEngine()
-    eng.initialize(
-        catalog_path=str(DATA_DIR / "cards" / "catalog.json"),
-        board_path=str(DATA_DIR / "boards" / "tyrants_of_the_underdark.json"),
-        setup_path=str(DATA_DIR / "decks" / "base_setup.json"),
-    )
-    return eng
-
-
 _P1 = "p1"
 _P2 = "p2"
 
 
 def _build_black_dragon_session(white_trophy_count: int = 3) -> CSession:
     """Session with Black Dragon in hand and white troops to supplant."""
-    eng = _engine()
+    eng = _make_engine()
     session = make_card_test_session(
         eng,
         [_P1, _P2],
@@ -78,7 +48,7 @@ def _build_black_dragon_session(white_trophy_count: int = 3) -> CSession:
         current_player=_P1,
     )
     s = _sptr(session).contents
-    pi = _player_index(session, _P1)
+    pi = _session_player_index(session, _P1)
     ps = s.players[pi]
     for i in range(white_trophy_count):
         if ps.trophy_hall_count < 50:
@@ -172,7 +142,7 @@ def test_black_dragon_zero_trophies_gives_zero_vp():
 
 def test_c_game_view_control_vp_fields():
     """CGameView should populate current_player_control_vp and total_control_vp."""
-    eng = _engine()
+    eng = _make_engine()
     session = make_card_test_session(
         eng,
         [_P1, _P2],

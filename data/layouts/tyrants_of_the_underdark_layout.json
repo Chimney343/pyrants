@@ -41,8 +41,8 @@
       "label": "1",
       "kind": "route",
       "center": {
-        "x": 167.79968115942026,
-        "y": 156.55663768115943
+        "x": 165.79968115942026,
+        "y": 153.55663768115943
       },
       "bounds": null,
       "troop_slots": []
@@ -53,7 +53,7 @@
       "kind": "route",
       "center": {
         "x": 61.25776811594203,
-        "y": 263.1446666666666
+        "y": 260.1446666666666
       },
       "bounds": null,
       "troop_slots": []
@@ -141,7 +141,7 @@
       "kind": "route",
       "center": {
         "x": 519.9535,
-        "y": 438.6168623188405
+        "y": 440.6168623188405
       },
       "bounds": null,
       "troop_slots": []
@@ -151,8 +151,8 @@
       "label": "11",
       "kind": "route",
       "center": {
-        "x": 442.446572463768,
-        "y": 456.2807318840579
+        "x": 436.446572463768,
+        "y": 457.2807318840579
       },
       "bounds": null,
       "troop_slots": []
@@ -1011,7 +1011,7 @@
       "kind": "route",
       "center": {
         "x": 178.0,
-        "y": 580.0
+        "y": 579.0
       },
       "bounds": null,
       "troop_slots": []
@@ -1098,7 +1098,7 @@
       "label": "23",
       "kind": "route",
       "center": {
-        "x": 723.0,
+        "x": 725.0,
         "y": 721.0
       },
       "bounds": null,
@@ -1109,8 +1109,8 @@
       "label": "24",
       "kind": "route",
       "center": {
-        "x": 479.0,
-        "y": 657.0
+        "x": 477.0,
+        "y": 648.0
       },
       "bounds": null,
       "troop_slots": []
@@ -1120,8 +1120,8 @@
       "label": "25",
       "kind": "route",
       "center": {
-        "x": 623.0,
-        "y": 537.0
+        "x": 624.0,
+        "y": 533.0
       },
       "bounds": null,
       "troop_slots": []
@@ -1164,7 +1164,7 @@
       "label": "29",
       "kind": "route",
       "center": {
-        "x": 312.0,
+        "x": 313.0,
         "y": 678.0
       },
       "bounds": null,
@@ -1186,8 +1186,8 @@
       "label": "31",
       "kind": "route",
       "center": {
-        "x": 433.0,
-        "y": 605.0
+        "x": 436.0,
+        "y": 610.0
       },
       "bounds": null,
       "troop_slots": []
@@ -1197,7 +1197,7 @@
       "label": "32",
       "kind": "route",
       "center": {
-        "x": 726.0,
+        "x": 727.0,
         "y": 604.0
       },
       "bounds": null,
@@ -1274,8 +1274,8 @@
       "label": "39",
       "kind": "route",
       "center": {
-        "x": 774.0,
-        "y": 811.0
+        "x": 775.0,
+        "y": 812.0
       },
       "bounds": null,
       "troop_slots": []
@@ -1318,8 +1318,8 @@
       "label": "43",
       "kind": "route",
       "center": {
-        "x": 1068.0,
-        "y": 897.0
+        "x": 1069.0,
+        "y": 900.0
       },
       "bounds": null,
       "troop_slots": []
@@ -1340,8 +1340,8 @@
       "label": "45",
       "kind": "route",
       "center": {
-        "x": 1105.0,
-        "y": 676.0
+        "x": 1106.0,
+        "y": 675.0
       },
       "bounds": null,
       "troop_slots": []
@@ -1373,7 +1373,7 @@
       "label": "48",
       "kind": "route",
       "center": {
-        "x": 923.0,
+        "x": 925.0,
         "y": 293.0
       },
       "bounds": null,
@@ -1406,8 +1406,8 @@
       "label": "51",
       "kind": "route",
       "center": {
-        "x": 723.0,
-        "y": 221.0
+        "x": 720.0,
+        "y": 222.0
       },
       "bounds": null,
       "troop_slots": []
@@ -1428,7 +1428,7 @@
       "label": "53",
       "kind": "route",
       "center": {
-        "x": 818.0,
+        "x": 817.0,
         "y": 164.0
       },
       "bounds": null,

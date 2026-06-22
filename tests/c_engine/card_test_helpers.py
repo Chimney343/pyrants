@@ -1,15 +1,55 @@
 """Helpers for C-engine card tests that build state programmatically."""
 
 from __future__ import annotations
+
 import sys
 from pathlib import Path
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+_project_root = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(_project_root))
 from engine_c.bindings.ce_api import CEngine
-from engine_c.bindings.session import CSession
 from engine_c.bindings.engine_bindings import (
-    _lib, Sym, MAX_PLAYERS, MAX_NODES, MAX_ZONE_SIZE, MAX_TROOP_SLOTS,
+    MAX_TROOP_SLOTS,
+    MAX_ZONE_SIZE,
     PHASE_MAIN,
+    Sym,
+    _lib,
 )
+from engine_c.bindings.session import CSession
+
+DATA_DIR = _project_root / "data"
+
+
+def _sptr(session: CSession):
+    return session._state._ptr
+
+
+def _session_player_index(session: CSession, pid: str) -> int:
+    s = _sptr(session).contents
+    for i in range(s.player_count):
+        pname = _lib.intern_str(s.player_ids[i])
+        if pname and pname.decode() == pid:
+            return i
+    return -1
+
+
+def _player_vp_tokens(session: CSession, pid: str) -> int:
+    pi = _session_player_index(session, pid)
+    if pi < 0:
+        return 0
+    return _sptr(session).contents.players[pi].vp_tokens
+
+
+def _make_engine(catalog_path: str | None = None,
+                 board_path: str | None = None,
+                 setup_path: str | None = None) -> CEngine:
+    eng = CEngine()
+    eng.initialize(
+        catalog_path=catalog_path or str(DATA_DIR / "cards" / "catalog.json"),
+        board_path=board_path or str(DATA_DIR / "boards" / "tyrants_of_the_underdark.json"),
+        setup_path=setup_path or str(DATA_DIR / "decks" / "base_setup.json"),
+    )
+    return eng
 def make_card_test_session(
     engine: CEngine,
     player_ids: list[str],

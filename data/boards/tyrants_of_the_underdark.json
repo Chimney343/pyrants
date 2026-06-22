@@ -259,6 +259,7 @@
         "route_10",
         "route_25",
         "route_32",
+        "route_49",
         "route_9"
       ],
       "troop_capacity": 1,
@@ -663,6 +664,7 @@
       "kind": "site",
       "adjacent_to": [
         "route_48",
+        "route_49",
         "route_50",
         "route_51",
         "route_53"
@@ -1316,7 +1318,10 @@
     {
       "node_id": "route_49",
       "kind": "route",
-      "adjacent_to": [],
+      "adjacent_to": [
+        "site_chasmleap_bridge",
+        "site_everfire"
+      ],
       "troop_capacity": 1,
       "control_vp": 0,
       "total_control_vp_per_turn": 0,

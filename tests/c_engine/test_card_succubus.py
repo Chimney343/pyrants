@@ -9,17 +9,14 @@ Verifies:
 
 from __future__ import annotations
 
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-
-from engine_c.bindings.ce_api import CEngine
 from engine_c.bindings.engine_bindings import PHASE_MAIN, _lib
 from engine_c.bindings.session import CSession
-from tests.c_engine.card_test_helpers import make_card_test_session
-
-DATA_DIR = Path(__file__).resolve().parents[2] / "data"
+from tests.c_engine.card_test_helpers import (
+    _make_engine,
+    _session_player_index,
+    _sptr,
+    make_card_test_session,
+)
 
 _SITE = "site_gauntlgrym"
 _P1 = "p1"
@@ -28,12 +25,7 @@ _WHITE = "white"
 
 
 def _build_succubus_session() -> CSession:
-    eng = CEngine()
-    eng.initialize(
-        catalog_path=str(DATA_DIR / "cards" / "catalog.json"),
-        board_path=str(DATA_DIR / "boards" / "tyrants_of_the_underdark.json"),
-        setup_path=str(DATA_DIR / "decks" / "base_setup.json"),
-    )
+    eng = _make_engine()
     session = make_card_test_session(
         eng,
         [_P1, _P2],
@@ -48,21 +40,8 @@ def _build_succubus_session() -> CSession:
     return session
 
 
-def _sptr(session: CSession):
-    return session._state._ptr
-
-
-def _player_index(session: CSession, pid: str) -> int:
-    s = _sptr(session).contents
-    for i in range(s.player_count):
-        pname = _lib.intern_str(s.player_ids[i])
-        if pname and pname.decode() == pid:
-            return i
-    return -1
-
-
 def _spies_available(session: CSession, pid: str) -> int:
-    pi = _player_index(session, pid)
+    pi = _session_player_index(session, pid)
     if pi < 0:
         return 0
     return _sptr(session).contents.players[pi].spies_available
@@ -78,7 +57,7 @@ def _spies_at_node(session: CSession, node_id: str) -> list[str]:
 
 
 def _trophy_hall(session: CSession, pid: str) -> list[str]:
-    pi = _player_index(session, pid)
+    pi = _session_player_index(session, pid)
     if pi < 0:
         return []
     s = _sptr(session).contents
@@ -128,7 +107,7 @@ def test_succubus_full_sequence() -> None:
 
     # noble should be gone from hand (devoured)
     s = _sptr(session).contents
-    pi = _player_index(session, _P1)
+    pi = _session_player_index(session, _P1)
     hand_cards = [_lib.intern_str(s.players[pi].hand[i]).decode() for i in range(s.players[pi].hand_count)]
     assert "noble" not in hand_cards, "Devoured card should be removed from hand"
 
