@@ -44,17 +44,26 @@ static int resolve_action_count(GameState *state, Sym player_id, const CardActio
 }
 
 static int resolve_runtime_action_count(GameState *state, Sym player_id, const CardAction *action) {
+    int per = 1;
+    for (int i = 0; i < action->metadata_count; i++) {
+        const char *k = intern_str(action->metadata[i].key);
+        const char *v = intern_str(action->metadata[i].value);
+        if (k && strcmp(k, "per") == 0 && v) per = atoi(v);
+    }
+    if (per <= 0) per = 1;
     for (int i = 0; i < action->metadata_count; i++) {
         const char *k = intern_str(action->metadata[i].key);
         const char *v = intern_str(action->metadata[i].value);
         if (k && strcmp(k, "count_from") == 0 && v && strcmp(v, "controlled_sites") == 0)
-            return count_controlled_sites(state, player_id);
+            return count_controlled_sites(state, player_id) / per;
+        if (k && strcmp(k, "count_from") == 0 && v && strcmp(v, "owned_control_markers") == 0)
+            return count_owned_control_markers(state, player_id) / per;
         if (k && strcmp(k, "count_from") == 0 && v && strcmp(v, "spies_on_board") == 0) {
             int count = 0;
             for (int ni = 0; ni < state->node_count; ni++)
                 for (int si = 0; si < state->nodes[ni].spy_count; si++)
                     if (state->nodes[ni].spies[si] == player_id) count++;
-            return count;
+            return count / per;
         }
         if (k && strcmp(k, "count_from") == 0 && v && strcmp(v, "assassinations_by_source_effect") == 0) {
             PendingGenericChoiceState *p = state->pending_generic;
@@ -65,11 +74,11 @@ static int resolve_runtime_action_count(GameState *state, Sym player_id, const C
                 if (ck && strncmp(ck, "assassinate_troop:", 17) == 0)
                     total += p->counter_values[ci];
             }
-            return total;
+            return total / per;
         }
     }
     const char *sf = intern_str(action->source_fragment);
-    if (sf && strstr(sf, "controlled_sites")) return count_controlled_sites(state, player_id);
+    if (sf && strstr(sf, "controlled_sites")) return count_controlled_sites(state, player_id) / per;
     return resolve_action_count(state, player_id, action);
 }
 

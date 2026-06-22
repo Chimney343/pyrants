@@ -1031,7 +1031,7 @@ class ReplayViewerApp:
 
         trophy_vp = len(current_player.trophy_hall)
         token_vp = current_player.vp_tokens
-        deck_zone_cards = current_player.deck + current_player.hand + current_player.discard_pile
+        deck_zone_cards = current_player.deck + current_player.hand + current_player.discard_pile + current_player.played_cards
         deck_vp = _cards_vp(deck_zone_cards, card_index_lookup, "deck_vp")
         inner_circle_vp = _cards_vp(current_player.inner_circle, card_index_lookup, "inner_circle_vp")
 
@@ -1039,7 +1039,7 @@ class ReplayViewerApp:
         total_vp = running_score + control_vp + total_control_vp_per_turn + trophy_vp + token_vp + deck_vp + inner_circle_vp
 
         self.vp_breakdown_var.set(
-            f"Score: {running_score:>2} | Controlled sites: {control_vp:>2} | "
+            f"Controlled sites VP: {control_vp:>2} | "
             f"Total Control VP/turn: {total_control_vp_per_turn:>2} | "
             f"Trophy: {trophy_vp:>2} | VP tokens: {token_vp:>2} | Deck VP: {deck_vp:>2} | "
             f"Inner Circle VP: {inner_circle_vp:>2} | Total: {total_vp:>2}"

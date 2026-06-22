@@ -104,6 +104,106 @@ def _format_aspect_breakdown(counter: Counter[str]) -> str:
     )
 
 
+def _compute_vp_breakdowns(session) -> list[dict]:
+    from engine_c.bindings.engine_bindings import _lib as _elib
+    from engine_c.bindings.view import _make_card_view
+
+    state = session._state._ptr.contents
+    player_count = state.player_count
+    player_syms = [state.player_ids[i] for i in range(player_count)]
+
+    def _pid(sym): return (_elib.intern_str(sym) or b"").decode()
+    def _cid(sym): return _pid(sym)
+
+    breakdowns = []
+    for pi in range(player_count):
+        ps = state.players[pi]
+        pid = _pid(player_syms[pi]) or f"p{pi}"
+        player_sym = player_syms[pi]
+
+        running_score = ps.score
+
+        site_control_vp = 0
+        board_def = state.definition.contents.board
+        for ni in range(board_def.node_count):
+            nd = board_def.nodes[ni]
+            if _pid(nd.kind) != "site":
+                continue
+            for si in range(state.node_count):
+                ns = state.nodes[si]
+                if ns.node_id != nd.node_id:
+                    continue
+                owner = _determine_site_owner_raw(ns, player_sym)
+                if owner == player_sym:
+                    site_control_vp += nd.control_vp
+                break
+
+        trophy_vp = ps.trophy_hall_count
+        token_vp = ps.vp_tokens
+
+        deck_vp = 0
+        seen: set[str] = set()
+        zones = [
+            (ps.deck, ps.deck_count),
+            (ps.hand, ps.hand_count),
+            (ps.discard_pile, ps.discard_pile_count),
+            (ps.played_cards, ps.played_cards_count),
+        ]
+        for arr, cnt in zones:
+            for j in range(cnt):
+                sym = arr[j]
+                if sym == 0:
+                    continue
+                cid = _cid(sym)
+                if cid and cid not in seen:
+                    seen.add(cid)
+                    deck_vp += _make_card_view(cid).deck_vp
+
+        inner_circle_vp = 0
+        for j in range(ps.inner_circle_count):
+            sym = ps.inner_circle[j]
+            if sym == 0:
+                continue
+            cid = _cid(sym)
+            if cid:
+                inner_circle_vp += _make_card_view(cid).inner_circle_vp
+
+        total = running_score + site_control_vp + trophy_vp + token_vp + deck_vp + inner_circle_vp
+
+        breakdowns.append({
+            "player_id": pid,
+            "running_score": running_score,
+            "site_control_vp": site_control_vp,
+            "trophy_vp": trophy_vp,
+            "vp_tokens": token_vp,
+            "deck_vp": deck_vp,
+            "inner_circle_vp": inner_circle_vp,
+            "total": total,
+        })
+
+    return breakdowns
+
+
+def _determine_site_owner_raw(node_state, player_sym):
+    from engine_c.bindings.engine_bindings import _lib as _elib
+
+    counts: dict[int, int] = {}
+    for j in range(node_state.troop_slot_count):
+        occ = node_state.troop_slots[j]
+        if occ == 0:
+            continue
+        if _elib.intern_str(occ) == b"white":
+            continue
+        counts[occ] = counts.get(occ, 0) + 1
+    if not counts:
+        return 0
+    max_count = max(counts.values())
+    max_owners = [k for k, v in counts.items() if v == max_count]
+    if len(max_owners) != 1:
+        return 0
+    return max_owners[0]
+
+
 def _ellipsize(text: str, max_chars: int) -> str:
     if len(text) <= max_chars:
         return text
@@ -320,6 +420,105 @@ def _read_json_object(path: Path) -> dict[str, object]:
     if not isinstance(payload, dict):
         raise ValueError(f"Expected JSON object in {path}")
     return payload
+
+
+class ScoreDialog(tk.Toplevel):
+    """Modal dialog showing final scores broken down by VP source."""
+
+    def __init__(
+        self,
+        parent: tk.Misc,
+        breakdowns: list[dict],
+        winner_id: str | None,
+    ) -> None:
+        super().__init__(parent)
+        self.title("Game Over — Final Scores")
+        self.transient(parent)
+        self.grab_set()
+
+        self._build(breakdowns, winner_id)
+        self._center_on_parent(parent)
+        self.wait_window()
+
+    def _build(self, breakdowns: list[dict], winner_id: str | None) -> None:
+        main = ttk.Frame(self, padding=16)
+        main.pack(fill=tk.BOTH, expand=True)
+
+        if winner_id:
+            winner_keys = [b["player_id"] for b in breakdowns if b["player_id"] == winner_id]
+            winner_text = winner_keys[0] if winner_keys else winner_id
+            ttk.Label(
+                main, text=f"Winner: {winner_text}",
+                font=("Segoe UI", 14, "bold"), foreground="#2d7d46",
+            ).pack(anchor=tk.W, pady=(0, 4))
+        else:
+            ttk.Label(
+                main, text="Result: Tie",
+                font=("Segoe UI", 14, "bold"), foreground="#8b7500",
+            ).pack(anchor=tk.W, pady=(0, 4))
+
+        cols = ("rank", "player_id", "running_score", "site_control", "trophies", "vp_tokens", "deck_vp", "inner_circle", "total")
+        tree = ttk.Treeview(main, columns=cols, show="headings", height=len(breakdowns) + 1)
+
+        col_specs = [
+            ("rank", "#", 36),
+            ("player_id", "Player", 80),
+            ("running_score", "Score", 70),
+            ("site_control", "Site VP", 70),
+            ("trophies", "Trophies", 75),
+            ("vp_tokens", "Tokens", 65),
+            ("deck_vp", "Deck VP", 70),
+            ("inner_circle", "Inner Δ", 70),
+            ("total", "Total", 70),
+        ]
+        for cid, heading, width in col_specs:
+            tree.heading(cid, text=heading)
+            tree.column(cid, width=width, anchor=tk.CENTER)
+
+        tree.column("player_id", anchor=tk.W)
+
+        sorted_b = sorted(breakdowns, key=lambda b: b["total"], reverse=True)
+        for idx, b in enumerate(sorted_b):
+            rank = idx + 1
+            if idx > 0 and sorted_b[idx - 1]["total"] == b["total"]:
+                rank = sorted_b[idx - 1].get("_display_rank", idx)
+            b["_display_rank"] = rank
+
+            tags = ("winner",) if winner_id and b["player_id"] == winner_id else ()
+            tree.insert("", tk.END, values=(
+                rank,
+                b["player_id"],
+                b["running_score"],
+                b["site_control_vp"],
+                b["trophy_vp"],
+                b["vp_tokens"],
+                b["deck_vp"],
+                b["inner_circle_vp"],
+                b["total"],
+            ), tags=tags)
+
+        tree.tag_configure("winner", background="#e6f4ea", font=("Segoe UI", 9, "bold"))
+
+        tree.pack(fill=tk.BOTH, expand=True, pady=(4, 12))
+
+        btn_frame = ttk.Frame(main)
+        btn_frame.pack()
+        ttk.Button(btn_frame, text="OK", command=self.destroy, width=12).pack()
+
+        self.bind("<Return>", lambda _: self.destroy())
+        self.bind("<Escape>", lambda _: self.destroy())
+
+    def _center_on_parent(self, parent: tk.Misc) -> None:
+        self.update_idletasks()
+        pw = parent.winfo_width()
+        ph = parent.winfo_height()
+        px = parent.winfo_rootx()
+        py = parent.winfo_rooty()
+        w = self.winfo_reqwidth()
+        h = self.winfo_reqheight()
+        x = px + (pw - w) // 2
+        y = py + (ph - h) // 2
+        self.geometry(f"+{x}+{y}")
 
 
 class GameViewerApp:
@@ -2121,7 +2320,7 @@ class GameViewerApp:
 
         trophy_vp = len(current_player.trophy_hall)
         token_vp = current_player.vp_tokens
-        deck_zone_cards = current_player.deck + current_player.hand + current_player.discard_pile
+        deck_zone_cards = current_player.deck + current_player.hand + current_player.discard_pile + current_player.played_cards
         deck_vp = _cards_vp(deck_zone_cards, card_index_lookup, "deck_vp")
         inner_circle_vp = _cards_vp(current_player.inner_circle, card_index_lookup, "inner_circle_vp")
 
@@ -2129,9 +2328,8 @@ class GameViewerApp:
         total_vp = running_score + control_vp + total_control_vp_per_turn + trophy_vp + token_vp + deck_vp + inner_circle_vp
 
         self.vp_breakdown_var.set(
-            f"Score: {running_score:>2} | Controlled sites: {control_vp:>2} | "
+            f"Controlled sites VP: {control_vp:>2} | "
             f"Total Control VP/turn: {total_control_vp_per_turn:>2} | "
-
             f"Trophy: {trophy_vp:>2} | VP tokens: {token_vp:>2} | Deck VP: {deck_vp:>2} | "
             f"Inner Circle VP: {inner_circle_vp:>2} | Total: {total_vp:>2}"
         )
@@ -2154,7 +2352,8 @@ class GameViewerApp:
         deck_cards = cstate.player_deck(current_index)
         hand_card_ids = [cv.card_id for cv in view.hand]
         discard_card_ids = [cv.card_id for cv in view.current_player_discard]
-        all_deck_zone = deck_cards + hand_card_ids + discard_card_ids
+        played_card_ids = [cv.card_id for cv in view.current_player_played]
+        all_deck_zone = deck_cards + hand_card_ids + discard_card_ids + played_card_ids
 
         deck_vp = 0
         seen: dict[str, Any] = {}
@@ -2168,7 +2367,7 @@ class GameViewerApp:
         total_vp = running_score + control_vp + total_control_vp_per_turn + trophy_vp + token_vp + deck_vp + inner_circle_vp
 
         self.vp_breakdown_var.set(
-            f"Score: {running_score:>2} | Controlled sites: {control_vp:>2} | "
+            f"Controlled sites VP: {control_vp:>2} | "
             f"Total Control VP/turn: {total_control_vp_per_turn:>2} | "
             f"Trophy: {trophy_vp:>2} | VP tokens: {token_vp:>2} | Deck VP: {deck_vp:>2} | "
             f"Inner Circle VP: {inner_circle_vp:>2} | Total: {total_vp:>2}"

@@ -28,20 +28,27 @@ static int find_sel_int(int *keys, Sym *vals, int count, const char *key, int de
 }
 
 static int resolve_count(GameState *state, Sym player_id, const CardAction *action) {
+    int per = 1;
+    for (int i = 0; i < action->metadata_count; i++) {
+        const char *k = intern_str(action->metadata[i].key);
+        const char *v = intern_str(action->metadata[i].value);
+        if (k && strcmp(k, "per") == 0 && v) per = atoi(v);
+    }
     for (int i = 0; i < action->metadata_count; i++) {
         const char *k = intern_str(action->metadata[i].key);
         const char *v = intern_str(action->metadata[i].value);
         if (k && strcmp(k, "count_from") == 0 && v) {
+            if (per <= 0) per = 1;
             if (strcmp(v, "controlled_sites") == 0)
-                return count_controlled_sites(state, player_id);
+                return count_controlled_sites(state, player_id) / per;
             if (strcmp(v, "owned_control_markers") == 0)
-                return count_owned_control_markers(state, player_id);
+                return count_owned_control_markers(state, player_id) / per;
             if (strcmp(v, "spies_on_board") == 0) {
                 int c = 0;
                 for (int ni = 0; ni < state->node_count; ni++)
                     for (int si = 0; si < state->nodes[ni].spy_count; si++)
                         if (state->nodes[ni].spies[si] == player_id) c++;
-                return c;
+                return c / per;
             }
             if (strcmp(v, "assassinations_by_source_effect") == 0) {
                 PendingGenericChoiceState *p = state->pending_generic;
@@ -52,7 +59,7 @@ static int resolve_count(GameState *state, Sym player_id, const CardAction *acti
                     if (ck && strncmp(ck, "assassinate_troop:", 17) == 0)
                         total += p->counter_values[ci];
                 }
-                return total;
+                return total / per;
             }
         }
     }
