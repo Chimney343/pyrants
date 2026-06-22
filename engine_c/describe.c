@@ -322,8 +322,56 @@ int engine_describe_move(const GameState *state, const Move *move,
                         snprintf(buf, sizeof(buf), "Resolve %s", name);
                     }
                 } else {
-                    const char *name = card_name_for(state, aid);
-                    snprintf(buf, sizeof(buf), "Resolve %s", name);
+                    if (state->pending_generic->awaiting_option) {
+                        PendingGenericChoiceState *pg = state->pending_generic;
+                        const CardCatalog *cat = &state->definition->catalog;
+                        for (int i = 0; i < cat->card_count; i++) {
+                            if (cat->cards[i].card_id == pg->source_card_id) {
+                                const CardDefinition *card = &cat->cards[i];
+                                if (card->execution.kind == EXEC_MODAL || card->execution.kind == EXEC_REPEAT) {
+                                    for (int oi = 0; oi < card->execution.option_count; oi++) {
+                                        const CardOption *opt = &card->execution.options[oi];
+                                        if (opt->option_id == aid) {
+                                            if (opt->action_count == 1) {
+                                                const CardAction *a = &opt->actions[0];
+                                                const char *op = intern_str(a->op);
+                                                if (op && strcmp(op, "gain_resource") == 0) {
+                                                    int count = a->quantity_kind == QUANT_FIXED ? a->quantity_value : 1;
+                                                    const char *res = "resource";
+                                                    for (int mi = 0; mi < a->metadata_count; mi++) {
+                                                        const char *mk = intern_str(a->metadata[mi].key);
+                                                        if (mk && strcmp(mk, "resource") == 0) {
+                                                            const char *mv = intern_str(a->metadata[mi].value);
+                                                            if (mv) res = mv;
+                                                        }
+                                                    }
+                                                    char rbuf[32];
+                                                    snprintf(rbuf, sizeof(rbuf), "%s", res);
+                                                    rbuf[0] = (char)toupper((unsigned char)rbuf[0]);
+                                                    snprintf(buf, sizeof(buf), "Gain %d %s", count, rbuf);
+                                                } else if (op && strcmp(op, "draw_cards") == 0) {
+                                                    int count = a->quantity_kind == QUANT_FIXED ? a->quantity_value : 1;
+                                                    snprintf(buf, sizeof(buf), "Draw %d card%s", count, count == 1 ? "" : "s");
+                                                } else {
+                                                    snprintf(buf, sizeof(buf), "%s", _humanize_id(intern_str(opt->option_id)));
+                                                }
+                                            } else {
+                                                snprintf(buf, sizeof(buf), "%s", _humanize_id(intern_str(opt->option_id)));
+                                            }
+                                            break;
+                                        }
+                                    }
+                                }
+                                break;
+                            }
+                        }
+                        if (buf[0] == '\0') {
+                            snprintf(buf, sizeof(buf), "Resolve %s", _humanize_id(intern_str(aid)));
+                        }
+                    } else {
+                        const char *name = card_name_for(state, aid);
+                        snprintf(buf, sizeof(buf), "Resolve %s", name);
+                    }
                 }
             } else {
                 const char *aid_str = intern_str(aid);

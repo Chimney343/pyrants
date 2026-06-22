@@ -104,6 +104,16 @@ def _describe_single_action(action: dict, *, spy_count: int = 0) -> str:
             ek = meta.get("effect_kind", "")
             if ek in _EFFECT_KIND_DESCRIPTIONS:
                 return _EFFECT_KIND_DESCRIPTIONS[ek]
+    if op == "gain_resource":
+        meta = action.get("metadata")
+        resource = "resource"
+        if isinstance(meta, dict):
+            resource = str(meta.get("resource", "resource")).strip().lower() or "resource"
+        qty = action.get("quantity")
+        amount = 1
+        if isinstance(qty, dict) and qty.get("kind") == "fixed" and isinstance(qty.get("value"), int):
+            amount = qty.get("value")
+        return f"Gain {amount} {resource}"
     desc = _describe_action_by_op(op, action.get("quantity"))
     filters = action.get("filters", [])
     if isinstance(filters, list):

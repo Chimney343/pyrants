@@ -362,3 +362,43 @@ class TestCDescribeIntegration:
             is_option_choice=True,
         )
         assert result == "Ettin: Assassinate white troop (x2)"
+
+    def test_dragon_cultist_option1_label(self):
+        """Dragon Cultist option 1: gain 2 power."""
+        result = enrich_label(
+            "resolve_generic",
+            "Resolve option_1",
+            {"action_id": "option_1", "selection_index": 0},
+            source_card_id="dragon_cultist",
+            is_option_choice=True,
+        )
+        assert result == "Dragon Cultist: Gain 2 power"
+
+    def test_dragon_cultist_option2_label(self):
+        """Dragon Cultist option 2: gain 2 influence."""
+        result = enrich_label(
+            "resolve_generic",
+            "Resolve option_2",
+            {"action_id": "option_2", "selection_index": 0},
+            source_card_id="dragon_cultist",
+            is_option_choice=True,
+        )
+        assert result == "Dragon Cultist: Gain 2 influence"
+
+    def test_dragon_cultist_labels_are_distinct(self):
+        """Dragon Cultist options must have different labels."""
+        label1 = enrich_label(
+            "resolve_generic",
+            "Resolve option_1",
+            {"action_id": "option_1", "selection_index": 0},
+            source_card_id="dragon_cultist",
+            is_option_choice=True,
+        )
+        label2 = enrich_label(
+            "resolve_generic",
+            "Resolve option_2",
+            {"action_id": "option_2", "selection_index": 0},
+            source_card_id="dragon_cultist",
+            is_option_choice=True,
+        )
+        assert label1 != label2, f"Labels should be distinct: {label1!r} == {label2!r}"
