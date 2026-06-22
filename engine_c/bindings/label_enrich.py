@@ -262,7 +262,7 @@ def enrich_label(move_type: str, raw_label: str, move_data: dict, *, source_card
                 for opt in options:
                     for act in opt.get("actions", []):
                         if act.get("action_id") == lookup_id:
-                            if act.get("op") in ("assassinate_troop", "supplant_troop", "move_troop"):
+                            if act.get("op") in ("assassinate_troop", "supplant_troop", "move_troop", "return_unit"):
                                 return raw_label
                             if _is_steal_custom_effect(act):
                                 return raw_label
@@ -276,7 +276,7 @@ def enrich_label(move_type: str, raw_label: str, move_data: dict, *, source_card
                 flat_actions = exec_model.get("actions", [])
                 for act in flat_actions:
                     if act.get("action_id") == lookup_id:
-                        if act.get("op") in ("assassinate_troop", "supplant_troop", "move_troop"):
+                        if act.get("op") in ("assassinate_troop", "supplant_troop", "move_troop", "return_unit"):
                             return raw_label
                         if _is_steal_custom_effect(act):
                             return raw_label

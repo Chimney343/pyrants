@@ -180,10 +180,26 @@ int engine_describe_move(const GameState *state, const Move *move,
                         Sym tid = move->data.resolve_generic.target_id;
                         const char *label = node_label(intern_str(aid), node_ids, node_labels, node_pair_count);
                         const char *ts = tid != SYM_NULL ? intern_str(tid) : NULL;
-                        if (ts && strncmp(ts, "troop:", 6) == 0) {
-                            snprintf(buf, sizeof(buf), "Return troop from %s", label);
-                        } else if (ts && strncmp(ts, "spy:", 4) == 0) {
-                            snprintf(buf, sizeof(buf), "Return spy from %s", label);
+                        if (ts) {
+                            int ts_len = (int)strlen(ts);
+                            if (ts_len > 6 && (ts[0] == 't' || ts[0] == 'T')
+                                && (ts[1] == 'r' || ts[1] == 'R')
+                                && (ts[2] == 'o' || ts[2] == 'O')
+                                && (ts[3] == 'o' || ts[3] == 'O')
+                                && (ts[4] == 'p' || ts[4] == 'P')
+                                && ts[5] == ':') {
+                                int slot_idx = atoi(ts + 6);
+                                const char *owner = troop_owner_label(state, aid, slot_idx);
+                                snprintf(buf, sizeof(buf), "Return %s's troop from %s", owner, label);
+                            } else if (ts_len > 4 && (ts[0] == 's' || ts[0] == 'S')
+                                && (ts[1] == 'p' || ts[1] == 'P')
+                                && (ts[2] == 'y' || ts[2] == 'Y')
+                                && ts[3] == ':') {
+                                const char *spy_owner = ts + 4;
+                                snprintf(buf, sizeof(buf), "Return %s's spy from %s", spy_owner, label);
+                            } else {
+                                snprintf(buf, sizeof(buf), "Return unit from %s", label);
+                            }
                         } else {
                             snprintf(buf, sizeof(buf), "Return unit from %s", label);
                         }
