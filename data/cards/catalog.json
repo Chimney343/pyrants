@@ -1700,7 +1700,8 @@
             "source_fragment": "scaled_vp_from_promoted_cards",
             "metadata": {
               "count_from": "inner_circle_cards",
-              "per": 3
+              "per": 3,
+              "as": "vp_tokens"
             }
           }
         ]
@@ -1736,7 +1737,8 @@
           "source_fragment": "scaled_vp_from_promoted_cards",
           "metadata": {
             "count_from": "inner_circle_cards",
-            "per": 3
+            "per": 3,
+            "as": "vp_tokens"
           }
         }
       ],
@@ -2425,7 +2427,9 @@
             },
             "filters": [],
             "source_fragment": "triggered_promote",
-            "metadata": {}
+            "metadata": {
+              "requires_another_played_card": true
+            }
           }
         ]
       },
@@ -2456,7 +2460,9 @@
           },
           "filters": [],
           "source_fragment": "triggered_promote",
-          "metadata": {}
+          "metadata": {
+            "requires_another_played_card": true
+          }
         }
       ],
       "global_conditions": [
@@ -4149,7 +4155,9 @@
               "kind": "unspecified",
               "value": null
             },
-            "filters": [],
+            "filters": [
+              "allow_white_troop"
+            ],
             "source_fragment": "assassinate_troop",
             "metadata": {}
           },
@@ -4185,7 +4193,9 @@
             "kind": "unspecified",
             "value": null
           },
-          "filters": [],
+          "filters": [
+            "allow_white_troop"
+          ],
           "source_fragment": "assassinate_troop",
           "metadata": {}
         },
@@ -11215,8 +11225,8 @@
       "effect_payload": {}
     },
     {
-      "card_id": "rather_modar",
-      "name": "Rather Modar",
+      "card_id": "rath_modar",
+      "name": "Rath Modar",
       "cost": 6,
       "aspect": "guile",
       "secondary_aspects": [
@@ -14156,7 +14166,9 @@
             },
             "filters": [],
             "source_fragment": "triggered_promote",
-            "metadata": {}
+            "metadata": {
+              "requires_another_played_card": true
+            }
           }
         ]
       },
@@ -14189,7 +14201,9 @@
           },
           "filters": [],
           "source_fragment": "triggered_promote",
-          "metadata": {}
+          "metadata": {
+            "requires_another_played_card": true
+          }
         }
       ],
       "global_conditions": [

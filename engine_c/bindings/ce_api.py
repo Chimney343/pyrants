@@ -358,8 +358,8 @@ class CEngine:
 
     def legal_moves(self, state: CState) -> list:
         """Return legal moves. Mirrors engine.rules.legal_moves()."""
-        moves = (CMove * 128)()
-        n = _lib.engine_legal_moves(state.ptr, moves, 128)
+        moves = (CMove * 1024)()
+        n = _lib.engine_legal_moves(state.ptr, moves, 1024)
         return [CMoveWrapper(moves[i]) for i in range(n)]
 
     def apply(self, state: CState, move: CMoveWrapper) -> CState | None:
