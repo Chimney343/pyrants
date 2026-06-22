@@ -4,9 +4,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from engine.state import NodeKind
 from game_session import GameSession
 from game_setup.loaders import build_board_package_from_files
-from game_view import build_game_view
+from game_view import NodeOccupancyView, build_game_view
+from interface.board_view import BoardNodeView
 from interface.game_renderer import (
     DEFAULT_SITE_OUTLINE,
     EMPTY_ROUTE_FILL,
@@ -115,9 +117,13 @@ def test_site_rectangle_uses_bounds_and_site_label_above() -> None:
     assert any("Menzoberranzan" in t for t in site_label_texts)
     assert any("Gauntlgrym" in t for t in site_label_texts)
 
-    interior_texts = [kw.get("text", "") for _, kw in texts]
-    owner_vp_texts = [t for t in interior_texts if "Owner:" in t and "VP:" in t]
-    assert len(owner_vp_texts) > 0
+    interior_texts = [(a, kw) for name, a, kw in canvas.calls if name == "text"]
+    assert not any("Owner:" in kw.get("text", "") for _, kw in interior_texts)
+    vp_texts = [(a, kw) for a, kw in interior_texts if isinstance(kw.get("text", ""), str) and kw["text"].startswith("VP:")]
+    assert len(vp_texts) > 0
+    for _, kwargs in vp_texts:
+        font = kwargs.get("font", ())
+        assert "bold" in font
 
     assert len(rectangles) > 0
     first_rect = rectangles[0][1]
@@ -226,3 +232,175 @@ def test_derive_control_owner_player_white_tie_returns_none() -> None:
 def test_derive_control_owner_player_majority() -> None:
     assert _derive_control_owner(("p1", "p1", "p2", "white", None, None)) == "p1"
     assert _derive_control_owner(("p1", "p2", "p2", "white", None, None)) == "p2"
+
+
+def test_site_vp_label_is_bold_without_owner() -> None:
+    node = BoardNodeView(
+        node_id="site1",
+        label="Test Site",
+        kind=NodeKind.SITE,
+        center_x=50.0,
+        center_y=50.0,
+        bounds=(10.0, 10.0, 80.0, 80.0),
+        troop_slot_points=((30.0, 30.0), (50.0, 30.0), (70.0, 30.0)),
+        adjacent_to=(),
+    )
+    occupancy = NodeOccupancyView(
+        node_id="site1",
+        kind=NodeKind.SITE,
+        adjacent_to=(),
+        control_vp=3,
+        total_control_vp_per_turn=0,
+        troop_slots=("p1", "p1", None),
+        spies=(),
+        vp_tokens=0,
+    )
+
+    canvas = _CanvasStub()
+    GameBoardRenderer()._draw_site(canvas, node, occupancy, is_highlighted=False, scale=1.0)
+
+    texts = [(a, kw) for name, a, kw in canvas.calls if name == "text"]
+    assert not any("Owner:" in kw.get("text", "") for _, kw in texts)
+
+    vp_texts = [(a, kw) for a, kw in texts if isinstance(kw.get("text", ""), str) and kw["text"] == "VP: 3"]
+    assert len(vp_texts) == 1
+    assert "bold" in vp_texts[0][1].get("font", ())
+
+
+def test_site_majority_control_border_is_player_color() -> None:
+    node = BoardNodeView(
+        node_id="site1",
+        label="Test Site",
+        kind=NodeKind.SITE,
+        center_x=50.0,
+        center_y=50.0,
+        bounds=(10.0, 10.0, 80.0, 80.0),
+        troop_slot_points=((30.0, 30.0), (50.0, 30.0), (70.0, 30.0)),
+        adjacent_to=(),
+    )
+    occupancy = NodeOccupancyView(
+        node_id="site1",
+        kind=NodeKind.SITE,
+        adjacent_to=(),
+        control_vp=1,
+        total_control_vp_per_turn=0,
+        troop_slots=("p1", "p1", None),
+        spies=(),
+        vp_tokens=0,
+    )
+
+    canvas = _CanvasStub()
+    GameBoardRenderer()._draw_site(canvas, node, occupancy, is_highlighted=False, scale=1.0)
+
+    rects = [(a, kw) for name, a, kw in canvas.calls if name == "rectangle"]
+    assert rects
+    assert rects[0][1].get("outline") == PLAYER_COLORS["p1"]
+
+    lines = [(a, kw) for name, a, kw in canvas.calls if name == "line"]
+    assert len(lines) == 0
+
+
+def test_site_no_control_border_is_default() -> None:
+    node = BoardNodeView(
+        node_id="site1",
+        label="Test Site",
+        kind=NodeKind.SITE,
+        center_x=50.0,
+        center_y=50.0,
+        bounds=(10.0, 10.0, 80.0, 80.0),
+        troop_slot_points=((30.0, 30.0), (50.0, 30.0), (70.0, 30.0)),
+        adjacent_to=(),
+    )
+    occupancy = NodeOccupancyView(
+        node_id="site1",
+        kind=NodeKind.SITE,
+        adjacent_to=(),
+        control_vp=1,
+        total_control_vp_per_turn=0,
+        troop_slots=("p1", "p2", None),
+        spies=(),
+        vp_tokens=0,
+    )
+
+    canvas = _CanvasStub()
+    GameBoardRenderer()._draw_site(canvas, node, occupancy, is_highlighted=False, scale=1.0)
+
+    rects = [(a, kw) for name, a, kw in canvas.calls if name == "rectangle"]
+    assert rects
+    assert rects[0][1].get("outline") == DEFAULT_SITE_OUTLINE
+
+    lines = [(a, kw) for name, a, kw in canvas.calls if name == "line"]
+    assert len(lines) == 0
+
+
+def test_lighten_color_produces_lighter_valid_hex() -> None:
+    from interface.game_renderer import _lighten_color
+
+    result = _lighten_color("#000000")
+    assert len(result) == 7
+    assert result[0] == "#"
+    r, g, b = int(result[1:3], 16), int(result[3:5], 16), int(result[5:7], 16)
+    assert r > 0
+    assert g > 0
+    assert b > 0
+
+    result2 = _lighten_color("#2f72c4")
+    r2, g2, b2 = int(result2[1:3], 16), int(result2[3:5], 16), int(result2[5:7], 16)
+    assert r2 >= 0x2F
+    assert g2 >= 0x72
+    assert b2 >= 0xC4
+    assert r2 <= 255
+    assert g2 <= 255
+    assert b2 <= 255
+
+    result3 = _lighten_color("#ffffff")
+    assert result3 == "#ffffff"
+
+
+def test_site_total_control_draws_lighter_hatching_inside_bounds() -> None:
+    from interface.game_renderer import _lighten_color
+
+    node = BoardNodeView(
+        node_id="site1",
+        label="Test Site",
+        kind=NodeKind.SITE,
+        center_x=50.0,
+        center_y=50.0,
+        bounds=(10.0, 10.0, 80.0, 80.0),
+        troop_slot_points=((30.0, 30.0), (50.0, 30.0), (70.0, 30.0)),
+        adjacent_to=(),
+    )
+    occupancy = NodeOccupancyView(
+        node_id="site1",
+        kind=NodeKind.SITE,
+        adjacent_to=(),
+        control_vp=1,
+        total_control_vp_per_turn=0,
+        troop_slots=("p1", "p1", "p1"),
+        spies=(),
+        vp_tokens=0,
+    )
+
+    canvas = _CanvasStub()
+    GameBoardRenderer()._draw_site(canvas, node, occupancy, is_highlighted=False, scale=1.0)
+
+    expected_fill = _lighten_color(PLAYER_COLORS["p1"])
+    lines = [(a, kw) for name, a, kw in canvas.calls if name == "line"]
+    hatch_lines = [(a, kw) for a, kw in lines if kw.get("fill") == expected_fill]
+    assert len(hatch_lines) > 0
+
+    left, top, w, h = node.bounds
+    right = left + w
+    bottom = top + h
+    for a, _kw in hatch_lines:
+        for coord in a:
+            assert isinstance(coord, (int, float))
+        x1, y1, x2, y2 = a[0], a[1], a[2], a[3]
+        assert left <= x1 <= right
+        assert top <= y1 <= bottom
+        assert left <= x2 <= right
+        assert top <= y2 <= bottom
+
+    rects = [(a, kw) for name, a, kw in canvas.calls if name == "rectangle"]
+    assert rects
+    assert rects[0][1].get("outline") == PLAYER_COLORS["p1"]

@@ -18,7 +18,6 @@ from interface.shared_board_renderer import (
     TROOP_SLOT_RADIUS,
     draw_edges,
     draw_route_base,
-    draw_site_base,
 )
 
 PLAYER_COLORS = {
@@ -63,6 +62,22 @@ def _derive_control_owner(
     return leaders[0] if len(leaders) == 1 and leaders[0] != "white" else None
 
 
+def _lighten_color(hex_color: str, factor: float = 1.25) -> str:
+    r = int(hex_color[1:3], 16)
+    g = int(hex_color[3:5], 16)
+    b = int(hex_color[5:7], 16)
+    r = min(255, int(r * factor))
+    g = min(255, int(g * factor))
+    b = min(255, int(b * factor))
+    if r == 0:
+        r = 1
+    if g == 0:
+        g = 1
+    if b == 0:
+        b = 1
+    return f"#{r:02x}{g:02x}{b:02x}"
+
+
 class GameBoardRenderer:
     """Render board geometry and occupancy overlays for read-only gameplay views."""
 
@@ -104,45 +119,94 @@ class GameBoardRenderer:
         is_highlighted: bool,
         scale: float,
     ) -> None:
+        control_owner = _derive_control_owner(occupancy.troop_slots)
         total_owner = _total_control_owner(occupancy.troop_slots, occupancy.spies)
-        if total_owner is not None:
-            outline = PLAYER_COLORS.get(total_owner, DEFAULT_SITE_OUTLINE)
+        if control_owner is not None:
+            outline = PLAYER_COLORS.get(control_owner, DEFAULT_SITE_OUTLINE)
         elif is_highlighted:
             outline = "#1e62c7"
         else:
             outline = DEFAULT_SITE_OUTLINE
 
-        ow = 3 if (is_highlighted or total_owner is not None) else None
-        draw_site_base(
-            canvas, node,
-            to_screen=lambda x, y: (x * scale, y * scale),
-            scaled=lambda d: d * scale,
-            fill=DEFAULT_SITE_FILL, outline=outline, outline_width=ow,
+        ow = 3 if (is_highlighted or control_owner is not None) else None
+        rect_ow_raw = ow if ow is not None else 2
+        rect_ow = max(1, int(round(rect_ow_raw * scale)))
+        left_s, top_s, w_s, h_s = node.bounds
+        canvas.create_rectangle(
+            left_s * scale,
+            top_s * scale,
+            (left_s + w_s) * scale,
+            (top_s + h_s) * scale,
+            fill=DEFAULT_SITE_FILL, outline=outline, width=rect_ow,
+        )
+
+        if total_owner is not None:
+            sc_left = left_s * scale
+            sc_top = top_s * scale
+            sc_right = (left_s + w_s) * scale
+            sc_bottom = (top_s + h_s) * scale
+            hatch_color = _lighten_color(PLAYER_COLORS[total_owner])
+            step = max(4, int(round(6 * scale)))
+            b_start = sc_top - sc_right
+            b_end = sc_bottom - sc_left
+            b = int(b_start)
+            while b <= b_end:
+                x1 = max(sc_left, sc_top - b)
+                y1 = x1 + b
+                x2 = min(sc_right, sc_bottom - b)
+                y2 = x2 + b
+                if x1 <= x2 and y1 <= y2:
+                    canvas.create_line(x1, y1, x2, y2, fill=hatch_color, width=1)
+                b += step
+
+        label_cx = node.center_x * scale
+        label_cy = node.center_y * scale
+        label_sr = max(4, int(round(TROOP_SLOT_RADIUS * scale)))
+        label_y = label_cy - label_sr - max(10, int(round(12 * scale)))
+        canvas.create_text(
+            label_cx, label_y,
+            text=node.label,
+            font=("Segoe UI", 10, "bold"),
+            fill="#1f2937",
         )
 
         slot_radius = max(4, int(round(TROOP_SLOT_RADIUS * scale)))
         troop_row_y = node.center_y * scale
 
-        owner = _derive_control_owner(occupancy.troop_slots) or "none"
-        site_text = f"Owner: {owner}  Control VP: {occupancy.control_vp}"
+        vp_text = f"VP: {occupancy.control_vp}"
         canvas.create_text(
             node.center_x * scale,
             troop_row_y + slot_radius + max(10, int(round(12 * scale))),
-            text=site_text,
-            font=("Segoe UI", 9),
+            text=vp_text,
+            font=("Segoe UI", 9, "bold"),
             fill="#1b2533",
         )
 
         if occupancy.spies:
-            badge = " ".join(occupancy.spies)
-            sx1 = (node.bounds[0] if node.bounds else 0) * scale  # type: ignore[index]
-            canvas.create_text(
-                node.center_x * scale,
-                sx1 - max(10, int(round(32 * scale))),
-                text=f"Spies: {badge}",
-                font=("Segoe UI", 8),
-                fill="#4f5b6c",
-            )
+            left, top, w, h = node.bounds
+            sx_left = left * scale
+            sx_top = top * scale
+            sx_right = (left + w) * scale
+            sx_bottom = (top + h) * scale
+            spy_corners = {
+                "p0": (sx_left, sx_top, "nw"),
+                "p1": (sx_right, sx_top, "ne"),
+                "p2": (sx_left, sx_bottom, "sw"),
+                "p3": (sx_right, sx_bottom, "se"),
+            }
+            for spy_id in occupancy.spies:
+                info = spy_corners.get(spy_id)
+                if info is None:
+                    continue
+                sx, sy, anchor = info
+                color = PLAYER_COLORS.get(spy_id, "#4f5b6c")
+                canvas.create_text(
+                    sx, sy,
+                    text="★",
+                    font=("Segoe UI", max(9, int(round(14 * scale)))),
+                    fill=color,
+                    anchor=anchor,
+                )
 
         for index, owner_id in enumerate(occupancy.troop_slots):
             if index >= len(node.troop_slot_points):
@@ -194,15 +258,26 @@ class GameBoardRenderer:
         )
 
         if occupancy.spies:
-            badge = " ".join(occupancy.spies)
+            center_sx = node.center_x * scale
             center_sy = node.center_y * scale
-            route_radius = max(4, int(round(ROUTE_RADIUS * scale)))
-            canvas.create_text(
-                node.center_x * scale,
-                center_sy - (route_radius + 12 * scale),
-                text=f"Spies: {badge}",
-                font=("Segoe UI", 8),
-                fill="#4f5b6c",
-            )
+            rr = max(4, int(round(ROUTE_RADIUS * scale)))
+            spy_positions = {
+                "p0": (center_sx - rr, center_sy - rr),
+                "p1": (center_sx + rr, center_sy - rr),
+                "p2": (center_sx - rr, center_sy + rr),
+                "p3": (center_sx + rr, center_sy + rr),
+            }
+            for spy_id in occupancy.spies:
+                pos = spy_positions.get(spy_id)
+                if pos is None:
+                    continue
+                color = PLAYER_COLORS.get(spy_id, "#4f5b6c")
+                canvas.create_text(
+                    pos[0], pos[1],
+                    text="★",
+                    font=("Segoe UI", max(9, int(round(14 * scale)))),
+                    fill=color,
+                    anchor="center",
+                )
 
 
