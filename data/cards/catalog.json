@@ -6415,6 +6415,24 @@
                 "filters": [],
                 "source_fragment": "place_spy",
                 "metadata": {}
+              },
+              {
+                "action_id": "option_1_action_2",
+                "op": "supplant_troop",
+                "target_scope": "board_site",
+                "timing": "immediate",
+                "optional": false,
+                "quantity": {
+                  "kind": "unspecified",
+                  "value": null
+                },
+                "filters": [
+                  "allow_white_troop"
+                ],
+                "source_fragment": "supplant_troop",
+                "metadata": {
+                  "requires_last_selected_node": true
+                }
               }
             ]
           },
@@ -6433,7 +6451,9 @@
                 },
                 "filters": [],
                 "source_fragment": "return_spy",
-                "metadata": {}
+                "metadata": {
+                  "spy_owner": "self"
+                }
               },
               {
                 "action_id": "option_2_action_2",
@@ -6445,9 +6465,13 @@
                   "kind": "unspecified",
                   "value": null
                 },
-                "filters": [],
+                "filters": [
+                  "allow_white_troop"
+                ],
                 "source_fragment": "supplant_troop",
-                "metadata": {}
+                "metadata": {
+                  "requires_returned_spy_site": true
+                }
               },
               {
                 "action_id": "option_2_action_3",
@@ -6486,6 +6510,24 @@
           "metadata": {}
         },
         {
+          "action_id": "option_1_action_2",
+          "op": "supplant_troop",
+          "target_scope": "board_site",
+          "timing": "immediate",
+          "optional": false,
+          "quantity": {
+            "kind": "unspecified",
+            "value": null
+          },
+          "filters": [
+            "allow_white_troop"
+          ],
+          "source_fragment": "supplant_troop",
+          "metadata": {
+            "requires_last_selected_node": true
+          }
+        },
+        {
           "action_id": "option_2_action_1",
           "op": "return_spy",
           "target_scope": "board_site",
@@ -6497,7 +6539,9 @@
           },
           "filters": [],
           "source_fragment": "return_spy",
-          "metadata": {}
+          "metadata": {
+            "spy_owner": "self"
+          }
         },
         {
           "action_id": "option_2_action_2",
@@ -6509,9 +6553,13 @@
             "kind": "unspecified",
             "value": null
           },
-          "filters": [],
+          "filters": [
+            "allow_white_troop"
+          ],
           "source_fragment": "supplant_troop",
-          "metadata": {}
+          "metadata": {
+            "requires_returned_spy_site": true
+          }
         },
         {
           "action_id": "option_2_action_3",
