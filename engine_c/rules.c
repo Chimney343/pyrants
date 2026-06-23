@@ -445,6 +445,14 @@ static GameState *apply_promote_card_impl(GameState *state, Sym player_id, Sym c
                 for (int i = 0; i < state->pending_eot_count - 1; i++)
                     state->pending_eot[i] = state->pending_eot[i + 1];
                 state->pending_eot_count--;
+            } else {
+                Sym rem[MAX_ZONE_SIZE];
+                int rem_tc = deferred_promotion_target_ids(state, player_id, p, rem, MAX_ZONE_SIZE);
+                if (rem_tc == 0) {
+                    for (int i = 0; i < state->pending_eot_count - 1; i++)
+                        state->pending_eot[i] = state->pending_eot[i + 1];
+                    state->pending_eot_count--;
+                }
             }
             return state;
         }
@@ -712,11 +720,7 @@ GameState *engine_apply(const GameState *src, const Move *move) {
 }
 
 int engine_is_terminal(const GameState *state) {
-    if (state->phase == PHASE_GAME_OVER) return 1;
-    if (state->market.deck_count == 0) return 1;
-    for (int i = 0; i < state->player_count; i++)
-        if (state->players[i].barracks == 0) return 1;
-    return 0;
+    return state->phase == PHASE_GAME_OVER;
 }
 
 Sym engine_winner(const GameState *state, int *score_out) {

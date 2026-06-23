@@ -74,7 +74,7 @@ def _play_card_and_deploy_all(session: CSession) -> None:
 
 
 def test_white_dragon_vp_tokens_from_controlled_sites() -> None:
-    """4 controlled sites with per=2 grants 2 VP tokens, score unchanged."""
+    """4 controlled sites with per=2 grants 2 VP tokens, score increases by same amount."""
     session = _build_white_dragon_session(controlled_site_count=4)
 
     before_tokens = _player_vp_tokens(session, _P1)

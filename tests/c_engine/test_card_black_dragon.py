@@ -94,9 +94,9 @@ def test_black_dragon_vp_awarded_as_tokens():
     tokens_after = _player_vp_tokens(session, _P1)
     score_after = _player_score(session, _P1)
 
-    expected_vp = 5 // 3
+    expected_vp = 6 // 3  # 5 pre-existing + 1 supplanted white = 6
     assert tokens_after == before_tokens + expected_vp, (
-        f"Expected {expected_vp} VP tokens (5 white trophies // 3), "
+        f"Expected {expected_vp} VP tokens (6 white trophies // 3), "
         f"got vp_tokens={tokens_after} (was {before_tokens})"
     )
     assert score_after == before_score, (

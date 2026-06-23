@@ -122,38 +122,77 @@ int legal_initial_placement_node_ids(const GameState *state, Sym *out, int max_o
     return count;
 }
 
+static Sym site_majority_owner(const GameState *state, const NodeState *ns) {
+    int counts[MAX_PLAYERS + 1] = {0};
+    Sym owners[MAX_PLAYERS + 1];
+    int oc = 0;
+    for (int t = 0; t < ns->troop_slot_count; t++) {
+        Sym occ = ns->troop_slots[t];
+        if (occ == SYM_NULL) continue;
+        int f = -1;
+        for (int k = 0; k < oc; k++) { if (owners[k] == occ) { f = k; break; } }
+        if (f >= 0) counts[f]++;
+        else { owners[oc] = occ; counts[oc++] = 1; }
+    }
+    if (oc == 0) return SYM_NULL;
+    int maxc = 0, maxi = -1, tie = 0;
+    for (int k = 0; k < oc; k++) {
+        if (counts[k] > maxc) { maxc = counts[k]; maxi = k; tie = 0; }
+        else if (counts[k] == maxc) { tie = 1; }
+    }
+    if (tie || maxi < 0) return SYM_NULL;
+    const char *os = intern_str(owners[maxi]);
+    if (os && strcmp(os, "white") == 0) return SYM_NULL;
+    return owners[maxi];
+}
+
+static int node_index(const GameState *state, Sym node_id) {
+    for (int j = 0; j < state->node_count; j++)
+        if (state->nodes[j].node_id == node_id) return j;
+    return -1;
+}
+
 int count_controlled_sites(const GameState *state, Sym player_id) {
     int total = 0;
     for (int i = 0; i < state->definition->board.node_count; i++) {
         const NodeDefinition *nd = &state->definition->board.nodes[i];
         if (strcmp(intern_str(nd->kind), "site") != 0) continue;
-        int ni = -1;
-        for (int j = 0; j < state->node_count; j++) {
-            if (state->nodes[j].node_id == nd->node_id) { ni = j; break; }
-        }
+        int ni = node_index(state, nd->node_id);
         if (ni < 0) continue;
         const NodeState *ns = &state->nodes[ni];
-        int counts[MAX_PLAYERS + 1] = {0};
-        Sym owners[MAX_PLAYERS + 1];
-        int oc = 0;
-        for (int t = 0; t < ns->troop_slot_count; t++) {
-            Sym occ = ns->troop_slots[t];
-            if (occ == SYM_NULL) continue;
-            int f = -1;
-            for (int k = 0; k < oc; k++) { if (owners[k] == occ) { f = k; break; } }
-            if (f >= 0) counts[f]++;
-            else { owners[oc] = occ; counts[oc++] = 1; }
+        int has_player_troop = 0;
+        int has_enemy_troop = 0;
+        for (int s = 0; s < ns->troop_slot_count; s++) {
+            Sym slot = ns->troop_slots[s];
+            if (slot == player_id) {
+                has_player_troop = 1;
+            } else if (slot != SYM_NULL) {
+                const char *sn = intern_str(slot);
+                if (sn && strcmp(sn, "white") != 0) {
+                    for (int p = 0; p < state->player_count; p++) {
+                        if (state->players[p].player_id == slot) {
+                            has_enemy_troop = 1;
+                            break;
+                        }
+                    }
+                }
+            }
         }
-        if (oc == 0) continue;
-        int maxc = 0, maxi = -1, tie = 0;
-        for (int k = 0; k < oc; k++) {
-            if (counts[k] > maxc) { maxc = counts[k]; maxi = k; tie = 0; }
-            else if (counts[k] == maxc) { tie = 1; }
-        }
-        if (tie || maxi < 0) continue;
-        const char *os = intern_str(owners[maxi]);
-        if (os && strcmp(os, "white") == 0) continue;
-        if (owners[maxi] == player_id) total++;
+        if (has_player_troop && !has_enemy_troop) total++;
+    }
+    return total;
+}
+
+int count_owned_control_markers(const GameState *state, Sym player_id) {
+    int total = 0;
+    for (int i = 0; i < state->definition->board.node_count; i++) {
+        const NodeDefinition *nd = &state->definition->board.nodes[i];
+        if (strcmp(intern_str(nd->kind), "site") != 0) continue;
+        if (nd->total_control_vp_per_turn <= 0) continue;
+        int ni = node_index(state, nd->node_id);
+        if (ni < 0) continue;
+        Sym owner = site_majority_owner(state, &state->nodes[ni]);
+        if (owner == player_id) total++;
     }
     return total;
 }
@@ -263,6 +302,8 @@ int scaled_vp_award_count(const GameState *state, Sym player_id, const CardActio
                                               required_aspect, required_secondary_aspect);
     } else if (strcmp(cf, "controlled_sites") == 0) {
         base = count_controlled_sites(state, player_id);
+    } else if (strcmp(cf, "owned_control_markers") == 0) {
+        base = count_owned_control_markers(state, player_id);
     }
     return base / per;
 }

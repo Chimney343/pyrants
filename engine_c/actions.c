@@ -182,10 +182,8 @@ static GameState *apply_supplant_troop(GameState *state, Sym player_id, const Ca
     if (occ == SYM_NULL || occ == player_id) return state;
     ns->troop_slots[slot] = SYM_NULL;
     PlayerState *ps = cow_player(state, player_id);
-    if (ps && occ != intern("white")) {
-        if (ps->trophy_hall_count < MAX_ZONE_SIZE)
-            ps->trophy_hall[ps->trophy_hall_count++] = occ;
-    }
+    if (ps && ps->trophy_hall_count < MAX_ZONE_SIZE)
+        ps->trophy_hall[ps->trophy_hall_count++] = occ;
     if (ps && ps->barracks > 0) {
         ns->troop_slots[slot] = player_id;
         ps->barracks--;

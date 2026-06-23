@@ -50,7 +50,14 @@ int advance_phase(GameState *state) {
 
     if (state->phase == PHASE_CLEANUP) {
         Sym next = next_player_id(state);
-        if (next == state->player_ids[0]) state->round_number++;
+        if (next == state->player_ids[0]) {
+            int kill = 0;
+            if (state->market.deck_count == 0) kill = 1;
+            for (int i = 0; i < state->player_count && !kill; i++)
+                if (state->players[i].barracks == 0) kill = 1;
+            if (kill) { set_game_over(state); return 0; }
+            state->round_number++;
+        }
         state->phase = PHASE_MAIN;
         state->current_player_id = next;
         memset(&state->resource_pool, 0, sizeof(ResourcePool));

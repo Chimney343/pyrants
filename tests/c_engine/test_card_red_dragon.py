@@ -137,14 +137,16 @@ def test_red_dragon_full_sequence():
     )
 
     # --- Verify VP awarded ---
-    # 3 controlled sites (site_gauntlgrym + site_jhachalkhyn + site_gracklstugh) → 3 VP
+    # 3 controlled sites → 3 vp_tokens
     score_after = _player_score(session, _P1)
-    assert score_after == score_before + 3, (
-        f"Expected 3 VP for 3 controlled sites, "
-        f"score went from {score_before} to {score_after} (delta={score_after - score_before})"
+    assert score_after == score_before, (
+        f"Score should not change (VP goes to vp_tokens), "
+        f"score went from {score_before} to {score_after}"
     )
-    assert vp_tokens_before == _player_vp_tokens(session, _P1), (
-        "VP tokens should not change (VP awarded to score, not tokens)"
+    vp_tokens_after = _player_vp_tokens(session, _P1)
+    assert vp_tokens_after == vp_tokens_before + 3, (
+        f"Expected 3 vp_tokens for 3 controlled sites, "
+        f"vp_tokens went from {vp_tokens_before} to {vp_tokens_after} (delta={vp_tokens_after - vp_tokens_before})"
     )
 
     session.destroy()
@@ -167,6 +169,7 @@ def test_red_dragon_supplant_white_troop():
     )
 
     score_before = _player_score(session, _P1)
+    vp_before = _player_vp_tokens(session, _P1)
     barracks_before = _barracks(session, _P1)
 
     # Play Red Dragon
@@ -199,9 +202,12 @@ def test_red_dragon_supplant_white_troop():
     if spy_moves:
         session.submit_move(spy_moves[0])
 
-    # 1 controlled site (site_gauntlgrym) → 1 VP
-    assert _player_score(session, _P1) == score_before + 1, (
-        f"Expected 1 VP for 1 controlled site, got {_player_score(session, _P1)}"
+    # 1 controlled site (site_gauntlgrym) → 1 vp_tokens
+    assert _player_score(session, _P1) == score_before, (
+        f"Score should not change (VP goes to vp_tokens), got {_player_score(session, _P1)}"
+    )
+    assert _player_vp_tokens(session, _P1) == vp_before + 1, (
+        f"Expected 1 vp_tokens for 1 controlled site, got {_player_vp_tokens(session, _P1)}"
     )
 
     session.destroy()
@@ -225,6 +231,7 @@ def test_red_dragon_vp_scales_with_controlled_sites():
     )
 
     score_before = _player_score(session, _P1)
+    vp_before = _player_vp_tokens(session, _P1)
 
     # Play Red Dragon
     for m in session.legal_moves():
@@ -243,10 +250,14 @@ def test_red_dragon_vp_scales_with_controlled_sites():
                   if m.move_type == "resolve_generic"]
     session.submit_move(spy_return[0])
 
-    # 2 controlled sites (site_gauntlgrym + site_jhachalkhyn) → 2 VP
-    assert _player_score(session, _P1) == score_before + 2, (
-        f"Expected 2 VP for 2 controlled sites, "
+    # 2 controlled sites → 2 vp_tokens
+    assert _player_score(session, _P1) == score_before, (
+        f"Score should not change (VP goes to vp_tokens), "
         f"got {_player_score(session, _P1)} (was {score_before})"
+    )
+    assert _player_vp_tokens(session, _P1) == vp_before + 2, (
+        f"Expected 2 vp_tokens for 2 controlled sites, "
+        f"got {_player_vp_tokens(session, _P1)} (was {vp_before})"
     )
 
     session.destroy()
@@ -265,6 +276,7 @@ def test_red_dragon_empty_board_zero_vp():
     )
 
     score_before = _player_score(session, _P1)
+    vp_before = _player_vp_tokens(session, _P1)
 
     # Play Red Dragon
     for m in session.legal_moves():
@@ -281,6 +293,10 @@ def test_red_dragon_empty_board_zero_vp():
     assert _player_score(session, _P1) == score_before, (
         f"Expected 0 VP with no controlled sites, "
         f"got {_player_score(session, _P1)} (was {score_before})"
+    )
+    assert _player_vp_tokens(session, _P1) == vp_before, (
+        f"Expected 0 vp_tokens with no controlled sites, "
+        f"got {_player_vp_tokens(session, _P1)} (was {vp_before})"
     )
 
     session.destroy()
