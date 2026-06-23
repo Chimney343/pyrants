@@ -83,3 +83,28 @@ def test_other_discard_boxes_initial_height(viewer_app: GameViewerApp) -> None:
     boxes = viewer_app.other_discard_boxes
     for player_id, box in boxes.items():
         assert_combobox_height(box, f"other_discard_box[{player_id}]")
+
+
+def test_sync_other_discard_labels_populated_for_c_engine(viewer_app: GameViewerApp) -> None:
+    """When _sync_other_player_discard_boxes_c creates new discard rows for other players,
+    all three supporting dicts (labels, selection_vars, boxes) must be populated.
+    Regression test for KeyError on missing other_discard_labels entry."""
+    from types import SimpleNamespace
+
+    state = SimpleNamespace(
+        turn_order=["p1", "p2"],
+        current_player_id="p1",
+        player_index=lambda pid: {"p1": 0, "p2": 1}[pid],
+        player_discard=lambda idx: [],
+    )
+    viewer_app._sync_other_player_discard_boxes_c(state, {})
+
+    assert "p2" in viewer_app.other_discard_labels, (
+        "other_discard_labels must contain key for non-current player 'p2'"
+    )
+    assert "p2" in viewer_app.other_discard_selection_vars, (
+        "other_discard_selection_vars must contain key for non-current player 'p2'"
+    )
+    assert "p2" in viewer_app.other_discard_boxes, (
+        "other_discard_boxes must contain key for non-current player 'p2'"
+    )
