@@ -1612,6 +1612,8 @@ class GameViewerApp:
                 box = ttk.Combobox(row, state="readonly", textvariable=selection_var, width=42, height=256)
                 box.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(6, 0))
 
+                self.other_discard_labels[player_id] = label
+                self.other_discard_selection_vars[player_id] = selection_var
                 self.other_discard_boxes[player_id] = box
 
             label = self.other_discard_labels[player_id]
