@@ -306,14 +306,14 @@ class TestControlledSites:
         session.destroy()
 
     def test_site_with_white_troop_counts(self):
-        """Site with p1 + white troops counts (white is not a player)."""
+        """Site with p1 majority over white troops counts (white is not a player)."""
         eng = _make_engine()
         session = make_card_test_session(
             eng, [P1, P2],
             hand={},
             troops={
                 P1: {
-                    "site_gauntlgrym": [P1, "white", "white", None],
+                    "site_gauntlgrym": [P1, P1, "white", None],
                 },
             },
             spies={},
@@ -321,7 +321,7 @@ class TestControlledSites:
         )
         cs = _count_controlled_sites(session, P1)
         assert cs == 1, (
-            f"Site with p1+white should count as controlled, got {cs}"
+            f"Site with p1 majority over white should count as controlled, got {cs}"
         )
         session.destroy()
 

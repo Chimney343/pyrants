@@ -502,4 +502,4 @@ def test_quaggoth_assassinate_count_snapshotted():
         assert result is not None, f"Assassinate #{total + 1} failed"
         total += 1
 
-    assert total == 6, f"Expected 6 assassinations (exclusive controlled sites), got {total}"
+    assert total == 3, f"Expected 3 assassinations (majority controlled sites), got {total}"

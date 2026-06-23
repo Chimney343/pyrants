@@ -159,26 +159,8 @@ int count_controlled_sites(const GameState *state, Sym player_id) {
         if (strcmp(intern_str(nd->kind), "site") != 0) continue;
         int ni = node_index(state, nd->node_id);
         if (ni < 0) continue;
-        const NodeState *ns = &state->nodes[ni];
-        int has_player_troop = 0;
-        int has_enemy_troop = 0;
-        for (int s = 0; s < ns->troop_slot_count; s++) {
-            Sym slot = ns->troop_slots[s];
-            if (slot == player_id) {
-                has_player_troop = 1;
-            } else if (slot != SYM_NULL) {
-                const char *sn = intern_str(slot);
-                if (sn && strcmp(sn, "white") != 0) {
-                    for (int p = 0; p < state->player_count; p++) {
-                        if (state->players[p].player_id == slot) {
-                            has_enemy_troop = 1;
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-        if (has_player_troop && !has_enemy_troop) total++;
+        Sym owner = site_majority_owner(state, &state->nodes[ni]);
+        if (owner == player_id) total++;
     }
     return total;
 }
