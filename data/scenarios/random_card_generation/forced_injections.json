@@ -1,13 +1,13 @@
 [
   {
-    "card_id": "blue_dragon",
-    "target_player_id": "p3",
-    "original_current_player_id": "p3",
-    "replaced_card_id": "air_elemental",
-    "replaced_hand_index": 4,
+    "card_id": "red_dragon",
+    "target_player_id": "p4",
+    "original_current_player_id": "p4",
+    "replaced_card_id": "noble",
+    "replaced_hand_index": 0,
     "attempts_exhausted": 30,
     "max_steps_per_attempt": 3000,
     "note": "Target card was force-injected after reachable search exhausted all attempts.",
-    "scenario_file": "blue_dragon_seed_660.json"
+    "scenario_file": "red_dragon_seed_666.json"
   }
 ]

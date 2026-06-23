@@ -673,7 +673,7 @@ GameState *engine_apply(const GameState *src, const Move *move) {
     case MOVE_RETURN_SPY:
         if (move->data.return_spy.spy_owner_id == pid) { engine_destroy(state); return NULL; }
         if (apply_return_spy(state, pid, move->data.return_spy.node_id,
-                             move->data.return_spy.spy_owner_id) != 0)
+                             move->data.return_spy.spy_owner_id, 0) != 0)
             { engine_destroy(state); return NULL; }
         return state;
 

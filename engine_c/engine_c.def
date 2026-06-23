@@ -64,3 +64,4 @@ EXPORTS
     engine_deserialize_state
     engine_determinize
     count_controlled_sites
+    count_total_controlled_sites

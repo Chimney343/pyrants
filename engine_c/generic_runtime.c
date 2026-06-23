@@ -56,6 +56,8 @@ static int resolve_runtime_action_count(GameState *state, Sym player_id, const C
         const char *v = intern_str(action->metadata[i].value);
         if (k && strcmp(k, "count_from") == 0 && v && strcmp(v, "controlled_sites") == 0)
             return count_controlled_sites(state, player_id) / per;
+        if (k && strcmp(k, "count_from") == 0 && v && strcmp(v, "total_controlled_sites") == 0)
+            return count_total_controlled_sites(state, player_id) / per;
         if (k && strcmp(k, "count_from") == 0 && v && strcmp(v, "owned_control_markers") == 0)
             return count_owned_control_markers(state, player_id) / per;
         if (k && strcmp(k, "count_from") == 0 && v && strcmp(v, "spies_on_board") == 0) {

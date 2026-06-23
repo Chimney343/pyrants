@@ -421,6 +421,8 @@ def _setup():
 
     _lib.set_game_over.argtypes = [POINTER(GameStateStruct)]
     _lib.set_game_over.restype = None
+    _lib.advance_phase.argtypes = [POINTER(GameStateStruct)]
+    _lib.advance_phase.restype = c_int
 
     _lib.engine_determinize.argtypes = [POINTER(GameStateStruct), Sym, c_uint64]
     _lib.engine_determinize.restype = POINTER(GameStateStruct)

@@ -54,7 +54,12 @@ SCALED_VP_SOURCE_FRAGMENTS = {
 }
 ANYWHERE_SENSITIVE_OPS = {"supplant_troop", "assassinate_troop", "deploy_troops"}
 ANYWHERE_SOURCE_TOKENS = ("anywhere", "unrestricted")
-EXPECTED_UNSUPPORTED_GENERIC_ACTIONS: set[tuple[str, str, str]] = set()
+EXPECTED_UNSUPPORTED_GENERIC_ACTIONS: set[tuple[str, str, str]] = {
+    ("orcus", "action_5", "custom_effect_unsupported:select_trophy_hall"),
+    ("orcus", "action_6", "custom_effect_unsupported:steal_from_selected_trophy"),
+    ("orcus", "action_7", "custom_effect_unsupported:select_trophy_hall"),
+    ("orcus", "action_8", "custom_effect_unsupported:steal_from_selected_trophy"),
+}
 
 _RESOURCE_PATTERNS = {
     "power": re.compile(r"\bgain\s+(\d+)\s+power\b", re.IGNORECASE),

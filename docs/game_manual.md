@@ -64,7 +64,7 @@ You manage two transient resources that refill each turn:
 | **Played Cards** | Cards you've played this turn. They stay face-up until cleanup. |
 | **Inner Circle** | Cards you've promoted. They score inner_circle_vp at game end and are removed from your deck cycle. |
 | **Trophy Hall** | Player IDs of troops you've assassinated. Each trophy is worth 1 VP at game end. |
-| **Barracks** | Your troop supply. Starts at 40. Deploying costs 1 barracks. When barracks reaches 0, the game ends. |
+| **Barracks** | Your troop supply. Starts at 40. Deploying costs 1 barracks. When barracks reaches 0, the game ends at the end of the current round. |
 | **Spies** | Spy tokens. Start at 5. Place spies on sites to gain intel. Spies count as presence for that player. |
 
 ---
@@ -175,7 +175,7 @@ Certain cards award VP based on a metric: number of trophies, controlled sites, 
 
 ### End Conditions
 
-The game ends immediately when either:
+The game ends at the end of the current round when either:
 - The **market deck** is empty (no cards remain to refill the row).
 - Any player's **barracks** reaches 0 (all troops deployed).
 
@@ -282,7 +282,7 @@ START
   ▼
 (NEXT PLAYER'S MAIN PHASE)
 
-GAME OVER when: market deck empty OR any barracks == 0
+GAME OVER at end of round when: market deck empty OR any barracks == 0
 ```
 
 ---
@@ -315,9 +315,9 @@ Many cards require a **focus** — you must have another card of the same aspect
 
 6. **Spy placement**: Spies give you presence without using troop slots. They're excellent for maintaining presence at contested sites.
 
-7. **Endgame awareness**: Watch your barracks count and the market deck size. The game can end suddenly. If you're ahead on VP, you may want to trigger the end condition. If behind, delay it.
+7. **Endgame awareness**: Watch your barracks count and the market deck size. Once a kill switch triggers (empty market or barracks at 0), the game ends at the end of the current round — not immediately. If you're ahead on VP, you may want to trigger the end condition. If behind, delay it.
 
-8. **Barracks fallback**: When your barracks hits 0, every deploy action gives you 1 VP instead. This gives you something to do with spare power even after you've exhausted your troop supply.
+8. **Barracks fallback**: When your barracks hits 0, every deploy action gives you 1 VP instead of placing a troop. The game continues until the end of the round, so you can still earn VP through deploys, card plays, and assassinations even with an empty barracks.
 
 ---
 

@@ -63,6 +63,13 @@ def advance_phase(state: GameState) -> GameState:
         updated.current_player_id = next_player
         updated.resource_pool = ResourcePool()
         if wrapped_round:
+            # Round boundary — check kill switches
+            kill = (
+                not updated.market.deck
+                or any(ps.barracks == 0 for ps in updated.players.values())
+            )
+            if kill:
+                return set_game_over(updated, {})
             updated.round_number += 1
         return updated
 

@@ -255,16 +255,17 @@ static int sel_return_spy(const GameState *state, Sym player_id,
             spy_owner = intern_str(action->metadata[mi].value);
     }
     bool only_self = spy_owner && strcmp(spy_owner, "self") == 0;
+    bool only_enemy = spy_owner && strcmp(spy_owner, "opponent") == 0;
     for (int i = 0; i < state->node_count && w < max_out; i++) {
         Sym nid = state->nodes[i].node_id;
         for (int s = 0; s < state->nodes[i].spy_count && w < max_out; s++) {
             Sym spy = state->nodes[i].spies[s];
-            if (spy == player_id) {
+            if (spy == player_id && !only_enemy) {
                 out[w].type = MOVE_RESOLVE_GENERIC;
                 out[w].data.resolve_generic.action_id = nid;
                 out[w].player_index = 0;
                 w++;
-            } else if (!only_self && has_presence(state, player_id, nid)) {
+            } else if (spy != player_id && !only_self && has_presence(state, player_id, nid)) {
                 out[w].type = MOVE_RESOLVE_GENERIC;
                 out[w].data.resolve_generic.action_id = nid;
                 out[w].player_index = 0;

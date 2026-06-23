@@ -177,6 +177,28 @@ def _count_controlled_sites_by_troops(state: GameState, player_id: str) -> int:
     return total
 
 
+def _count_owned_control_markers(state: GameState, player_id: str) -> int:
+    board_definitions = board_index(state.definition.board)
+    total = 0
+    for node_id, node_definition in board_definitions.items():
+        if node_definition.kind != NodeKind.SITE:
+            continue
+        if node_definition.total_control_vp_per_turn <= 0:
+            continue
+        node_state = state.board.nodes[node_id]
+        counts: dict[str, int] = {}
+        for occupant in node_state.troop_slots:
+            if occupant is not None:
+                counts[occupant] = counts.get(occupant, 0) + 1
+        if not counts:
+            continue
+        max_count = max(counts.values())
+        leaders = [owner for owner, count in counts.items() if count == max_count]
+        if len(leaders) == 1 and leaders[0] != "white" and leaders[0] == player_id:
+            total += 1
+    return total
+
+
 def _count_runtime_cards_by_aspect(
     state: GameState,
     card_ids: list[str],
@@ -288,7 +310,7 @@ def _scaled_vp_award_count(state: GameState, player_id: str, action: CardAction)
             required_secondary_aspect=required_secondary_aspect,
         )
     elif count_from == "owned_control_markers":
-        base_count = _count_controlled_sites_by_troops(state, player_id)
+        base_count = _count_owned_control_markers(state, player_id)
     elif count_from == "controlled_sites":
         base_count = _count_controlled_sites(state, player_id)
     else:

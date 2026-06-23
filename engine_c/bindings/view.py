@@ -253,6 +253,17 @@ def _describe_c_move(state_ptr, move_wrapper, *, node_names_dict=None) -> str:
     return buf.value.decode()
 
 
+def _session_attr(session, name: str, default=None):
+    """Safely read an attribute or callable member from a session object."""
+    try:
+        val = getattr(session, name, None)
+        if callable(val):
+            return val()
+        return val if val is not None else default
+    except Exception:
+        return default
+
+
 def build_c_game_view(
     session,
     *,
@@ -405,4 +416,7 @@ def build_c_game_view(
         board_nodes=tuple(board_nodes),
         prompts=(f"{current_player_id} is acting in {_PHASE_MAP.get(c_view.phase, 'unknown').replace('_', ' ')}.",),
         legal_moves=_build_c_legal_moves(session, state_ptr, node_names=node_names, player_spy_count=player_spy_count),
+        is_terminal=_session_attr(session, "is_terminal"),
+        winner_id=_session_attr(session, "winner_id"),
+        final_scores=_session_attr(session, "final_scores", default={}),
     )

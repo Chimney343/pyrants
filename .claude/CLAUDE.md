@@ -11,33 +11,31 @@
 > (documentation, ownership, history, decisions). **Always verify against
 > actual source files before making changes** — the index may be stale.
 
-Last indexed: 2026-06-22 (commit 6348130). Confidence: 100%.
+Last indexed: 2026-06-23 (commit f68a728). Confidence: 100%.
 ### Architecture
-Repo is a hybrid Python/C game engine for the board game Pyrants: it loads game configuration and board packages, simulates turn-by-turn play through a dual state machine (pure Python and optimized C with Python bindings), enforces rules, computes scores, and produces game outcomes as an OpenSpiel environment for reinforcement learning and AI experimentation. | Layer | Technologies |
-|-------|--------------|
-| **Core logic (reference)** | Python 3 |
-| **Core logic (performance)** | C (C99/C11), compiled via gcc/clang |
-| **Python<->C binding** | Python ctypes (custom generated wrappers in engine_c/bindings/) |
-| **Game framework** | OpenSpiel (Python API, openspiel_pyrants package) |
-| **Configuration & data** | JSON (board layouts, game settings) |
-| **Testing** | pytest, unittest (Python), C test harness (Makefile-based) |
-| **Documentation** | Markdown (23% of codebase) |
-| **Utilities** | Shell scripts (build, CI), YAML (CI config) |
-| **Package management** | Poetry (inferred from .toml), make for C targets |
+Repo is a hybrid C/Python game engine for the card game PyRants: it consumes JSON-based game configuration and card definitions, transforms them through a state machine implemented in C and Python (with C bindings for performance), and produces serialized game states, legal move lists, observation tensors, and reward signals suitable for reinforcement learning agents in the OpenSpiel framework. | Layer | Technology | Role |
+|-------|------------|------|
+| Core engine | C (engine_c/) | Performance-critical game state management, move validation, and RNG |
+| Bindings | Python (engine_c/bindings/, ce_api.py) | C-to-Python FFI wrappers enabling Python-side game logic |
+| Game logic | Python (engine/, game_setup/) | Rule interpretation, scoring, board setup, error handling |
+| RL integration | Python (openspiel_pyrants/) | OpenSpiel-compatible Game and Observer interfaces |
+| Configuration | JSON (39.5% of codebase) | Card definitions, game variants, and scenario parameters |
+| Language mix | C (4%), C++ (2.6%), JavaScript (1.9%), Python (27.8%), Markdown (23.3%), Shell (0.3%) | |
 
 
-1. **OpenSpiel game registration** – openspiel_pyrants/__init__.py exposes the game as an OpenSpiel environment. Developers can instantiate it via:
-   
-2.
+
+The repository does not specify explicit entry-point scripts, but the following modules represent the main invocation paths based on file analysis:
+
+- **openspiel_pyrants/game.py** — OpenSpiel Game class constructor, receives game parameters and kicks off the Python-based game loop. - **openspiel_pyrants/game_c.py** — Alternative entry using the C engine backend for faster simulation. - **engine_c/bindings/engine_bindings.py** — Exposes the C engine’s State, Arena, and RNG objects to Python; loaded by any Python-side game runner.
 ### Key Modules
 | Module | Purpose | Owner |
 |--------|---------|-------|
-| `community-1` | The **engine_c** module is the core game-engine subsystem of the board-game syst | — |
+| `community-1` | The tests/legacy_engine module is the integration and testing layer for the lega | — |
 | `community-0` | The engine_c module is the **generic action resolution subsystem** of the game e | — |
 | `community-3` | The tests/c_engine module is the validation and integration‑support layer for th | — |
 | `community-2` | The tests module is the **validation layer** of the Tyrants game engine — it exe | — |
 | `community-248` | The **tests** module is the verification subsystem of repowise — it consumes gen | — |
-| `community-4` | The tests/c_engine module is the **C engine integration and validation layer** w | — |
+| `community-4` | The tests/c_engine module is the integration and unit test suite for the **C gam | — |
 ### Entry Points
 - `.augment/skills/impeccable/scripts/cleanup-deprecated.mjs`
 - `.augment/skills/impeccable/scripts/design-parser.mjs`
@@ -78,23 +76,23 @@ Repo is a hybrid Python/C game engine for the board game Pyrants: it loads game 
 ### Hotspots (High Churn)
 | File | Churn | 90d Commits | Owner |
 |------|-------|-------------|-------|
-| `data/cards/catalog.json` | 100.0th %ile | 18 | Chimney343 |
-| `interface/game_viewer.py` | 99.9th %ile | 13 | Chimney343 |
+| `data/cards/catalog.json` | 100.0th %ile | 23 | Chimney343 |
+| `interface/game_viewer.py` | 99.9th %ile | 15 | Chimney343 |
 | `engine/rules.py` | 99.8th %ile | 7 | Chimney343 |
 | `tests/test_rules.py` | 99.7th %ile | 4 | Chimney343 |
 | `game_setup/scenario_generation/card_scenarios.py` | 99.7th %ile | 4 | Chimney343 |
 
 ## Code health
-Hotspot health: 6.34/10 (stable) ·
-Average: 7.16/10 ·
+Hotspot health: 6.46/10 (stable) ·
+Average: 7.19/10 ·
 Worst: 1.0/10 (`engine/rules.py`)
 
 ### Critical biomarkers
 - `engine/rules.py` — untested hotspot — impact −2.0
 - `engine/helpers.py` — untested hotspot — impact −2.0
 - `engine/state.py` — untested hotspot — impact −2.0
-- `engine_c/bindings/ce_api.py` — untested hotspot — impact −2.0
 - `engine_c/state.h` — untested hotspot — impact −2.0
+- `engine_c/bindings/view.py` — untested hotspot — impact −2.0
 
 ### Repowise MCP Tools
 

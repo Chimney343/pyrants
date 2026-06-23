@@ -9,7 +9,7 @@ from engine.errors import (
 from engine.helpers import (
     WHITE_TROOP_OWNER,
     _count_controlled_sites,
-    _count_controlled_sites_by_troops,
+    _count_owned_control_markers,
     _focus_requirement_met,
     _focus_requirement_met_for_aspect,
 )
@@ -60,7 +60,7 @@ def _resolve_runtime_action_count(
         return _count_controlled_sites(state, player_id)
 
     if count_from == "owned_control_markers":
-        return _count_controlled_sites_by_troops(state, player_id)
+        return _count_owned_control_markers(state, player_id)
 
     return _resolve_action_count(action)
 

@@ -320,7 +320,7 @@
       ],
       "troop_capacity": 6,
       "control_vp": 5,
-      "total_control_vp_per_turn": 1,
+      "total_control_vp_per_turn": 2,
       "initial_troop_slots": [
         "white",
         "white",
@@ -490,7 +490,7 @@
       ],
       "troop_capacity": 3,
       "control_vp": 4,
-      "total_control_vp_per_turn": 0,
+      "total_control_vp_per_turn": 1,
       "initial_troop_slots": [
         "white",
         "white",
@@ -530,7 +530,7 @@
       ],
       "troop_capacity": 4,
       "control_vp": 3,
-      "total_control_vp_per_turn": 0,
+      "total_control_vp_per_turn": 3,
       "initial_troop_slots": [
         "white",
         "white",

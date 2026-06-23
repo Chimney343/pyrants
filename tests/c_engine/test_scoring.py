@@ -217,15 +217,14 @@ class TestVPTokenScoring:
     """grant_vp with as:vp_tokens updates vp_tokens, not score."""
 
     def test_grant_vp_as_tokens_updates_vp_tokens_not_score(self):
-        """Red Dragon's grant_vp (as:vp_tokens) → vp_tokens up, score unchanged."""
+        """Red Dragon's grant_vp (as:vp_tokens) -> vp_tokens up, score unchanged."""
         eng = _make_engine()
         session = make_card_test_session(
             eng, [P1, P2],
             hand={P1: ["red_dragon"]},
             troops={
                 P1: {
-                    "site_gauntlgrym": [P1, P2, None, None],
-                    "site_jhachalkhyn": [P1, None, None, None],
+                    "site_gauntlgrym": [P1, P2],
                 },
             },
             spies={"site_gauntlgrym": [P2]},

@@ -204,6 +204,53 @@ def _determine_site_owner_raw(node_state, player_sym):
     return max_owners[0]
 
 
+def _compute_vp_breakdowns_py(session) -> list[dict]:
+    from engine.scoring import _cards_vp, _site_control_owner
+
+    state = session.state
+    breakdowns = []
+
+    for pid, ps in state.players.items():
+        running_score = ps.score
+
+        site_control_vp = 0
+        for node_id, node in state.nodes.items():
+            if node.kind != "site":
+                continue
+            owner = _site_control_owner(state, node_id)
+            if owner == pid:
+                from engine.state import board_index
+                nd = board_index(state.definition.board, node_id)
+                if nd:
+                    site_control_vp += nd.control_vp
+
+        trophy_vp = len(ps.trophy_hall)
+        token_vp = ps.vp_tokens
+
+        all_cards = ps.deck + ps.hand + ps.discard_pile + ps.played_cards
+        deck_vp = _cards_vp(state.definition.catalog, all_cards)
+        inner_circle_vp = sum(
+            card.inner_circle_vp
+            for card in state.definition.catalog.cards
+            if card.card_id in ps.inner_circle
+        )
+
+        total = running_score + site_control_vp + trophy_vp + token_vp + deck_vp + inner_circle_vp
+
+        breakdowns.append({
+            "player_id": pid,
+            "running_score": running_score,
+            "site_control_vp": site_control_vp,
+            "trophy_vp": trophy_vp,
+            "vp_tokens": token_vp,
+            "deck_vp": deck_vp,
+            "inner_circle_vp": inner_circle_vp,
+            "total": total,
+        })
+
+    return breakdowns
+
+
 def _ellipsize(text: str, max_chars: int) -> str:
     if len(text) <= max_chars:
         return text
@@ -540,6 +587,8 @@ class GameViewerApp:
         self.root = root
         self.root.title("Tyrants Game Viewer")
 
+        self._game_over_shown = False
+
         self.card_path = card_path
         self.base_setup_path = setup_path
         self._engine = engine
@@ -666,6 +715,7 @@ class GameViewerApp:
             setup_controls,
             state="readonly",
             width=20,
+            height=256,
             textvariable=self.map_var,
             values=[profile.label for profile in self.map_profiles],
         )
@@ -680,6 +730,7 @@ class GameViewerApp:
             setup_controls,
             state="readonly",
             width=22,
+            height=256,
             textvariable=self.deck_a_var,
             values=[profile.label for profile in self.deck_profiles],
         )
@@ -690,6 +741,7 @@ class GameViewerApp:
             setup_controls,
             state="readonly",
             width=22,
+            height=256,
             textvariable=self.deck_b_var,
             values=[profile.label for profile in self.deck_profiles],
         )
@@ -728,6 +780,7 @@ class GameViewerApp:
             state="readonly",
             textvariable=self.devoured_selection_var,
             width=90,
+            height=256,
         )
         self.devoured_box.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(8, 0))
         market_row_frame = ttk.Frame(market_frame)
@@ -823,7 +876,7 @@ class GameViewerApp:
             state="readonly",
             textvariable=self.discard_selection_var,
             width=90,
-            height=25,
+            height=256,
         )
         self.discard_box.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(8, 0))
 
@@ -835,6 +888,7 @@ class GameViewerApp:
             state="readonly",
             textvariable=self.inner_circle_selection_var,
             width=90,
+            height=256,
         )
         self.inner_circle_box.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(8, 0))
         ttk.Label(
@@ -852,6 +906,7 @@ class GameViewerApp:
             state="readonly",
             textvariable=self.trophy_hall_selection_var,
             width=90,
+            height=256,
         )
         self.trophy_hall_box.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(8, 0))
         ttk.Label(
@@ -926,7 +981,7 @@ class GameViewerApp:
         self._other_discards_placeholder.pack(anchor=tk.W)
 
         ttk.Label(sidebar, text="Generic Choice Options", font=("Segoe UI", 10, "bold")).pack(anchor=tk.W)
-        self.option_box = ttk.Combobox(sidebar, state="readonly", textvariable=self.option_var)
+        self.option_box = ttk.Combobox(sidebar, state="readonly", textvariable=self.option_var, height=256)
         self.option_box.pack(fill=tk.X, pady=(0, 8))
         self.option_box.bind("<<ComboboxSelected>>", self._on_option_selected)
 
@@ -986,6 +1041,7 @@ class GameViewerApp:
                 seed=seed,
                 engine=self._engine,
             )
+            self._game_over_shown = False
             self._clear_filters()
             self._apply_responsive_layout()
             self._refresh_view()
@@ -1040,10 +1096,12 @@ class GameViewerApp:
                 from engine_c.bindings.session import CSession
                 from engine_c.bindings.view import build_c_game_view
                 self.session = CSession.load(path)
+                self._game_over_shown = False
                 view = build_c_game_view(self.session)
                 self._rebuild_package_for_loaded_state_c(view)
             else:
                 self.session = GameSession.from_scenario_file(Path(path))
+                self._game_over_shown = False
                 self._derive_market_deck_metadata(self.session.state)
                 self._rebuild_package_for_loaded_state(self.session.state)
             self._clear_filters()
@@ -1177,6 +1235,16 @@ class GameViewerApp:
                 view = build_c_game_view(self.session, node_names=self._node_names)
             else:
                 view = build_game_view(self.session, node_names=self._node_names)
+
+            if view.is_terminal and not self._game_over_shown:
+                self._game_over_shown = True
+                if self._engine == "c":
+                    breakdowns = _compute_vp_breakdowns(self.session)
+                else:
+                    breakdowns = _compute_vp_breakdowns_py(self.session)
+                winner_id = view.winner_id
+                ScoreDialog(self.root, breakdowns, winner_id)
+
             self.renderer.redraw(
                 self.canvas, self.package, view,
                 highlighted_node_id=self._selected_node_id,
@@ -1490,7 +1558,7 @@ class GameViewerApp:
                 label.pack(side=tk.LEFT)
 
                 selection_var = tk.StringVar(value="(empty)")
-                box = ttk.Combobox(row, state="readonly", textvariable=selection_var, width=42)
+                box = ttk.Combobox(row, state="readonly", textvariable=selection_var, width=42, height=256)
                 box.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(6, 0))
 
                 self.other_discard_labels[player_id] = label
@@ -1541,11 +1609,9 @@ class GameViewerApp:
                 label.pack(side=tk.LEFT)
 
                 selection_var = tk.StringVar(value="(empty)")
-                box = ttk.Combobox(row, state="readonly", textvariable=selection_var, width=42)
+                box = ttk.Combobox(row, state="readonly", textvariable=selection_var, width=42, height=256)
                 box.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(6, 0))
 
-                self.other_discard_labels[player_id] = label
-                self.other_discard_selection_vars[player_id] = selection_var
                 self.other_discard_boxes[player_id] = box
 
             label = self.other_discard_labels[player_id]

@@ -188,15 +188,12 @@ def apply(state: GameState, move: Move) -> GameState:
 
 
 def is_terminal(state: GameState) -> bool:
-    """Check terminal conditions from current source rules."""
+    """Check terminal conditions. The kill-switch checks (empty market deck,
+    any barracks == 0) are evaluated at the round boundary in advance_phase(),
+    not immediately here. This allows multi-step card effects to complete
+    even if barracks hits 0 mid-resolution."""
 
-    if state.phase == TurnPhase.GAME_OVER:
-        return True
-
-    if not state.market.deck:
-        return True
-
-    return any(player_state.barracks == 0 for player_state in state.players.values())
+    return state.phase == TurnPhase.GAME_OVER
 
 
 def winner(state: GameState) -> str | None:

@@ -1,4 +1,5 @@
 #include "helpers.h"
+#include "scoring.h"
 #include <string.h>
 #include <stdlib.h>
 
@@ -175,6 +176,16 @@ int count_owned_control_markers(const GameState *state, Sym player_id) {
         if (ni < 0) continue;
         Sym owner = site_majority_owner(state, &state->nodes[ni]);
         if (owner == player_id) total++;
+    }
+    return total;
+}
+
+int count_total_controlled_sites(const GameState *state, Sym player_id) {
+    int total = 0;
+    for (int i = 0; i < state->definition->board.node_count; i++) {
+        const NodeDefinition *nd = &state->definition->board.nodes[i];
+        if (strcmp(intern_str(nd->kind), "site") != 0) continue;
+        if (is_total_control(state, nd->node_id, player_id)) total++;
     }
     return total;
 }
@@ -400,7 +411,7 @@ int apply_free_deploy(GameState *state, Sym player_id, Sym target_node_id) {
     return -1;
 }
 
-int apply_return_spy(GameState *state, Sym player_id, Sym node_id, Sym spy_owner_id) {
+int apply_return_spy(GameState *state, Sym player_id, Sym node_id, Sym spy_owner_id, int free_enemy_return) {
     const NodeDefinition *nd = node_def_by_id(state, node_id);
     if (!nd) return -1;
     if (strcmp(intern_str(nd->kind), "route") == 0) return -1;
@@ -414,10 +425,12 @@ int apply_return_spy(GameState *state, Sym player_id, Sym node_id, Sym spy_owner
     if (spy_idx < 0) return -1;
 
     if (spy_owner_id != player_id) {
-        ResourcePool *pool = cow_resource_pool(state);
-        if (!pool || pool->power < 3) return -1;
+        if (!free_enemy_return) {
+            ResourcePool *pool = cow_resource_pool(state);
+            if (!pool || pool->power < 3) return -1;
+            pool->power -= 3;
+        }
         if (!has_presence(state, player_id, node_id)) return -1;
-        pool->power -= 3;
     }
 
     for (int i = spy_idx; i < ns->spy_count - 1; i++)

@@ -11522,9 +11522,9 @@
               "value": null
             },
             "filters": [],
-            "source_fragment": "scaled_vp_from_controlled_sites",
+            "source_fragment": "scaled_vp_from_total_controlled_sites",
             "metadata": {
-              "count_from": "controlled_sites",
+              "count_from": "total_controlled_sites",
               "per": 1,
               "as": "vp_tokens"
             }
@@ -11574,9 +11574,9 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "scaled_vp_from_controlled_sites",
+          "source_fragment": "scaled_vp_from_total_controlled_sites",
           "metadata": {
-            "count_from": "controlled_sites",
+            "count_from": "total_controlled_sites",
             "per": 1,
             "as": "vp_tokens"
           }
