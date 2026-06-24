@@ -2032,9 +2032,9 @@ def _apply_catalog_overrides(cards: list[dict[str, Any]]) -> None:
     ]
     orcus["actions"] = list(orcus["execution_model"]["actions"])
 
-    rather_modar = cards_by_id["rather_modar"]
-    rather_modar["execution_model"]["actions"][0]["quantity"] = {"kind": "fixed", "value": 2}
-    rather_modar["actions"] = list(rather_modar["execution_model"]["actions"])
+    rath_modar = cards_by_id["rath_modar"]
+    rath_modar["execution_model"]["actions"][0]["quantity"] = {"kind": "fixed", "value": 2}
+    rath_modar["actions"] = list(rath_modar["execution_model"]["actions"])
 
     ravenous_zombies = cards_by_id["ravenous_zombies"]
     ravenous_zombies["execution_model"]["actions"][0]["quantity"] = {"kind": "fixed", "value": 1}

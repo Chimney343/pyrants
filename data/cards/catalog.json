@@ -1599,7 +1599,9 @@
                   "kind": "unspecified",
                   "value": null
                 },
-                "filters": [],
+                "filters": [
+                  "allow_white_troop"
+                ],
                 "source_fragment": "assassinate_troop",
                 "metadata": {}
               }
@@ -1634,7 +1636,9 @@
             "kind": "unspecified",
             "value": null
           },
-          "filters": [],
+          "filters": [
+            "allow_white_troop"
+          ],
           "source_fragment": "assassinate_troop",
           "metadata": {}
         }
@@ -2232,7 +2236,9 @@
             },
             "filters": [],
             "source_fragment": "triggered_promote",
-            "metadata": {}
+            "metadata": {
+              "requires_another_played_card": true
+            }
           }
         ]
       },
@@ -2263,7 +2269,9 @@
           },
           "filters": [],
           "source_fragment": "triggered_promote",
-          "metadata": {}
+          "metadata": {
+            "requires_another_played_card": true
+          }
         }
       ],
       "global_conditions": [
@@ -2746,8 +2754,8 @@
             "timing": "immediate",
             "optional": false,
             "quantity": {
-              "kind": "unspecified",
-              "value": null
+              "kind": "fixed",
+              "value": 2
             },
             "filters": [],
             "source_fragment": "move_troop",
@@ -2765,7 +2773,9 @@
             },
             "filters": [],
             "source_fragment": "triggered_promote",
-            "metadata": {}
+            "metadata": {
+              "requires_another_played_card": true
+            }
           }
         ]
       },
@@ -2777,8 +2787,8 @@
           "timing": "immediate",
           "optional": false,
           "quantity": {
-            "kind": "unspecified",
-            "value": null
+            "kind": "fixed",
+            "value": 2
           },
           "filters": [],
           "source_fragment": "move_troop",
@@ -2796,7 +2806,9 @@
           },
           "filters": [],
           "source_fragment": "triggered_promote",
-          "metadata": {}
+          "metadata": {
+            "requires_another_played_card": true
+          }
         }
       ],
       "global_conditions": [
@@ -11490,7 +11502,9 @@
               "kind": "unspecified",
               "value": null
             },
-            "filters": ["allow_white_troop"],
+            "filters": [
+              "allow_white_troop"
+            ],
             "source_fragment": "supplant_troop",
             "metadata": {}
           },
@@ -11542,7 +11556,9 @@
             "kind": "unspecified",
             "value": null
           },
-          "filters": ["allow_white_troop"],
+          "filters": [
+            "allow_white_troop"
+          ],
           "source_fragment": "supplant_troop",
           "metadata": {}
         },
