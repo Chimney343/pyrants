@@ -120,3 +120,59 @@ def test_deathblade_catalog_actions_are_mandatory() -> None:
     assert len(top_actions) == 2
     assert top_actions[0]["optional"] is False
     assert top_actions[1]["optional"] is False
+
+
+def test_deathblade_no_valid_targets_auto_skips() -> None:
+    """When no legal assassination targets exist, both actions auto-skip.
+    Card resolves immediately with no effect and no stuck pending state."""
+    session = CSession.load(str(SCENARIO_PATH))
+
+    # Remove all p3 presence from every board node
+    s = session._state._ptr.contents
+    for i in range(s.node_count):
+        ns = s.nodes[i]
+        for t in range(ns.troop_slot_count):
+            if ns.troop_slots[t]:
+                val = _lib.intern_str(ns.troop_slots[t]).decode() if ns.troop_slots[t] else None
+                if val == "p3":
+                    ns.troop_slots[t] = 0
+        for sp in range(ns.spy_count):
+            if ns.spies[sp]:
+                val = _lib.intern_str(ns.spies[sp]).decode() if ns.spies[sp] else None
+                if val == "p3":
+                    ns.spies[sp] = 0
+
+    trophy_before = len(_trophy_hall(session, "p3"))
+
+    play_move = None
+    for m in session.legal_moves():
+        if m.move_type == "play_card" and m.data.get("card_id") == "deathblade":
+            play_move = m
+            break
+    assert play_move is not None, "Deathblade not found in legal moves"
+
+    result = session.submit_move(play_move)
+    assert result is not None, "Playing Deathblade should succeed even with no targets"
+
+    # No resolve_generic moves — both actions auto-skipped
+    gen_moves = [m for m in session.legal_moves() if m.move_type == "resolve_generic"]
+    assert len(gen_moves) == 0, (
+        f"Expected 0 resolve_generic moves when no targets, got {len(gen_moves)}"
+    )
+
+    # Pending generic should be cleared
+    s = session._state._ptr.contents
+    assert not s.pending_generic, "Expected no pending_generic after auto-skip"
+
+    # Trophy hall unchanged — no assassinations happened
+    trophy_after = len(_trophy_hall(session, "p3"))
+    assert trophy_after == trophy_before, (
+        f"Trophy hall should be unchanged, was {trophy_before} now {trophy_after}"
+    )
+
+    # Regular turn continues — play_card and end_main_phase moves available
+    move_types = {m.move_type for m in session.legal_moves()}
+    assert "play_card" in move_types, "Should still be able to play other cards"
+    assert "end_main_phase" in move_types, "Should be able to end main phase"
+
+    session.destroy()
