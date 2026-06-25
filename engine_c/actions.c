@@ -376,6 +376,26 @@ static GameState *apply_promote_card_gen(GameState *state, Sym player_id, const 
         return state;
     }
 
+    if (sf && strcmp(sf, "promote_from_discard") == 0) {
+        Sym target_card = find_sel(sk, sv, sc, "target_card_id");
+        if (target_card != SYM_NULL) {
+            PlayerState *ps = cow_player(state, player_id);
+            if (ps) {
+                for (int i = 0; i < ps->discard_pile_count; i++) {
+                    if (ps->discard_pile[i] == target_card) {
+                        for (int j = i; j < ps->discard_pile_count - 1; j++)
+                            ps->discard_pile[j] = ps->discard_pile[j + 1];
+                        ps->discard_pile_count--;
+                        if (ps->inner_circle_count < MAX_ZONE_SIZE)
+                            ps->inner_circle[ps->inner_circle_count++] = target_card;
+                        return state;
+                    }
+                }
+            }
+        }
+        return state;
+    }
+
     Sym target_card = find_sel(sk, sv, sc, "target_card_id");
     if (target_card != SYM_NULL) {
         promote_card(state, player_id, target_card);

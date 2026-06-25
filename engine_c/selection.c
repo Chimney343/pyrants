@@ -392,11 +392,21 @@ static int sel_promote(const GameState *state, Sym player_id,
     for (int i = 0; i < state->player_count; i++)
         if (state->players[i].player_id == player_id) { pi = i; break; }
     if (pi < 0) return 0;
-    for (int i = 0; i < state->players[pi].played_cards_count && w < max_out; i++) {
-        out[w].type = MOVE_RESOLVE_GENERIC;
-        out[w].data.resolve_generic.action_id = state->players[pi].played_cards[i];
-        out[w].player_index = 0;
-        w++;
+    const char *sf = intern_str(action->source_fragment);
+    if (sf && strcmp(sf, "promote_from_discard") == 0) {
+        for (int i = 0; i < state->players[pi].discard_pile_count && w < max_out; i++) {
+            out[w].type = MOVE_RESOLVE_GENERIC;
+            out[w].data.resolve_generic.action_id = state->players[pi].discard_pile[i];
+            out[w].player_index = 0;
+            w++;
+        }
+    } else {
+        for (int i = 0; i < state->players[pi].played_cards_count && w < max_out; i++) {
+            out[w].type = MOVE_RESOLVE_GENERIC;
+            out[w].data.resolve_generic.action_id = state->players[pi].played_cards[i];
+            out[w].player_index = 0;
+            w++;
+        }
     }
     return w;
 }
