@@ -34,6 +34,7 @@ int  apply_free_assassinate(GameState *state, Sym player_id, Sym target_node_id,
 int  apply_free_deploy(GameState *state, Sym player_id, Sym target_node_id);
 int  apply_return_spy(GameState *state, Sym player_id, Sym node_id, Sym spy_owner_id, int free_enemy_return);
 int  apply_recruit(GameState *state, Sym player_id, int market_slot);
+int  apply_recruit_free(GameState *state, Sym player_id, int market_slot);
 
 int  ability_cost_affordable(const GameState *state, Sym player_id, Sym card_id);
 int  pay_ability_cost(GameState *state, Sym player_id, Sym card_id, int *discard_indices, int discard_count);

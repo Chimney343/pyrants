@@ -493,6 +493,23 @@
                 "filters": [],
                 "source_fragment": "place_spy",
                 "metadata": {}
+              },
+              {
+                "action_id": "option_1_action_2",
+                "op": "draw_cards",
+                "target_scope": "self",
+                "timing": "immediate",
+                "optional": false,
+                "quantity": {
+                  "kind": "fixed",
+                  "value": 1
+                },
+                "filters": [],
+                "source_fragment": "draw_cards",
+                "metadata": {
+                  "requires_focus": true,
+                  "focus_aspect": "guile"
+                }
               }
             ]
           },
@@ -594,6 +611,23 @@
           "metadata": {}
         },
         {
+          "action_id": "option_1_action_2",
+          "op": "draw_cards",
+          "target_scope": "self",
+          "timing": "immediate",
+          "optional": false,
+          "quantity": {
+            "kind": "fixed",
+            "value": 1
+          },
+          "filters": [],
+          "source_fragment": "draw_cards",
+          "metadata": {
+            "requires_focus": true,
+            "focus_aspect": "guile"
+          }
+        },
+        {
           "action_id": "option_2_action_1",
           "op": "return_spy",
           "target_scope": "board_site",
@@ -690,7 +724,9 @@
           "board.spies",
           "player.spies_available",
           "board.troop_slots",
-          "player.barracks"
+          "player.barracks",
+          "player.hand",
+          "player.deck"
         ]
       },
       "effect_key": "generic_card",
@@ -4790,7 +4826,7 @@
       },
       "actions": [
         {
-          "action_id": "action_1",
+          "action_id": "option_1_action_1",
           "op": "place_spy",
           "target_scope": "board_site",
           "timing": "immediate",
@@ -4804,7 +4840,24 @@
           "metadata": {}
         },
         {
-          "action_id": "action_1",
+          "action_id": "option_1_action_2",
+          "op": "draw_cards",
+          "target_scope": "self",
+          "timing": "immediate",
+          "optional": false,
+          "quantity": {
+            "kind": "fixed",
+            "value": 1
+          },
+          "filters": [],
+          "source_fragment": "draw_cards",
+          "metadata": {
+            "requires_focus": true,
+            "focus_aspect": "guile"
+          }
+        },
+        {
+          "action_id": "option_2_action_1",
           "op": "return_spy",
           "target_scope": "board_site",
           "timing": "immediate",
@@ -8564,17 +8617,34 @@
             "actions": [
               {
                 "action_id": "option_1_action_1",
-                "op": "deploy_troops",
+                "op": "place_spy",
                 "target_scope": "board_site",
                 "timing": "immediate",
                 "optional": false,
                 "quantity": {
-                  "kind": "fixed",
-                  "value": 4
+                  "kind": "unspecified",
+                  "value": null
                 },
                 "filters": [],
-                "source_fragment": "deploy_troops",
+                "source_fragment": "place_spy",
                 "metadata": {}
+              },
+              {
+                "action_id": "option_1_action_2",
+                "op": "draw_cards",
+                "target_scope": "self",
+                "timing": "immediate",
+                "optional": false,
+                "quantity": {
+                  "kind": "fixed",
+                  "value": 1
+                },
+                "filters": [],
+                "source_fragment": "draw_cards",
+                "metadata": {
+                  "requires_focus": true,
+                  "focus_aspect": "guile"
+                }
               }
             ]
           },
@@ -13465,6 +13535,23 @@
             "filters": [],
             "source_fragment": "deploy_troops",
             "metadata": {}
+          },
+          {
+            "action_id": "action_2",
+            "op": "draw_cards",
+            "target_scope": "self",
+            "timing": "immediate",
+            "optional": false,
+            "quantity": {
+              "kind": "fixed",
+              "value": 1
+            },
+            "filters": [],
+            "source_fragment": "draw_cards",
+            "metadata": {
+              "requires_focus": true,
+              "focus_aspect": "conquest"
+            }
           }
         ]
       },
@@ -13482,6 +13569,23 @@
           "filters": [],
           "source_fragment": "deploy_troops",
           "metadata": {}
+        },
+        {
+          "action_id": "action_2",
+          "op": "draw_cards",
+          "target_scope": "self",
+          "timing": "immediate",
+          "optional": false,
+          "quantity": {
+            "kind": "fixed",
+            "value": 1
+          },
+          "filters": [],
+          "source_fragment": "draw_cards",
+          "metadata": {
+            "requires_focus": true,
+            "focus_aspect": "conquest"
+          }
         }
       ],
       "global_conditions": [

@@ -310,12 +310,15 @@ int focus_requirement_met(const GameState *state, Sym player_id, const CardDefin
     const PlayerState *ps = &state->players[pi];
 
     for (int i = 0; i < ps->hand_count; i++) {
-        if (ps->hand[i] == source_card_id) continue;
         const CardDefinition *cd = card_by_id(state, ps->hand[i]);
         if (cd && cd->aspect == required) return 1;
     }
+    int skipped = 0;
     for (int i = 0; i < ps->played_cards_count; i++) {
-        if (ps->played_cards[i] == source_card_id) continue;
+        if (!skipped && ps->played_cards[i] == source_card_id) {
+            skipped = 1;
+            continue;
+        }
         const CardDefinition *cd = card_by_id(state, ps->played_cards[i]);
         if (cd && cd->aspect == required) return 1;
     }
@@ -466,6 +469,38 @@ int apply_recruit(GameState *state, Sym player_id, int market_slot) {
     ResourcePool *pool = cow_resource_pool(state);
     if (!pool || pool->influence < cd->cost) return -1;
     pool->influence -= cd->cost;
+
+    PlayerState *ps = cow_player(state, player_id);
+    if (ps && ps->discard_pile_count < MAX_ZONE_SIZE)
+        ps->discard_pile[ps->discard_pile_count++] = card_id;
+
+    MarketState *ms = cow_market(state);
+    if (ms) {
+        if (ms->deck_count > 0) {
+            ms->row[market_slot] = ms->deck[--ms->deck_count];
+        } else {
+            for (int i = market_slot; i < ms->row_count - 1; i++)
+                ms->row[i] = ms->row[i + 1];
+            ms->row_count--;
+        }
+    }
+    return 0;
+}
+
+int apply_recruit_free(GameState *state, Sym player_id, int market_slot) {
+    Sym special_id;
+    int stack_total;
+    if (special_stack_config(market_slot, &special_id, &stack_total)) {
+        if (market_slot == 102 && !is_aberrations_enabled(state)) return -1;
+        if (remaining_special_stack_count(state, special_id, stack_total) <= 0) return -1;
+        PlayerState *ps = cow_player(state, player_id);
+        if (ps && ps->discard_pile_count < MAX_ZONE_SIZE)
+            ps->discard_pile[ps->discard_pile_count++] = special_id;
+        return 0;
+    }
+
+    if (market_slot >= state->market.row_count) return -1;
+    Sym card_id = state->market.row[market_slot];
 
     PlayerState *ps = cow_player(state, player_id);
     if (ps && ps->discard_pile_count < MAX_ZONE_SIZE)

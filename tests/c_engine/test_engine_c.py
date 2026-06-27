@@ -503,3 +503,260 @@ def test_quaggoth_assassinate_count_snapshotted():
         total += 1
 
     assert total == 3, f"Expected 3 assassinations (majority controlled sites), got {total}"
+
+
+def test_aerisi_kalinoth_free_recruit():
+    """Aerisi Kalinoth: gain 1 power, place 1 spy, recruit free guile card costing ≤4."""
+    from engine_c.bindings.session import CSession
+    from engine_c.bindings.ce_api import CEngine
+
+    engine = CEngine()
+    engine.initialize()
+    session = CSession.load(
+        "data/scenarios/batch_card_generation/081_seed_4_aerisi_kalinoth.json", engine
+    )
+
+    s = session.state
+    assert s.current_player_id == "p1", "Expected p1 to be current player"
+    p_idx = s.player_index("p1")
+    influence_before = s.resource_influence
+    power_before = s.resource_power
+    spies_before = s._s.players[p_idx].spies_available
+    discard_before = s.player_discard(p_idx)
+
+    moves = session.legal_moves()
+    aerisi_move = next(
+        m for m in moves
+        if m.move_type == "play_card" and m.data.get("card_id") == "aerisi_kalinoth"
+    )
+    session.submit_move(aerisi_move)
+
+    gen_moves = [m for m in session.legal_moves() if m.move_type == "resolve_generic"]
+    assert len(gen_moves) > 0, "Expected generic choices for place_spy"
+
+    spy_move = gen_moves[0]
+    session.submit_move(spy_move)
+
+    gen_moves = [m for m in session.legal_moves() if m.move_type == "resolve_generic"]
+    assert len(gen_moves) > 0, "Expected generic choices for recruit_card"
+
+    recruit_cards = [m.data.get("action_id") for m in gen_moves]
+    import json
+    with open("data/cards/catalog.json", encoding="utf-8-sig") as f:
+        cat = json.load(f)["cards"]
+    for cid in recruit_cards:
+        card = next((c for c in cat if c["card_id"] == cid), None)
+        assert card is not None, f"Recruit target {cid} not in catalog"
+        assert card["aspect"] == "guile", \
+            f"Recruit target {card['name']} has aspect {card['aspect']}, expected guile"
+        assert card["cost"] <= 4, \
+            f"Recruit target {card['name']} costs {card['cost']}, expected ≤4"
+
+    recruit_move = gen_moves[0]
+    session.submit_move(recruit_move)
+
+    s = session.state
+    influence_after = s.resource_influence
+    power_after = s.resource_power
+    spies_after = s._s.players[p_idx].spies_available
+    discard_after = s.player_discard(p_idx)
+
+    assert power_after == power_before + 1, \
+        f"Expected +1 power, got {power_after} (was {power_before})"
+    assert spies_after == spies_before - 1, \
+        f"Expected 1 spy placed, spies {spies_before} → {spies_after}"
+    assert influence_after == influence_before, \
+        f"Free recruit must not deduct influence: {influence_before} → {influence_after}"
+    assert len(discard_after) == len(discard_before) + 1, \
+        f"Expected +1 card in discard from recruit, got {len(discard_before)} → {len(discard_after)}"
+
+    session.destroy()
+
+
+def test_air_elemental_focus_draw_with_duplicate_cards():
+    """Air Elemental focus draw must work when hand has two copies of the same
+    Guile card.  The second copy is a different physical card and satisfies
+    focus — the Sym comparison must not exclude it."""
+    import json as _json
+
+    from engine_c.bindings.session import CSession
+    from engine_c.bindings.ce_api import CEngine
+
+    engine = CEngine()
+    engine.initialize()
+    session = CSession.load(
+        "data/scenarios/random_card_generation/air_elemental_seed_666.json", engine
+    )
+
+    cp = session.state.current_player_id
+    p_idx = session.state.player_index(cp)
+    deck_before = len(session.state.player_deck(p_idx))
+
+    assert deck_before >= 1, "Deck must have at least 1 card to draw"
+
+    moves = session.legal_moves()
+    ae = next(m for m in moves if m.move_type == "play_card" and m.data.get("card_id") == "air_elemental")
+    session.submit_move(ae)
+
+    # Choose Option 2 (return spy + deploy 3 troops + focus draw)
+    moves = session.legal_moves()
+    gen = [m for m in moves if m.move_type == "resolve_generic"]
+    opt2 = next(m for m in gen if m.data.get("action_id") == "option_2")
+    session.submit_move(opt2)
+
+    # Resolve all remaining generic moves
+    while True:
+        moves = session.legal_moves()
+        gen = [m for m in moves if m.move_type == "resolve_generic"]
+        if not gen:
+            break
+        session.submit_move(gen[0])
+
+    deck_after = len(session.state.player_deck(p_idx))
+    assert deck_after == deck_before - 1, \
+        f"Expected 1 card drawn (deck {deck_before} -> {deck_before-1}), got {deck_after}"
+
+    session.destroy()
+
+
+def test_air_elemental_option_1_focus_draw():
+    """Option 1 (place spy) must also draw a card when Guile focus is met
+    (catalog fix: option_1 was missing the draw_cards action)."""
+    import json as _json, os as _os
+
+    from engine_c.bindings.session import CSession
+    from engine_c.bindings.ce_api import CEngine
+
+    engine = CEngine()
+    engine.initialize()
+    session = CSession.load(
+        "data/scenarios/random_card_generation/air_elemental_seed_666.json", engine
+    )
+
+    raw = CSession.save_to_string(session.state, move_count=0, is_terminal=False)
+    session.destroy()
+    payload = _json.loads(raw)
+    gs = payload["state"]
+    cp = gs["current_player_id"]
+    cp_data = next(p for p in gs["players"] if p["player_id"] == cp)
+    cp_data["spies_available"] = max(cp_data["spies_available"], 1)
+    has_guile = any(c != "air_elemental" and _is_aspect(c, "guile") for c in cp_data["hand"])
+    if not has_guile:
+        _ensure_guile_focus(cp_data, gs)
+
+    tmp_path = "data/scenarios/test_card_generation/_ae_opt1_test.json"
+    _os.makedirs(_os.path.dirname(tmp_path), exist_ok=True)
+    with open(tmp_path, "w", encoding="utf-8") as f:
+        _json.dump(payload, f)
+
+    engine2 = CEngine()
+    engine2.initialize()
+    session2 = CSession.load(tmp_path, engine2)
+
+    p_idx = session2.state.player_index(cp)
+    deck_before = len(session2.state.player_deck(p_idx))
+
+    moves = session2.legal_moves()
+    ae = next(m for m in moves if m.move_type == "play_card" and m.data.get("card_id") == "air_elemental")
+    session2.submit_move(ae)
+
+    moves = session2.legal_moves()
+    gen = [m for m in moves if m.move_type == "resolve_generic"]
+    opt1 = next(m for m in gen if m.data.get("action_id") == "option_1")
+    result = session2.submit_move(opt1)
+    assert result is not None, "Option 1 submit failed"
+
+    moves = session2.legal_moves()
+    gen = [m for m in moves if m.move_type == "resolve_generic"]
+    if gen:
+        session2.submit_move(gen[0])
+
+    deck_after = len(session2.state.player_deck(p_idx))
+    assert deck_after == deck_before - 1, \
+        f"Expected 1 card drawn via Option 1 (deck {deck_before} -> {deck_before-1}), got {deck_after}"
+
+    session2.destroy()
+
+
+def test_water_elemental_focus_draw():
+    """Water Elemental must draw a card when Conquest focus is met
+    (catalog fix: draw_cards action was missing from execution model)."""
+    import json as _json, os as _os
+
+    from engine_c.bindings.session import CSession
+    from engine_c.bindings.ce_api import CEngine
+
+    engine = CEngine()
+    engine.initialize()
+    session = CSession.load(
+        "data/scenarios/test_card_generation/we_focus_test.json", engine
+    )
+
+    raw = CSession.save_to_string(session.state, move_count=0, is_terminal=False)
+    session.destroy()
+    payload = _json.loads(raw)
+    gs = payload["state"]
+    cp = gs["current_player_id"]
+    cp_data = next(p for p in gs["players"] if p["player_id"] == cp)
+
+    has_conquest = any(c != "water_elemental" and _is_aspect(c, "conquest") for c in cp_data["hand"])
+    if not has_conquest:
+        _ensure_aspect_focus(cp_data, gs, "conquest", "black_wyrmling")
+
+    site_found = False
+    for node in gs["nodes"]:
+        if "troop_slots" in node and len(node["troop_slots"]) >= 2:
+            site_found = True
+            break
+    if not site_found:
+        gs["nodes"][0]["troop_slots"] = [None, None, None]
+
+    tmp_path = "data/scenarios/test_card_generation/_we_focus_test.json"
+    _os.makedirs(_os.path.dirname(tmp_path), exist_ok=True)
+    with open(tmp_path, "w", encoding="utf-8") as f:
+        _json.dump(payload, f)
+
+    engine2 = CEngine()
+    engine2.initialize()
+    session2 = CSession.load(tmp_path, engine2)
+
+    p_idx = session2.state.player_index(cp)
+    deck_before = len(session2.state.player_deck(p_idx))
+
+    moves = session2.legal_moves()
+    we = next(m for m in moves if m.move_type == "play_card" and m.data.get("card_id") == "water_elemental")
+    session2.submit_move(we)
+
+    while True:
+        moves = session2.legal_moves()
+        gen = [m for m in moves if m.move_type == "resolve_generic"]
+        if not gen:
+            break
+        session2.submit_move(gen[0])
+
+    deck_after = len(session2.state.player_deck(p_idx))
+    assert deck_after == deck_before - 1, \
+        f"Expected 1 card drawn via Water Elemental (deck {deck_before} -> {deck_before-1}), got {deck_after}"
+
+    session2.destroy()
+
+
+def _is_aspect(card_id: str, aspect: str) -> bool:
+    import json as _json
+    with open("data/cards/catalog.json", encoding="utf-8") as f:
+        cat = _json.load(f)["cards"]
+    for c in cat:
+        if c["card_id"] == card_id:
+            return c["aspect"] == aspect
+    return False
+
+
+def _ensure_guile_focus(player_data: dict, game_state: dict) -> None:
+    _ensure_aspect_focus(player_data, game_state, "guile", "banshee")
+
+
+def _ensure_aspect_focus(player_data: dict, game_state: dict, aspect: str, fallback: str) -> None:
+    for i, c in enumerate(player_data["hand"]):
+        if not _is_aspect(c, aspect):
+            player_data["hand"][i] = fallback
+            return

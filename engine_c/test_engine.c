@@ -4,6 +4,7 @@
 #include "rng.h"
 #include "loader.h"
 #include "moves.h"
+#include "helpers.h"
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
@@ -210,6 +211,82 @@ static void test_cow(void) {
     arena_destroy(arena);
 }
 
+static void test_focus_requirement_met(void) {
+    /* Set up a minimal game with the catalog loaded so card_by_id works. */
+    const char *player_ids[] = {"p1", "p2"};
+    Arena *arena = arena_create(2 * 1024 * 1024);
+    GameDefinition *def = engine_load_definition(
+        "../data/cards/catalog.json",
+        "../data/boards/tyrants_of_the_underdark.json",
+        "../data/decks/base_setup.json",
+        arena
+    );
+    if (!def || def->catalog.card_count == 0) {
+        def = engine_load_definition(
+            "data/cards/catalog.json",
+            "data/boards/tyrants_of_the_underdark.json",
+            "data/decks/base_setup.json",
+            arena
+        );
+    }
+    assert(def);
+    GameState *gs = engine_create_game_definition(def, player_ids, 2, 42);
+    assert(gs);
+
+    Sym p1 = intern("p1");
+    Sym air_el = intern("air_elemental");
+    Sym banshee = intern("banshee");
+    const CardDefinition *ae_def = NULL;
+    const CardDefinition *ba_def = NULL;
+    for (int i = 0; i < def->catalog.card_count; i++) {
+        if (def->catalog.cards[i].card_id == air_el) ae_def = &def->catalog.cards[i];
+        if (def->catalog.cards[i].card_id == banshee) ba_def = &def->catalog.cards[i];
+    }
+    assert(ae_def);
+    assert(ba_def);
+    assert(ae_def->aspect == intern("guile"));
+    assert(ba_def->aspect == intern("guile"));
+
+    PlayerState *ps = cow_player(gs, p1);
+    assert(ps);
+
+    /* Case 1: two copies of the same card — second copy satisfies focus. */
+    ps->hand[0] = air_el;
+    ps->hand[1] = air_el;
+    ps->hand_count = 2;
+    ps->played_cards[0] = air_el;
+    ps->played_cards_count = 1;
+    int met = focus_requirement_met(gs, p1, ae_def, air_el);
+    assert(met == 1);
+
+    /* Case 2: only one copy, no other guile card — focus NOT met. */
+    ps->hand_count = 0;
+    ps->played_cards[0] = air_el;
+    ps->played_cards_count = 1;
+    met = focus_requirement_met(gs, p1, ae_def, air_el);
+    assert(met == 0);
+
+    /* Case 3: different guile card in hand — focus met. */
+    ps->hand[0] = banshee;
+    ps->hand_count = 1;
+    ps->played_cards[0] = air_el;
+    ps->played_cards_count = 1;
+    met = focus_requirement_met(gs, p1, ae_def, air_el);
+    assert(met == 1);
+
+    /* Case 4: different guile card in played_cards — focus met. */
+    ps->hand_count = 0;
+    ps->played_cards[0] = air_el;
+    ps->played_cards[1] = banshee;
+    ps->played_cards_count = 2;
+    met = focus_requirement_met(gs, p1, ae_def, air_el);
+    assert(met == 1);
+
+    printf("PASS: focus_requirement_met\n");
+    engine_destroy(gs);
+    arena_destroy(arena);
+}
+
 int main(void) {
     test_intern();
     test_intern_null_sym();
@@ -225,6 +302,7 @@ int main(void) {
     test_clone();
     test_moves();
     test_cow();
+    test_focus_requirement_met();
     printf("\nAll Phase 0 + Phase 1 tests passed.\n");
     return 0;
 }
