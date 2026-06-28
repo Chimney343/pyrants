@@ -530,6 +530,14 @@ static GameState *apply_devour(GameState *state, Sym player_id, const CardDefini
                 if (ms) {
                     if (self_replace && ms->row_count < MAX_ZONE_SIZE) {
                         ms->row[i] = source;
+                        for (int pci = 0; pci < ps->played_cards_count; pci++) {
+                            if (ps->played_cards[pci] == source) {
+                                for (int pcj = pci; pcj < ps->played_cards_count - 1; pcj++)
+                                    ps->played_cards[pcj] = ps->played_cards[pcj + 1];
+                                ps->played_cards_count--;
+                                break;
+                            }
+                        }
                     } else if (ms->deck_count > 0) {
                         ms->row[i] = ms->deck[--ms->deck_count];
                     } else {
