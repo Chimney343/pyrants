@@ -4589,12 +4589,14 @@
             "timing": "end_of_turn",
             "optional": false,
             "quantity": {
-              "kind": "unspecified",
-              "value": null
+              "kind": "fixed",
+              "value": 1
             },
             "filters": [],
             "source_fragment": "triggered_promote",
-            "metadata": {}
+            "metadata": {
+              "requires_another_played_card": true
+            }
           }
         ]
       },
@@ -4622,12 +4624,14 @@
           "timing": "end_of_turn",
           "optional": false,
           "quantity": {
-            "kind": "unspecified",
-            "value": null
+            "kind": "fixed",
+            "value": 1
           },
           "filters": [],
           "source_fragment": "triggered_promote",
-          "metadata": {}
+          "metadata": {
+            "requires_another_played_card": true
+          }
         }
       ],
       "global_conditions": [
