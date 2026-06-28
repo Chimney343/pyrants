@@ -223,6 +223,7 @@ def _build_c_legal_moves(session, state_ptr, *, node_names=None, player_spy_coun
                 pass
         promotion_source_card_id = ""
         promotion_aspect = ""
+        promotion_focus_aspect = ""
         if mw.move_type == "promote_card":
             try:
                 s = state_ptr.contents
@@ -233,6 +234,10 @@ def _build_c_legal_moves(session, state_ptr, *, node_names=None, player_spy_coun
                     if s.pending_eot[0].required_aspect:
                         promotion_aspect = _elib.intern_str(
                             s.pending_eot[0].required_aspect
+                        ).decode()
+                    if s.pending_eot[0].focus_aspect:
+                        promotion_focus_aspect = _elib.intern_str(
+                            s.pending_eot[0].focus_aspect
                         ).decode()
                 elif s.pending_immediate_count > 0:
                     promotion_source_card_id = _elib.intern_str(
@@ -256,6 +261,7 @@ def _build_c_legal_moves(session, state_ptr, *, node_names=None, player_spy_coun
             player_spy_count=player_spy_count,
             promotion_source_card_id=promotion_source_card_id,
             promotion_aspect=promotion_aspect,
+            promotion_focus_aspect=promotion_focus_aspect,
             node_names=node_names,
             player_available_aspects=player_available_aspects,
         )

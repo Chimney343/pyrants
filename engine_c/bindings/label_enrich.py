@@ -233,7 +233,7 @@ def _card_id_from_data(move_data: dict) -> str:
     return ""
 
 
-def enrich_label(move_type: str, raw_label: str, move_data: dict, *, source_card_id: str = "", card_action_id: str = "", is_option_choice: bool = False, is_optional_action: bool = False, player_spy_count: int = 0, promotion_source_card_id: str = "", promotion_aspect: str = "", node_names: dict[str, str] | None = None, player_available_aspects: frozenset[str] | None = None) -> str:
+def enrich_label(move_type: str, raw_label: str, move_data: dict, *, source_card_id: str = "", card_action_id: str = "", is_option_choice: bool = False, is_optional_action: bool = False, player_spy_count: int = 0, promotion_source_card_id: str = "", promotion_aspect: str = "", promotion_focus_aspect: str = "", node_names: dict[str, str] | None = None, player_available_aspects: frozenset[str] | None = None) -> str:
     if move_type not in _ENRICH_MOVES:
         return raw_label
 
@@ -256,11 +256,12 @@ def enrich_label(move_type: str, raw_label: str, move_data: dict, *, source_card
         if card_id:
             target_name = _card_name(card_id)
             aspect_suffix = f" ({promotion_aspect.title()})" if promotion_aspect else ""
+            focus_suffix = f" (Focus: {promotion_focus_aspect.title()})" if promotion_focus_aspect else ""
             if promotion_source_card_id:
                 source_name = _card_name(promotion_source_card_id)
                 if source_name != promotion_source_card_id:
-                    return f"{source_name}: Promote card {target_name}{aspect_suffix}"
-            return f"Promote {target_name}{aspect_suffix}"
+                    return f"{source_name}: Promote card {target_name}{aspect_suffix}{focus_suffix}"
+            return f"Promote {target_name}{aspect_suffix}{focus_suffix}"
         return raw_label
 
     if move_type == "resolve_generic":

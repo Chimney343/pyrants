@@ -259,6 +259,7 @@ typedef struct {
     bool requires_another_played_card;
     Sym  required_aspect;
     Sym  required_secondary_aspect;
+    Sym  focus_aspect;
     bool repeat_while_targets;
     int  promotions_remaining;
 } PendingPromotionState;

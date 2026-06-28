@@ -112,7 +112,7 @@ int action_focus_requirement_met(GameState *state, Sym player_id,
             focus_aspect = intern(v);
     }
     if (!requires_focus) return 1;
-    return focus_requirement_met(state, player_id, card, source_card_id);
+    return focus_requirement_met(state, player_id, card, source_card_id, focus_aspect);
 }
 
 const CardAction *pending_generic_active_action(const PendingGenericChoiceState *p) {
@@ -356,9 +356,7 @@ GameState *auto_resolve_pending_generic(GameState *state, Sym player_id) {
                         pp->timing = intern("end_of_turn");
                         pp->deferred_choice = 1;
                         pp->optional = action->optional;
-                        pp->promotions_remaining = resolve_action_count(state, player_id, action);
-                        if (action->quantity_kind != QUANT_FIXED)
-                            pp->promotions_remaining = MAX_ZONE_SIZE;
+                        pp->promotions_remaining = resolve_runtime_action_count(state, player_id, action);
                         for (int j = 0; j < action->metadata_count; j++) {
                             const char *mk = intern_str(action->metadata[j].key);
                             const char *mv = intern_str(action->metadata[j].value);
@@ -372,7 +370,11 @@ GameState *auto_resolve_pending_generic(GameState *state, Sym player_id) {
                                 pp->required_aspect = intern(mv);
                             if (mk && strcmp(mk, "required_secondary_aspect") == 0 && mv)
                                 pp->required_secondary_aspect = intern(mv);
+                            if (mk && strcmp(mk, "focus_aspect") == 0 && mv)
+                                pp->focus_aspect = intern(mv);
                         }
+                        if (pp->repeat_while_targets && action->quantity_kind != QUANT_FIXED)
+                            pp->promotions_remaining = MAX_ZONE_SIZE;
                         state->pending_eot_count++;
                     }
                     p->next_action_index++;
