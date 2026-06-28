@@ -181,6 +181,7 @@ def _build_c_legal_moves(session, state_ptr, *, node_names=None, player_spy_coun
         source_card_id = ""
         card_action_id = ""
         is_option_choice = False
+        is_optional_action = False
         if mw.move_type == "resolve_generic":
             try:
                 pg_ptr = state_ptr.contents.pending_generic
@@ -192,11 +193,13 @@ def _build_c_legal_moves(session, state_ptr, *, node_names=None, player_spy_coun
                         idx = pg.next_action_index
                         if 0 <= idx < pg.current_action_count:
                             current_action = pg.current_actions[idx]
+                            is_optional_action = bool(current_action.optional)
                             if current_action.action_id:
                                 card_action_id = _elib.intern_str(current_action.action_id).decode()
             except Exception:
                 pass
         promotion_source_card_id = ""
+        promotion_aspect = ""
         if mw.move_type == "promote_card":
             try:
                 s = state_ptr.contents
@@ -204,10 +207,18 @@ def _build_c_legal_moves(session, state_ptr, *, node_names=None, player_spy_coun
                     promotion_source_card_id = _elib.intern_str(
                         s.pending_eot[0].source_card_id
                     ).decode()
+                    if s.pending_eot[0].required_aspect:
+                        promotion_aspect = _elib.intern_str(
+                            s.pending_eot[0].required_aspect
+                        ).decode()
                 elif s.pending_immediate_count > 0:
                     promotion_source_card_id = _elib.intern_str(
                         s.pending_immediate[0].source_card_id
                     ).decode()
+                    if s.pending_immediate[0].required_aspect:
+                        promotion_aspect = _elib.intern_str(
+                            s.pending_immediate[0].required_aspect
+                        ).decode()
             except Exception:
                 pass
         final_label = enrich_label(
@@ -215,8 +226,11 @@ def _build_c_legal_moves(session, state_ptr, *, node_names=None, player_spy_coun
             source_card_id=source_card_id,
             card_action_id=card_action_id,
             is_option_choice=is_option_choice,
+            is_optional_action=is_optional_action,
             player_spy_count=player_spy_count,
             promotion_source_card_id=promotion_source_card_id,
+            promotion_aspect=promotion_aspect,
+            node_names=node_names,
         )
         available = mw.data.get("target_id") != "unavailable"
         if not available:

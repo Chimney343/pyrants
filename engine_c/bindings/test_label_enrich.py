@@ -21,10 +21,10 @@ class TestEnrichLabel:
     def test_assassinate_passthrough(self):
         result = enrich_label(
             "assassinate",
-            "Remove white troop at Gauntlgrym",
+            "Assassinate white troop at Gauntlgrym",
             {"target_node_id": "site_gauntlgrym", "target_slot_index": 0},
         )
-        assert result == "Remove white troop at Gauntlgrym"
+        assert result == "Assassinate white troop at Gauntlgrym"
 
     def test_unknown_move_passthrough(self):
         result = enrich_label("unknown", "Move", {})
@@ -64,7 +64,7 @@ class TestEnrichLabel:
             {"action_id": "assassinate_troop", "target_id": "advance_scout", "selection_index": 0},
         )
         assert "Advance Scout" in result
-        assert "choice" in result
+        assert "Choose for" in result
 
     def test_resolve_generic_with_unknown_target_falls_back_to_humanized_action(self):
         result = enrich_label(
@@ -90,7 +90,7 @@ class TestEnrichLabel:
             source_card_id="advance_scout",
         )
         assert "Advance Scout" in result
-        assert "choice" in result
+        assert "Choose for" in result
 
     def test_resolve_generic_source_card_id_beats_action_id(self):
         result = enrich_label(
@@ -100,7 +100,7 @@ class TestEnrichLabel:
             source_card_id="advance_scout",
         )
         assert "Advance Scout" in result
-        assert "choice" in result
+        assert "Choose for" in result
 
     def test_resolve_generic_humanizes_different_actions(self):
         result = enrich_label(
@@ -289,6 +289,38 @@ class TestEnrichLabel:
             {"card_id": "noble"},
         )
         assert result == "Promote Noble"
+
+    def test_promote_card_with_source_and_aspect(self):
+        "promote_card with source and aspect includes both in the label."
+        result = enrich_label(
+            "promote_card",
+            "Promote Noble",
+            {"card_id": "noble"},
+            promotion_source_card_id="air_elemental_myrmidon",
+            promotion_aspect="obedience",
+        )
+        assert result == "Air Elemental Myrmidon: Promote card Noble (Obedience)"
+
+    def test_promote_card_with_aspect_no_source(self):
+        "promote_card with aspect but no source appends aspect suffix."
+        result = enrich_label(
+            "promote_card",
+            "Promote Noble",
+            {"card_id": "noble"},
+            promotion_aspect="obedience",
+        )
+        assert result == "Promote Noble (Obedience)"
+
+    def test_promote_card_with_source_empty_aspect(self):
+        "promote_card with source and empty aspect matches no-aspect behavior."
+        result = enrich_label(
+            "promote_card",
+            "Promote Noble",
+            {"card_id": "noble"},
+            promotion_source_card_id="ambassador",
+            promotion_aspect="",
+        )
+        assert result == "Ambassador: Promote card Noble"
 
 class TestCDescribeIntegration:
     """Integration tests that call the C engine through ctypes."""

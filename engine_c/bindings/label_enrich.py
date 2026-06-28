@@ -22,7 +22,7 @@ _ENRICH_MOVES = frozenset({"activate_ability", "decline_ability", "resolve_gener
 _OP_DESCRIPTIONS = {
     "place_spy": "Place spy",
     "assassinate_troop": "Assassinate troop",
-    "supplant_troop": "Replace troop",
+    "supplant_troop": "Supplant troop",
     "deploy_troops": "Deploy troops",
     "return_spy": "Return spy",
     "return_unit": "Return unit",
@@ -182,10 +182,12 @@ def _is_steal_custom_effect(action: dict) -> bool:
     return False
 
 
-def _format_action_with_target(card_name: str, action_desc: str, target_id: str) -> str:
+def _format_action_with_target(card_name: str, action_desc: str, target_id: str, *, node_names: dict[str, str] | None = None) -> str:
     name = _card_name(target_id)
     if name != target_id:
         return f"{card_name}: {action_desc} {name}"
+    if node_names and target_id in node_names:
+        return f"{card_name}: {action_desc} at {node_names[target_id]}"
     humanized = _humanize_action(target_id)
     return f"{card_name}: {action_desc} at {humanized}"
 
@@ -204,7 +206,7 @@ def _card_id_from_data(move_data: dict) -> str:
     return ""
 
 
-def enrich_label(move_type: str, raw_label: str, move_data: dict, *, source_card_id: str = "", card_action_id: str = "", is_option_choice: bool = False, player_spy_count: int = 0, promotion_source_card_id: str = "") -> str:
+def enrich_label(move_type: str, raw_label: str, move_data: dict, *, source_card_id: str = "", card_action_id: str = "", is_option_choice: bool = False, is_optional_action: bool = False, player_spy_count: int = 0, promotion_source_card_id: str = "", promotion_aspect: str = "", node_names: dict[str, str] | None = None) -> str:
     if move_type not in _ENRICH_MOVES:
         return raw_label
 
@@ -226,11 +228,12 @@ def enrich_label(move_type: str, raw_label: str, move_data: dict, *, source_card
         card_id = move_data.get("card_id", "")
         if card_id:
             target_name = _card_name(card_id)
+            aspect_suffix = f" ({promotion_aspect.title()})" if promotion_aspect else ""
             if promotion_source_card_id:
                 source_name = _card_name(promotion_source_card_id)
                 if source_name != promotion_source_card_id:
-                    return f"{source_name}: Promote card {target_name}"
-            return f"Promote {target_name}"
+                    return f"{source_name}: Promote card {target_name}{aspect_suffix}"
+            return f"Promote {target_name}{aspect_suffix}"
         return raw_label
 
     if move_type == "resolve_generic":
@@ -246,6 +249,8 @@ def enrich_label(move_type: str, raw_label: str, move_data: dict, *, source_card
             card_action = _lookup_card_action(card_entry, card_action_id) if card_action_id else None
             if card_action:
                 desc = _describe_single_action(card_action)
+                if is_optional_action:
+                    return f"Decline {desc} for {card_name}"
                 return f"Skip {desc} for {card_name}"
             return f"Skip for {card_name}"
 
@@ -278,7 +283,7 @@ def enrich_label(move_type: str, raw_label: str, move_data: dict, *, source_card
                                 return raw_label
                             desc = _describe_single_action(act, spy_count=player_spy_count)
                             if target_display:
-                                return _format_action_with_target(card_name, desc, target_display)
+                                return _format_action_with_target(card_name, desc, target_display, node_names=node_names)
                             return f"{card_name}: {desc}"
 
                 # 1c: sequence-type execution model -> flat actions directly on
@@ -292,19 +297,19 @@ def enrich_label(move_type: str, raw_label: str, move_data: dict, *, source_card
                             return raw_label
                         desc = _describe_single_action(act, spy_count=player_spy_count)
                         if target_display:
-                            return _format_action_with_target(card_name, desc, target_display)
+                            return _format_action_with_target(card_name, desc, target_display, node_names=node_names)
                         return f"{card_name}: {desc}"
 
         # Level 2: target_id or action_id resolved through catalog as a card name
         name = _card_id_from_data(move_data)
         if name:
-            return f"Resolve {name} choice"
+            return f"Choose for {name}"
 
         # Level 3: source_card_id resolved through catalog as a card name
         if source_card_id:
             name = _card_name(source_card_id)
             if name != source_card_id:
-                return f"Resolve {name} choice"
+                return f"Choose for {name}"
 
         # Level 4: humanize the raw action_id
         if action_id:
