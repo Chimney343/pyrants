@@ -96,6 +96,20 @@ def _lookup_card_action(card_entry: dict | None, action_id: str) -> dict | None:
     return None
 
 
+def _action_has_focus_requirement(action: dict) -> bool:
+    meta = action.get("metadata")
+    if isinstance(meta, dict):
+        return bool(meta.get("requires_focus"))
+    return False
+
+
+def _action_focus_aspect(action: dict) -> str:
+    meta = action.get("metadata")
+    if isinstance(meta, dict):
+        return str(meta.get("focus_aspect", ""))
+    return ""
+
+
 def _describe_single_action(action: dict, *, spy_count: int = 0) -> str:
     op = action.get("op", "")
     if op == "custom_effect":
@@ -127,18 +141,31 @@ def _describe_single_action(action: dict, *, spy_count: int = 0) -> str:
         if count_from == "spies_on_board" and spy_count > 0:
             dc = f"{spy_count} card" if spy_count == 1 else f"{spy_count} cards"
             ds = f"{spy_count} spy" if spy_count == 1 else f"{spy_count} spies"
-            return f"Draw {dc} (from {ds} on board)"
+            desc = f"Draw {dc} (from {ds} on board)"
         elif count_from:
             source = count_from.replace("_", " ")
             desc = f"{desc} (from {source})"
+    if _action_has_focus_requirement(action):
+        fa = _action_focus_aspect(action)
+        desc = f"{desc} ({fa})" if fa else f"{desc} (focus)"
     return desc
 
 
-def _describe_option(option: dict, *, spy_count: int = 0) -> str:
+def _describe_option(option: dict, *, spy_count: int = 0,
+                     available_aspects: frozenset[str] | None = None) -> str:
     actions = option.get("actions", [])
     if not actions:
         return "unknown"
-    # Compress identical actions: "Place spy (x2)" not "Place spy and Place spy"
+    effective_actions = []
+    for a in actions:
+        if available_aspects is not None and _action_has_focus_requirement(a):
+            fa = _action_focus_aspect(a)
+            if fa and fa not in available_aspects:
+                continue
+        effective_actions.append(a)
+    if not effective_actions:
+        return "unknown"
+    actions = effective_actions
     if len(actions) > 1:
         first_op = actions[0].get("op", "")
         first_qty = actions[0].get("quantity")
@@ -206,7 +233,7 @@ def _card_id_from_data(move_data: dict) -> str:
     return ""
 
 
-def enrich_label(move_type: str, raw_label: str, move_data: dict, *, source_card_id: str = "", card_action_id: str = "", is_option_choice: bool = False, is_optional_action: bool = False, player_spy_count: int = 0, promotion_source_card_id: str = "", promotion_aspect: str = "", node_names: dict[str, str] | None = None) -> str:
+def enrich_label(move_type: str, raw_label: str, move_data: dict, *, source_card_id: str = "", card_action_id: str = "", is_option_choice: bool = False, is_optional_action: bool = False, player_spy_count: int = 0, promotion_source_card_id: str = "", promotion_aspect: str = "", node_names: dict[str, str] | None = None, player_available_aspects: frozenset[str] | None = None) -> str:
     if move_type not in _ENRICH_MOVES:
         return raw_label
 
@@ -270,7 +297,7 @@ def enrich_label(move_type: str, raw_label: str, move_data: dict, *, source_card
                 # 1a: option choice -> match option_id
                 for opt in options:
                     if opt.get("option_id") == lookup_id:
-                        desc = _describe_option(opt, spy_count=player_spy_count)
+                        desc = _describe_option(opt, spy_count=player_spy_count, available_aspects=player_available_aspects)
                         return f"{card_name}: {desc}"
 
                 # 1b: target selection -> match the card's action_id, append target

@@ -4,9 +4,16 @@ import os
 import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "bindings"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
 import pytest
-from label_enrich import enrich_label
+from label_enrich import (
+    _action_focus_aspect,
+    _action_has_focus_requirement,
+    _describe_option,
+    _describe_single_action,
+    enrich_label,
+)
 
 
 class TestEnrichLabel:
@@ -434,3 +441,323 @@ class TestCDescribeIntegration:
             is_option_choice=True,
         )
         assert label1 != label2, f"Labels should be distinct: {label1!r} == {label2!r}"
+
+
+class TestFocusRequirementHelpers:
+    def test_has_focus_requirement_true(self):
+        action = {"op": "draw_cards", "metadata": {"requires_focus": True, "focus_aspect": "malice"}}
+        assert _action_has_focus_requirement(action) is True
+
+    def test_has_focus_requirement_false(self):
+        action = {"op": "draw_cards", "metadata": {"count_from": "spies_on_board"}}
+        assert _action_has_focus_requirement(action) is False
+
+    def test_has_focus_requirement_no_metadata(self):
+        action = {"op": "place_spy"}
+        assert _action_has_focus_requirement(action) is False
+
+    def test_has_focus_requirement_requires_focus_false(self):
+        action = {"op": "draw_cards", "metadata": {"requires_focus": False}}
+        assert _action_has_focus_requirement(action) is False
+
+    def test_focus_aspect_returns_aspect(self):
+        action = {"op": "draw_cards", "metadata": {"requires_focus": True, "focus_aspect": "malice"}}
+        assert _action_focus_aspect(action) == "malice"
+
+    def test_focus_aspect_missing_key(self):
+        action = {"op": "draw_cards", "metadata": {"requires_focus": True}}
+        assert _action_focus_aspect(action) == ""
+
+    def test_focus_aspect_no_metadata(self):
+        action = {"op": "place_spy"}
+        assert _action_focus_aspect(action) == ""
+
+    def test_describe_single_action_appends_focus(self):
+        action = {
+            "op": "draw_cards",
+            "quantity": {"kind": "fixed", "value": 1},
+            "metadata": {"requires_focus": True, "focus_aspect": "malice"},
+        }
+        result = _describe_single_action(action)
+        assert result == "Draw cards (malice)"
+
+    def test_describe_single_action_no_focus(self):
+        action = {"op": "place_spy", "quantity": {"kind": "unspecified", "value": None}}
+        result = _describe_single_action(action)
+        assert result == "Place spy"
+
+    def test_describe_single_action_focus_without_aspect_key(self):
+        action = {
+            "op": "draw_cards",
+            "quantity": {"kind": "fixed", "value": 1},
+            "metadata": {"requires_focus": True},
+        }
+        result = _describe_single_action(action)
+        assert result == "Draw cards (focus)"
+
+
+class TestFireElementalFocusLabels:
+    """Fire Elemental: modal choice with gain_resource + draw_cards (focus: malice)."""
+
+    def test_option1_focus_met_shows_draw_with_aspect(self):
+        result = enrich_label(
+            "resolve_generic",
+            "Resolve option_1",
+            {"action_id": "option_1", "selection_index": 0},
+            source_card_id="fire_elemental",
+            is_option_choice=True,
+            player_available_aspects=frozenset({"malice"}),
+        )
+        assert result == "Fire Elemental: Gain 2 power and Draw cards (malice)"
+
+    def test_option1_focus_not_met_hides_draw(self):
+        result = enrich_label(
+            "resolve_generic",
+            "Resolve option_1",
+            {"action_id": "option_1", "selection_index": 0},
+            source_card_id="fire_elemental",
+            is_option_choice=True,
+            player_available_aspects=frozenset({"guile"}),
+        )
+        assert result == "Fire Elemental: Gain 2 power"
+
+    def test_option1_no_aspects_available(self):
+        result = enrich_label(
+            "resolve_generic",
+            "Resolve option_1",
+            {"action_id": "option_1", "selection_index": 0},
+            source_card_id="fire_elemental",
+            is_option_choice=True,
+            player_available_aspects=frozenset(),
+        )
+        assert result == "Fire Elemental: Gain 2 power"
+
+    def test_option1_no_aspects_passed_uses_legacy_label(self):
+        """Without player_available_aspects, focus actions are not filtered (backward compat)."""
+        result = enrich_label(
+            "resolve_generic",
+            "Resolve option_1",
+            {"action_id": "option_1", "selection_index": 0},
+            source_card_id="fire_elemental",
+            is_option_choice=True,
+        )
+        assert "Draw cards (malice)" in result
+
+    def test_option2_focus_met_shows_draw_with_aspect(self):
+        result = enrich_label(
+            "resolve_generic",
+            "Resolve option_2",
+            {"action_id": "option_2", "selection_index": 0},
+            source_card_id="fire_elemental",
+            is_option_choice=True,
+            player_available_aspects=frozenset({"malice"}),
+        )
+        assert result == "Fire Elemental: Gain 2 influence and Draw cards (malice)"
+
+    def test_option2_focus_not_met_hides_draw(self):
+        result = enrich_label(
+            "resolve_generic",
+            "Resolve option_2",
+            {"action_id": "option_2", "selection_index": 0},
+            source_card_id="fire_elemental",
+            is_option_choice=True,
+            player_available_aspects=frozenset({"obedience"}),
+        )
+        assert result == "Fire Elemental: Gain 2 influence"
+
+    def test_option_labels_are_distinct(self):
+        label1 = enrich_label(
+            "resolve_generic",
+            "Resolve option_1",
+            {"action_id": "option_1", "selection_index": 0},
+            source_card_id="fire_elemental",
+            is_option_choice=True,
+            player_available_aspects=frozenset({"malice"}),
+        )
+        label2 = enrich_label(
+            "resolve_generic",
+            "Resolve option_2",
+            {"action_id": "option_2", "selection_index": 0},
+            source_card_id="fire_elemental",
+            is_option_choice=True,
+            player_available_aspects=frozenset({"malice"}),
+        )
+        assert label1 != label2, f"Labels should be distinct: {label1!r} == {label2!r}"
+
+
+class TestAirElementalFocusLabels:
+    """Air Elemental: modal choice with place_spy/return_spy+deploy+draw_cards (focus: guile)."""
+
+    def test_option1_focus_met_shows_draw_with_aspect(self):
+        result = enrich_label(
+            "resolve_generic",
+            "Resolve option_1",
+            {"action_id": "option_1", "selection_index": 0},
+            source_card_id="air_elemental",
+            is_option_choice=True,
+            player_available_aspects=frozenset({"guile"}),
+        )
+        assert result == "Air Elemental: Place spy and Draw cards (guile)"
+
+    def test_option1_focus_not_met_hides_draw(self):
+        result = enrich_label(
+            "resolve_generic",
+            "Resolve option_1",
+            {"action_id": "option_1", "selection_index": 0},
+            source_card_id="air_elemental",
+            is_option_choice=True,
+            player_available_aspects=frozenset({"malice"}),
+        )
+        assert result == "Air Elemental: Place spy"
+
+    def test_option2_focus_met_shows_multiple_actions_with_draw(self):
+        """option_2: return_spy + deploy + deploy + deploy + draw_cards (focus: guile)."""
+        result = enrich_label(
+            "resolve_generic",
+            "Resolve option_2",
+            {"action_id": "option_2", "selection_index": 0},
+            source_card_id="air_elemental",
+            is_option_choice=True,
+            player_available_aspects=frozenset({"guile"}),
+        )
+        assert "Return spy" in result
+        assert "Deploy troops" in result
+        assert "Draw cards (guile)" in result
+
+
+class TestDescribeOptionFocusFiltering:
+    """Direct unit tests for _describe_option focus filtering."""
+
+    def test_all_actions_focus_unmet_returns_unknown(self):
+        option = {
+            "option_id": "option_x",
+            "actions": [
+                {
+                    "op": "draw_cards",
+                    "quantity": {"kind": "fixed", "value": 1},
+                    "metadata": {"requires_focus": True, "focus_aspect": "obedience"},
+                },
+                {
+                    "op": "draw_cards",
+                    "quantity": {"kind": "fixed", "value": 1},
+                    "metadata": {"requires_focus": True, "focus_aspect": "destruction"},
+                },
+            ],
+        }
+        result = _describe_option(option, available_aspects=frozenset({"guile"}))
+        assert result == "unknown"
+
+    def test_mixed_focus_and_non_focus_actions(self):
+        option = {
+            "option_id": "option_x",
+            "actions": [
+                {
+                    "op": "gain_resource",
+                    "quantity": {"kind": "fixed", "value": 3},
+                    "metadata": {"resource": "power"},
+                },
+                {
+                    "op": "draw_cards",
+                    "quantity": {"kind": "fixed", "value": 2},
+                    "metadata": {"requires_focus": True, "focus_aspect": "malice"},
+                },
+            ],
+        }
+        result = _describe_option(option, available_aspects=frozenset({"malice"}))
+        assert result == "Gain 3 power and Draw cards (x2) (malice)"
+
+
+class TestViewHelpers:
+    """Unit tests for the aspect-computation helpers in view.py."""
+
+    @staticmethod
+    def _make_card_view(card_id, aspect, secondary_aspects=()):
+        from engine_c.bindings.view import CardView
+        return CardView(
+            card_id=card_id, name="Test", cost=1, aspect=aspect,
+            deck_vp=1, inner_circle_vp=1, rules_text="", notes="",
+            secondary_aspects=secondary_aspects,
+        )
+
+    def test_compute_player_card_aspects_collects_primary(self):
+        from engine_c.bindings.view import _compute_player_card_aspects
+        cv = self._make_card_view("fire_elemental", "malice")
+        result = _compute_player_card_aspects([cv], [], [])
+        assert result == {"fire_elemental": frozenset({"malice"})}
+
+    def test_compute_player_card_aspects_collects_secondary(self):
+        from engine_c.bindings.view import _compute_player_card_aspects
+        cv = self._make_card_view("fire_elemental", "malice", ("elemental",))
+        result = _compute_player_card_aspects([cv], [], [])
+        assert result == {"fire_elemental": frozenset({"malice", "elemental"})}
+
+    def test_compute_player_card_aspects_across_zones(self):
+        from engine_c.bindings.view import _compute_player_card_aspects
+        hand_cv = self._make_card_view("fire_elemental", "malice")
+        ic_cv = self._make_card_view("shade_enforcer", "malice")
+        played_cv = self._make_card_view("noble", "obedience")
+        result = _compute_player_card_aspects([hand_cv], [played_cv], [ic_cv])
+        assert result == {
+            "fire_elemental": frozenset({"malice"}),
+            "noble": frozenset({"obedience"}),
+            "shade_enforcer": frozenset({"malice"}),
+        }
+
+    def test_available_aspects_excludes_source(self):
+        from engine_c.bindings.view import _available_aspects_for_source
+        player_aspects = {
+            "fire_elemental": frozenset({"malice"}),
+            "shade_enforcer": frozenset({"malice"}),
+        }
+        result = _available_aspects_for_source(player_aspects, "fire_elemental")
+        assert result == frozenset({"malice"})
+
+    def test_available_aspects_source_only_card_removes_aspect(self):
+        from engine_c.bindings.view import _available_aspects_for_source
+        player_aspects = {"fire_elemental": frozenset({"malice"})}
+        result = _available_aspects_for_source(player_aspects, "fire_elemental")
+        assert result == frozenset()
+
+    def test_available_aspects_empty_player_aspects(self):
+        from engine_c.bindings.view import _available_aspects_for_source
+        result = _available_aspects_for_source({}, "fire_elemental")
+        assert result == frozenset()
+
+    def test_available_aspects_unknown_source(self):
+        from engine_c.bindings.view import _available_aspects_for_source
+        player_aspects = {"shade_enforcer": frozenset({"malice"})}
+        result = _available_aspects_for_source(player_aspects, "fire_elemental")
+        assert result == frozenset({"malice"})
+
+    def test_available_aspects_none_player_aspects(self):
+        from engine_c.bindings.view import _available_aspects_for_source
+        result = _available_aspects_for_source(None, "fire_elemental")
+        assert result == frozenset()
+
+
+class TestNoRegressionsWithFocusParam:
+    """Non-focus cards still work when player_available_aspects is passed."""
+
+    def test_dragon_cultist_with_aspects_param(self):
+        """Dragon Cultist has no focus actions; passing aspects changes nothing."""
+        result = enrich_label(
+            "resolve_generic",
+            "Resolve option_1",
+            {"action_id": "option_1", "selection_index": 0},
+            source_card_id="dragon_cultist",
+            is_option_choice=True,
+            player_available_aspects=frozenset({"guile", "obedience"}),
+        )
+        assert result == "Dragon Cultist: Gain 2 power"
+
+    def test_ettin_with_aspects_param(self):
+        """Ettin has no focus actions; passing aspects changes nothing."""
+        result = enrich_label(
+            "resolve_generic",
+            "Resolve option_1",
+            {"action_id": "option_1", "selection_index": 0},
+            source_card_id="ettin",
+            is_option_choice=True,
+            player_available_aspects=frozenset({"malice"}),
+        )
+        assert result == "Ettin: Deploy troops (x3)"

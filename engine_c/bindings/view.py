@@ -15,13 +15,16 @@ import json
 from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
-from typing import Optional, Sequence
 
 from .engine_bindings import (
-    _lib, Sym, GameStateStruct, CGameView,
-    MAX_PLAYERS, MAX_NODES, MAX_ZONE_SIZE, MAX_TROOP_SLOTS, MAX_SPY_SLOTS,
-    PHASE_SETUP, PHASE_DRAW, PHASE_MAIN, PHASE_END_OF_TURN,
-    PHASE_CLEANUP, PHASE_GAME_OVER,
+    PHASE_CLEANUP,
+    PHASE_DRAW,
+    PHASE_END_OF_TURN,
+    PHASE_GAME_OVER,
+    PHASE_MAIN,
+    PHASE_SETUP,
+    CGameView,
+    _lib,
 )
 from .label_enrich import enrich_label
 
@@ -35,7 +38,7 @@ _PHASE_MAP = {
 }
 
 
-def _sym_str(sym) -> Optional[str]:
+def _sym_str(sym) -> str | None:
     if sym == 0:
         return None
     return _lib.intern_str(sym).decode()
@@ -77,7 +80,7 @@ class NodeOccupancyView:
     adjacent_to: tuple[str, ...]
     control_vp: int
     total_control_vp_per_turn: int
-    troop_slots: tuple[Optional[str], ...]
+    troop_slots: tuple[str | None, ...]
     spies: tuple[str, ...]
     vp_tokens: int
 
@@ -107,7 +110,7 @@ class CGameViewData:
     prompts: tuple[str, ...] = ()
     legal_moves: tuple = ()
     is_terminal: bool = False
-    winner_id: Optional[str] = None
+    winner_id: str | None = None
     final_scores: dict[str, int] = field(default_factory=dict)
 
     @property
@@ -167,7 +170,27 @@ def _make_card_view(card_id: str) -> CardView:
     )
 
 
-def _build_c_legal_moves(session, state_ptr, *, node_names=None, player_spy_count=0) -> tuple:
+def _compute_player_card_aspects(hand, played, inner_circle):
+    """Return {card_id: frozenset([aspect, *secondary_aspects])} for the current player."""
+    result = {}
+    for cv in list(hand) + list(played) + list(inner_circle):
+        if isinstance(cv, CardView):
+            result[cv.card_id] = frozenset([cv.aspect, *cv.secondary_aspects])
+    return result
+
+
+def _available_aspects_for_source(player_card_aspects, source_card_id):
+    if not player_card_aspects:
+        return frozenset()
+    aspects = set()
+    for cid, card_aspects in player_card_aspects.items():
+        if cid != source_card_id:
+            aspects.update(card_aspects)
+    return frozenset(aspects)
+
+
+def _build_c_legal_moves(session, state_ptr, *, node_names=None, player_spy_count=0,
+                          player_card_aspects=None) -> tuple:
     try:
         moves = session.legal_moves()
     except Exception:
@@ -221,6 +244,9 @@ def _build_c_legal_moves(session, state_ptr, *, node_names=None, player_spy_coun
                         ).decode()
             except Exception:
                 pass
+        player_available_aspects = None
+        if player_card_aspects is not None and source_card_id:
+            player_available_aspects = _available_aspects_for_source(player_card_aspects, source_card_id)
         final_label = enrich_label(
             mw.move_type, raw_label, mw.data,
             source_card_id=source_card_id,
@@ -231,6 +257,7 @@ def _build_c_legal_moves(session, state_ptr, *, node_names=None, player_spy_coun
             promotion_source_card_id=promotion_source_card_id,
             promotion_aspect=promotion_aspect,
             node_names=node_names,
+            player_available_aspects=player_available_aspects,
         )
         available = mw.data.get("target_id") != "unavailable"
         if not available:
@@ -281,7 +308,7 @@ def _session_attr(session, name: str, default=None):
 def build_c_game_view(
     session,
     *,
-    node_names: Optional[dict[str, str]] = None,
+    node_names: dict[str, str] | None = None,
 ) -> CGameViewData:
     """Project a CSession or CState into a client-friendly view model.
 
@@ -368,6 +395,8 @@ def build_c_game_view(
                     trophy_hall.append(t)
             current_player_deck_count = zv.deck_count
 
+    player_card_aspects = _compute_player_card_aspects(hand, played, inner_circle)
+
     market_row: list[CardView] = []
     for j in range(c_view.market_row_count):
         cid = _sym_str(c_view.market_row[j])
@@ -385,7 +414,7 @@ def build_c_game_view(
             if a:
                 adjacent.append(a)
 
-        troop_slots: list[Optional[str]] = []
+        troop_slots: list[str | None] = []
         for j in range(nv.troop_slot_count):
             t = _sym_str(nv.troop_slots[j])
             troop_slots.append(t)
@@ -429,7 +458,7 @@ def build_c_game_view(
         player_summaries=tuple(player_summaries),
         board_nodes=tuple(board_nodes),
         prompts=(f"{current_player_id} is acting in {_PHASE_MAP.get(c_view.phase, 'unknown').replace('_', ' ')}.",),
-        legal_moves=_build_c_legal_moves(session, state_ptr, node_names=node_names, player_spy_count=player_spy_count),
+        legal_moves=_build_c_legal_moves(session, state_ptr, node_names=node_names, player_spy_count=player_spy_count, player_card_aspects=player_card_aspects),
         is_terminal=_session_attr(session, "is_terminal"),
         winner_id=_session_attr(session, "winner_id"),
         final_scores=_session_attr(session, "final_scores", default={}),
