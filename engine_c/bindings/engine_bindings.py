@@ -229,6 +229,7 @@ class PendingPromotionState(Structure):
         ("deferred_choice", c_bool), ("source_card_id", Sym),
         ("requires_another_played_card", c_bool),
         ("required_aspect", Sym), ("required_secondary_aspect", Sym),
+        ("focus_aspect", Sym),
         ("repeat_while_targets", c_bool),
         ("promotions_remaining", c_int),
     ]
