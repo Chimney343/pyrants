@@ -256,14 +256,14 @@ static void test_focus_requirement_met(void) {
     ps->hand_count = 2;
     ps->played_cards[0] = air_el;
     ps->played_cards_count = 1;
-    int met = focus_requirement_met(gs, p1, ae_def, air_el);
+    int met = focus_requirement_met(gs, p1, ae_def, air_el, SYM_NULL);
     assert(met == 1);
 
     /* Case 2: only one copy, no other guile card — focus NOT met. */
     ps->hand_count = 0;
     ps->played_cards[0] = air_el;
     ps->played_cards_count = 1;
-    met = focus_requirement_met(gs, p1, ae_def, air_el);
+    met = focus_requirement_met(gs, p1, ae_def, air_el, SYM_NULL);
     assert(met == 0);
 
     /* Case 3: different guile card in hand — focus met. */
@@ -271,7 +271,7 @@ static void test_focus_requirement_met(void) {
     ps->hand_count = 1;
     ps->played_cards[0] = air_el;
     ps->played_cards_count = 1;
-    met = focus_requirement_met(gs, p1, ae_def, air_el);
+    met = focus_requirement_met(gs, p1, ae_def, air_el, SYM_NULL);
     assert(met == 1);
 
     /* Case 4: different guile card in played_cards — focus met. */
@@ -279,7 +279,7 @@ static void test_focus_requirement_met(void) {
     ps->played_cards[0] = air_el;
     ps->played_cards[1] = banshee;
     ps->played_cards_count = 2;
-    met = focus_requirement_met(gs, p1, ae_def, air_el);
+    met = focus_requirement_met(gs, p1, ae_def, air_el, SYM_NULL);
     assert(met == 1);
 
     printf("PASS: focus_requirement_met\n");

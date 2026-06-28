@@ -416,17 +416,28 @@ static int sel_recruit(const GameState *state, Sym player_id,
                         const CardDefinition *card, const CardAction *action,
                         Move *out, int max_out) {
     int w = 0;
+    Sym required_aspect = SYM_NULL;
+    int max_cost = -1;
+    for (int mi = 0; mi < action->metadata_count; mi++) {
+        const char *mk = intern_str(action->metadata[mi].key);
+        const char *mv = intern_str(action->metadata[mi].value);
+        if (mk && strcmp(mk, "required_aspect") == 0 && mv) required_aspect = intern(mv);
+        if (mk && strcmp(mk, "max_cost") == 0 && mv) max_cost = atoi(mv);
+    }
+    int free_recruit = (max_cost >= 0);
     for (int s = 0; s < state->market.row_count && w < max_out; s++) {
         Sym cid = state->market.row[s];
         const CardDefinition *cd = NULL;
         for (int i = 0; i < state->definition->catalog.card_count; i++)
             if (state->definition->catalog.cards[i].card_id == cid) { cd = &state->definition->catalog.cards[i]; break; }
-        if (cd && state->resource_pool.influence >= cd->cost) {
-            out[w].type = MOVE_RESOLVE_GENERIC;
-            out[w].data.resolve_generic.action_id = cid;
-            out[w].player_index = 0;
-            w++;
-        }
+        if (!cd) continue;
+        if (required_aspect != SYM_NULL && cd->aspect != required_aspect) continue;
+        if (max_cost >= 0 && cd->cost > max_cost) continue;
+        if (!free_recruit && state->resource_pool.influence < cd->cost) continue;
+        out[w].type = MOVE_RESOLVE_GENERIC;
+        out[w].data.resolve_generic.action_id = cid;
+        out[w].player_index = 0;
+        w++;
     }
     return w;
 }

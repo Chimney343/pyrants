@@ -19,10 +19,10 @@ test:
     & {{python}} -m pytest -q
 
 test-c:
-    & engine_c/test_engine.exe
-    & engine_c/test_view.exe
-    & engine_c/test_describe.exe
-    & engine_c/test_saveload.exe
+    & .\engine_c\test_engine.exe
+    & .\engine_c\test_view.exe
+    & .\engine_c\test_describe.exe
+    & .\engine_c\test_saveload.exe
 
 test-c-python: generate-test-card-scenarios
     & {{python}} -m pytest tests/c_engine -v
@@ -90,15 +90,35 @@ openspiel-smoke:
     & {{python}} -c "import openspiel_pyrants; import pyspiel; g = pyspiel.load_game('python_pyrants'); print('Registered:', g.get_type().short_name); s = g.new_initial_state(); print('State created, chance_node:', s.is_chance_node()); actions = s.legal_actions(); print('Chance actions:', len(actions)); s._apply_action(42); print('After chance:', str(s)[:120])"
 
 # ── Scenario Generation ─────────────────────────────────────────────────────
+#
+# generate-card-scenarios [workers] [spy] [aspect] [seed] [attempts] [steps]
+#   spy:   "true" to require the current player to have a spy on the board.
+#   aspect: "ASPECT:COUNT" to require COUNT cards of ASPECT in hand (e.g. "guile:2").
+#   Both are AND-combined with the always-on "target card playable now" condition.
+# Examples:
+#   just generate-card-scenarios
+#   just generate-card-scenarios 1 true
+#   just generate-card-scenarios 1 false guile:2
+#   just generate-card-scenarios 1 true guile:2
 
-generate-card-scenarios workers="1" seed="4" attempts="30" steps="3000":
-    $sw = [System.Diagnostics.Stopwatch]::StartNew(); $outDir = "data/scenarios/batch_card_generation"; & {{python}} scripts/generate_card_scenarios.py --output-dir $outDir --base-seed {{seed}} --max-attempts {{attempts}} --max-steps {{steps}} --workers {{workers}}; $exit = $LASTEXITCODE; $sw.Stop(); $elapsed = [math]::Round($sw.Elapsed.TotalSeconds, 1); Write-Host "Runtime: ${elapsed}s"; Set-Content -Path (Join-Path $outDir "runtime.txt") -Value "Runtime: ${elapsed}s"; if ($exit -ne 0) { exit $exit }
+generate-card-scenarios workers="1" spy="false" aspect="" seed="4" attempts="30" steps="3000":
+    $sw = [System.Diagnostics.Stopwatch]::StartNew(); $outDir = "data/scenarios/batch_card_generation"; $flags = @('--output-dir', $outDir, '--base-seed', '{{seed}}', '--max-attempts', '{{attempts}}', '--max-steps', '{{steps}}', '--workers', '{{workers}}'); if ('{{spy}}' -eq 'true') { $flags += @('--require-spy-on-board') }; if ('{{aspect}}' -ne '') { $flags += @('--require-aspect', '{{aspect}}') }; & {{python}} scripts/generate_card_scenarios.py $flags; $exit = $LASTEXITCODE; $sw.Stop(); $elapsed = [math]::Round($sw.Elapsed.TotalSeconds, 1); Write-Host "Runtime: ${elapsed}s"; Set-Content -Path (Join-Path $outDir "runtime.txt") -Value "Runtime: ${elapsed}s"; if ($exit -ne 0) { exit $exit }
 
 generate-test-card-scenarios workers="1" seed="4" attempts="30" steps="3000":
-    $sw = [System.Diagnostics.Stopwatch]::StartNew(); $outDir = "data/scenarios/test_card_generation"; if ((Test-Path -LiteralPath $outDir) -and (Get-ChildItem -LiteralPath $outDir -Filter "*_seed_4_*.json" | Select-Object -First 1)) { Write-Host "Test scenario folder already populated; skipping regeneration." } else { & {{python}} scripts/generate_card_scenarios.py --output-dir $outDir --base-seed {{seed}} --max-attempts {{attempts}} --max-steps {{steps}} --workers {{workers}}; $exit = $LASTEXITCODE; $sw.Stop(); $elapsed = [math]::Round($sw.Elapsed.TotalSeconds, 1); Write-Host "Runtime: ${elapsed}s"; Set-Content -Path (Join-Path $outDir "runtime.txt") -Value "Runtime: ${elapsed}s"; if ($exit -ne 0) { exit $exit } }
+    $sw = [System.Diagnostics.Stopwatch]::StartNew(); $outDir = "data/scenarios/test_card_generation"; if ((Test-Path -LiteralPath $outDir) -and (Get-ChildItem -LiteralPath $outDir -Filter "*_seed_4_*.json" | Select-Object -First 1)) { Write-Host "Test scenario folder already populated; skipping regeneration." } else { $flags = @('--output-dir', $outDir, '--base-seed', '{{seed}}', '--max-attempts', '{{attempts}}', '--max-steps', '{{steps}}', '--workers', '{{workers}}'); & {{python}} scripts/generate_card_scenarios.py $flags; $exit = $LASTEXITCODE; $sw.Stop(); $elapsed = [math]::Round($sw.Elapsed.TotalSeconds, 1); Write-Host "Runtime: ${elapsed}s"; Set-Content -Path (Join-Path $outDir "runtime.txt") -Value "Runtime: ${elapsed}s"; if ($exit -ne 0) { exit $exit } }
 
-generate-card-scenario card_id seed="4" attempts="30" steps="3000":
-    $sw = [System.Diagnostics.Stopwatch]::StartNew(); $outDir = "data/scenarios/random_card_generation"; & {{python}} scripts/generate_card_scenarios.py --output-dir $outDir --base-seed {{seed}} --max-attempts {{attempts}} --max-steps {{steps}} --card-id {{card_id}}; $exit = $LASTEXITCODE; $sw.Stop(); $elapsed = [math]::Round($sw.Elapsed.TotalSeconds, 1); Write-Host "Runtime: ${elapsed}s"; if ($exit -ne 0) { exit $exit }
+# generate-card-scenario <card_id> [spy] [aspect] [seed] [attempts] [steps]
+#   spy:   "true" to require the current player to have a spy on the board.
+#   aspect: "ASPECT:COUNT" to require COUNT cards of ASPECT in hand (e.g. "guile:2").
+#   Both are AND-combined with the always-on "target card playable now" condition.
+# Examples:
+#   just generate-card-scenario noble
+#   just generate-card-scenario noble true
+#   just generate-card-scenario noble false guile:2
+#   just generate-card-scenario noble true guile:2
+
+generate-card-scenario card_id spy="false" aspect="" seed="4" attempts="30" steps="10000":
+    $sw = [System.Diagnostics.Stopwatch]::StartNew(); $outDir = "data/scenarios/random_card_generation"; $flags = @('--output-dir', $outDir, '--base-seed', '{{seed}}', '--max-attempts', '{{attempts}}', '--max-steps', '{{steps}}', '--card-id', '{{card_id}}'); if ('{{spy}}' -eq 'true') { $flags += @('--require-spy-on-board') }; if ('{{aspect}}' -ne '') { $flags += @('--require-aspect', '{{aspect}}') }; & {{python}} scripts/generate_card_scenarios.py $flags; $exit = $LASTEXITCODE; $sw.Stop(); $elapsed = [math]::Round($sw.Elapsed.TotalSeconds, 1); Write-Host "Runtime: ${elapsed}s"; if ($exit -ne 0) { exit $exit }
 
 regenerate-canonical-scenarios:
     & {{python}} scripts/regenerate_canonical_scenarios.py

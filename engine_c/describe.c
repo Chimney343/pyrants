@@ -38,6 +38,15 @@ static const char *_humanize_id(const char *id_str) {
     return buf;
 }
 
+static const char *_player_label(const char *id_str) {
+    if (id_str && (id_str[0]=='p'||id_str[0]=='P') && id_str[1]>='0' && id_str[1]<='9') {
+        static char buf[32];
+        snprintf(buf, sizeof(buf), "Player %s", id_str+1);
+        return buf;
+    }
+    return id_str ? id_str : "unknown";
+}
+
 static const char *node_label(const char *node_id_str,
                               const char *const *node_ids,
                               const char *const *node_labels,
@@ -59,7 +68,7 @@ static const char *troop_owner_label(const GameState *state, Sym node_id, int sl
             if (slot_index < 0 || slot_index >= ns->troop_slot_count) return "unknown";
             Sym owner = ns->troop_slots[slot_index];
             if (owner == SYM_NULL) return "empty";
-            return intern_str(owner);
+            return _player_label(intern_str(owner));
         }
     }
     return "unknown";
@@ -106,7 +115,7 @@ int engine_describe_move(const GameState *state, const Move *move,
                                                    move->data.assassinate.slot_index);
             const char *nid = intern_str(move->data.assassinate.target_node_id);
             const char *label = node_label(nid, node_ids, node_labels, node_pair_count);
-            snprintf(buf, sizeof(buf), "Remove %s troop from %s", owner, label);
+            snprintf(buf, sizeof(buf), "Assassinate %s troop at %s", owner, label);
             break;
         }
         case MOVE_RECRUIT: {
@@ -115,7 +124,7 @@ int engine_describe_move(const GameState *state, const Move *move,
             break;
         }
         case MOVE_RETURN_SPY: {
-            const char *owner = intern_str(move->data.return_spy.spy_owner_id);
+            const char *owner = _player_label(intern_str(move->data.return_spy.spy_owner_id));
             const char *nid = intern_str(move->data.return_spy.node_id);
             const char *label = node_label(nid, node_ids, node_labels, node_pair_count);
             snprintf(buf, sizeof(buf), "Return %s's spy from %s", owner, label);
@@ -142,7 +151,7 @@ int engine_describe_move(const GameState *state, const Move *move,
         case MOVE_RESOLVE_GENERIC: {
             Sym aid = move->data.resolve_generic.action_id;
             if (aid == SYM_NULL) {
-                snprintf(buf, sizeof(buf), "Skip (resign)");
+                snprintf(buf, sizeof(buf), "Skip");
             } else if (state && state->pending_generic) {
                 const CardAction *act = pending_generic_active_action(state->pending_generic);
                 if (act) {
@@ -165,7 +174,7 @@ int engine_describe_move(const GameState *state, const Move *move,
                         }
                         const char *owner = troop_owner_label(state, aid, slot_idx);
                         const char *label = node_label(intern_str(aid), node_ids, node_labels, node_pair_count);
-                        snprintf(buf, sizeof(buf), "Remove %s troop from %s", owner, label);
+                        snprintf(buf, sizeof(buf), "Assassinate %s troop at %s", owner, label);
                     } else if (op && strcmp(op, "supplant_troop") == 0) {
                         Sym tid = move->data.resolve_generic.target_id;
                         int slot_idx = 0;
@@ -195,7 +204,7 @@ int engine_describe_move(const GameState *state, const Move *move,
                                 && (ts[1] == 'p' || ts[1] == 'P')
                                 && (ts[2] == 'y' || ts[2] == 'Y')
                                 && ts[3] == ':') {
-                                const char *spy_owner = ts + 4;
+                                const char *spy_owner = _player_label(ts + 4);
                                 snprintf(buf, sizeof(buf), "Return %s's spy from %s", spy_owner, label);
                             } else {
                                 snprintf(buf, sizeof(buf), "Return unit from %s", label);
@@ -251,7 +260,7 @@ int engine_describe_move(const GameState *state, const Move *move,
                                 if (ts) trophy_idx = atoi(ts);
                             }
                             char sp_label_buf[32];
-                            snprintf(sp_label_buf, sizeof(sp_label_buf), "%s", _humanize_id(intern_str(aid)));
+                            snprintf(sp_label_buf, sizeof(sp_label_buf), "%s", _player_label(intern_str(aid)));
                             const char *trophy_type = "troop";
                             for (int p = 0; p < state->player_count; p++) {
                                 if (state->players[p].player_id == aid) {
@@ -261,7 +270,7 @@ int engine_describe_move(const GameState *state, const Move *move,
                                         if (oc && strcmp(oc, "white") == 0) trophy_type = "white";
                                         else if (oc) {
                                             char tt_buf[32];
-                                            snprintf(tt_buf, sizeof(tt_buf), "%s", _humanize_id(oc));
+                                            snprintf(tt_buf, sizeof(tt_buf), "%s", _player_label(oc));
                                             trophy_type = tt_buf;
                                         }
                                     }
@@ -302,7 +311,7 @@ int engine_describe_move(const GameState *state, const Move *move,
                                                             if (oc && strcmp(oc, "white") == 0)
                                                                 snprintf(trophy_type_buf, sizeof(trophy_type_buf), "white");
                                                             else if (oc)
-                                                                snprintf(trophy_type_buf, sizeof(trophy_type_buf), "%s", _humanize_id(oc));
+                                                                snprintf(trophy_type_buf, sizeof(trophy_type_buf), "%s", _player_label(oc));
                                                         }
                                                     }
                                                     break;
@@ -345,10 +354,7 @@ int engine_describe_move(const GameState *state, const Move *move,
                                                             if (mv) res = mv;
                                                         }
                                                     }
-                                                    char rbuf[32];
-                                                    snprintf(rbuf, sizeof(rbuf), "%s", res);
-                                                    rbuf[0] = (char)toupper((unsigned char)rbuf[0]);
-                                                    snprintf(buf, sizeof(buf), "Gain %d %s", count, rbuf);
+                                                    snprintf(buf, sizeof(buf), "Gain %d %s", count, res);
                                                 } else if (op && strcmp(op, "draw_cards") == 0) {
                                                     int count = a->quantity_kind == QUANT_FIXED ? a->quantity_value : 1;
                                                     snprintf(buf, sizeof(buf), "Draw %d card%s", count, count == 1 ? "" : "s");

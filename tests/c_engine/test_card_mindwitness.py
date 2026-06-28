@@ -44,15 +44,18 @@ def test_mindwitness_assassinate_labels() -> None:
     labels = [v.label for v in view.legal_moves]
     assert labels, "No legal assassinate targets"
     for label in labels:
-        assert "Remove " in label, f"Label missing 'Remove': {label}"
-        assert " troop from " in label, f"Label missing 'troop from': {label}"
+        assert "Assassinate " in label, f"Label missing 'Assassinate': {label}"
+        assert " troop at " in label, f"Label missing 'troop at': {label}"
 
     session.destroy()
 
 
 def _target_owner_from_label(label: str) -> str:
-    """Extract owner id from a resolve_generic label like 'Remove p3 troop from ...'."""
-    return label.split()[1]
+    """Extract owner id from a resolve_generic label like 'Assassinate Player 3 troop at ...'."""
+    parts = label.split()
+    if len(parts) >= 3 and parts[1] == "Player":
+        return f"p{parts[2]}"
+    return parts[1]
 
 
 def test_mindwitness_discards_owners_random_card() -> None:

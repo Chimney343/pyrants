@@ -17,6 +17,7 @@ from game_setup.market_setup import (
     discover_full_deck_profiles,
 )
 from game_setup.scenario_generation.card_scenarios import (
+    StopConditions,
     _resolve_two_deck_pairing,
     iter_roster_card_ids,
 )
@@ -24,10 +25,37 @@ from game_setup.scenario_generation.card_scenarios import (
 from .ce_api import CEngine, CMoveWrapper, CState
 from .engine_bindings import _lib
 from .session import CSession
+from .view import _catalog_cache
 
 FORCED_INJECTIONS_FILENAME = "forced_injections.json"
 
 CARD_SCENARIO_PICK_WEIGHTS = {"recruit": 8.0, "play_card": 4.0, "other": 1.0}
+
+
+def _evaluate_stop_conditions(engine: CEngine, state: CState, conditions: StopConditions) -> bool:
+    if conditions.require_spy_on_board:
+        current_sym = state._s.current_player_id
+        spy_found = False
+        for i in range(state._s.node_count):
+            node = state._s.nodes[i]
+            for j in range(node.spy_count):
+                if node.spies[j] == current_sym:
+                    spy_found = True
+                    break
+            if spy_found:
+                break
+        if not spy_found:
+            return False
+
+    if conditions.require_aspect and conditions.require_aspect_count > 0:
+        cat = _catalog_cache()
+        current_idx = state.player_ids.index(state.current_player_id)
+        hand = state.player_hand(current_idx)
+        count = sum(1 for cid in hand if cat.get(cid, {}).get("aspect") == conditions.require_aspect)
+        if count < conditions.require_aspect_count:
+            return False
+
+    return True
 
 
 def _classify_moves_c(
@@ -108,6 +136,7 @@ def _search_card_scenario_c(
     max_attempts: int,
     max_steps_per_attempt: int,
     verbose: bool = False,
+    conditions: StopConditions | None = None,
 ) -> tuple[CState | None, CState, list[str], list[str]]:
     roster_a_id, roster_b_id, special_stacks_present = _resolve_two_deck_pairing(
         rosters_path=rosters_path,
@@ -133,11 +162,13 @@ def _search_card_scenario_c(
                 break
             playable_now, injectable, weights = _classify_moves_c(engine, moves, target_card_id, state)
             if playable_now:
-                if verbose:
-                    print(f"  found at attempt {attempt + 1}, step {step}")
-                if fallback_state is not None:
-                    engine.destroy(fallback_state)
-                return state, state, market_deck_ids, special_stacks_present
+                extra = conditions or StopConditions()
+                if _evaluate_stop_conditions(engine, state, extra):
+                    if verbose:
+                        print(f"  found at attempt {attempt + 1}, step {step}")
+                    if fallback_state is not None:
+                        engine.destroy(fallback_state)
+                    return state, state, market_deck_ids, special_stacks_present
             if injectable:
                 if fallback_state is not None:
                     engine.destroy(fallback_state)
@@ -221,6 +252,7 @@ def ensure_card_scenario_c(
     max_attempts: int = 20,
     max_steps_per_attempt: int = 1000,
     verbose: bool = False,
+    conditions: StopConditions | None = None,
 ) -> tuple[CState, dict[str, object] | None, list[str], list[str]]:
     players = player_ids or ["p1", "p2", "p3", "p4"]
     rp = rosters_path or Path("data/decks")
@@ -265,6 +297,7 @@ def ensure_card_scenario_c(
         max_attempts=max_attempts,
         max_steps_per_attempt=max_steps_per_attempt,
         verbose=verbose,
+        conditions=conditions,
     )
 
     if found_state is not None:
@@ -332,6 +365,7 @@ def generate_card_scenarios_c(
     card_ids: list[str] | None = None,
     workers: int = 1,
     pretty: bool = False,
+    conditions: StopConditions | None = None,
 ) -> tuple[list[Path], list[str]]:
     players = player_ids or ["p1", "p2", "p3", "p4"]
     rp = rosters_path or Path("data/decks")
@@ -367,6 +401,7 @@ def generate_card_scenarios_c(
                 max_attempts=max_attempts,
                 max_steps_per_attempt=max_steps_per_attempt,
                 verbose=False,
+                conditions=conditions,
             )
         except Exception:
             missing.append(card_id)
@@ -379,6 +414,11 @@ def generate_card_scenarios_c(
         filename = f"{padded_index}_seed_{base_seed}_{card_id}.json"
         path = output_dir / filename
         tags: list[str] = ["generated", "cards", "reachable", "playable_now"]
+        if conditions is not None:
+            if conditions.require_spy_on_board:
+                tags.append("spy_on_board")
+            if conditions.require_aspect and conditions.require_aspect_count > 0:
+                tags.append(f"aspect_{conditions.require_aspect}_{conditions.require_aspect_count}")
         description = f"Reachable 4-player Tyrants scenario for {card_id}"
         if injection_note is not None:
             tags = ["generated", "cards", "forced_injection"]

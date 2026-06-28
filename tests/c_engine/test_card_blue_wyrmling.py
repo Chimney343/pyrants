@@ -21,7 +21,7 @@ def _play_card(session: CSession, card_id: str) -> None:
 
 
 def test_blue_wyrmling_return_spy_label():
-    """Returning a spy should show 'Return p1's spy from <site>' label."""
+    """Returning a spy should show 'Return Player 1's spy from <site>' label."""
     eng = CEngine()
     eng.initialize(
         catalog_path=str(DATA_DIR / "cards" / "catalog.json"),
@@ -46,7 +46,7 @@ def test_blue_wyrmling_return_spy_label():
     for m in return_moves:
         label = m.label or ""
         assert "Return" in label, f"Label should contain 'Return': {label}"
-        assert "p1" in label, f"Label should contain player ID 'p1': {label}"
+        assert "Player 1" in label, f"Label should contain 'Player 1': {label}"
         assert "spy" in label, f"Label should contain unit type 'spy': {label}"
         assert "from" in label, f"Label should contain 'from': {label}"
         assert "Gauntlgrym" in label, f"Label should contain site name: {label}"
@@ -80,7 +80,7 @@ def test_blue_wyrmling_return_troop_label():
     for m in return_moves:
         label = m.label or ""
         assert "Return" in label, f"Label should contain 'Return': {label}"
-        assert "p1" in label, f"Label should contain player ID 'p1': {label}"
+        assert "Player 1" in label, f"Label should contain 'Player 1': {label}"
         assert "troop" in label, f"Label should contain unit type 'troop': {label}"
         assert "from" in label, f"Label should contain 'from': {label}"
         assert "Gauntlgrym" in label, f"Label should contain site name: {label}"

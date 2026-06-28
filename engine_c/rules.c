@@ -37,7 +37,7 @@ static GameState *apply_effect_with_wrappers(GameState *state, Sym player_id,
         if (k && strcmp(k, "focus_required") == 0 && v && strcmp(v, "true") == 0)
             focus_needed = 1;
     }
-    if (focus_needed && !focus_requirement_met(state, player_id, card, source_card_id))
+    if (focus_needed && !focus_requirement_met(state, player_id, card, source_card_id, SYM_NULL))
         return state;
 
     EffectFn effect = lookup_effect(card->effect_key);

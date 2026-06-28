@@ -12,6 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from engine_c.bindings.scenario_search import (  # noqa: E402, I001
+    StopConditions,
     ensure_card_scenario_c,
     generate_card_scenarios_c,
     save_c_scenario,
@@ -58,6 +59,8 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--workers", type=int, default=1, help="Number of parallel workers (default: 1)")
     parser.add_argument("--pretty", action="store_true", help="Write pretty-printed JSON (indent=2)")
     parser.add_argument("--legacy-market", action="store_true", help="Use legacy market-scoping (ad-hoc filtering)")
+    parser.add_argument("--require-spy-on-board", action="store_true", help="Require current player to have a spy on the board")
+    parser.add_argument("--require-aspect", type=str, default=None, help="Require N cards of ASPECT in hand (format: ASPECT:COUNT, e.g. guile:2)")
     parser.add_argument("--engine", type=str, default="c", choices=["c", "python"],
                         help="Engine to use: c (default) or python")
     return parser.parse_args(argv)
@@ -75,12 +78,34 @@ def _run_list_mode(rosters_path: Path) -> None:
         print(cid)
 
 
+def _build_stop_conditions(args: argparse.Namespace) -> StopConditions:
+    require_aspect: str | None = None
+    require_aspect_count: int = 0
+    if args.require_aspect:
+        parts = args.require_aspect.split(":")
+        if len(parts) != 2:
+            raise ValueError(f"Invalid --require-aspect format: {args.require_aspect!r}. Expected ASPECT:COUNT (e.g. guile:2)")
+        require_aspect = parts[0].strip()
+        try:
+            require_aspect_count = int(parts[1])
+        except ValueError:
+            raise ValueError(f"Invalid count in --require-aspect: {args.require_aspect!r}. Count must be an integer.") from None
+        if require_aspect_count <= 0:
+            raise ValueError(f"Invalid count in --require-aspect: {args.require_aspect!r}. Count must be positive."    )
+    return StopConditions(
+        require_spy_on_board=args.require_spy_on_board,
+        require_aspect=require_aspect,
+        require_aspect_count=require_aspect_count,
+    )
+
+
 def _use_c_engine(args: argparse.Namespace) -> bool:
     return args.engine == "c" and not args.legacy_market
 
 
 def _run_single_card_mode(args: argparse.Namespace, player_ids: list[str]) -> None:
     card_id = args.card_id
+    conditions = _build_stop_conditions(args)
     logger.info("Searching for card scenario card_id=%s seed=%d", card_id, args.base_seed)
 
     if _use_c_engine(args):
@@ -95,6 +120,7 @@ def _run_single_card_mode(args: argparse.Namespace, player_ids: list[str]) -> No
             max_attempts=args.max_attempts,
             max_steps_per_attempt=args.max_steps,
             verbose=True,
+            conditions=conditions,
         )
     else:
         state, injection_note, market_deck_ids, special_stacks_present = ensure_card_scenario(
@@ -109,6 +135,7 @@ def _run_single_card_mode(args: argparse.Namespace, player_ids: list[str]) -> No
             max_steps_per_attempt=args.max_steps,
             verbose=True,
             legacy_market=args.legacy_market,
+            conditions=conditions,
         )
 
     filename = f"{card_id}_seed_{args.base_seed}.json"
@@ -160,6 +187,7 @@ def _run_single_card_mode(args: argparse.Namespace, player_ids: list[str]) -> No
 
 def _run_batch_mode(args: argparse.Namespace, player_ids: list[str]) -> None:
     all_ids = iter_roster_card_ids(args.rosters_path)
+    conditions = _build_stop_conditions(args)
     logger.info(
         "Starting batch generation cards=%d players=%d attempts=%d steps=%d",
         len(all_ids),
@@ -188,6 +216,7 @@ def _run_batch_mode(args: argparse.Namespace, player_ids: list[str]) -> None:
             max_steps_per_attempt=args.max_steps,
             workers=args.workers,
             pretty=args.pretty,
+            conditions=conditions,
         )
     else:
         saved, missing = generate_card_scenarios(
@@ -203,6 +232,7 @@ def _run_batch_mode(args: argparse.Namespace, player_ids: list[str]) -> None:
             workers=args.workers,
             pretty=args.pretty,
             legacy_market=args.legacy_market,
+            conditions=conditions,
         )
 
     notes_path = args.output_dir / FORCED_INJECTIONS_FILENAME

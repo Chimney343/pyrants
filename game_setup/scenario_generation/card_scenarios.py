@@ -46,6 +46,38 @@ DEFAULT_ROSTERS_PATH = ROOT / "data" / "decks"
 FORCED_INJECTIONS_FILENAME = "forced_injections.json"
 
 
+@dataclass
+class StopConditions:
+    require_spy_on_board: bool = False
+    require_aspect: str | None = None
+    require_aspect_count: int = 0
+
+
+def _evaluate_stop_conditions(state: GameState, conditions: StopConditions) -> bool:
+    if conditions.require_spy_on_board:
+        current_pid = state.current_player_id
+        spy_found = any(
+            current_pid in node.spies
+            for node in state.board.nodes.values()
+        )
+        if not spy_found:
+            return False
+
+    if conditions.require_aspect and conditions.require_aspect_count > 0:
+        current_player = state.players[state.current_player_id]
+        aspect_map: dict[str, str] = {}
+        for card in state.definition.catalog.cards:
+            aspect_map[card.card_id] = card.aspect
+        count = sum(
+            1 for cid in current_player.hand
+            if aspect_map.get(cid) == conditions.require_aspect
+        )
+        if count < conditions.require_aspect_count:
+            return False
+
+    return True
+
+
 def _stable_hash(s: str) -> int:
     return int.from_bytes(hashlib.blake2b(s.encode(), digest_size=8).digest(), "big")
 
@@ -292,6 +324,7 @@ def _search_card_scenario(
     max_steps_per_attempt: int = 1000,
     verbose: bool = False,
     legacy_market: bool = False,
+    conditions: StopConditions | None = None,
 ) -> tuple[GameState | None, GameState, list[str], list[str]]:
     players = player_ids or ["p1", "p2", "p3", "p4"]
     board_id = _cached_board(str(board_path)).board_id
@@ -354,9 +387,11 @@ def _search_card_scenario(
                 break
             playable_now, injectable, weights = _classify_moves(moves, target_card_id, state, board_id)
             if playable_now:
-                if verbose:
-                    print(f"  found at attempt {attempt + 1}, step {step}")
-                return state, state, market_deck_ids, special_stacks_present
+                extra = conditions or StopConditions()
+                if _evaluate_stop_conditions(state, extra):
+                    if verbose:
+                        print(f"  found at attempt {attempt + 1}, step {step}")
+                    return state, state, market_deck_ids, special_stacks_present
             if injectable:
                 fallback_state = state
             state = apply(state, _pick_weighted(moves, weights, rng))
@@ -459,6 +494,7 @@ def find_card_scenario(
     max_attempts: int = 20,
     max_steps_per_attempt: int = 1000,
     verbose: bool = False,
+    conditions: StopConditions | None = None,
 ) -> GameState | None:
     """Search for a reachable state where `target_card_id` is playable."""
     found_state, _fallback_state, _market_deck_ids, _special_stacks_present = _search_card_scenario(
@@ -472,6 +508,7 @@ def find_card_scenario(
         max_attempts=max_attempts,
         max_steps_per_attempt=max_steps_per_attempt,
         verbose=verbose,
+        conditions=conditions,
     )
     return found_state
 
@@ -489,6 +526,7 @@ def ensure_card_scenario(
     max_steps_per_attempt: int = 1000,
     verbose: bool = False,
     legacy_market: bool = False,
+    conditions: StopConditions | None = None,
 ) -> tuple[GameState, dict[str, object] | None, list[str], list[str]]:
     found_state, fallback_state, market_deck_ids, special_stacks_present = _search_card_scenario(
         target_card_id,
@@ -502,6 +540,7 @@ def ensure_card_scenario(
         max_steps_per_attempt=max_steps_per_attempt,
         verbose=verbose,
         legacy_market=legacy_market,
+        conditions=conditions,
     )
     if found_state is not None:
         return found_state, None, market_deck_ids, special_stacks_present
@@ -527,7 +566,7 @@ def write_forced_injection_notes(output_dir: Path, notes: list[dict[str, object]
 def _worker_generate_card(args: tuple) -> dict[str, object]:
     (index, card_id, board_path_str, card_path_str, setup_path_str, rosters_path_str,
      player_ids, base_seed, max_attempts, max_steps_per_attempt, out_dir_str, pretty,
-     legacy_market) = args
+     legacy_market, conditions) = args
 
     card_seed = base_seed
     state, injection_note, market_deck_ids, special_stacks_present = ensure_card_scenario(
@@ -542,6 +581,7 @@ def _worker_generate_card(args: tuple) -> dict[str, object]:
         max_steps_per_attempt=max_steps_per_attempt,
         verbose=False,
         legacy_market=legacy_market,
+        conditions=conditions,
     )
 
     padded_index = str(index + 1).zfill(3)
@@ -589,6 +629,7 @@ def generate_card_scenarios(
     workers: int = 1,
     pretty: bool = False,
     legacy_market: bool = False,
+    conditions: StopConditions | None = None,
 ) -> tuple[list[Path], list[str]]:
     """Generate one scenario per card id and save to `output_dir`."""
     players = tuple(player_ids or ["p1", "p2", "p3", "p4"])
@@ -623,6 +664,7 @@ def generate_card_scenarios(
                 max_steps_per_attempt=max_steps_per_attempt,
                 verbose=False,
                 legacy_market=legacy_market,
+                conditions=conditions,
             )
             with contextlib.suppress(AttributeError):
                 card_iter.set_postfix_str(card_id)
@@ -657,7 +699,7 @@ def generate_card_scenarios(
         (i, card_id,
          str(board_path), str(card_path), str(setup_path), str(rosters_path),
          players, base_seed, max_attempts, max_steps_per_attempt,
-         str(output_dir), pretty, legacy_market)
+         str(output_dir), pretty, legacy_market, conditions)
         for i, card_id in enumerate(target_ids)
     ]
 
@@ -700,7 +742,7 @@ class CardScenarioGenerator:
     max_steps_per_attempt: int = 1000
     legacy_market: bool = False
 
-    def find(self, target_card_id: str, *, verbose: bool = False) -> GameState | None:
+    def find(self, target_card_id: str, *, verbose: bool = False, conditions: StopConditions | None = None) -> GameState | None:
         return find_card_scenario(
             target_card_id,
             board_path=self.board_path,
@@ -712,9 +754,10 @@ class CardScenarioGenerator:
             max_attempts=self.max_attempts,
             max_steps_per_attempt=self.max_steps_per_attempt,
             verbose=verbose,
+            conditions=conditions,
         )
 
-    def ensure(self, target_card_id: str, *, verbose: bool = False) -> tuple[GameState, dict[str, object] | None, list[str], list[str]]:
+    def ensure(self, target_card_id: str, *, verbose: bool = False, conditions: StopConditions | None = None) -> tuple[GameState, dict[str, object] | None, list[str], list[str]]:
         return ensure_card_scenario(
             target_card_id,
             board_path=self.board_path,
@@ -727,6 +770,7 @@ class CardScenarioGenerator:
             max_steps_per_attempt=self.max_steps_per_attempt,
             verbose=verbose,
             legacy_market=self.legacy_market,
+            conditions=conditions,
         )
 
     def generate(
@@ -736,6 +780,7 @@ class CardScenarioGenerator:
         card_ids: list[str] | None = None,
         workers: int = 1,
         pretty: bool = False,
+        conditions: StopConditions | None = None,
     ) -> tuple[list[Path], list[str]]:
         return generate_card_scenarios(
             output_dir,
@@ -751,6 +796,7 @@ class CardScenarioGenerator:
             workers=workers,
             pretty=pretty,
             legacy_market=self.legacy_market,
+            conditions=conditions,
         )
 
     def iter_card_ids(self) -> list[str]:

@@ -435,8 +435,25 @@ static GameState *apply_recruit_card_gen(GameState *state, Sym player_id, const 
                                           Sym source, const CardAction *action,
                                           int *sk, Sym *sv, int sc) {
     (void)card; (void)source;
-    int slot = find_sel_int(sk, sv, sc, "market_slot", -1);
-    if (slot >= 0) apply_recruit(state, player_id, slot);
+    Sym target_card_id = find_sel(sk, sv, sc, "target_card_id");
+    if (target_card_id == SYM_NULL) return state;
+    int slot = -1;
+    for (int i = 0; i < state->market.row_count; i++)
+        if (state->market.row[i] == target_card_id) { slot = i; break; }
+    if (slot < 0) {
+        Sym scid; int st;
+        if (special_stack_config(100, &scid, &st) && scid == target_card_id) slot = 100;
+        if (slot < 0 && special_stack_config(101, &scid, &st) && scid == target_card_id) slot = 101;
+        if (slot < 0 && special_stack_config(102, &scid, &st) && scid == target_card_id) slot = 102;
+    }
+    if (slot < 0) return state;
+    int free_recruit = 0;
+    for (int mi = 0; mi < action->metadata_count; mi++) {
+        const char *mk = intern_str(action->metadata[mi].key);
+        if (mk && strcmp(mk, "max_cost") == 0) { free_recruit = 1; break; }
+    }
+    if (free_recruit) apply_recruit_free(state, player_id, slot);
+    else apply_recruit(state, player_id, slot);
     return state;
 }
 
@@ -665,20 +682,21 @@ static GameState *apply_conditional_bonus(GameState *state, Sym player_id, const
                                            Sym source, const CardAction *action,
                                            int *sk, Sym *sv, int sc) {
     Sym cond = SYM_NULL, resource = SYM_NULL;
-    int amount = 0;
+    int amount = 0, min_cards = 0;
     for (int i = 0; i < action->metadata_count; i++) {
         const char *k = intern_str(action->metadata[i].key);
         const char *v = intern_str(action->metadata[i].value);
         if (k && strcmp(k, "condition") == 0 && v) cond = intern(v);
         if (k && strcmp(k, "resource") == 0 && v) resource = intern(v);
         if (k && strcmp(k, "amount") == 0 && v) amount = atoi(v);
+        if (k && strcmp(k, "min_cards") == 0 && v) min_cards = atoi(v);
     }
     if (cond == SYM_NULL) return state;
     if (amount <= 0) amount = 1;
 
     const char *cs = intern_str(cond);
     if (cs && strcmp(cs, "focus_aspect_present") == 0) {
-        if (focus_requirement_met(state, player_id, card, source))
+        if (focus_requirement_met(state, player_id, card, source, SYM_NULL))
             grant_resource(state, resource != SYM_NULL ? resource : intern("influence"), amount);
     } else if (cs && strcmp(cs, "selected_node_has_other_player_troop") == 0) {
         PendingGenericChoiceState *p = state->pending_generic;
@@ -706,6 +724,12 @@ static GameState *apply_conditional_bonus(GameState *state, Sym player_id, const
                 }
             }
         }
+    } else if (cs && strcmp(cs, "player_inner_circle_at_least") == 0) {
+        int pi = -1;
+        for (int i = 0; i < state->player_count; i++)
+            if (state->players[i].player_id == player_id) { pi = i; break; }
+        if (pi >= 0 && state->players[pi].inner_circle_count >= min_cards)
+            grant_resource(state, resource != SYM_NULL ? resource : intern("influence"), amount);
     }
     return state;
 }

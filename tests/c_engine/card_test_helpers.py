@@ -55,6 +55,8 @@ def make_card_test_session(
     player_ids: list[str],
     *,
     hand: dict[str, list[str]] | None = None,
+    inner_circle: dict[str, list[str]] | None = None,
+    deck: dict[str, list[str]] | None = None,
     troops: dict[str, dict[str, list[str | None]]] | None = None,
     spies: dict[str, list[str]] | None = None,
     current_player: str | None = None,
@@ -86,6 +88,22 @@ def make_card_test_session(
             ps.hand_count = min(len(cards), MAX_ZONE_SIZE)
             for j, cid in enumerate(cards[:MAX_ZONE_SIZE]):
                 ps.hand[j] = _lib.intern(cid.encode())
+    if inner_circle:
+        for pid, cards in inner_circle.items():
+            pi = _player_index(s, pid)
+            if pi < 0: continue
+            ps = s.players[pi]
+            ps.inner_circle_count = min(len(cards), MAX_ZONE_SIZE)
+            for j, cid in enumerate(cards[:MAX_ZONE_SIZE]):
+                ps.inner_circle[j] = _lib.intern(cid.encode())
+    if deck:
+        for pid, cards in deck.items():
+            pi = _player_index(s, pid)
+            if pi < 0: continue
+            ps = s.players[pi]
+            ps.deck_count = min(len(cards), MAX_ZONE_SIZE)
+            for j, cid in enumerate(cards[:MAX_ZONE_SIZE]):
+                ps.deck[j] = _lib.intern(cid.encode())
     if troops:
         for _pid, node_map in troops.items():
             for node_id, slots in node_map.items():

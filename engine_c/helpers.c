@@ -301,10 +301,15 @@ int scaled_vp_award_count(const GameState *state, Sym player_id, const CardActio
     return base / per;
 }
 
-int focus_requirement_met(const GameState *state, Sym player_id, const CardDefinition *card, Sym source_card_id) {
-    const char *aspect_str = card->aspect != SYM_NULL ? intern_str(card->aspect) : NULL;
-    if (!aspect_str) return 1;
-    Sym required = intern(aspect_str);
+int focus_requirement_met(const GameState *state, Sym player_id, const CardDefinition *card, Sym source_card_id, Sym focus_aspect_override) {
+    Sym required;
+    if (focus_aspect_override != SYM_NULL) {
+        required = focus_aspect_override;
+    } else {
+        const char *aspect_str = card->aspect != SYM_NULL ? intern_str(card->aspect) : NULL;
+        if (!aspect_str) return 1;
+        required = intern(aspect_str);
+    }
     int pi = player_index_for_id(state, player_id);
     if (pi < 0) return 0;
     const PlayerState *ps = &state->players[pi];

@@ -124,7 +124,7 @@ static void test_describe_assassinate(void) {
     char buf[256];
     int needed = engine_describe_move(gs, &m, NULL, NULL, 0, buf, sizeof(buf));
     assert(needed > 0);
-    assert(strstr(buf, "Remove") != NULL);
+    assert(strstr(buf, "Assassinate") != NULL);
     assert(strstr(buf, "white") != NULL);
     assert(strstr(buf, "slot") == NULL);
     printf("describe assassinate: %s\n", buf);
