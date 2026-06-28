@@ -10576,7 +10576,7 @@
       ],
       "deck_vp": 3,
       "inner_circle_vp": 7,
-      "rules_text": "Gain 2 influence. At end of turn, promote another played card. Focus: at end of turn, promote another played card.",
+      "rules_text": "Gain 2 influence. At end of turn, promote another played card. Focus Ambition: at end of turn, promote another played card.",
       "notes": "If the focus condition is met, Ogremoch gains a second separate end-of-turn `promote another played card` trigger on top of the base one.",
       "execution_model": {
         "kind": "sequence",
@@ -13156,7 +13156,7 @@
       "deck_vp": 2,
       "inner_circle_vp": 5,
       "rules_text": "Assassinate a troop. Recruit a Malice card that costs 4 or less.",
-      "notes": "Straight additive effect card. Bare `assassinate a troop` uses the established free standard assassinate rule.",
+      "notes": "Free assassinate a troop (player or white). Free recruit a Malice card costing 4 or less from market.",
       "execution_model": {
         "kind": "sequence",
         "actions": [
@@ -13170,7 +13170,9 @@
               "kind": "unspecified",
               "value": null
             },
-            "filters": [],
+            "filters": [
+              "allow_white_troop"
+            ],
             "source_fragment": "assassinate_troop",
             "metadata": {}
           },
@@ -13184,9 +13186,15 @@
               "kind": "unspecified",
               "value": null
             },
-            "filters": [],
+            "filters": [
+              "aspect_malice_only",
+              "max_cost_4"
+            ],
             "source_fragment": "recruit_card",
-            "metadata": {}
+            "metadata": {
+              "required_aspect": "malice",
+              "max_cost": 4
+            }
           }
         ]
       },
@@ -13201,7 +13209,9 @@
             "kind": "unspecified",
             "value": null
           },
-          "filters": [],
+          "filters": [
+            "allow_white_troop"
+          ],
           "source_fragment": "assassinate_troop",
           "metadata": {}
         },
@@ -13215,9 +13225,15 @@
             "kind": "unspecified",
             "value": null
           },
-          "filters": [],
+          "filters": [
+            "aspect_malice_only",
+            "max_cost_4"
+          ],
           "source_fragment": "recruit_card",
-          "metadata": {}
+          "metadata": {
+            "required_aspect": "malice",
+            "max_cost": 4
+          }
         }
       ],
       "global_conditions": [],
@@ -13226,7 +13242,8 @@
           "board.troop_slots",
           "presence_or_target_rules",
           "market.row",
-          "card_catalog"
+          "card_catalog",
+          "card_costs"
         ],
         "writes": [
           "board.troop_slots",
@@ -14451,7 +14468,9 @@
             },
             "filters": [],
             "source_fragment": "assassinate_troop",
-            "metadata": {}
+            "metadata": {
+              "requires_last_selected_node": true
+            }
           },
           {
             "action_id": "action_3",
@@ -14499,7 +14518,9 @@
           },
           "filters": [],
           "source_fragment": "assassinate_troop",
-          "metadata": {}
+          "metadata": {
+            "requires_last_selected_node": true
+          }
         },
         {
           "action_id": "action_3",
