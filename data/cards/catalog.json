@@ -5391,7 +5391,9 @@
             },
             "filters": [],
             "source_fragment": "triggered_promote_aspect_filtered",
-            "metadata": {}
+            "metadata": {
+              "required_aspect": "obedience"
+            }
           }
         ]
       },
@@ -5424,7 +5426,9 @@
           },
           "filters": [],
           "source_fragment": "triggered_promote",
-          "metadata": {}
+          "metadata": {
+            "required_aspect": "obedience"
+          }
         }
       ],
       "global_conditions": [
@@ -13683,7 +13687,9 @@
             },
             "filters": [],
             "source_fragment": "triggered_promote_aspect_filtered",
-            "metadata": {}
+            "metadata": {
+              "required_aspect": "obedience"
+            }
           }
         ]
       },
@@ -13716,7 +13722,9 @@
           },
           "filters": [],
           "source_fragment": "triggered_promote_aspect_filtered",
-          "metadata": {}
+          "metadata": {
+            "required_aspect": "obedience"
+          }
         }
       ],
       "global_conditions": [
@@ -14470,7 +14478,9 @@
               "kind": "unspecified",
               "value": null
             },
-            "filters": [],
+            "filters": [
+              "allow_white_troop"
+            ],
             "source_fragment": "assassinate_troop",
             "metadata": {
               "requires_last_selected_node": true
@@ -14520,7 +14530,9 @@
             "kind": "unspecified",
             "value": null
           },
-          "filters": [],
+          "filters": [
+            "allow_white_troop"
+          ],
           "source_fragment": "assassinate_troop",
           "metadata": {
             "requires_last_selected_node": true
