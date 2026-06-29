@@ -2722,6 +2722,42 @@
                 "filters": [],
                 "source_fragment": "return_spy",
                 "metadata": {}
+              },
+              {
+                "action_id": "option_2_action_2",
+                "op": "recruit_card",
+                "target_scope": "market",
+                "timing": "immediate",
+                "optional": true,
+                "quantity": {
+                  "kind": "unspecified",
+                  "value": null
+                },
+                "filters": [
+                  "max_cost_3"
+                ],
+                "source_fragment": "recruit_card",
+                "metadata": {
+                  "max_cost": 3
+                }
+              },
+              {
+                "action_id": "option_2_action_3",
+                "op": "recruit_card",
+                "target_scope": "market",
+                "timing": "immediate",
+                "optional": true,
+                "quantity": {
+                  "kind": "unspecified",
+                  "value": null
+                },
+                "filters": [
+                  "max_cost_3"
+                ],
+                "source_fragment": "recruit_card",
+                "metadata": {
+                  "max_cost": 3
+                }
               }
             ]
           }
@@ -2755,6 +2791,42 @@
           "filters": [],
           "source_fragment": "return_spy",
           "metadata": {}
+        },
+        {
+          "action_id": "option_2_action_2",
+          "op": "recruit_card",
+          "target_scope": "market",
+          "timing": "immediate",
+          "optional": true,
+          "quantity": {
+            "kind": "unspecified",
+            "value": null
+          },
+          "filters": [
+            "max_cost_3"
+          ],
+          "source_fragment": "recruit_card",
+          "metadata": {
+            "max_cost": 3
+          }
+        },
+        {
+          "action_id": "option_2_action_3",
+          "op": "recruit_card",
+          "target_scope": "market",
+          "timing": "immediate",
+          "optional": true,
+          "quantity": {
+            "kind": "unspecified",
+            "value": null
+          },
+          "filters": [
+            "max_cost_3"
+          ],
+          "source_fragment": "recruit_card",
+          "metadata": {
+            "max_cost": 3
+          }
         }
       ],
       "global_conditions": [],
@@ -2762,11 +2834,14 @@
         "reads": [
           "player.spies_available",
           "board.nodes",
-          "board.spies"
+          "board.spies",
+          "player.discard",
+          "market.row"
         ],
         "writes": [
           "board.spies",
-          "player.spies_available"
+          "player.spies_available",
+          "player.discard"
         ]
       },
       "effect_key": "generic_card",
