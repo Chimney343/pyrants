@@ -194,6 +194,66 @@ def test_format_ordered_card_options_falls_back_to_unknown_card_when_missing_def
     assert options == ["1. Unknown Card"]
 
 
+def test_format_ordered_card_options_empty_returns_placeholder() -> None:
+    options = format_ordered_card_options([], {})
+
+    assert options == ["(empty)"]
+
+
+def test_format_ordered_card_options_reverse_shows_newest_first() -> None:
+    cards_by_id = {
+        "noble": SimpleNamespace(name="Noble"),
+        "soldier": SimpleNamespace(name="Soldier"),
+        "priestess_of_lolth": SimpleNamespace(name="Priestess of Lolth"),
+    }
+
+    options = format_ordered_card_options(
+        ["soldier", "noble", "priestess_of_lolth"],
+        cards_by_id,
+        reverse=True,
+    )
+
+    assert options == [
+        "1. Priestess of Lolth",
+        "2. Noble",
+        "3. Soldier",
+    ]
+
+
+def test_format_ordered_card_options_top_label_applied_to_first_entry() -> None:
+    cards_by_id = {
+        "soldier": SimpleNamespace(name="Soldier"),
+        "noble": SimpleNamespace(name="Noble"),
+    }
+
+    options = format_ordered_card_options(
+        ["noble", "soldier"],
+        cards_by_id,
+        reverse=True,
+        top_label="(top)",
+    )
+
+    assert options == [
+        "1. Soldier (top)",
+        "2. Noble",
+    ]
+
+
+def test_format_ordered_card_options_reverse_and_top_label_on_single_card() -> None:
+    cards_by_id = {
+        "soldier": SimpleNamespace(name="Soldier"),
+    }
+
+    options = format_ordered_card_options(
+        ["soldier"],
+        cards_by_id,
+        reverse=True,
+        top_label="(top)",
+    )
+
+    assert options == ["1. Soldier (top)"]
+
+
 def test_format_trophy_hall_options_labels_white_and_player_trophies() -> None:
     options = format_trophy_hall_options(["p2", "white", "p3"])
 

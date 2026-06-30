@@ -296,16 +296,31 @@ def format_discard_pile_options(discard_pile: list[str], cards_by_id: dict[str, 
     return options
 
 
-def format_ordered_card_options(card_ids: Sequence[str], cards_by_id: Mapping[str, Any]) -> list[str]:
-    """Build ordered card options with stable indices for current-player zones."""
+def format_ordered_card_options(
+    card_ids: Sequence[str],
+    cards_by_id: Mapping[str, Any],
+    *,
+    reverse: bool = False,
+    top_label: str = "",
+) -> list[str]:
+    """Build ordered card options with stable indices for current-player zones.
+
+    If *reverse* is True, the list is shown newest-first (for LIFO piles like
+    devour).  If *top_label* is set, it is appended to the first entry (e.g. "(top)").
+    """
 
     if not card_ids:
         return ["(empty)"]
 
-    return [
-        f"{index + 1}. {(cards_by_id.get(card_id).name if cards_by_id.get(card_id) is not None else 'Unknown Card')}"
-        for index, card_id in enumerate(card_ids)
-    ]
+    ids = reversed(card_ids) if reverse else card_ids
+    result = []
+    for index, card_id in enumerate(ids):
+        name = cards_by_id.get(card_id).name if cards_by_id.get(card_id) is not None else 'Unknown Card'
+        label = f"{index + 1}. {name}"
+        if index == 0 and top_label:
+            label = f"{label} {top_label}"
+        result.append(label)
+    return result
 
 
 def format_card_hover_details(card: CardView) -> str:
@@ -1386,7 +1401,7 @@ class GameViewerApp:
                 if self.discard_selection_var.get() not in discard_options:
                     self.discard_selection_var.set(discard_options[0])
 
-                devoured_options = format_ordered_card_options(state.devour_pile, cards_by_id)
+                devoured_options = format_ordered_card_options(state.devour_pile, cards_by_id, reverse=True, top_label="(top)")
                 self.devoured_box["values"] = devoured_options
                 if self.devoured_selection_var.get() not in devoured_options:
                     self.devoured_selection_var.set(devoured_options[0])
@@ -1449,7 +1464,7 @@ class GameViewerApp:
                 devoured = cstate.devour_pile
                 for cid in devoured:
                     _ensure_card(cid)
-                devoured_options = format_discard_pile_options(devoured, cards_by_id)
+                devoured_options = format_ordered_card_options(devoured, cards_by_id, reverse=True, top_label="(top)")
                 self.devoured_box["values"] = devoured_options
                 if devoured_options:
                     self.devoured_selection_var.set(devoured_options[0])

@@ -692,6 +692,15 @@ static GameState *apply_custom_effect(GameState *state, Sym player_id, const Car
                 ps->discard_pile[ps->discard_pile_count++] = ps->deck[i];
             ps->deck_count = 0;
         }
+    } else if (strcmp(ek, "take_from_devour_pile_to_discard") == 0) {
+        if (state->devour_pile_count > 0) {
+            Sym top_card = state->devour_pile[state->devour_pile_count - 1];
+            PlayerState *ps = cow_player(state, player_id);
+            if (ps && ps->discard_pile_count < MAX_ZONE_SIZE) {
+                ps->discard_pile[ps->discard_pile_count++] = top_card;
+                state->devour_pile_count--;
+            }
+        }
     } else if (strcmp(ek, "select_trophy_hall") == 0) {
         return state;
     } else if (strcmp(ek, "steal_from_selected_trophy") == 0) {

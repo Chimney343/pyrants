@@ -362,11 +362,43 @@ int engine_describe_move(const GameState *state, const Move *move,
                                                 } else if (op && strcmp(op, "draw_cards") == 0) {
                                                     int count = a->quantity_kind == QUANT_FIXED ? a->quantity_value : 1;
                                                     snprintf(buf, sizeof(buf), "Draw %d card%s", count, count == 1 ? "" : "s");
+                                                } else if (op && strcmp(op, "place_spy") == 0) {
+                                                    snprintf(buf, sizeof(buf), "Place a spy");
                                                 } else {
                                                     snprintf(buf, sizeof(buf), "%s", _humanize_id(intern_str(opt->option_id)));
                                                 }
                                             } else {
-                                                snprintf(buf, sizeof(buf), "%s", _humanize_id(intern_str(opt->option_id)));
+                                                char part_buf[128];
+                                                buf[0] = '\0';
+                                                for (int ai = 0; ai < opt->action_count && ai < 4; ai++) {
+                                                    const CardAction *a = &opt->actions[ai];
+                                                    const char *op = intern_str(a->op);
+                                                    if (!op) continue;
+                                                    if (strcmp(op, "return_spy") == 0) {
+                                                        snprintf(part_buf, sizeof(part_buf), "Return a spy");
+                                                    } else if (strcmp(op, "custom_effect") == 0) {
+                                                        const char *ek = NULL;
+                                                        for (int mi = 0; mi < a->metadata_count; mi++) {
+                                                            const char *mk = intern_str(a->metadata[mi].key);
+                                                            const char *mv = intern_str(a->metadata[mi].value);
+                                                            if (mk && strcmp(mk, "effect_kind") == 0 && mv) { ek = mv; break; }
+                                                        }
+                                                        if (ek && strcmp(ek, "take_from_devour_pile_to_discard") == 0)
+                                                            snprintf(part_buf, sizeof(part_buf), "take from devour pile");
+                                                        else
+                                                            snprintf(part_buf, sizeof(part_buf), "%s", _humanize_id(op));
+                                                    } else {
+                                                        snprintf(part_buf, sizeof(part_buf), "%s", _humanize_id(op));
+                                                    }
+                                                    if (buf[0] != '\0') {
+                                                        size_t cur = strlen(buf);
+                                                        snprintf(buf + cur, sizeof(buf) - cur, " & %s", part_buf);
+                                                    } else {
+                                                        snprintf(buf, sizeof(buf), "%s", part_buf);
+                                                    }
+                                                }
+                                                if (buf[0] == '\0')
+                                                    snprintf(buf, sizeof(buf), "%s", _humanize_id(intern_str(opt->option_id)));
                                             }
                                             break;
                                         }
