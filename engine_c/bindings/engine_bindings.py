@@ -369,6 +369,8 @@ class CGameView(Structure):
         ("nodes", CNodeOccupancyView * MAX_NODES), ("node_count", c_int),
         ("controlled_sites", c_int), ("total_control_sites", c_int),
         ("current_player_control_vp", c_int), ("current_player_total_control_vp", c_int),
+        ("house_guard_remaining", c_int), ("priestess_remaining", c_int),
+        ("insane_outcast_remaining", c_int),
     ]
 
 

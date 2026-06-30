@@ -60,6 +60,9 @@ typedef struct {
     int total_control_sites;
     int current_player_control_vp;
     int current_player_total_control_vp;
+    int house_guard_remaining;
+    int priestess_remaining;
+    int insane_outcast_remaining;
 } CGameView;
 
 void engine_build_view(const GameState *state, CGameView *out);

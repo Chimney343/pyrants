@@ -209,6 +209,17 @@ def _is_steal_custom_effect(action: dict) -> bool:
     return False
 
 
+def _is_self_purge_custom_effect(action: dict) -> bool:
+    op = action.get("op", "")
+    if op != "custom_effect":
+        return False
+    meta = action.get("metadata")
+    if isinstance(meta, dict):
+        ek = meta.get("effect_kind", "")
+        return ek == "self_purge_to_supply"
+    return False
+
+
 def _format_action_with_target(card_name: str, action_desc: str, target_id: str, *, node_names: dict[str, str] | None = None) -> str:
     name = _card_name(target_id)
     if name != target_id:
@@ -309,6 +320,8 @@ def enrich_label(move_type: str, raw_label: str, move_data: dict, *, source_card
                                 return raw_label
                             if _is_steal_custom_effect(act):
                                 return raw_label
+                            if _is_self_purge_custom_effect(act):
+                                return raw_label
                             desc = _describe_single_action(act, spy_count=player_spy_count)
                             if target_display:
                                 return _format_action_with_target(card_name, desc, target_display, node_names=node_names)
@@ -322,6 +335,8 @@ def enrich_label(move_type: str, raw_label: str, move_data: dict, *, source_card
                         if act.get("op") in ("assassinate_troop", "supplant_troop", "move_troop", "return_unit"):
                             return raw_label
                         if _is_steal_custom_effect(act):
+                            return raw_label
+                        if _is_self_purge_custom_effect(act):
                             return raw_label
                         desc = _describe_single_action(act, spy_count=player_spy_count)
                         if target_display:

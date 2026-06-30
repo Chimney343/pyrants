@@ -322,6 +322,10 @@ int engine_describe_move(const GameState *state, const Move *move,
                                 }
                             }
                             snprintf(buf, sizeof(buf), "Place %s trophy at %s", trophy_type_buf, nl_buf);
+                        } else if (effect_kind && strcmp(effect_kind, "self_purge_to_supply") == 0) {
+                            const char *card_name = card_name_for(state, aid);
+                            const char *source_name = card_name_for(state, state->pending_generic->source_card_id);
+                            snprintf(buf, sizeof(buf), "Discard %s to return %s to supply", card_name, source_name);
                         } else {
                             const char *name = card_name_for(state, aid);
                             snprintf(buf, sizeof(buf), "Resolve %s", name);

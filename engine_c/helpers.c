@@ -44,11 +44,27 @@ static const NodeDefinition *node_def_by_id(const GameState *state, Sym node_id)
     return NULL;
 }
 
-static int player_index_for_id(const GameState *state, Sym player_id) {
+int player_index_for_id(const GameState *state, Sym player_id) {
     for (int i = 0; i < state->player_count; i++) {
         if (state->players[i].player_id == player_id) return i;
     }
     return -1;
+}
+
+int count_trophies(const PlayerState *ps, const char *filter) {
+    if (!ps || !filter) return 0;
+    if (strcmp(filter, "all") == 0) return ps->trophy_hall_count;
+    if (strcmp(filter, "non_white") == 0 || strcmp(filter, "white") == 0) {
+        int c = 0;
+        for (int i = 0; i < ps->trophy_hall_count; i++) {
+            const char *t = intern_str(ps->trophy_hall[i]);
+            if (!t) continue;
+            if (strcmp(filter, "non_white") == 0 && strcmp(t, "white") != 0) c++;
+            if (strcmp(filter, "white") == 0 && strcmp(t, "white") == 0) c++;
+        }
+        return c;
+    }
+    return 0;
 }
 
 int has_presence(const GameState *state, Sym player_id, Sym node_id) {
@@ -270,17 +286,11 @@ int scaled_vp_award_count(const GameState *state, Sym player_id, const CardActio
 
     int base = 0;
     if (strcmp(cf, "trophy_hall_white") == 0) {
-        for (int i = 0; i < ps->trophy_hall_count; i++) {
-            const char *t = intern_str(ps->trophy_hall[i]);
-            if (t && strcmp(t, "white") == 0) base++;
-        }
+        base = count_trophies(ps, "white");
     } else if (strcmp(cf, "trophy_hall_non_white") == 0) {
-        for (int i = 0; i < ps->trophy_hall_count; i++) {
-            const char *t = intern_str(ps->trophy_hall[i]);
-            if (t && strcmp(t, "white") != 0) base++;
-        }
+        base = count_trophies(ps, "non_white");
     } else if (strcmp(cf, "trophy_hall_all") == 0) {
-        base = ps->trophy_hall_count;
+        base = count_trophies(ps, "all");
     } else if (strcmp(cf, "inner_circle_cards") == 0) {
         Sym required_aspect = SYM_NULL;
         Sym required_secondary_aspect = SYM_NULL;
@@ -333,11 +343,14 @@ int focus_requirement_met(const GameState *state, Sym player_id, const CardDefin
 void promote_card(GameState *state, Sym player_id, Sym card_id) {
     PlayerState *ps = cow_player(state, player_id);
     if (!ps) return;
+    Sym insane = intern("insane_outcast");
     for (int i = 0; i < ps->played_cards_count; i++) {
         if (ps->played_cards[i] == card_id) {
             for (int j = i; j < ps->played_cards_count - 1; j++)
                 ps->played_cards[j] = ps->played_cards[j + 1];
             ps->played_cards_count--;
+            if (card_id == insane)
+                return;
             if (ps->inner_circle_count < MAX_ZONE_SIZE)
                 ps->inner_circle[ps->inner_circle_count++] = card_id;
             return;

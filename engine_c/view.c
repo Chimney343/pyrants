@@ -1,5 +1,6 @@
 #include "view.h"
 #include "scoring.h"
+#include "helpers.h"
 #include <string.h>
 
 void engine_build_view(const GameState *state, CGameView *out) {
@@ -105,4 +106,8 @@ void engine_build_view(const GameState *state, CGameView *out) {
     out->total_control_sites = total_control_sites;
     out->current_player_control_vp = control_vp_sum;
     out->current_player_total_control_vp = total_control_vp_sum;
+
+    out->house_guard_remaining = remaining_special_stack_count(state, intern("house_guard"), 15);
+    out->priestess_remaining = remaining_special_stack_count(state, intern("priestess_of_lolth"), 15);
+    out->insane_outcast_remaining = remaining_special_stack_count(state, intern("insane_outcast"), 30);
 }

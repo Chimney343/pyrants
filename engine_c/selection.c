@@ -148,6 +148,22 @@ static int sel_custom_effect(const GameState *state, Sym player_id,
                 out[w].player_index = 0;
                 w++;
             }
+        } else if (strcmp(v, "self_purge_to_supply") == 0) {
+            int pi = -1;
+            for (int i = 0; i < state->player_count; i++)
+                if (state->players[i].player_id == player_id) { pi = i; break; }
+            if (pi < 0) continue;
+            for (int h = 0; h < state->players[pi].hand_count && w < max_out; h++) {
+                if (state->players[pi].hand[h] == pending->source_card_id) continue;
+                char idx_buf[16];
+                snprintf(idx_buf, sizeof(idx_buf), "%d", h);
+                out[w].type = MOVE_RESOLVE_GENERIC;
+                out[w].data.resolve_generic.action_id = state->players[pi].hand[h];
+                out[w].data.resolve_generic.target_id = intern(idx_buf);
+                out[w].data.resolve_generic.selection_index = 0;
+                out[w].player_index = 0;
+                w++;
+            }
         } else if (strcmp(v, "select_trophy_hall") == 0) {
             int white_only = 0;
             for (int fi = 0; fi < action->filter_count; fi++) {

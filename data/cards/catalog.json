@@ -7175,8 +7175,8 @@
       "secondary_aspects": [
         "drow"
       ],
-      "deck_vp": 13,
-      "inner_circle_vp": 0,
+      "deck_vp": 1,
+      "inner_circle_vp": 3,
       "rules_text": "Gain 2 power.",
       "notes": "Simple fixed resource card.",
       "execution_model": {
@@ -7874,7 +7874,7 @@
       "deck_vp": -1,
       "inner_circle_vp": 0,
       "rules_text": "You may discard a card from your hand to return this card to supply. If this card would be devoured or promoted, return it to supply instead.",
-      "notes": "This hand ability works only while Insane Outcast is in your hand. You must discard another card from hand to return Insane Outcast to supply; it cannot discard itself as the cost. This is anti-deck-clog text for a negative-VP card opponents can force into your deck.",
+      "notes": "This hand ability works only while Insane Outcast is in your hand. You must discard another card from hand to return Insane Outcast to supply; it cannot discard itself as the cost. This is anti-deck-clog text for a negative-VP card opponents can force into your deck. The devour/promote protection is a passive rule enforced at the engine level: when Insane Outcast would be devoured or promoted, it is removed from its current zone and returned to the supply stack instead of going to the devour pile or inner circle.",
       "execution_model": {
         "kind": "sequence",
         "actions": [

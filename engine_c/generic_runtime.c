@@ -166,6 +166,7 @@ int action_requires_selection(const CardAction *action) {
                     strstr(v, "steal") ||
                     strstr(v, "select_trophy") ||
                     strstr(v, "discard_selected_hand") ||
+                    strstr(v, "self_purge_to_supply") ||
                     strcmp(v, "select_site") == 0)
                     return 1;
             }
@@ -796,6 +797,9 @@ GameState *apply_resolve_generic_choice(GameState *src, const Move *move) {
                                 }
                             }
                         }
+                    } else if (effect_kind && strcmp(effect_kind, "self_purge_to_supply") == 0) {
+                        if (aid != SYM_NULL) { sk[sc] = intern("target_card_id"); sv[sc] = aid; sc++; }
+                        if (tid != SYM_NULL) { sk[sc] = intern("hand_index"); sv[sc] = tid; sc++; }
                     } else if (aid != SYM_NULL) {
                         sk[sc] = intern("target_node_id"); sv[sc] = aid; sc++;
                     }

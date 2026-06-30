@@ -105,6 +105,9 @@ class CGameViewData:
     market_row: tuple[CardView, ...]
     market_deck_count: int
     market_discard_count: int
+    house_guard_remaining: int
+    priestess_remaining: int
+    insane_outcast_remaining: int
     player_summaries: tuple[PlayerSummaryView, ...]
     board_nodes: tuple[NodeOccupancyView, ...]
     prompts: tuple[str, ...] = ()
@@ -461,6 +464,9 @@ def build_c_game_view(
         market_row=tuple(market_row),
         market_deck_count=c_view.market_deck_count,
         market_discard_count=c_view.market_discard_count,
+        house_guard_remaining=c_view.house_guard_remaining,
+        priestess_remaining=c_view.priestess_remaining,
+        insane_outcast_remaining=c_view.insane_outcast_remaining,
         player_summaries=tuple(player_summaries),
         board_nodes=tuple(board_nodes),
         prompts=(f"{current_player_id} is acting in {_PHASE_MAP.get(c_view.phase, 'unknown').replace('_', ' ')}.",),

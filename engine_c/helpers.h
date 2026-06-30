@@ -23,6 +23,8 @@ int  count_runtime_cards_by_aspect(const GameState *state, Sym *card_ids, int co
 int  is_aberrations_enabled(const GameState *state);
 int  special_stack_config(int market_slot, Sym *card_id_out, int *stack_total);
 int  remaining_special_stack_count(const GameState *state, Sym card_id, int stack_total);
+int  player_index_for_id(const GameState *state, Sym player_id);
+int  count_trophies(const PlayerState *ps, const char *filter);
 int  scaled_vp_award_count(const GameState *state, Sym player_id, const CardAction *action);
 int  focus_requirement_met(const GameState *state, Sym player_id, const CardDefinition *card, Sym source_card_id, Sym focus_aspect_override);
 
