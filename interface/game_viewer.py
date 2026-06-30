@@ -647,9 +647,9 @@ class GameViewerApp:
         self.market_meta_var = tk.StringVar(value="")
         self.resource_var = tk.StringVar(value="")
         self.vp_breakdown_var = tk.StringVar(value="")
-        self.house_guard_var = tk.StringVar(value="")
-        self.priestess_var = tk.StringVar(value="")
-        self.insane_outcast_var = tk.StringVar(value="")
+        self.house_guard_var = tk.StringVar(value="—")
+        self.priestess_var = tk.StringVar(value="—")
+        self.insane_outcast_var = tk.StringVar(value="—")
         self.discard_selection_var = tk.StringVar(value="")
         self.inner_circle_selection_var = tk.StringVar(value="")
         self.trophy_hall_selection_var = tk.StringVar(value="")
@@ -772,6 +772,11 @@ class GameViewerApp:
         market_frame = ttk.LabelFrame(canvas_frame, text="Market Deck", padding=6)
         market_frame.pack(fill=tk.X, pady=(0, 6))
         ttk.Label(market_frame, textvariable=self.market_meta_var, justify=tk.LEFT, font=("TkFixedFont", 9)).pack(anchor=tk.W)
+        special_stacks_frame = ttk.Frame(market_frame)
+        special_stacks_frame.pack(fill=tk.X, pady=(2, 0))
+        ttk.Label(special_stacks_frame, textvariable=self.house_guard_var, font=("TkFixedFont", 9)).pack(side=tk.LEFT, padx=(0, 16))
+        ttk.Label(special_stacks_frame, textvariable=self.priestess_var, font=("TkFixedFont", 9)).pack(side=tk.LEFT, padx=(0, 16))
+        ttk.Label(special_stacks_frame, textvariable=self.insane_outcast_var, font=("TkFixedFont", 9)).pack(side=tk.LEFT)
         devoured_frame = ttk.Frame(market_frame)
         devoured_frame.pack(fill=tk.X, pady=(4, 0))
         ttk.Label(devoured_frame, text="Devoured Cards:", font=("Segoe UI", 9, "bold")).pack(side=tk.LEFT)
@@ -1315,12 +1320,7 @@ class GameViewerApp:
                 )
             else:
                 self._set_vp_breakdown_c(view)
-                for ps in view.player_summaries:
-                    if ps.is_current:
-                        self.house_guard_var.set("—")
-                        self.priestess_var.set("—")
-                        self.insane_outcast_var.set("—")
-                        break
+                self._set_special_stack_vars(view)
             scaled_w = self.package.layout.canvas.width * self.zoom_level
             scaled_h = self.package.layout.canvas.height * self.zoom_level
             self.canvas.configure(scrollregion=(0, 0, scaled_w, scaled_h))
@@ -1434,21 +1434,7 @@ class GameViewerApp:
 
                 current_index = cstate.player_index(cstate.current_player_id)
 
-                # Starter pile summaries — compute safely; don't block discard/other updates
-                try:
-                    self.house_guard_var.set(
-                        self._c_starter_pile_summary(cstate, current_index, HOUSE_GUARD_CARD_ID)
-                    )
-                    self.priestess_var.set(
-                        self._c_starter_pile_summary(cstate, current_index, PRIESTESS_CARD_ID)
-                    )
-                    self.insane_outcast_var.set(
-                        self._c_starter_pile_summary(cstate, current_index, INSANE_OUTCAST_CARD_ID)
-                    )
-                except Exception:
-                    self.house_guard_var.set("—")
-                    self.priestess_var.set("—")
-                    self.insane_outcast_var.set("—")
+                self._set_special_stack_vars(view)
 
                 # Own discard pile
                 current_discard = cstate.player_discard(current_index)
@@ -1933,10 +1919,17 @@ class GameViewerApp:
     def _apply_first_legal_move(self) -> None:
         if self.session is None:
             return
-        view = build_game_view(self.session, node_names=self._node_names)
-        if not view.legal_moves:
-            return
-        self.session.submit_move(view.legal_moves[0].move)
+        if self._engine == "c":
+            from engine_c.bindings.view import build_c_game_view
+            view = build_c_game_view(self.session, node_names=self._node_names)
+            if not view.legal_moves:
+                return
+            self.session.submit_move(view.legal_moves[0].move)
+        else:
+            view = build_game_view(self.session, node_names=self._node_names)
+            if not view.legal_moves:
+                return
+            self.session.submit_move(view.legal_moves[0].move)
         self._clear_filters()
         self._refresh_view()
 
@@ -2132,13 +2125,23 @@ class GameViewerApp:
             return
 
         selected_card_id = self._hand_card_ids[selected_index]
-        view = build_game_view(self.session, node_names=self._node_names)
-        for legal_move in view.legal_moves:
-            if isinstance(legal_move.move, PlayCardMove) and legal_move.move.card_id == selected_card_id:
-                self.session.submit_move(legal_move.move)
-                self._clear_filters()
-                self._refresh_view()
-                return
+        if self._engine == "c":
+            from engine_c.bindings.view import build_c_game_view
+            view = build_c_game_view(self.session, node_names=self._node_names)
+            for legal_move in view.legal_moves:
+                if legal_move.move_type == "play_card" and legal_move.move.data.get("card_id") == selected_card_id:
+                    self.session.submit_move(legal_move.move)
+                    self._clear_filters()
+                    self._refresh_view()
+                    return
+        else:
+            view = build_game_view(self.session, node_names=self._node_names)
+            for legal_move in view.legal_moves:
+                if isinstance(legal_move.move, PlayCardMove) and legal_move.move.card_id == selected_card_id:
+                    self.session.submit_move(legal_move.move)
+                    self._clear_filters()
+                    self._refresh_view()
+                    return
 
     def _on_played_canvas_click(self, event: tk.Event[tk.Canvas]) -> None:
         if self._is_refreshing:
@@ -2402,6 +2405,17 @@ class GameViewerApp:
             f"Inner Circle VP: {inner_circle_vp:>2} | Total: {total_vp:>2}"
         )
 
+    def _set_special_stack_vars(self, view: Any) -> None:
+        self.house_guard_var.set(
+            f"House Guard remaining: {view.house_guard_remaining}"
+        )
+        self.priestess_var.set(
+            f"Priestess of Lolth remaining: {view.priestess_remaining}"
+        )
+        self.insane_outcast_var.set(
+            f"Insane Outcast remaining: {view.insane_outcast_remaining}"
+        )
+
     def _set_vp_breakdown_c(self, view: Any) -> None:
         from engine_c.bindings.view import _make_card_view
 
@@ -2447,19 +2461,6 @@ class GameViewerApp:
         played_count = player.played_cards.count(card_id)
         discard_count = player.discard_pile.count(card_id)
         inner_circle_count = player.inner_circle.count(card_id)
-        owned_total = deck_count + hand_count + played_count + discard_count + inner_circle_count
-        return (
-            f"deck {deck_count:>2} | hand {hand_count:>2} | played {played_count:>2}\n"
-            f"discard {discard_count:>2} | inner {inner_circle_count:>2} | total {owned_total:>2}"
-        )
-
-    @staticmethod
-    def _c_starter_pile_summary(cstate: Any, index: int, card_id: str) -> str:
-        deck_count = cstate.player_deck(index).count(card_id)
-        hand_count = cstate.player_hand(index).count(card_id)
-        played_count = cstate.player_played(index).count(card_id)
-        discard_count = cstate.player_discard(index).count(card_id)
-        inner_circle_count = cstate.player_inner_circle(index).count(card_id)
         owned_total = deck_count + hand_count + played_count + discard_count + inner_circle_count
         return (
             f"deck {deck_count:>2} | hand {hand_count:>2} | played {played_count:>2}\n"
