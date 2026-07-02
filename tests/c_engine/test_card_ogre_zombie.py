@@ -1,10 +1,12 @@
 """Ogre Zombie card behavior tests.
 
-Supplant a white troop anywhere (no presence required).
+Ogre Zombie (4-cost, Conquest/Undead):
+  Supplant a white troop anywhere.
 """
 
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
@@ -22,6 +24,8 @@ from tests.c_engine.card_test_helpers import (
 CARD_ID = "ogre_zombie"
 _SITE_A = "site_gauntlgrym"
 _SITE_B = "site_menzoberranzan"
+
+DATA_DIR = Path(__file__).resolve().parents[2] / "data"
 
 
 def _play_card(session: CSession, card_id: str = CARD_ID) -> None:
@@ -72,6 +76,31 @@ def _pick_supplant_target(session: CSession, node_id: str, slot_index: int) -> N
                 return
     session.destroy()
     raise AssertionError(f"Supplant move for {node_id} slot {slot_index} not found")
+
+
+def test_ogre_zombie_execution_model() -> None:
+    catalog = json.loads((DATA_DIR / "cards" / "catalog.json").read_text(encoding="utf-8"))
+    cards = catalog if isinstance(catalog, list) else catalog.get("cards", catalog)
+    card = next(c for c in cards if c.get("card_id") == "ogre_zombie")
+
+    actions = card["execution_model"]["actions"]
+    assert len(actions) == 1
+
+    supplant = actions[0]
+    assert supplant["op"] == "supplant_troop"
+    assert supplant["target_scope"] == "board_site"
+    assert supplant["filters"] == ["white_troop_only"]
+    assert supplant["metadata"]["ignore_presence_requirement"] is True
+    assert supplant["metadata"]["targeting"] == "anywhere"
+    assert supplant["optional"] is False
+    assert supplant["quantity"] == {"kind": "unspecified", "value": None}
+
+    assert "Supplant a white troop" in card["rules_text"]
+    assert card["cost"] == 4
+    assert card["aspect"] == "conquest"
+    assert "undead" in card["secondary_aspects"]
+    assert card["deck_vp"] == 2
+    assert card["inner_circle_vp"] == 4
 
 
 def test_ogre_zombie_supplants_white_troop_with_presence():
