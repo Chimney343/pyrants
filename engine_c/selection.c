@@ -115,6 +115,21 @@ static int sel_custom_effect(const GameState *state, Sym player_id,
         const char *v = intern_str(action->metadata[i].value);
         if (!k || strcmp(k, "effect_kind") != 0 || !v) continue;
         if (strcmp(v, "select_site") == 0) {
+            int site_white_only = 0;
+            for (int fi = 0; fi < action->filter_count; fi++) {
+                const char *f = intern_str(action->filters[fi]);
+                if (f && strcmp(f, "white_troop_only") == 0) site_white_only = 1;
+            }
+            int ignore_presence = 0;
+            for (int mi = 0; mi < action->metadata_count; mi++) {
+                const char *mk = intern_str(action->metadata[mi].key);
+                const char *mv = intern_str(action->metadata[mi].value);
+                if (mk && strcmp(mk, "ignore_presence_requirement") == 0 && mv
+                    && strcmp(mv, "true") == 0) {
+                    ignore_presence = 1;
+                    break;
+                }
+            }
             for (int ni = 0; ni < state->node_count && w < max_out; ni++) {
                 Sym nid = state->nodes[ni].node_id;
                 const NodeDefinition *nd = NULL;
@@ -122,7 +137,17 @@ static int sel_custom_effect(const GameState *state, Sym player_id,
                     if (state->definition->board.nodes[j].node_id == nid)
                         { nd = &state->definition->board.nodes[j]; break; }
                 if (!nd || strcmp(intern_str(nd->kind), "site") != 0) continue;
-                if (!has_presence(state, player_id, nid)) continue;
+                if (!ignore_presence && !has_presence(state, player_id, nid)) continue;
+                if (site_white_only) {
+                    int has_white = 0;
+                    for (int s = 0; s < state->nodes[ni].troop_slot_count; s++) {
+                        Sym occ = state->nodes[ni].troop_slots[s];
+                        if (occ == SYM_NULL) continue;
+                        const char *os = intern_str(occ);
+                        if (os && strcmp(os, "white") == 0) { has_white = 1; break; }
+                    }
+                    if (!has_white) continue;
+                }
                 out[w].type = MOVE_RESOLVE_GENERIC;
                 out[w].data.resolve_generic.action_id = nid;
                 out[w].data.resolve_generic.target_id = SYM_NULL;
@@ -166,12 +191,15 @@ static int sel_custom_effect(const GameState *state, Sym player_id,
             }
         } else if (strcmp(v, "select_trophy_hall") == 0) {
             int white_only = 0;
+            int exclude_self = 0;
             for (int fi = 0; fi < action->filter_count; fi++) {
                 const char *f = intern_str(action->filters[fi]);
                 if (f && strcmp(f, "white_troop_only") == 0) white_only = 1;
+                if (f && strcmp(f, "exclude_self") == 0) exclude_self = 1;
             }
             for (int sp = 0; sp < state->player_count && w < max_out; sp++) {
                 Sym sp_id = state->players[sp].player_id;
+                if (exclude_self && sp_id == player_id) continue;
                 for (int ti = 0; ti < state->players[sp].trophy_hall_count && w < max_out; ti++) {
                     Sym occ = state->players[sp].trophy_hall[ti];
                     const char *oc = intern_str(occ);
@@ -221,6 +249,84 @@ static int sel_custom_effect(const GameState *state, Sym player_id,
                     out[w].data.resolve_generic.selection_index = 0;
                     out[w].player_index = 0;
                     w++;
+                }
+            }
+        } else if (strcmp(v, "lich_select_target_player") == 0) {
+            Sym target_node = find_ls_sym(pending, "target_node_id");
+            if (target_node == SYM_NULL) continue;
+            int ni = -1;
+            for (int n = 0; n < state->node_count; n++)
+                if (state->nodes[n].node_id == target_node) { ni = n; break; }
+            if (ni < 0) continue;
+            Sym seen[4];
+            int seen_count = 0;
+            for (int s = 0; s < state->nodes[ni].troop_slot_count && w < max_out; s++) {
+                Sym occ = state->nodes[ni].troop_slots[s];
+                if (occ == SYM_NULL || occ == player_id) continue;
+                const char *os = intern_str(occ);
+                if (os && strcmp(os, "white") == 0) continue;
+                int already = 0;
+                for (int j = 0; j < seen_count; j++)
+                    if (seen[j] == occ) { already = 1; break; }
+                if (already) continue;
+                if (seen_count < 4) seen[seen_count++] = occ;
+                out[w].type = MOVE_RESOLVE_GENERIC;
+                out[w].data.resolve_generic.action_id = occ;
+                out[w].data.resolve_generic.target_id = SYM_NULL;
+                out[w].data.resolve_generic.selection_index = 0;
+                out[w].player_index = 0;
+                w++;
+            }
+        } else if (strcmp(v, "deploy_from_trophy_hall_with_presence") == 0) {
+            Sym source_player = SYM_NULL;
+            const char *color_filter = NULL;
+            for (int mi = 0; mi < action->metadata_count; mi++) {
+                const char *mk = intern_str(action->metadata[mi].key);
+                const char *mv = intern_str(action->metadata[mi].value);
+                if (mk && strcmp(mk, "trophy_source_player") == 0 && mv) {
+                    if (strcmp(mv, "lich_target_player") == 0)
+                        source_player = find_ls_sym(pending, "source_player_id");
+                }
+                if (mk && strcmp(mk, "trophy_color_filter") == 0 && mv)
+                    color_filter = mv;
+            }
+            if (source_player == SYM_NULL) continue;
+            int spi = -1;
+            for (int p = 0; p < state->player_count; p++)
+                if (state->players[p].player_id == source_player) { spi = p; break; }
+            if (spi < 0) continue;
+            const PlayerState *sps = &state->players[spi];
+            for (int ti = 0; ti < sps->trophy_hall_count && w < max_out; ti++) {
+                Sym occ = sps->trophy_hall[ti];
+                const char *oc = intern_str(occ);
+                int is_white = oc && strcmp(oc, "white") == 0;
+                if (color_filter && strcmp(color_filter, "white_only") == 0 && !is_white) continue;
+                if (color_filter && strcmp(color_filter, "player_only") == 0 && is_white) continue;
+                for (int ni2 = 0; ni2 < state->node_count && w < max_out; ni2++) {
+                    Sym nid = state->nodes[ni2].node_id;
+                    const NodeDefinition *nd = NULL;
+                    for (int j = 0; j < state->definition->board.node_count; j++)
+                        if (state->definition->board.nodes[j].node_id == nid)
+                            { nd = &state->definition->board.nodes[j]; break; }
+                    if (!nd || strcmp(intern_str(nd->kind), "site") != 0) continue;
+                    if (!has_presence(state, player_id, nid)) continue;
+                    for (int s = 0; s < state->nodes[ni2].troop_slot_count && w < max_out; s++) {
+                        if (state->nodes[ni2].troop_slots[s] != SYM_NULL) continue;
+                        char tbuf[128];
+                        const char *sp_str = intern_str(source_player);
+                        char idx_buf[16];
+                        snprintf(idx_buf, sizeof(idx_buf), "%d", ti);
+                        const char *nid_str = intern_str(nid);
+                        snprintf(tbuf, sizeof(tbuf), "%.24s:%.16s:%.48s:%d",
+                                 sp_str ? sp_str : "", idx_buf,
+                                 nid_str ? nid_str : "", s);
+                        out[w].type = MOVE_RESOLVE_GENERIC;
+                        out[w].data.resolve_generic.action_id = nid;
+                        out[w].data.resolve_generic.target_id = intern(tbuf);
+                        out[w].data.resolve_generic.selection_index = 0;
+                        out[w].player_index = 0;
+                        w++;
+                    }
                 }
             }
         }

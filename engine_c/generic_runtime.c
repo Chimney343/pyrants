@@ -115,6 +115,43 @@ int action_focus_requirement_met(GameState *state, Sym player_id,
     return focus_requirement_met(state, player_id, card, source_card_id, focus_aspect);
 }
 
+static bool action_gate_met(const GameState *state, Sym player_id,
+                           const CardAction *action,
+                           const PendingGenericChoiceState *pending) {
+    const char *gate = NULL;
+    for (int i = 0; i < action->metadata_count; i++) {
+        const char *k = intern_str(action->metadata[i].key);
+        const char *v = intern_str(action->metadata[i].value);
+        if (k && strcmp(k, "gate") == 0 && v) {
+            gate = v;
+            break;
+        }
+    }
+    if (!gate) return true;
+    if (strcmp(gate, "selected_node_has_other_player_troop") == 0) {
+        Sym target_node = SYM_NULL;
+        for (int i = 0; i < pending->last_selection_count; i++) {
+            const char *k = intern_str(pending->last_selection_keys[i]);
+            if (k && strcmp(k, "target_node_id") == 0) {
+                target_node = pending->last_selection_values[i];
+                break;
+            }
+        }
+        if (target_node == SYM_NULL) return false;
+        for (int ni = 0; ni < state->node_count; ni++) {
+            if (state->nodes[ni].node_id != target_node) continue;
+            for (int s = 0; s < state->nodes[ni].troop_slot_count; s++) {
+                Sym occ = state->nodes[ni].troop_slots[s];
+                if (occ != SYM_NULL && occ != player_id
+                    && strcmp(intern_str(occ) ? intern_str(occ) : "", "white") != 0)
+                    return true;
+            }
+            return false;
+        }
+    }
+    return true;
+}
+
 const CardAction *pending_generic_active_action(const PendingGenericChoiceState *p) {
     if (p->next_action_index < 0 || p->next_action_index >= p->current_action_count)
         return NULL;
@@ -167,7 +204,9 @@ int action_requires_selection(const CardAction *action) {
                     strstr(v, "select_trophy") ||
                     strstr(v, "discard_selected_hand") ||
                     strstr(v, "self_purge_to_supply") ||
-                    strcmp(v, "select_site") == 0)
+                    strcmp(v, "select_site") == 0 ||
+                    strcmp(v, "lich_select_target_player") == 0 ||
+                    strcmp(v, "deploy_from_trophy_hall_with_presence") == 0)
                     return 1;
             }
         }
@@ -331,6 +370,21 @@ GameState *auto_resolve_pending_generic(GameState *state, Sym player_id) {
 
         if (!action_focus_requirement_met(state, player_id, card, p->source_card_id, action)) {
             p->next_action_index++;
+            continue;
+        }
+
+        if (!action_gate_met(state, player_id, action, p)) {
+            int skip_to = -1;
+            for (int mi = 0; mi < action->metadata_count; mi++) {
+                const char *mk = intern_str(action->metadata[mi].key);
+                const char *mv = intern_str(action->metadata[mi].value);
+                if (mk && strcmp(mk, "skip_advance_to_index") == 0 && mv) {
+                    skip_to = atoi(mv);
+                    break;
+                }
+            }
+            if (skip_to >= 0) p->next_action_index = skip_to;
+            else p->next_action_index++;
             continue;
         }
 
@@ -626,6 +680,20 @@ GameState *apply_resolve_generic_choice(GameState *src, const Move *move) {
             p->next_action_index++;
             return auto_resolve_pending_generic(state, pid);
         }
+        if (!action_gate_met(state, pid, action, p)) {
+            int skip_to = -1;
+            for (int mi = 0; mi < action->metadata_count; mi++) {
+                const char *mk = intern_str(action->metadata[mi].key);
+                const char *mv = intern_str(action->metadata[mi].value);
+                if (mk && strcmp(mk, "skip_advance_to_index") == 0 && mv) {
+                    skip_to = atoi(mv);
+                    break;
+                }
+            }
+            if (skip_to >= 0) p->next_action_index = skip_to;
+            else p->next_action_index++;
+            return auto_resolve_pending_generic(state, pid);
+        }
         if (action_requires_selection(action)) {
             /* Optional action with NULL action_id = player chose to skip. */
             if (action->optional && move->data.resolve_generic.action_id == SYM_NULL) {
@@ -800,6 +868,37 @@ GameState *apply_resolve_generic_choice(GameState *src, const Move *move) {
                     } else if (effect_kind && strcmp(effect_kind, "self_purge_to_supply") == 0) {
                         if (aid != SYM_NULL) { sk[sc] = intern("target_card_id"); sv[sc] = aid; sc++; }
                         if (tid != SYM_NULL) { sk[sc] = intern("hand_index"); sv[sc] = tid; sc++; }
+                    } else if (effect_kind && strcmp(effect_kind, "lich_select_target_player") == 0) {
+                        if (aid != SYM_NULL) { sk[sc] = intern("source_player_id"); sv[sc] = aid; sc++; }
+                    } else if (effect_kind && strcmp(effect_kind, "deploy_from_trophy_hall_with_presence") == 0) {
+                        if (aid != SYM_NULL) { sk[sc] = intern("target_node_id"); sv[sc] = aid; sc++; }
+                        if (tid != SYM_NULL) {
+                            const char *ts = intern_str(tid);
+                            if (ts) {
+                                const char *c1 = strchr(ts, ':');
+                                const char *c2 = c1 ? strchr(c1 + 1, ':') : NULL;
+                                const char *c3 = c2 ? strchr(c2 + 1, ':') : NULL;
+                                if (c1 && c2 && c3) {
+                                    int sp_len = (int)(c1 - ts);
+                                    int idx_len = (int)(c2 - c1 - 1);
+                                    int nid_len = (int)(c3 - c2 - 1);
+                                    char sp_buf[32], idx_buf[32], nid_buf[64];
+                                    if (sp_len > 0 && sp_len < (int)sizeof(sp_buf)
+                                        && idx_len > 0 && idx_len < (int)sizeof(idx_buf)
+                                        && nid_len > 0 && nid_len < (int)sizeof(nid_buf)) {
+                                        memcpy(sp_buf, ts, (size_t)sp_len); sp_buf[sp_len] = '\0';
+                                        memcpy(idx_buf, c1 + 1, (size_t)idx_len); idx_buf[idx_len] = '\0';
+                                        memcpy(nid_buf, c2 + 1, (size_t)nid_len); nid_buf[nid_len] = '\0';
+                                        if (sc + 4 <= 8) {
+                                            sk[sc] = intern("source_player_id"); sv[sc] = intern(sp_buf); sc++;
+                                            sk[sc] = intern("selected_trophy_index"); sv[sc] = intern(idx_buf); sc++;
+                                            sk[sc] = intern("target_node_id"); sv[sc] = intern(nid_buf); sc++;
+                                            sk[sc] = intern("target_slot_index"); sv[sc] = intern(c3 + 1); sc++;
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     } else if (aid != SYM_NULL) {
                         sk[sc] = intern("target_node_id"); sv[sc] = aid; sc++;
                     }
@@ -903,6 +1002,20 @@ int legal_pending_generic_choice_moves(GameState *state, Sym player_id, Move *ou
                             if (os && strcmp(os, "white") == 0) { has_troop = 1; break; }
                         }
                         if (has_troop) viable = 1;
+                    }
+                }
+                /* Mummy Lord option_2: requires at least one enemy player
+                 * with a white troop in their trophy hall. */
+                if (cid && strcmp(cid, "mummy_lord") == 0
+                    && oid_str && strcmp(oid_str, "option_2") == 0) {
+                    viable = 0;
+                    for (int ep = 0; ep < state->player_count && !viable; ep++) {
+                        if (state->players[ep].player_id == player_id) continue;
+                        for (int ti = 0; ti < state->players[ep].trophy_hall_count && !viable; ti++) {
+                            Sym occ = state->players[ep].trophy_hall[ti];
+                            const char *os = intern_str(occ);
+                            if (os && strcmp(os, "white") == 0) viable = 1;
+                        }
                     }
                 }
             }

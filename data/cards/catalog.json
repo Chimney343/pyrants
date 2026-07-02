@@ -5579,7 +5579,8 @@
             "source_fragment": "devour",
             "metadata": {
               "source_zone": "played_self",
-              "self_replace": false
+              "self_replace": false,
+              "skip_advance_to_index": "3"
             }
           },
           {
@@ -5592,7 +5593,9 @@
               "kind": "unspecified",
               "value": null
             },
-            "filters": [],
+            "filters": [
+              "allow_white_troop"
+            ],
             "source_fragment": "assassinate_troop",
             "metadata": {}
           }
@@ -5629,7 +5632,8 @@
           "source_fragment": "devour",
           "metadata": {
             "source_zone": "played_self",
-            "self_replace": false
+            "self_replace": false,
+            "skip_advance_to_index": "3"
           }
         },
         {
@@ -5642,7 +5646,9 @@
             "kind": "unspecified",
             "value": null
           },
-          "filters": [],
+          "filters": [
+            "allow_white_troop"
+          ],
           "source_fragment": "assassinate_troop",
           "metadata": {}
         }
@@ -8363,8 +8369,8 @@
             "timing": "immediate",
             "optional": false,
             "quantity": {
-              "kind": "unspecified",
-              "value": null
+              "kind": "fixed",
+              "value": 1
             },
             "filters": [],
             "source_fragment": "place_spy",
@@ -8372,17 +8378,57 @@
           },
           {
             "action_id": "action_2",
-            "op": "deploy_troops",
-            "target_scope": "board_site",
+            "op": "custom_effect",
+            "target_scope": "self",
+            "timing": "immediate",
+            "optional": true,
+            "quantity": {
+              "kind": "fixed",
+              "value": 1
+            },
+            "filters": [],
+            "source_fragment": "lich_select_target_player",
+            "metadata": {
+              "effect_kind": "lich_select_target_player",
+              "gate": "selected_node_has_other_player_troop",
+              "skip_advance_to_index": "4"
+            }
+          },
+          {
+            "action_id": "action_3",
+            "op": "custom_effect",
+            "target_scope": "self",
             "timing": "immediate",
             "optional": false,
             "quantity": {
-              "kind": "unspecified",
-              "value": null
+              "kind": "fixed",
+              "value": 1
             },
             "filters": [],
-            "source_fragment": "deploy_troops",
-            "metadata": {}
+            "source_fragment": "lich_take_trophy",
+            "metadata": {
+              "effect_kind": "deploy_from_trophy_hall_with_presence",
+              "trophy_source_player": "lich_target_player",
+              "trophy_color_filter": "any"
+            }
+          },
+          {
+            "action_id": "action_4",
+            "op": "custom_effect",
+            "target_scope": "self",
+            "timing": "immediate",
+            "optional": false,
+            "quantity": {
+              "kind": "fixed",
+              "value": 1
+            },
+            "filters": [],
+            "source_fragment": "lich_take_trophy",
+            "metadata": {
+              "effect_kind": "deploy_from_trophy_hall_with_presence",
+              "trophy_source_player": "lich_target_player",
+              "trophy_color_filter": "any"
+            }
           }
         ]
       },
@@ -8394,8 +8440,8 @@
           "timing": "immediate",
           "optional": false,
           "quantity": {
-            "kind": "unspecified",
-            "value": null
+            "kind": "fixed",
+            "value": 1
           },
           "filters": [],
           "source_fragment": "place_spy",
@@ -8403,17 +8449,57 @@
         },
         {
           "action_id": "action_2",
-          "op": "deploy_troops",
-          "target_scope": "board_site",
+          "op": "custom_effect",
+          "target_scope": "self",
+          "timing": "immediate",
+          "optional": true,
+          "quantity": {
+            "kind": "fixed",
+            "value": 1
+          },
+          "filters": [],
+          "source_fragment": "lich_select_target_player",
+          "metadata": {
+            "effect_kind": "lich_select_target_player",
+            "gate": "selected_node_has_other_player_troop",
+            "skip_advance_to_index": "4"
+          }
+        },
+        {
+          "action_id": "action_3",
+          "op": "custom_effect",
+          "target_scope": "self",
           "timing": "immediate",
           "optional": false,
           "quantity": {
-            "kind": "unspecified",
-            "value": null
+            "kind": "fixed",
+            "value": 1
           },
           "filters": [],
-          "source_fragment": "deploy_troops",
-          "metadata": {}
+          "source_fragment": "lich_take_trophy",
+          "metadata": {
+            "effect_kind": "deploy_from_trophy_hall_with_presence",
+            "trophy_source_player": "lich_target_player",
+            "trophy_color_filter": "any"
+          }
+        },
+        {
+          "action_id": "action_4",
+          "op": "custom_effect",
+          "target_scope": "self",
+          "timing": "immediate",
+          "optional": false,
+          "quantity": {
+            "kind": "fixed",
+            "value": 1
+          },
+          "filters": [],
+          "source_fragment": "lich_take_trophy",
+          "metadata": {
+            "effect_kind": "deploy_from_trophy_hall_with_presence",
+            "trophy_source_player": "lich_target_player",
+            "trophy_color_filter": "any"
+          }
         }
       ],
       "global_conditions": [
@@ -8426,14 +8512,17 @@
         "reads": [
           "player.spies_available",
           "board.nodes",
-          "player.barracks",
-          "board.troop_slots"
+          "board.troop_slots",
+          "presence_or_target_rules",
+          "custom_rules",
+          "player.trophy_hall"
         ],
         "writes": [
           "board.spies",
           "player.spies_available",
           "board.troop_slots",
-          "player.barracks"
+          "player.trophy_hall",
+          "custom_state"
         ]
       },
       "effect_key": "generic_card",
@@ -9433,7 +9522,7 @@
       "deck_vp": 1,
       "inner_circle_vp": 3,
       "rules_text": "Choose exactly one mode. Either deploy 3 troops, or devour this card to assassinate up to 3 white troops at a single site.",
-      "notes": "Uses established modal `or` semantics. The second mode mirrors existing single-site repeated white-troop assassination patterns.",
+      "notes": "Uses established modal `or` semantics. The second mode first devours the played Minotaur Skeleton itself (played_self devour, reusing the Cultist of Myrkul self-devour rule), then the player chooses a single site with at least one white troop (presence not required), then may assassinate up to 3 white troops at that site (each individually declinable), mirroring the Death Tyrant select_site + repeated assassinate pattern restricted to white troops.",
       "execution_model": {
         "kind": "modal_choice",
         "selection": "exactly_one",
@@ -9462,36 +9551,38 @@
             "actions": [
               {
                 "action_id": "option_2_action_1",
-                "op": "assassinate_troop",
+                "op": "devour_cost",
+                "target_scope": "played_self",
+                "timing": "immediate",
+                "optional": false,
+                "quantity": {
+                  "kind": "unspecified",
+                  "value": null
+                },
+                "filters": [],
+                "source_fragment": "devour",
+                "metadata": {
+                  "source_zone": "played_self",
+                  "self_replace": false
+                }
+              },
+              {
+                "action_id": "option_2_action_2",
+                "op": "custom_effect",
                 "target_scope": "board_site",
                 "timing": "immediate",
                 "optional": false,
                 "quantity": {
-                  "kind": "fixed",
-                  "value": 1
-                },
-                "filters": [
-                  "white_troop_only"
-                ],
-                "source_fragment": "devour",
-                "metadata": {}
-              },
-              {
-                "action_id": "option_2_action_2",
-                "op": "assassinate_troop",
-                "target_scope": "board_site",
-                "timing": "immediate",
-                "optional": true,
-                "quantity": {
-                  "kind": "fixed",
-                  "value": 1
+                  "kind": "unspecified",
+                  "value": null
                 },
                 "filters": [
                   "white_troop_only"
                 ],
                 "source_fragment": "devour",
                 "metadata": {
-                  "requires_last_selected_node": true
+                  "effect_kind": "select_site",
+                  "ignore_presence_requirement": true
                 }
               },
               {
@@ -9509,7 +9600,46 @@
                 ],
                 "source_fragment": "devour",
                 "metadata": {
-                  "requires_last_selected_node": true
+                  "requires_last_selected_node": true,
+                  "ignore_presence_requirement": true
+                }
+              },
+              {
+                "action_id": "option_2_action_4",
+                "op": "assassinate_troop",
+                "target_scope": "board_site",
+                "timing": "immediate",
+                "optional": true,
+                "quantity": {
+                  "kind": "fixed",
+                  "value": 1
+                },
+                "filters": [
+                  "white_troop_only"
+                ],
+                "source_fragment": "devour",
+                "metadata": {
+                  "requires_last_selected_node": true,
+                  "ignore_presence_requirement": true
+                }
+              },
+              {
+                "action_id": "option_2_action_5",
+                "op": "assassinate_troop",
+                "target_scope": "board_site",
+                "timing": "immediate",
+                "optional": true,
+                "quantity": {
+                  "kind": "fixed",
+                  "value": 1
+                },
+                "filters": [
+                  "white_troop_only"
+                ],
+                "source_fragment": "devour",
+                "metadata": {
+                  "requires_last_selected_node": true,
+                  "ignore_presence_requirement": true
                 }
               }
             ]
@@ -9533,36 +9663,38 @@
         },
         {
           "action_id": "option_2_action_1",
-          "op": "assassinate_troop",
+          "op": "devour_cost",
+          "target_scope": "played_self",
+          "timing": "immediate",
+          "optional": false,
+          "quantity": {
+            "kind": "unspecified",
+            "value": null
+          },
+          "filters": [],
+          "source_fragment": "devour",
+          "metadata": {
+            "source_zone": "played_self",
+            "self_replace": false
+          }
+        },
+        {
+          "action_id": "option_2_action_2",
+          "op": "custom_effect",
           "target_scope": "board_site",
           "timing": "immediate",
           "optional": false,
           "quantity": {
-            "kind": "fixed",
-            "value": 1
-          },
-          "filters": [
-            "white_troop_only"
-          ],
-          "source_fragment": "devour",
-          "metadata": {}
-        },
-        {
-          "action_id": "option_2_action_2",
-          "op": "assassinate_troop",
-          "target_scope": "board_site",
-          "timing": "immediate",
-          "optional": true,
-          "quantity": {
-            "kind": "fixed",
-            "value": 1
+            "kind": "unspecified",
+            "value": null
           },
           "filters": [
             "white_troop_only"
           ],
           "source_fragment": "devour",
           "metadata": {
-            "requires_last_selected_node": true
+            "effect_kind": "select_site",
+            "ignore_presence_requirement": true
           }
         },
         {
@@ -9580,7 +9712,46 @@
           ],
           "source_fragment": "devour",
           "metadata": {
-            "requires_last_selected_node": true
+            "requires_last_selected_node": true,
+            "ignore_presence_requirement": true
+          }
+        },
+        {
+          "action_id": "option_2_action_4",
+          "op": "assassinate_troop",
+          "target_scope": "board_site",
+          "timing": "immediate",
+          "optional": true,
+          "quantity": {
+            "kind": "fixed",
+            "value": 1
+          },
+          "filters": [
+            "white_troop_only"
+          ],
+          "source_fragment": "devour",
+          "metadata": {
+            "requires_last_selected_node": true,
+            "ignore_presence_requirement": true
+          }
+        },
+        {
+          "action_id": "option_2_action_5",
+          "op": "assassinate_troop",
+          "target_scope": "board_site",
+          "timing": "immediate",
+          "optional": true,
+          "quantity": {
+            "kind": "fixed",
+            "value": 1
+          },
+          "filters": [
+            "white_troop_only"
+          ],
+          "source_fragment": "devour",
+          "metadata": {
+            "requires_last_selected_node": true,
+            "ignore_presence_requirement": true
           }
         }
       ],
@@ -9594,7 +9765,8 @@
         "writes": [
           "board.troop_slots",
           "player.barracks",
-          "player.trophy_hall"
+          "player.trophy_hall",
+          "devour_zone_or_equivalent"
         ]
       },
       "effect_key": "generic_card",
@@ -9651,10 +9823,29 @@
                   "kind": "unspecified",
                   "value": null
                 },
-                "filters": [],
-                "source_fragment": "custom_effect",
+                "filters": [
+                  "white_troop_only",
+                  "exclude_self"
+                ],
+                "source_fragment": "select_trophy_hall",
                 "metadata": {
-                  "effect_kind": "steal_white_trophy_to_board"
+                  "effect_kind": "select_trophy_hall"
+                }
+              },
+              {
+                "action_id": "option_2_action_2",
+                "op": "custom_effect",
+                "target_scope": "self",
+                "timing": "immediate",
+                "optional": false,
+                "quantity": {
+                  "kind": "unspecified",
+                  "value": null
+                },
+                "filters": [],
+                "source_fragment": "steal_from_selected_trophy",
+                "metadata": {
+                  "effect_kind": "steal_from_selected_trophy"
                 }
               }
             ]
@@ -9688,10 +9879,29 @@
             "kind": "unspecified",
             "value": null
           },
-          "filters": [],
-          "source_fragment": "custom_effect",
+          "filters": [
+            "white_troop_only",
+            "exclude_self"
+          ],
+          "source_fragment": "select_trophy_hall",
           "metadata": {
-            "effect_kind": "steal_white_trophy_to_board"
+            "effect_kind": "select_trophy_hall"
+          }
+        },
+        {
+          "action_id": "option_2_action_2",
+          "op": "custom_effect",
+          "target_scope": "self",
+          "timing": "immediate",
+          "optional": false,
+          "quantity": {
+            "kind": "unspecified",
+            "value": null
+          },
+          "filters": [],
+          "source_fragment": "steal_from_selected_trophy",
+          "metadata": {
+            "effect_kind": "steal_from_selected_trophy"
           }
         }
       ],
@@ -9699,13 +9909,11 @@
       "state_contract": {
         "reads": [
           "board.troop_slots",
-          "presence_or_target_rules",
-          "custom_rules"
+          "player.trophy_hall"
         ],
         "writes": [
           "board.troop_slots",
-          "player.trophy_hall",
-          "custom_state"
+          "player.trophy_hall"
         ]
       },
       "effect_key": "generic_card",
