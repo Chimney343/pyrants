@@ -403,11 +403,27 @@ static int sel_return_unit(const GameState *state, Sym player_id,
                             const CardDefinition *card, const CardAction *action,
                             Move *out, int max_out) {
     int w = 0;
+    int include_self = 1;
+    int include_opponent = 0;
+    const char *scope = intern_str(action->target_scope);
+    if (scope) {
+        if (strcmp(scope, "opponent_unit") == 0) {
+            include_self = 0;
+            include_opponent = 1;
+        } else if (strcmp(scope, "self_or_opponent_unit") == 0) {
+            include_opponent = 1;
+        }
+    }
     for (int i = 0; i < state->node_count && w < max_out; i++) {
         Sym nid = state->nodes[i].node_id;
         for (int s = 0; s < state->nodes[i].troop_slot_count && w < max_out; s++) {
             Sym occ = state->nodes[i].troop_slots[s];
-            if (occ != player_id) continue;
+            if (occ == SYM_NULL) continue;
+            int is_own = (occ == player_id);
+            const char *occ_str = intern_str(occ);
+            int is_opponent = (!is_own && occ_str && strcmp(occ_str, "white") != 0);
+            int include = (include_self && is_own) || (include_opponent && is_opponent);
+            if (!include) continue;
             char buf[32];
             snprintf(buf, sizeof(buf), "troop:%d", s);
             out[w].type = MOVE_RESOLVE_GENERIC;
@@ -418,9 +434,13 @@ static int sel_return_unit(const GameState *state, Sym player_id,
             w++;
         }
         for (int s = 0; s < state->nodes[i].spy_count && w < max_out; s++) {
-            if (state->nodes[i].spies[s] != player_id) continue;
+            Sym spy = state->nodes[i].spies[s];
+            int is_own = (spy == player_id);
+            int is_opponent = (!is_own);
+            int include = (include_self && is_own) || (include_opponent && is_opponent);
+            if (!include) continue;
             char buf[32];
-            const char *pid_str = intern_str(player_id);
+            const char *pid_str = intern_str(spy);
             snprintf(buf, sizeof(buf), "spy:%s", pid_str ? pid_str : "?");
             out[w].type = MOVE_RESOLVE_GENERIC;
             out[w].data.resolve_generic.action_id = nid;
@@ -519,6 +539,36 @@ static int sel_promote(const GameState *state, Sym player_id,
         for (int i = 0; i < state->players[pi].discard_pile_count && w < max_out; i++) {
             out[w].type = MOVE_RESOLVE_GENERIC;
             out[w].data.resolve_generic.action_id = state->players[pi].discard_pile[i];
+            out[w].player_index = 0;
+            w++;
+        }
+    } else if (sf && strcmp(sf, "single_promote_from_multiple_zones") == 0) {
+        Sym src = pending->source_card_id;
+        for (int i = 0; i < state->players[pi].played_cards_count && w < max_out; i++) {
+            if (state->players[pi].played_cards[i] == src) {
+                out[w].type = MOVE_RESOLVE_GENERIC;
+                out[w].data.resolve_generic.action_id = src;
+                out[w].data.resolve_generic.target_id = intern("played");
+                out[w].player_index = 0;
+                w++;
+                break;
+            }
+        }
+        for (int i = 0; i < state->players[pi].hand_count && w < max_out; i++) {
+            out[w].type = MOVE_RESOLVE_GENERIC;
+            char idx_buf[16];
+            snprintf(idx_buf, sizeof(idx_buf), "%d", i);
+            out[w].data.resolve_generic.action_id = intern(idx_buf);
+            out[w].data.resolve_generic.target_id = intern("hand");
+            out[w].player_index = 0;
+            w++;
+        }
+        for (int i = 0; i < state->players[pi].discard_pile_count && w < max_out; i++) {
+            out[w].type = MOVE_RESOLVE_GENERIC;
+            char idx_buf[16];
+            snprintf(idx_buf, sizeof(idx_buf), "%d", i);
+            out[w].data.resolve_generic.action_id = intern(idx_buf);
+            out[w].data.resolve_generic.target_id = intern("discard");
             out[w].player_index = 0;
             w++;
         }
