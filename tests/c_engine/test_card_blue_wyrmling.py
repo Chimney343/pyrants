@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from engine_c.bindings.ce_api import CEngine
+from engine_c.bindings.session import CSession
 from engine_c.bindings.view import build_c_game_view
 from tests.c_engine.card_test_helpers import make_card_test_session
 
@@ -21,7 +22,7 @@ def _play_card(session: CSession, card_id: str) -> None:
 
 
 def test_blue_wyrmling_return_spy_label():
-    """Returning a spy should show 'Return Player 1's spy from <site>' label."""
+    """Returning a spy should show 'Return Player 2's spy from <site>' label."""
     eng = CEngine()
     eng.initialize(
         catalog_path=str(DATA_DIR / "cards" / "catalog.json"),
@@ -32,7 +33,7 @@ def test_blue_wyrmling_return_spy_label():
         eng,
         ["p1", "p2"],
         hand={"p1": ["blue_wyrmling"]},
-        spies={"site_gauntlgrym": ["p1"]},
+        spies={"site_gauntlgrym": ["p2"]},
         current_player="p1",
     )
 
@@ -46,7 +47,7 @@ def test_blue_wyrmling_return_spy_label():
     for m in return_moves:
         label = m.label or ""
         assert "Return" in label, f"Label should contain 'Return': {label}"
-        assert "Player 1" in label, f"Label should contain 'Player 1': {label}"
+        assert "Player 2" in label, f"Label should contain 'Player 2': {label}"
         assert "spy" in label, f"Label should contain unit type 'spy': {label}"
         assert "from" in label, f"Label should contain 'from': {label}"
         assert "Gauntlgrym" in label, f"Label should contain site name: {label}"
@@ -55,7 +56,7 @@ def test_blue_wyrmling_return_spy_label():
 
 
 def test_blue_wyrmling_return_troop_label():
-    """Returning a troop should show 'Return p1's troop from <site>' label."""
+    """Returning a troop should show 'Return p2's troop from <site>' label."""
     eng = CEngine()
     eng.initialize(
         catalog_path=str(DATA_DIR / "cards" / "catalog.json"),
@@ -66,7 +67,7 @@ def test_blue_wyrmling_return_troop_label():
         eng,
         ["p1", "p2"],
         hand={"p1": ["blue_wyrmling"]},
-        troops={"default": {"site_gauntlgrym": ["p1", None, None]}},
+        troops={"p2": {"site_gauntlgrym": ["p2", None, None]}},
         current_player="p1",
     )
 
@@ -80,7 +81,7 @@ def test_blue_wyrmling_return_troop_label():
     for m in return_moves:
         label = m.label or ""
         assert "Return" in label, f"Label should contain 'Return': {label}"
-        assert "Player 1" in label, f"Label should contain 'Player 1': {label}"
+        assert "Player 2" in label, f"Label should contain 'Player 2': {label}"
         assert "troop" in label, f"Label should contain unit type 'troop': {label}"
         assert "from" in label, f"Label should contain 'from': {label}"
         assert "Gauntlgrym" in label, f"Label should contain site name: {label}"

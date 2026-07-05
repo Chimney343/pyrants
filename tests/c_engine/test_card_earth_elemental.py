@@ -48,7 +48,7 @@ def test_earth_elemental_focus_draw_from_hand():
         ["p1", "p2"],
         hand={"p1": ["earth_elemental", "black_earth_cultist", "cleric_of_laogzed"]},
         deck={"p1": ["noble", "noble", "noble"]},
-        troops={"p1": {"site_gauntlgrym": ["p1", None]}},
+        troops={"p2": {"site_gauntlgrym": ["p2", None]}},
         current_player="p1",
     )
 
@@ -88,7 +88,7 @@ def test_earth_elemental_no_focus_draw_without_ambition():
         ["p1", "p2"],
         hand={"p1": ["earth_elemental", "noble"]},
         deck={"p1": ["noble", "noble", "noble"]},
-        troops={"p1": {"site_gauntlgrym": ["p1", None]}},
+        troops={"p2": {"site_gauntlgrym": ["p2", None]}},
         current_player="p1",
     )
 
