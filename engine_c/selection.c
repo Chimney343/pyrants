@@ -459,6 +459,12 @@ static int sel_move_troop(const GameState *state, Sym player_id,
                            Move *out, int max_out) {
     int w = 0;
     int requires_presence = 1;
+    int allow_white = 0, white_only = 0;
+    for (int i = 0; i < action->filter_count; i++) {
+        const char *f = intern_str(action->filters[i]);
+        if (f && strcmp(f, "allow_white_troop") == 0) allow_white = 1;
+        if (f && strcmp(f, "white_troop_only") == 0) white_only = 1;
+    }
     for (int i = 0; i < action->metadata_count; i++) {
         const char *k = intern_str(action->metadata[i].key);
         const char *v = intern_str(action->metadata[i].value);
@@ -472,6 +478,12 @@ static int sel_move_troop(const GameState *state, Sym player_id,
         for (int ss = 0; ss < state->nodes[si].troop_slot_count; ss++) {
             Sym occ = state->nodes[si].troop_slots[ss];
             if (occ == SYM_NULL || occ == player_id) continue;
+            {
+                const char *os = intern_str(occ);
+                int is_white = (os && strcmp(os, "white") == 0);
+                if (white_only && !is_white) continue;
+                if (!allow_white && is_white) continue;
+            }
             for (int di = 0; di < state->node_count && w < max_out; di++) {
                 if (di == si) continue;
                 for (int ts = 0; ts < state->nodes[di].troop_slot_count && w < max_out; ts++) {

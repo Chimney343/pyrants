@@ -24,8 +24,8 @@ def _init_engine() -> CEngine:
     return eng
 
 
-def test_move_troop_targets_both_white_and_enemy_troops() -> None:
-    """move_troop should list both white and other-player troops as legal targets."""
+def test_move_troop_only_targets_enemy_troops() -> None:
+    """move_troop should only target enemy player troops, not white or own."""
     eng = _init_engine()
     session = make_card_test_session(
         eng,
@@ -60,8 +60,8 @@ def test_move_troop_targets_both_white_and_enemy_troops() -> None:
                 src_slot = tid.split(":")[0]
                 target_source_slots.add(src_slot)
 
-    assert "1" in target_source_slots, "Slot 1 (white troop) should be a legal move target"
-    assert "2" in target_source_slots, "Slot 2 (p2 troop) should be a legal move target"
+    assert "1" not in target_source_slots, "Slot 1 (white troop) should NOT be a legal move target"
+    assert "2" in target_source_slots, "Slot 2 (p2/enemy troop) should be a legal move target"
 
     session.destroy()
 
@@ -73,17 +73,9 @@ def test_promote_cannot_target_self() -> None:
         eng,
         ["p1", "p2"],
         hand={"p1": ["cleric_of_laogzed", "noble"]},
-        troops={"p1": {"route_1": ["p1"]}},
+        troops={"p1": {"site_gauntlgrym": ["p1", "p2"]}},
         current_player="p1",
     )
-    s = session._state._ptr.contents
-    nid = _lib.intern(b"site_gauntlgrym")
-    for ni in range(s.node_count):
-        if s.nodes[ni].node_id == nid:
-            s.nodes[ni].troop_slots[0] = _lib.intern(b"white")
-            if s.nodes[ni].troop_slot_count < 1:
-                s.nodes[ni].troop_slot_count = 1
-            break
 
     for m in session.legal_moves():
         if m._move_type == "play_card" and m.data.get("card_id") == "cleric_of_laogzed":
