@@ -230,13 +230,13 @@
             "actions": [
               {
                 "action_id": "action_1",
-                "op": "deploy_troops",
-                "target_scope": "board_site",
+                "op": "gain_resource",
+                "target_scope": "self",
                 "timing": "immediate",
                 "optional": false,
                 "quantity": {
                   "kind": "fixed",
-                  "value": 4
+                  "value": 2
                 },
                 "filters": [],
                 "source_fragment": "gain_resource",
@@ -533,18 +533,18 @@
                 }
               },
               {
-                "action_id": "option_2_action_2",
-                "op": "deploy_troops",
-                "target_scope": "board_site",
-                "timing": "immediate",
-                "optional": false,
-                "quantity": {
-                  "kind": "fixed",
-                  "value": 1
-                },
-                "filters": [],
-                "source_fragment": "deploy_troops",
-                "metadata": {}
+          "action_id": "option_2_action_2",
+          "op": "supplant_troop",
+          "target_scope": "board_site",
+          "timing": "immediate",
+          "optional": false,
+          "quantity": {
+            "kind": "unspecified",
+            "value": null
+          },
+          "filters": ["allow_white_troop"],
+          "source_fragment": "supplant_troop",
+          "metadata": {}
               },
               {
                 "action_id": "option_2_action_3",
@@ -848,7 +848,7 @@
       "deck_vp": 1,
       "inner_circle_vp": 3,
       "rules_text": "At end of turn, promote another card you played this turn. If this card would be discarded from hand to discard pile, you may choose to promote this card instead.",
-      "notes": "The self-promotion effect is an optional replacement effect that applies only when this card would move from hand to discard pile.",
+      "notes": "The self-promotion effect is an optional replacement effect that applies only when this card would move from hand to discard pile. This is enforced at the engine level (discard_hand_card helper) — whenever Ambassador would be discarded from hand (cleanup, force_discard, ability cost), it is promoted to the inner circle instead.",
       "execution_model": {
         "kind": "sequence",
         "actions": [
@@ -4187,6 +4187,25 @@
                 "metadata": {
                   "resource": "power"
                 }
+              },
+              {
+                "action_id": "option_1_action_2",
+                "op": "conditional_bonus",
+                "target_scope": "self",
+                "timing": "immediate",
+                "optional": false,
+                "quantity": {
+                  "kind": "unspecified",
+                  "value": null
+                },
+                "filters": [],
+                "source_fragment": "gain_resource",
+                "metadata": {
+                  "condition": "player_trophy_hall_non_white_at_least",
+                  "min_trophies": 5,
+                  "resource": "power",
+                  "amount": 2
+                }
               }
             ]
           },
@@ -4228,6 +4247,25 @@
           "source_fragment": "gain_resource",
           "metadata": {
             "resource": "power"
+          }
+        },
+        {
+          "action_id": "option_1_action_2",
+          "op": "conditional_bonus",
+          "target_scope": "self",
+          "timing": "immediate",
+          "optional": false,
+          "quantity": {
+            "kind": "unspecified",
+            "value": null
+          },
+          "filters": [],
+          "source_fragment": "gain_resource",
+          "metadata": {
+            "condition": "player_trophy_hall_non_white_at_least",
+            "min_trophies": 5,
+            "resource": "power",
+            "amount": 2
           }
         },
         {
@@ -5837,8 +5875,8 @@
                   "kind": "unspecified",
                   "value": null
                 },
-                "filters": [],
-                "source_fragment": "targeted_discard",
+                "filters": ["allow_white_troop"],
+                "source_fragment": "supplant_troop",
                 "metadata": {}
               }
             ]
@@ -12109,7 +12147,9 @@
               "kind": "fixed",
               "value": 1
             },
-            "filters": [],
+            "filters": [
+              "allow_white_troop"
+            ],
             "source_fragment": "assassinate_troop",
             "metadata": {}
           },
@@ -12123,7 +12163,9 @@
               "kind": "fixed",
               "value": 1
             },
-            "filters": [],
+            "filters": [
+              "allow_white_troop"
+            ],
             "source_fragment": "assassinate_troop",
             "metadata": {}
           },
@@ -12157,7 +12199,9 @@
             "kind": "fixed",
             "value": 1
           },
-          "filters": [],
+          "filters": [
+            "allow_white_troop"
+          ],
           "source_fragment": "assassinate_troop",
           "metadata": {}
         },
@@ -12171,7 +12215,9 @@
             "kind": "fixed",
             "value": 1
           },
-          "filters": [],
+          "filters": [
+            "allow_white_troop"
+          ],
           "source_fragment": "assassinate_troop",
           "metadata": {}
         },
@@ -12335,8 +12381,8 @@
             "timing": "immediate",
             "optional": false,
             "quantity": {
-              "kind": "unspecified",
-              "value": null
+              "kind": "fixed",
+              "value": 3
             },
             "filters": [],
             "source_fragment": "deploy_troops",
@@ -12383,8 +12429,8 @@
           "timing": "immediate",
           "optional": false,
           "quantity": {
-            "kind": "unspecified",
-            "value": null
+            "kind": "fixed",
+            "value": 3
           },
           "filters": [],
           "source_fragment": "deploy_troops",
@@ -13267,7 +13313,8 @@
                 "source_fragment": "scaled_vp",
                 "metadata": {
                   "count_from": "inner_circle_cards",
-                  "per": 3
+                  "per": 3,
+                  "as": "vp_tokens"
                 }
               }
             ]
@@ -13317,7 +13364,8 @@
           "source_fragment": "scaled_vp",
           "metadata": {
             "count_from": "inner_circle_cards",
-            "per": 3
+            "per": 3,
+            "as": "vp_tokens"
           }
         }
       ],
@@ -14531,7 +14579,8 @@
             "source_fragment": "devour",
             "metadata": {
               "source_zone": "played_self",
-              "self_replace": false
+              "self_replace": false,
+              "skip_advance_to_index": "3"
             }
           },
           {
@@ -14546,7 +14595,9 @@
             },
             "filters": [],
             "source_fragment": "assassinate_troop",
-            "metadata": {}
+            "metadata": {
+              "requires_last_selected_node": true
+            }
           }
         ]
       },
@@ -14579,7 +14630,8 @@
           "source_fragment": "devour",
           "metadata": {
             "source_zone": "played_self",
-            "self_replace": false
+            "self_replace": false,
+            "skip_advance_to_index": "3"
           }
         },
         {
@@ -14594,7 +14646,9 @@
           },
           "filters": [],
           "source_fragment": "assassinate_troop",
-          "metadata": {}
+          "metadata": {
+            "requires_last_selected_node": true
+          }
         }
       ],
       "global_conditions": [],

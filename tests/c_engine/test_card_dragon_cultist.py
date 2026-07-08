@@ -1,7 +1,7 @@
 """Dragon Cultist card behavior tests.
 
 Execution model: modal_choice (exactly_one)
-  - Option 1 (option_1): gain 2 power
+  - Option 1 (option_1): gain 2 power (doubled to 4 if >=5 player trophies)
   - Option 2 (option_2): gain 2 influence
 
 Verifies:
@@ -11,6 +11,9 @@ Verifies:
   - Option 2 grants 2 influence, power unchanged
   - Card fully resolves after modal choice
   - Card stays in played_cards
+  - Option 1 grants 4 power (2x) when >=5 non-white trophies
+  - White trophies do not count toward threshold
+  - Option 2 unaffected by trophy hall
 """
 
 from __future__ import annotations
@@ -18,12 +21,17 @@ from __future__ import annotations
 from pathlib import Path
 
 from engine_c.bindings.ce_api import CEngine
-from engine_c.bindings.engine_bindings import _lib
+from engine_c.bindings.engine_bindings import MAX_ZONE_SIZE, _lib
 from engine_c.bindings.session import CSession
-from tests.c_engine.card_test_helpers import make_card_test_session
+from tests.c_engine.card_test_helpers import (
+    _session_player_index,
+    _sptr,
+    make_card_test_session,
+)
 
 DATA_DIR = Path(__file__).resolve().parents[2] / "data"
 _CARD_ID = "dragon_cultist"
+_WHITE = "white"
 
 
 def _play_card(session: CSession, card_id: str) -> None:
@@ -59,6 +67,26 @@ def _played_cards_ids(session: CSession, player_index: int = 0) -> list[str]:
     s = session._state._ptr.contents
     ps = s.players[player_index]
     return [_lib.intern_str(ps.played_cards[j]).decode() for j in range(ps.played_cards_count)]
+
+
+def _trophy_hall(session: CSession, pid: str) -> list[str]:
+    pi = _session_player_index(session, pid)
+    if pi < 0:
+        return []
+    s = _sptr(session).contents
+    ps = s.players[pi]
+    return [_lib.intern_str(ps.trophy_hall[j]).decode() for j in range(ps.trophy_hall_count)]
+
+
+def _set_trophy_hall(session: CSession, pid: str, trophies: list[str]) -> None:
+    pi = _session_player_index(session, pid)
+    if pi < 0:
+        return
+    s = _sptr(session).contents
+    ps = s.players[pi]
+    ps.trophy_hall_count = min(len(trophies), MAX_ZONE_SIZE)
+    for i, t in enumerate(trophies[:MAX_ZONE_SIZE]):
+        ps.trophy_hall[i] = _lib.intern(t.encode())
 
 
 def _init_engine() -> CEngine:
@@ -275,4 +303,195 @@ def test_dragon_cultist_power_gain_with_nonzero_start() -> None:
     assert _power(session) == 5, f"Expected 5 power (3 + 2), got {_power(session)}"
     assert _influence(session) == 5, f"Expected 5 influence unchanged, got {_influence(session)}"
 
+    session.destroy()
+
+
+# ---------------------------------------------------------------------------
+# Trophy-hall conditional power doubling tests
+# ---------------------------------------------------------------------------
+
+
+def test_option_1_grants_4_power_with_5_player_trophies() -> None:
+    """Option 1 grants 4 power (2x) when current player has >=5 non-white trophies."""
+    eng = _init_engine()
+    session = make_card_test_session(
+        eng,
+        ["p1", "p2"],
+        hand={"p1": [_CARD_ID]},
+        current_player="p1",
+    )
+
+    s = session._state._ptr.contents
+    s.resource_pool.power = 0
+    s.resource_pool.influence = 0
+    _set_trophy_hall(session, "p1", ["p2"] * 5)
+
+    _play_card(session, _CARD_ID)
+
+    option_1_moves = [
+        m for m in session.legal_moves()
+        if m._move_type == "resolve_generic" and m.data.get("action_id") == "option_1"
+    ]
+    assert option_1_moves
+    session.submit_move(option_1_moves[0])
+
+    assert _power(session) == 4, (
+        f"Expected 4 power (2x) with 5 player trophies, got {_power(session)}"
+    )
+    assert _influence(session) == 0, (
+        f"Expected 0 influence after option_1, got {_influence(session)}"
+    )
+    session.destroy()
+
+
+def test_option_1_grants_4_power_with_more_than_5_player_trophies() -> None:
+    """Option 1 grants 4 power when current player has >5 non-white trophies."""
+    eng = _init_engine()
+    session = make_card_test_session(
+        eng,
+        ["p1", "p2"],
+        hand={"p1": [_CARD_ID]},
+        current_player="p1",
+    )
+
+    s = session._state._ptr.contents
+    s.resource_pool.power = 0
+    s.resource_pool.influence = 0
+    _set_trophy_hall(session, "p1", ["p2"] * 8)
+
+    _play_card(session, _CARD_ID)
+
+    option_1_moves = [
+        m for m in session.legal_moves()
+        if m._move_type == "resolve_generic" and m.data.get("action_id") == "option_1"
+    ]
+    assert option_1_moves
+    session.submit_move(option_1_moves[0])
+
+    assert _power(session) == 4, (
+        f"Expected 4 power with 8 player trophies, got {_power(session)}"
+    )
+    session.destroy()
+
+
+def test_option_1_grants_2_power_with_less_than_5_player_trophies() -> None:
+    """Option 1 grants only 2 power when <5 non-white trophies."""
+    eng = _init_engine()
+    session = make_card_test_session(
+        eng,
+        ["p1", "p2"],
+        hand={"p1": [_CARD_ID]},
+        current_player="p1",
+    )
+
+    s = session._state._ptr.contents
+    s.resource_pool.power = 0
+    s.resource_pool.influence = 0
+    _set_trophy_hall(session, "p1", ["p2"] * 4)
+
+    _play_card(session, _CARD_ID)
+
+    option_1_moves = [
+        m for m in session.legal_moves()
+        if m._move_type == "resolve_generic" and m.data.get("action_id") == "option_1"
+    ]
+    assert option_1_moves
+    session.submit_move(option_1_moves[0])
+
+    assert _power(session) == 2, (
+        f"Expected 2 power with 4 player trophies, got {_power(session)}"
+    )
+    session.destroy()
+
+
+def test_white_trophies_do_not_count_toward_power_threshold() -> None:
+    """White trophies do not count; only player trophies trigger bonus power."""
+    eng = _init_engine()
+    session = make_card_test_session(
+        eng,
+        ["p1", "p2"],
+        hand={"p1": [_CARD_ID]},
+        current_player="p1",
+    )
+
+    s = session._state._ptr.contents
+    s.resource_pool.power = 0
+    s.resource_pool.influence = 0
+    _set_trophy_hall(session, "p1", [_WHITE, _WHITE, _WHITE, _WHITE, _WHITE, _WHITE, "p2"])
+
+    _play_card(session, _CARD_ID)
+
+    option_1_moves = [
+        m for m in session.legal_moves()
+        if m._move_type == "resolve_generic" and m.data.get("action_id") == "option_1"
+    ]
+    assert option_1_moves
+    session.submit_move(option_1_moves[0])
+
+    assert _power(session) == 2, (
+        f"Expected 2 power (only 1 player trophy among whites), got {_power(session)}"
+    )
+    session.destroy()
+
+
+def test_option_2_unaffected_by_trophy_hall() -> None:
+    """Option 2 always grants 2 influence regardless of trophy hall."""
+    eng = _init_engine()
+    session = make_card_test_session(
+        eng,
+        ["p1", "p2"],
+        hand={"p1": [_CARD_ID]},
+        current_player="p1",
+    )
+
+    s = session._state._ptr.contents
+    s.resource_pool.power = 0
+    s.resource_pool.influence = 0
+    _set_trophy_hall(session, "p1", ["p2"] * 7)
+
+    _play_card(session, _CARD_ID)
+
+    option_2_moves = [
+        m for m in session.legal_moves()
+        if m._move_type == "resolve_generic" and m.data.get("action_id") == "option_2"
+    ]
+    assert option_2_moves
+    session.submit_move(option_2_moves[0])
+
+    assert _influence(session) == 2, (
+        f"Expected 2 influence regardless of trophy hall, got {_influence(session)}"
+    )
+    assert _power(session) == 0, (
+        f"Expected 0 power for option_2, got {_power(session)}"
+    )
+    session.destroy()
+
+
+def test_power_doubles_with_mixed_white_and_player_trophies() -> None:
+    """Power doubles when 5+ player trophies exist among mixed trophy hall."""
+    eng = _init_engine()
+    session = make_card_test_session(
+        eng,
+        ["p1", "p2"],
+        hand={"p1": [_CARD_ID]},
+        current_player="p1",
+    )
+
+    s = session._state._ptr.contents
+    s.resource_pool.power = 0
+    s.resource_pool.influence = 0
+    _set_trophy_hall(session, "p1", [_WHITE, "p2", _WHITE, "p2", "p3", _WHITE, "p2", "p3", "p4"])
+
+    _play_card(session, _CARD_ID)
+
+    option_1_moves = [
+        m for m in session.legal_moves()
+        if m._move_type == "resolve_generic" and m.data.get("action_id") == "option_1"
+    ]
+    assert option_1_moves
+    session.submit_move(option_1_moves[0])
+
+    assert _power(session) == 4, (
+        f"Expected 4 power (6 player trophies mixed with whites), got {_power(session)}"
+    )
     session.destroy()

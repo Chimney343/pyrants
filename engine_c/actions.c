@@ -217,7 +217,17 @@ static GameState *apply_assassinate_troop(GameState *state, Sym player_id, const
             break;
         }
     }
-    if (apply_free_assassinate(state, player_id, target, slot) != 0) return state;
+    int ignore_presence = 0;
+    for (int i = 0; i < action->metadata_count; i++) {
+        const char *k = intern_str(action->metadata[i].key);
+        const char *v = intern_str(action->metadata[i].value);
+        if (k && strcmp(k, "ignore_presence_requirement") == 0 && v
+            && strcmp(v, "true") == 0) {
+            ignore_presence = 1;
+            break;
+        }
+    }
+    if (apply_free_assassinate(state, player_id, target, slot, ignore_presence) != 0) return state;
     if (state->pending_generic)
         increment_pending_counter(state->pending_generic, action);
     return state;
@@ -378,6 +388,8 @@ static GameState *apply_move_troop(GameState *state, Sym player_id, const CardDe
 
     nss->troop_slots[src_slot] = SYM_NULL;
     nsd->troop_slots[dst_slot] = occ;
+    if (state->pending_generic)
+        increment_pending_counter(state->pending_generic, action);
     return state;
 }
 
@@ -401,11 +413,7 @@ static GameState *apply_force_discard(GameState *state, Sym player_id, const Car
         state->shuffle_counter++;
     }
     if (hand_idx < 0 || hand_idx >= ps->hand_count) return state;
-    if (ps->discard_pile_count < MAX_ZONE_SIZE)
-        ps->discard_pile[ps->discard_pile_count++] = ps->hand[hand_idx];
-    for (int i = hand_idx; i < ps->hand_count - 1; i++)
-        ps->hand[i] = ps->hand[i + 1];
-    ps->hand_count--;
+    discard_hand_card(state, target, hand_idx);
     return state;
 }
 
@@ -425,7 +433,25 @@ static GameState *apply_promote_card_gen(GameState *state, Sym player_id, const 
         return state;
     }
     if (sf && strcmp(sf, "threshold_self_promote") == 0) {
-        promote_card(state, player_id, source);
+        int min_trophies = 0;
+        const char *count_from = NULL;
+        for (int i = 0; i < action->metadata_count; i++) {
+            const char *k = intern_str(action->metadata[i].key);
+            const char *v = intern_str(action->metadata[i].value);
+            if (k && strcmp(k, "min_trophies") == 0 && v) min_trophies = atoi(v);
+            if (k && strcmp(k, "count_from") == 0 && v) count_from = v;
+        }
+        if (min_trophies == 0) {
+            promote_card(state, player_id, source);
+            return state;
+        }
+        const char *filter = "all";
+        if (count_from && strcmp(count_from, "trophy_hall_all") == 0) filter = "all";
+        else if (count_from && strcmp(count_from, "trophy_hall_non_white") == 0) filter = "non_white";
+        else if (count_from && strcmp(count_from, "trophy_hall_white") == 0) filter = "white";
+        int pi = player_index_for_id(state, player_id);
+        if (pi >= 0 && count_trophies(&state->players[pi], filter) >= min_trophies)
+            promote_card(state, player_id, source);
         return state;
     }
 
@@ -463,18 +489,24 @@ static GameState *apply_promote_card_gen(GameState *state, Sym player_id, const 
         if (sz && strcmp(sz, "discard") == 0) {
             int idx = find_sel_int(sk, sv, sc, "discard_index", -1);
             if (idx >= 0 && idx < ps->discard_pile_count && ps->inner_circle_count < MAX_ZONE_SIZE) {
-                ps->inner_circle[ps->inner_circle_count++] = ps->discard_pile[idx];
+                Sym card_id = ps->discard_pile[idx];
+                Sym insane = intern("insane_outcast");
                 for (int i = idx; i < ps->discard_pile_count - 1; i++)
                     ps->discard_pile[i] = ps->discard_pile[i + 1];
                 ps->discard_pile_count--;
+                if (card_id != insane)
+                    ps->inner_circle[ps->inner_circle_count++] = card_id;
             }
         } else if (sz && strcmp(sz, "hand") == 0) {
             int idx = find_sel_int(sk, sv, sc, "hand_index", -1);
             if (idx >= 0 && idx < ps->hand_count && ps->inner_circle_count < MAX_ZONE_SIZE) {
-                ps->inner_circle[ps->inner_circle_count++] = ps->hand[idx];
+                Sym card_id = ps->hand[idx];
+                Sym insane = intern("insane_outcast");
                 for (int i = idx; i < ps->hand_count - 1; i++)
                     ps->hand[i] = ps->hand[i + 1];
                 ps->hand_count--;
+                if (card_id != insane)
+                    ps->inner_circle[ps->inner_circle_count++] = card_id;
             }
         } else if (sz && strcmp(sz, "played") == 0) {
             Sym tcid = find_sel(sk, sv, sc, "target_card_id");
@@ -703,6 +735,32 @@ static GameState *apply_custom_effect(GameState *state, Sym player_id, const Car
         }
     } else if (strcmp(ek, "select_trophy_hall") == 0) {
         return state;
+    } else if (strcmp(ek, "lich_select_target_player") == 0) {
+        return state;
+    } else if (strcmp(ek, "deploy_from_trophy_hall_with_presence") == 0) {
+        Sym source_player = find_sel(sk, sv, sc, "source_player_id");
+        Sym trophy_idx_sym = find_sel(sk, sv, sc, "selected_trophy_index");
+        Sym target_node = find_sel(sk, sv, sc, "target_node_id");
+        int target_slot = find_sel_int(sk, sv, sc, "target_slot_index", -1);
+        if (source_player == SYM_NULL || trophy_idx_sym == SYM_NULL
+            || target_node == SYM_NULL || target_slot < 0) return state;
+        const char *idx_str = intern_str(trophy_idx_sym);
+        int trophy_idx = idx_str ? atoi(idx_str) : -1;
+        int spi = -1;
+        for (int p = 0; p < state->player_count; p++)
+            if (state->players[p].player_id == source_player) { spi = p; break; }
+        if (spi < 0 || trophy_idx < 0) return state;
+        PlayerState *sp = cow_player(state, source_player);
+        if (!sp || trophy_idx >= sp->trophy_hall_count) return state;
+        Sym trophy_owner = sp->trophy_hall[trophy_idx];
+        for (int t = trophy_idx; t < sp->trophy_hall_count - 1; t++)
+            sp->trophy_hall[t] = sp->trophy_hall[t + 1];
+        sp->trophy_hall_count--;
+        if (!has_presence(state, player_id, target_node)) return state;
+        NodeState *ns = cow_node(state, target_node);
+        if (!ns || target_slot < 0 || target_slot >= ns->troop_slot_count) return state;
+        if (ns->troop_slots[target_slot] != SYM_NULL) return state;
+        ns->troop_slots[target_slot] = trophy_owner;
     } else if (strcmp(ek, "steal_from_selected_trophy") == 0) {
         Sym source_player = find_sel(sk, sv, sc, "source_player_id");
         Sym trophy_idx_sym = find_sel(sk, sv, sc, "selected_trophy_index");
@@ -734,11 +792,7 @@ static GameState *apply_custom_effect(GameState *state, Sym player_id, const Car
         if (!ps) return state;
         if (hand_idx >= ps->hand_count) return state;
         if (ps->hand[hand_idx] != target_card) return state;
-        if (ps->discard_pile_count < MAX_ZONE_SIZE)
-            ps->discard_pile[ps->discard_pile_count++] = target_card;
-        for (int i = hand_idx; i < ps->hand_count - 1; i++)
-            ps->hand[i] = ps->hand[i + 1];
-        ps->hand_count--;
+        discard_hand_card(state, player_id, hand_idx);
         for (int i = 0; i < ps->played_cards_count; i++) {
             if (ps->played_cards[i] == source) {
                 for (int j = i; j < ps->played_cards_count - 1; j++)
@@ -777,7 +831,7 @@ static GameState *apply_conditional_bonus(GameState *state, Sym player_id, const
                                            Sym source, const CardAction *action,
                                            int *sk, Sym *sv, int sc) {
     Sym cond = SYM_NULL, resource = SYM_NULL;
-    int amount = 0, min_cards = 0, min_spies = 0;
+    int amount = 0, min_cards = 0, min_spies = 0, min_trophies = 0;
     for (int i = 0; i < action->metadata_count; i++) {
         const char *k = intern_str(action->metadata[i].key);
         const char *v = intern_str(action->metadata[i].value);
@@ -786,6 +840,7 @@ static GameState *apply_conditional_bonus(GameState *state, Sym player_id, const
         if (k && strcmp(k, "amount") == 0 && v) amount = atoi(v);
         if (k && strcmp(k, "min_cards") == 0 && v) min_cards = atoi(v);
         if (k && strcmp(k, "min_spies") == 0 && v) min_spies = atoi(v);
+        if (k && strcmp(k, "min_trophies") == 0 && v) min_trophies = atoi(v);
     }
     if (cond == SYM_NULL) return state;
     if (amount <= 0) amount = 1;
@@ -843,6 +898,12 @@ static GameState *apply_conditional_bonus(GameState *state, Sym player_id, const
             if (state->players[i].player_id == player_id) { pi = i; break; }
         if (pi >= 0 && state->players[pi].inner_circle_count >= min_cards)
             grant_resource(state, resource != SYM_NULL ? resource : intern("influence"), amount);
+    } else if (cs && strcmp(cs, "player_trophy_hall_non_white_at_least") == 0) {
+        int pi = -1;
+        for (int i = 0; i < state->player_count; i++)
+            if (state->players[i].player_id == player_id) { pi = i; break; }
+        if (pi >= 0 && count_trophies(&state->players[pi], "non_white") >= min_trophies)
+            grant_resource(state, resource != SYM_NULL ? resource : intern("power"), amount);
     }
     return state;
 }
