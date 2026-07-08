@@ -1,6 +1,6 @@
 # Cards Without tests/c_engine/ Test Files
 
-Generated 2026-07-08. Catalog: 125 cards. Tested: 72. Untested: 53.
+Generated 2026-07-09. Catalog: 125 cards. Tested: 73. Untested: 52.
 
 ## Edge Cases
 
@@ -27,7 +27,6 @@ Generated 2026-07-08. Catalog: 125 cards. Tested: 72. Untested: 53.
 | Cult Fanatic | cult_fanatic |
 | Death Knight | death_knight |
 | Death Tyrant | death_tyrant |
-| Doppelganger | doppelganger |
 | Dragon Cultist | dragon_cultist |
 | Dragonclaw | dragonclaw |
 | Earth Elemental Myrmidon | earth_elemental_myrmidon |
