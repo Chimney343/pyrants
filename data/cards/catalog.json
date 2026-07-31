@@ -2019,7 +2019,7 @@
                 },
                 "filters": [],
                 "source_fragment": "return_spy",
-                "metadata": {}
+                "metadata": { "spy_owner": "self" }
               },
               {
                 "action_id": "option_2_action_2",
@@ -2084,7 +2084,7 @@
           },
           "filters": [],
           "source_fragment": "return_spy",
-          "metadata": {}
+          "metadata": { "spy_owner": "self" }
         },
         {
           "action_id": "option_2_action_2",
@@ -2588,7 +2588,7 @@
                 },
                 "filters": [],
                 "source_fragment": "return_spy",
-                "metadata": {}
+                "metadata": { "spy_owner": "self" }
               },
               {
                 "action_id": "option_2_action_2",
@@ -2635,7 +2635,7 @@
           },
           "filters": [],
           "source_fragment": "return_spy",
-          "metadata": {}
+          "metadata": { "spy_owner": "self" }
         },
         {
           "action_id": "option_2_action_2",
@@ -2721,7 +2721,7 @@
                 },
                 "filters": [],
                 "source_fragment": "return_spy",
-                "metadata": {}
+                "metadata": { "spy_owner": "self" }
               },
               {
                 "action_id": "option_2_action_2",
@@ -2790,7 +2790,7 @@
           },
           "filters": [],
           "source_fragment": "return_spy",
-          "metadata": {}
+          "metadata": { "spy_owner": "self" }
         },
         {
           "action_id": "option_2_action_2",
@@ -10717,7 +10717,7 @@
                 },
                 "filters": [],
                 "source_fragment": "return_spy",
-                "metadata": {}
+                "metadata": { "spy_owner": "self" }
               },
               {
                 "action_id": "option_2_action_2",
@@ -10778,7 +10778,7 @@
           },
           "filters": [],
           "source_fragment": "return_spy",
-          "metadata": {}
+          "metadata": { "spy_owner": "self" }
         },
         {
           "action_id": "option_2_action_2",
@@ -12663,7 +12663,7 @@
                 },
                 "filters": [],
                 "source_fragment": "return_spy",
-                "metadata": {}
+                "metadata": { "spy_owner": "self" }
               },
               {
                 "action_id": "option_2_action_2",
@@ -12710,7 +12710,7 @@
           },
           "filters": [],
           "source_fragment": "return_spy",
-          "metadata": {}
+          "metadata": { "spy_owner": "self" }
         },
         {
           "action_id": "option_2_action_2",
