@@ -5875,8 +5875,8 @@
                   "kind": "unspecified",
                   "value": null
                 },
-                "filters": ["allow_white_troop"],
-                "source_fragment": "supplant_troop",
+                "filters": [],
+                "source_fragment": "targeted_discard",
                 "metadata": {}
               }
             ]

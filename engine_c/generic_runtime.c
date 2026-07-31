@@ -472,11 +472,7 @@ GameState *auto_resolve_pending_generic(GameState *state, Sym player_id) {
                         for (int c = 0; c < state->shuffle_counter; c++)
                             rng_next(&rng);
                         int idx = rng_randint(&rng, 0, ps->hand_count - 1);
-                        if (ps->discard_pile_count < MAX_ZONE_SIZE)
-                            ps->discard_pile[ps->discard_pile_count++] = ps->hand[idx];
-                        for (int h = idx; h < ps->hand_count - 1; h++)
-                            ps->hand[h] = ps->hand[h + 1];
-                        ps->hand_count--;
+                        discard_hand_card(state, tpid, idx);
                         state->shuffle_counter++;
                     }
                     p->next_action_index++;
@@ -515,11 +511,7 @@ GameState *auto_resolve_pending_generic(GameState *state, Sym player_id) {
                                 for (int c = 0; c < state->shuffle_counter; c++)
                                     rng_next(&rng);
                                 int idx = rng_randint(&rng, 0, ps->hand_count - 1);
-                                if (ps->discard_pile_count < MAX_ZONE_SIZE)
-                                    ps->discard_pile[ps->discard_pile_count++] = ps->hand[idx];
-                                for (int h = idx; h < ps->hand_count - 1; h++)
-                                    ps->hand[h] = ps->hand[h + 1];
-                                ps->hand_count--;
+                                discard_hand_card(state, target_owner, idx);
                                 state->shuffle_counter++;
                             }
                         }
@@ -559,11 +551,7 @@ GameState *auto_resolve_pending_generic(GameState *state, Sym player_id) {
                             int idx = rng_randint(&rng, 0, state->players[o].hand_count - 1);
                             PlayerState *ps = cow_player(state, state->players[o].player_id);
                             if (ps && idx >= 0 && idx < ps->hand_count) {
-                                if (ps->discard_pile_count < MAX_ZONE_SIZE)
-                                    ps->discard_pile[ps->discard_pile_count++] = ps->hand[idx];
-                                for (int h = idx; h < ps->hand_count - 1; h++)
-                                    ps->hand[h] = ps->hand[h + 1];
-                                ps->hand_count--;
+                                discard_hand_card(state, state->players[o].player_id, idx);
                                 state->shuffle_counter++;
                             }
                         }
@@ -591,14 +579,10 @@ GameState *auto_resolve_pending_generic(GameState *state, Sym player_id) {
                             rng_seed(&rng, state->shuffle_seed);
                             for (int c = 0; c < state->shuffle_counter; c++)
                                 rng_next(&rng);
-                            int idx = rng_randint(&rng, 0, state->players[o].hand_count - 1);
+                             int idx = rng_randint(&rng, 0, state->players[o].hand_count - 1);
                             PlayerState *ps = cow_player(state, state->players[o].player_id);
                             if (ps && idx >= 0 && idx < ps->hand_count) {
-                                if (ps->discard_pile_count < MAX_ZONE_SIZE)
-                                    ps->discard_pile[ps->discard_pile_count++] = ps->hand[idx];
-                                for (int h = idx; h < ps->hand_count - 1; h++)
-                                    ps->hand[h] = ps->hand[h + 1];
-                                ps->hand_count--;
+                                discard_hand_card(state, state->players[o].player_id, idx);
                                 state->shuffle_counter++;
                             }
                         }
@@ -741,7 +725,22 @@ GameState *apply_resolve_generic_choice(GameState *src, const Move *move) {
                 } else if (strcmp(op, "return_spy") == 0) {
                     if (aid != SYM_NULL) { sk[sc] = intern("node_id"); sv[sc] = aid; sc++; }
                 } else if (strcmp(op, "promote_card") == 0) {
-                    if (aid != SYM_NULL) { sk[sc] = intern("target_card_id"); sv[sc] = aid; sc++; }
+                    const char *sf = intern_str(action->source_fragment);
+                    if (sf && strcmp(sf, "single_promote_from_multiple_zones") == 0) {
+                        if (aid != SYM_NULL && tid != SYM_NULL) {
+                            sk[sc] = intern("source_zone"); sv[sc] = tid; sc++;
+                            const char *sz = intern_str(tid);
+                            if (sz && strcmp(sz, "played") == 0) {
+                                sk[sc] = intern("target_card_id"); sv[sc] = aid; sc++;
+                            } else if (sz && strcmp(sz, "hand") == 0) {
+                                sk[sc] = intern("hand_index"); sv[sc] = aid; sc++;
+                            } else if (sz && strcmp(sz, "discard") == 0) {
+                                sk[sc] = intern("discard_index"); sv[sc] = aid; sc++;
+                            }
+                        }
+                    } else {
+                        if (aid != SYM_NULL) { sk[sc] = intern("target_card_id"); sv[sc] = aid; sc++; }
+                    }
                 } else if (strcmp(op, "recruit_card") == 0) {
                     if (aid != SYM_NULL) { sk[sc] = intern("target_card_id"); sv[sc] = aid; sc++; }
                 } else if (strcmp(op, "devour") == 0 || strcmp(op, "devour_cost") == 0) {
@@ -910,11 +909,40 @@ GameState *apply_resolve_generic_choice(GameState *src, const Move *move) {
             }
             GameState *prev_sel = state;
             /* Store the last selection so subsequent actions in a sequence
-             * (e.g. force_discard after place_spy on Chuul) can read it. */
-            p->last_selection_count = sc < 8 ? sc : 8;
-            for (int si = 0; si < p->last_selection_count; si++) {
-                p->last_selection_keys[si] = sk[si];
-                p->last_selection_values[si] = sv[si];
+             * (e.g. force_discard after place_spy on Chuul, assassinate
+             *  after devour_cost on Wraith) can read it.  Preserve
+             * `target_node_id` from the previous selection when the
+             * current action doesn't supply one — this lets an earlier
+             * site selection survive an intervening non-site action
+             * (e.g. devour_cost between place_spy and assassinate). */
+            {
+                Sym carry_target_node = SYM_NULL;
+                for (int si = 0; si < p->last_selection_count; si++) {
+                    const char *k = intern_str(p->last_selection_keys[si]);
+                    if (k && strcmp(k, "target_node_id") == 0) {
+                        carry_target_node = p->last_selection_values[si];
+                        break;
+                    }
+                }
+                p->last_selection_count = sc < 8 ? sc : 8;
+                for (int si = 0; si < p->last_selection_count; si++) {
+                    p->last_selection_keys[si] = sk[si];
+                    p->last_selection_values[si] = sv[si];
+                }
+                if (carry_target_node != SYM_NULL) {
+                    int found = 0;
+                    for (int si = 0; si < p->last_selection_count; si++) {
+                        const char *k = intern_str(p->last_selection_keys[si]);
+                        if (k && strcmp(k, "target_node_id") == 0) { found = 1; break; }
+                    }
+                    if (!found && p->last_selection_count < 8) {
+                        p->last_selection_keys[p->last_selection_count] =
+                            intern("target_node_id");
+                        p->last_selection_values[p->last_selection_count] =
+                            carry_target_node;
+                        p->last_selection_count++;
+                    }
+                }
             }
             state = apply_generic_action(state, pid, card, p->source_card_id, action,
                                           sk, sv, sc);
@@ -974,7 +1002,16 @@ int legal_pending_generic_choice_moves(GameState *state, Sym player_id, Move *ou
                         Move dummy[1];
                         int nc = legal_generic_target_selection_moves(
                             state, player_id, p, opt_card, act, dummy, 1);
-                        if (nc == 0) viable = 0;
+                        if (nc == 0) {
+                            /* Gauth option_2: draw_cards works unconditionally;
+                             * targeted_discard auto-skips when no opponent has
+                             * 3+ cards — option remains viable. */
+                            const char *cid2 = intern_str(p->source_card_id);
+                            const char *os = intern_str(oid);
+                            if (!(cid2 && strcmp(cid2, "gauth") == 0
+                                  && os && strcmp(os, "option_2") == 0))
+                                viable = 0;
+                        }
                     }
                 }
             }
