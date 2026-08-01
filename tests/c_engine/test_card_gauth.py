@@ -6,11 +6,15 @@ Execution model: modal_choice (exactly_one)
     in hand to discard one random card
 
 Verifies:
+  - Execution model metadata (cost, aspect, ops, options structure)
+  - Card moves to played_cards and hand count decreases after play
   - Modal choice is pending after play with two options
-  - Option 1 grants 2 influence
-  - Option 2 draws 1 card, then shows opponent targets with 3+ cards
-  - Option 2 discard picks a random card from the targeted opponent
+  - Option 1 grants 2 influence and resolves fully
+  - Option 2 draws 1 card (reshuffles when deck is empty)
+  - Option 2 shows only opponent targets with 3+ cards
   - Option 2 skips discard when no opponent has 3+ cards
+  - Option 2 discard picks a random card from the targeted opponent
+  - Multiplayer: only opponents with 3+ cards are targetable
   - Card fully resolves after each option
 """
 
@@ -44,6 +48,38 @@ def _hand_count(session: CSession, pid: str) -> int:
     if pi < 0:
         return 0
     return _sptr(session).contents.players[pi].hand_count
+
+
+def _deck_count(session: CSession, pid: str) -> int:
+    pi = _session_player_index(session, pid)
+    if pi < 0:
+        return 0
+    return _sptr(session).contents.players[pi].deck_count
+
+
+def _discard_count(session: CSession, pid: str) -> int:
+    pi = _session_player_index(session, pid)
+    if pi < 0:
+        return 0
+    return _sptr(session).contents.players[pi].discard_pile_count
+
+
+def _played_count(session: CSession, pid: str) -> int:
+    pi = _session_player_index(session, pid)
+    if pi < 0:
+        return 0
+    return _sptr(session).contents.players[pi].played_cards_count
+
+
+def _played_card_names(session: CSession, pid: str) -> list[str]:
+    pi = _session_player_index(session, pid)
+    if pi < 0:
+        return []
+    s = _sptr(session).contents
+    return [
+        _lib.intern_str(s.players[pi].played_cards[j]).decode()
+        for j in range(s.players[pi].played_cards_count)
+    ]
 
 
 def _influence(session: CSession) -> int:
@@ -101,6 +137,16 @@ def _set_deck(session: CSession, pid: str, card: str, count: int) -> None:
     s.players[pi].deck_count = min(count, 40)
     for j in range(min(count, 40)):
         s.players[pi].deck[j] = _lib.intern(card.encode())
+
+
+def _set_discard(session: CSession, pid: str, cards: list[str]) -> None:
+    s = _sptr(session).contents
+    pi = _session_player_index(session, pid)
+    if pi < 0:
+        return
+    s.players[pi].discard_pile_count = min(len(cards), 40)
+    for j, cid in enumerate(cards[:40]):
+        s.players[pi].discard_pile[j] = _lib.intern(cid.encode())
 
 
 def _build_session(**kwargs) -> CSession:
@@ -279,5 +325,149 @@ def test_gauth_option_2_only_opponent_targetable_not_self() -> None:
         f"Self (P1) should not be targetable; got {target_pids}"
     )
     assert _P2 in target_pids, f"P2 (4 cards) should be targetable; got {target_pids}"
+
+    session.destroy()
+
+
+# ---------------------------------------------------------------------------
+# Card movement: hand → played zone
+# ---------------------------------------------------------------------------
+
+
+def test_gauth_moves_to_played_cards_and_hand_decreases() -> None:
+    session = _build_session()
+
+    hand_before = _hand_count(session, _P1)
+    played_before = _played_count(session, _P1)
+
+    _play_card(session)
+
+    assert _hand_count(session, _P1) == hand_before - 1, (
+        f"Hand should decrease by 1; before={hand_before}, after={_hand_count(session, _P1)}"
+    )
+    assert _played_count(session, _P1) == played_before + 1, (
+        f"Played cards should increase by 1; before={played_before}, after={_played_count(session, _P1)}"
+    )
+    assert CARD_ID in _played_card_names(session, _P1), (
+        f"Gauth should be in played_cards; got {_played_card_names(session, _P1)}"
+    )
+
+    session.destroy()
+
+
+# ---------------------------------------------------------------------------
+# Option 2: draw verification
+# ---------------------------------------------------------------------------
+
+
+def test_gauth_option_2_draws_exactly_one_card() -> None:
+    session = _build_session()
+    _set_deck(session, _P1, "noble", 5)
+    _set_opponent_hand(session, _P2, "soldier", 3)
+
+    hand_after_play = 0  # only gauth was in hand, now played
+
+    _play_card(session)
+    assert _hand_count(session, _P1) == hand_after_play
+
+    _pick_option(session, "option_2")
+
+    assert _hand_count(session, _P1) == 1, (
+        f"P1 should have drawn 1 card; got {_hand_count(session, _P1)}"
+    )
+
+    session.destroy()
+
+
+def test_gauth_option_2_reshuffles_discard_when_deck_empty() -> None:
+    session = _build_session()
+    _set_discard(session, _P1, ["malice_adept", "noble"])
+    _set_opponent_hand(session, _P2, "soldier", 3)
+
+    assert _deck_count(session, _P1) == 0
+    assert _discard_count(session, _P1) == 2
+
+    _play_card(session)
+    _pick_option(session, "option_2")
+
+    assert _hand_count(session, _P1) == 1, (
+        "P1 should have drawn 1 card after reshuffle"
+    )
+    assert _deck_count(session, _P1) + _discard_count(session, _P1) == 1, (
+        "After reshuffle+draw, remaining (deck+discard) should be 1"
+    )
+
+    session.destroy()
+
+
+# ---------------------------------------------------------------------------
+# Multiplayer: only opponents with 3+ cards are targetable
+# ---------------------------------------------------------------------------
+
+
+def test_gauth_option_2_filters_opponents_by_hand_size_in_multiplayer() -> None:
+    _P3 = "p3"
+    _P4 = "p4"
+    session = _build_session(
+        player_ids=[_P1, _P2, _P3, _P4],
+        hand={_P1: [CARD_ID]},
+        current_player=_P1,
+    )
+    _set_deck(session, _P1, "noble", 5)
+    _set_opponent_hand(session, _P2, "soldier", 4)
+    _set_opponent_hand(session, _P3, "noble", 3)
+    _set_opponent_hand(session, _P4, "soldier", 2)
+
+    _play_card(session)
+    _pick_option(session, "option_2")
+
+    discard_moves = _resolve_generic_moves(session)
+    target_pids = {m.data.get("action_id") for m in discard_moves}
+
+    assert _P1 not in target_pids, "Self should never be targetable"
+    assert _P2 in target_pids, "P2 (4 cards) should be targetable"
+    assert _P3 in target_pids, "P3 (3 cards, threshold) should be targetable"
+    assert _P4 not in target_pids, "P4 (2 cards) should not be targetable"
+    assert len(target_pids) == 2, (
+        f"Expected exactly 2 targetable opponents; got {target_pids}"
+    )
+
+    session.destroy()
+
+
+# ---------------------------------------------------------------------------
+# Resolved state after each option
+# ---------------------------------------------------------------------------
+
+
+def test_gauth_option_1_clears_pending_and_leaves_no_side_state() -> None:
+    session = _build_session()
+    s = _sptr(session).contents
+    s.resource_pool.influence = 0
+
+    _play_card(session)
+    _pick_option(session, "option_1")
+
+    assert not _has_pending_generic(session), "Pending generic must be cleared"
+    assert _influence(session) == 2
+    assert _hand_count(session, _P2) == 0, "P2 should be unaffected"
+
+    session.destroy()
+
+
+def test_gauth_option_2_targeted_discard_resolves_and_clears() -> None:
+    session = _build_session()
+    _set_deck(session, _P1, "noble", 5)
+    _set_opponent_hand(session, _P2, "soldier", 3)
+
+    _play_card(session)
+    _pick_option(session, "option_2")
+
+    assert _has_pending_generic(session), "Should need discard target selection"
+
+    _pick_target_player(session, _P2)
+
+    assert not _has_pending_generic(session), "Pending generic must be cleared after discard"
+    assert _hand_count(session, _P2) == 2, "P2 should have discarded 1 (3→2)"
 
     session.destroy()
