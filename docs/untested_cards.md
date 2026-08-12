@@ -43,7 +43,7 @@ Generated 2026-07-09. Updated 2026-08-12. Catalog: 125 cards. Tested: 78. Untest
 | ~~Mercenary Squad~~ | ~~mercenary_squad~~ |
 | Mind Flayer | mind_flayer |
 | Myconid Adult | myconid_adult |
-| Necromancer | necromancer |
+| ~~Necromancer~~ | ~~necromancer~~ |
 | Night Hag | night_hag |
 | Noble | noble |
 | Nothic | nothic |
