@@ -1,6 +1,6 @@
 # Cards Without tests/c_engine/ Test Files
 
-Generated 2026-07-09. Catalog: 125 cards. Tested: 77. Untested: 48.
+Generated 2026-07-09. Updated 2026-08-12. Catalog: 125 cards. Tested: 78. Untested: 47.
 
 ## Edge Cases
 
@@ -40,7 +40,7 @@ Generated 2026-07-09. Catalog: 125 cards. Tested: 77. Untested: 48.
 | Kobold | kobold |
 | ~~Marilith~~ | ~~marilith~~ |
 | Masters of Sorcere | masters_of_sorcere |
-| Mercenary Squad | mercenary_squad |
+| ~~Mercenary Squad~~ | ~~mercenary_squad~~ |
 | Mind Flayer | mind_flayer |
 | Myconid Adult | myconid_adult |
 | Necromancer | necromancer |
