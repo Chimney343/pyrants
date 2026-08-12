@@ -1,4 +1,5 @@
 #include "helpers.h"
+#include "generic_runtime.h"
 #include "scoring.h"
 #include <string.h>
 #include <stdlib.h>
@@ -34,6 +35,34 @@ static const CardDefinition *card_by_id(const GameState *state, Sym card_id) {
             return &state->definition->catalog.cards[i];
     }
     return NULL;
+}
+
+void trigger_opponent_discard_reactive(GameState *state, Sym actor_id, Sym victim_id, Sym discarded_card_id) {
+    if (actor_id == victim_id || discarded_card_id == SYM_NULL) return;
+
+    const CardDefinition *card = card_by_id(state, discarded_card_id);
+    if (!card) return;
+
+    for (int i = 0; i < card->global_condition_count; i++) {
+        const char *gct = intern_str(card->global_conditions[i].condition_type);
+        if (!gct || strcmp(gct, "conditional_gate") != 0) continue;
+
+        for (int ai = 0; ai < card->action_count; ai++) {
+            const CardAction *action = &card->actions[ai];
+            const char *sf = intern_str(action->source_fragment);
+            if (!sf || strncmp(sf, "on_", 3) != 0) continue;
+
+            const char *ts = intern_str(action->target_scope);
+            Sym beneficiary = victim_id;
+            if (ts && strcmp(ts, "opponent") == 0) beneficiary = actor_id;
+
+            int dummy_keys[8] = {0};
+            Sym dummy_vals[8] = {0};
+            apply_generic_action(state, beneficiary, card, discarded_card_id, action,
+                                 dummy_keys, dummy_vals, 0);
+        }
+        return;
+    }
 }
 
 static const NodeDefinition *node_def_by_id(const GameState *state, Sym node_id) {
@@ -399,8 +428,8 @@ void grant_resource(GameState *state, Sym resource, int amount) {
     else if (rs && strcmp(rs, "influence") == 0) pool->influence += amount;
 }
 
-int apply_free_assassinate(GameState *state, Sym player_id, Sym target_node_id, int target_slot_index) {
-    if (!has_presence(state, player_id, target_node_id)) return -1;
+int apply_free_assassinate(GameState *state, Sym player_id, Sym target_node_id, int target_slot_index, int ignore_presence) {
+    if (!ignore_presence && !has_presence(state, player_id, target_node_id)) return -1;
     NodeState *ns = cow_node(state, target_node_id);
     if (!ns) return -1;
     if (target_slot_index < 0 || target_slot_index >= ns->troop_slot_count) return -1;
@@ -589,12 +618,30 @@ int pay_ability_cost(GameState *state, Sym player_id, Sym card_id, int *discard_
     }
     for (int d = 0; d < discard_count; d++) {
         int idx = sorted[d];
-        if (ps->discard_pile_count < MAX_ZONE_SIZE)
-            ps->discard_pile[ps->discard_pile_count++] = ps->hand[idx];
-        for (int i = idx; i < ps->hand_count - 1; i++)
-            ps->hand[i] = ps->hand[i + 1];
-        ps->hand_count--;
+        discard_hand_card(state, player_id, idx);
     }
+    return 0;
+}
+
+int discard_hand_card(GameState *state, Sym player_id, int hand_idx) {
+    PlayerState *ps = cow_player(state, player_id);
+    if (!ps) return -1;
+    if (hand_idx < 0 || hand_idx >= ps->hand_count) return -1;
+
+    Sym card_id = ps->hand[hand_idx];
+    Sym ambassador_sym = intern("ambassador");
+
+    if (card_id == ambassador_sym) {
+        if (ps->inner_circle_count < MAX_ZONE_SIZE)
+            ps->inner_circle[ps->inner_circle_count++] = card_id;
+    } else {
+        if (ps->discard_pile_count < MAX_ZONE_SIZE)
+            ps->discard_pile[ps->discard_pile_count++] = card_id;
+    }
+
+    for (int i = hand_idx; i < ps->hand_count - 1; i++)
+        ps->hand[i] = ps->hand[i + 1];
+    ps->hand_count--;
     return 0;
 }
 

@@ -32,7 +32,7 @@ void promote_card(GameState *state, Sym player_id, Sym card_id);
 int  apply_promote_instruction(GameState *state, Sym player_id, Sym card_id, Sym timing, int optional);
 
 void grant_resource(GameState *state, Sym resource, int amount);
-int  apply_free_assassinate(GameState *state, Sym player_id, Sym target_node_id, int target_slot_index);
+int  apply_free_assassinate(GameState *state, Sym player_id, Sym target_node_id, int target_slot_index, int ignore_presence);
 int  apply_free_deploy(GameState *state, Sym player_id, Sym target_node_id);
 int  apply_return_spy(GameState *state, Sym player_id, Sym node_id, Sym spy_owner_id, int free_enemy_return);
 int  apply_recruit(GameState *state, Sym player_id, int market_slot);
@@ -41,6 +41,13 @@ int  apply_recruit_free(GameState *state, Sym player_id, int market_slot);
 int  ability_cost_affordable(const GameState *state, Sym player_id, Sym card_id);
 int  pay_ability_cost(GameState *state, Sym player_id, Sym card_id, int *discard_indices, int discard_count);
 int  can_activate_pending_ability(const GameState *state, Sym player_id, Sym card_id, Sym ability_key);
+
+/* Remove a card at hand[idx] and place it in its destination zone.
+ * For most cards this is discard_pile. Ambassador goes to inner_circle
+ * instead (passive replacement effect).
+ * Returns 0 on success, -1 if idx is out of range. */
+int  discard_hand_card(GameState *state, Sym player_id, int hand_idx);
+void trigger_opponent_discard_reactive(GameState *state, Sym actor_id, Sym victim_id, Sym discarded_card_id);
 int  deferred_promotion_target_ids(const GameState *state, Sym player_id,
                                     const PendingPromotionState *pending, Sym *out, int max_out);
 

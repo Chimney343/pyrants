@@ -413,7 +413,9 @@ static GameState *apply_force_discard(GameState *state, Sym player_id, const Car
         state->shuffle_counter++;
     }
     if (hand_idx < 0 || hand_idx >= ps->hand_count) return state;
+    Sym discarded_card = ps->hand[hand_idx];
     discard_hand_card(state, target, hand_idx);
+    trigger_opponent_discard_reactive(state, player_id, target, discarded_card);
     return state;
 }
 

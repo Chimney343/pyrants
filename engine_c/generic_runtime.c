@@ -472,7 +472,9 @@ GameState *auto_resolve_pending_generic(GameState *state, Sym player_id) {
                         for (int c = 0; c < state->shuffle_counter; c++)
                             rng_next(&rng);
                         int idx = rng_randint(&rng, 0, ps->hand_count - 1);
+                        Sym discarded = ps->hand[idx];
                         discard_hand_card(state, tpid, idx);
+                        trigger_opponent_discard_reactive(state, player_id, tpid, discarded);
                         state->shuffle_counter++;
                     }
                     p->next_action_index++;
@@ -511,7 +513,9 @@ GameState *auto_resolve_pending_generic(GameState *state, Sym player_id) {
                                 for (int c = 0; c < state->shuffle_counter; c++)
                                     rng_next(&rng);
                                 int idx = rng_randint(&rng, 0, ps->hand_count - 1);
+                                Sym discarded = ps->hand[idx];
                                 discard_hand_card(state, target_owner, idx);
+                                trigger_opponent_discard_reactive(state, player_id, target_owner, discarded);
                                 state->shuffle_counter++;
                             }
                         }
@@ -551,7 +555,9 @@ GameState *auto_resolve_pending_generic(GameState *state, Sym player_id) {
                             int idx = rng_randint(&rng, 0, state->players[o].hand_count - 1);
                             PlayerState *ps = cow_player(state, state->players[o].player_id);
                             if (ps && idx >= 0 && idx < ps->hand_count) {
+                                Sym discarded = ps->hand[idx];
                                 discard_hand_card(state, state->players[o].player_id, idx);
+                                trigger_opponent_discard_reactive(state, player_id, state->players[o].player_id, discarded);
                                 state->shuffle_counter++;
                             }
                         }
@@ -582,7 +588,9 @@ GameState *auto_resolve_pending_generic(GameState *state, Sym player_id) {
                              int idx = rng_randint(&rng, 0, state->players[o].hand_count - 1);
                             PlayerState *ps = cow_player(state, state->players[o].player_id);
                             if (ps && idx >= 0 && idx < ps->hand_count) {
+                                Sym discarded = ps->hand[idx];
                                 discard_hand_card(state, state->players[o].player_id, idx);
+                                trigger_opponent_discard_reactive(state, player_id, state->players[o].player_id, discarded);
                                 state->shuffle_counter++;
                             }
                         }
@@ -607,6 +615,31 @@ GameState *auto_resolve_pending_generic(GameState *state, Sym player_id) {
                     if (skip) {
                         p->next_action_index++;
                         continue;
+                    }
+                }
+            }
+
+            /* Any draw_cards with a reactive source_fragment on a card
+             * with conditional_gate is a reactive trigger — skip during
+             * normal play (e.g. Grimlock's draw-2-when-opponent-discards).
+             * Normal draw_cards (source_fragment "draw_cards") still fire. */
+            {
+                const char *op_str2 = intern_str(action->op);
+                if (op_str2 && strcmp(op_str2, "draw_cards") == 0) {
+                    const char *sf2 = intern_str(action->source_fragment);
+                    if (sf2 && strncmp(sf2, "on_", 3) == 0) {
+                        int skip = 0;
+                        for (int gc = 0; gc < card->global_condition_count; gc++) {
+                            const char *gct = intern_str(card->global_conditions[gc].condition_type);
+                            if (gct && strcmp(gct, "conditional_gate") == 0) {
+                                skip = 1;
+                                break;
+                            }
+                        }
+                        if (skip) {
+                            p->next_action_index++;
+                            continue;
+                        }
                     }
                 }
             }
