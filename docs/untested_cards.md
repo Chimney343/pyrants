@@ -1,6 +1,6 @@
 # Cards Without tests/c_engine/ Test Files
 
-Generated 2026-07-09. Updated 2026-08-12. Catalog: 125 cards. Tested: 78. Untested: 47.
+Generated 2026-07-09. Updated 2026-08-12. Catalog: 125 cards. Tested: 79. Untested: 46.
 
 ## Edge Cases
 
@@ -45,7 +45,7 @@ Generated 2026-07-09. Updated 2026-08-12. Catalog: 125 cards. Tested: 78. Untest
 | Myconid Adult | myconid_adult |
 | ~~Necromancer~~ | ~~necromancer~~ |
 | Night Hag | night_hag |
-| Noble | noble |
+| ~~Noble~~ | ~~noble~~ |
 | Nothic | nothic |
 | Puppeteer | puppeteer |
 | Quaggoth | quaggoth |
