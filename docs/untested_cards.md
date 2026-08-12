@@ -34,7 +34,7 @@ Generated 2026-07-09. Catalog: 125 cards. Tested: 77. Untested: 48.
 | ~~Fire Elemental~~ | ~~fire_elemental~~ |
 | Fire Elemental Myrmidon | fire_elemental_myrmidon |
 | Gauth | gauth |
-| Glabrezu | glabrezu |
+| ~~Glabrezu~~ | ~~glabrezu~~ |
 | Grimlock | grimlock |
 | High Priest of Myrkul | high_priest_of_myrkul |
 | Kobold | kobold |
