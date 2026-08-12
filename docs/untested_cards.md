@@ -1,6 +1,6 @@
 # Cards Without tests/c_engine/ Test Files
 
-Generated 2026-07-09. Catalog: 125 cards. Tested: 76. Untested: 49.
+Generated 2026-07-09. Catalog: 125 cards. Tested: 77. Untested: 48.
 
 ## Edge Cases
 
@@ -29,7 +29,7 @@ Generated 2026-07-09. Catalog: 125 cards. Tested: 76. Untested: 49.
 | Dragon Cultist | dragon_cultist |
 | Dragonclaw | dragonclaw |
 | ~~Earth Elemental Myrmidon~~ | ~~earth_elemental_myrmidon~~ |
-| Enchanter of Thay | enchanter_of_thay |
+| ~~Enchanter of Thay~~ | ~~enchanter_of_thay~~ |
 | Ettin | ettin |
 | ~~Fire Elemental~~ | ~~fire_elemental~~ |
 | Fire Elemental Myrmidon | fire_elemental_myrmidon |

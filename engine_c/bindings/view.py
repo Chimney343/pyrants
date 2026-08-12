@@ -192,6 +192,32 @@ def _available_aspects_for_source(player_card_aspects, source_card_id):
     return frozenset(aspects)
 
 
+def _end_main_phase_available(state_ptr):
+    s = state_ptr.contents
+    cpid = s.current_player_id
+    for i in range(s.pending_eot_count):
+        pe = s.pending_eot[i]
+        if not (pe.requires_another_played_card and pe.deferred_choice):
+            continue
+        if pe.repeat_while_targets:
+            continue
+        source_id = pe.source_card_id
+        found = False
+        has_other = False
+        for j in range(s.player_count):
+            if s.players[j].player_id == cpid:
+                found = True
+                ps = s.players[j]
+                for k in range(ps.played_cards_count):
+                    if ps.played_cards[k] != source_id:
+                        has_other = True
+                        break
+                break
+        if found and not has_other:
+            return False
+    return True
+
+
 def _build_c_legal_moves(session, state_ptr, *, node_names=None, player_spy_count=0,
                           player_card_aspects=None) -> tuple:
     try:
@@ -208,6 +234,7 @@ def _build_c_legal_moves(session, state_ptr, *, node_names=None, player_spy_coun
         card_action_id = ""
         is_option_choice = False
         is_optional_action = False
+        current_option_id = ""
         if mw.move_type == "resolve_generic":
             try:
                 pg_ptr = state_ptr.contents.pending_generic
@@ -215,6 +242,8 @@ def _build_c_legal_moves(session, state_ptr, *, node_names=None, player_spy_coun
                     pg = pg_ptr.contents
                     source_card_id = _elib.intern_str(pg.source_card_id).decode()
                     is_option_choice = bool(pg.awaiting_option)
+                    if pg.current_option_id and not is_option_choice:
+                        current_option_id = _elib.intern_str(pg.current_option_id).decode()
                     if not is_option_choice:
                         idx = pg.next_action_index
                         if 0 <= idx < pg.current_action_count:
@@ -252,6 +281,19 @@ def _build_c_legal_moves(session, state_ptr, *, node_names=None, player_spy_coun
                         ).decode()
             except Exception:
                 pass
+        if mw.move_type == "skip_promote":
+            try:
+                s = state_ptr.contents
+                if s.pending_eot_count > 0:
+                    promotion_source_card_id = _elib.intern_str(
+                        s.pending_eot[0].source_card_id
+                    ).decode()
+                elif s.pending_immediate_count > 0:
+                    promotion_source_card_id = _elib.intern_str(
+                        s.pending_immediate[0].source_card_id
+                    ).decode()
+            except Exception:
+                pass
         player_available_aspects = None
         if player_card_aspects is not None and source_card_id:
             player_available_aspects = _available_aspects_for_source(player_card_aspects, source_card_id)
@@ -261,6 +303,7 @@ def _build_c_legal_moves(session, state_ptr, *, node_names=None, player_spy_coun
             card_action_id=card_action_id,
             is_option_choice=is_option_choice,
             is_optional_action=is_optional_action,
+            current_option_id=current_option_id,
             player_spy_count=player_spy_count,
             promotion_source_card_id=promotion_source_card_id,
             promotion_aspect=promotion_aspect,
@@ -268,7 +311,13 @@ def _build_c_legal_moves(session, state_ptr, *, node_names=None, player_spy_coun
             node_names=node_names,
             player_available_aspects=player_available_aspects,
         )
-        available = mw.data.get("target_id") != "unavailable"
+        if mw.move_type == "end_main_phase":
+            try:
+                available = _end_main_phase_available(state_ptr)
+            except Exception:
+                available = True
+        else:
+            available = mw.data.get("target_id") != "unavailable"
         if not available:
             final_label += " [ILLEGAL MOVE]"
         result.append(CLegalMoveView(mw, mw.move_type, final_label, available=available))

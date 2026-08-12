@@ -17,7 +17,7 @@ import json
 from functools import lru_cache
 from pathlib import Path
 
-_ENRICH_MOVES = frozenset({"activate_ability", "decline_ability", "resolve_generic", "promote_card"})
+_ENRICH_MOVES = frozenset({"activate_ability", "decline_ability", "resolve_generic", "promote_card", "skip_promote"})
 
 _OP_DESCRIPTIONS = {
     "place_spy": "Place spy",
@@ -40,6 +40,8 @@ _EFFECT_KIND_DESCRIPTIONS = {
     "select_trophy_hall": "Take trophy from a trophy hall",
     "steal_from_selected_trophy": "Place stolen trophy on the board",
     "steal_white_trophy_to_board": "Take white trophy and deploy",
+    "lich_select_target_player": "Choose opponent as trophy source",
+    "deploy_from_trophy_hall_with_presence": "Deploy trophy from trophy hall to a presence site",
 }
 
 _FILTER_DESCRIPTIONS = {
@@ -116,6 +118,11 @@ def _describe_single_action(action: dict, *, spy_count: int = 0) -> str:
         meta = action.get("metadata")
         if isinstance(meta, dict):
             ek = meta.get("effect_kind", "")
+            if ek == "select_site":
+                filters = action.get("filters", [])
+                if isinstance(filters, list) and "white_troop_only" in filters:
+                    return "Choose a site with a white troop"
+                return "Choose a site"
             if ek in _EFFECT_KIND_DESCRIPTIONS:
                 return _EFFECT_KIND_DESCRIPTIONS[ek]
     if op == "gain_resource":
@@ -205,7 +212,8 @@ def _is_steal_custom_effect(action: dict) -> bool:
     meta = action.get("metadata")
     if isinstance(meta, dict):
         ek = meta.get("effect_kind", "")
-        return ek in ("select_trophy_hall", "steal_from_selected_trophy", "steal_white_trophy_to_board", "steal_trophy_to_board")
+        return ek in ("select_trophy_hall", "steal_from_selected_trophy", "steal_white_trophy_to_board", "steal_trophy_to_board",
+                      "deploy_from_trophy_hall_with_presence", "lich_select_target_player")
     return False
 
 
@@ -244,7 +252,7 @@ def _card_id_from_data(move_data: dict) -> str:
     return ""
 
 
-def enrich_label(move_type: str, raw_label: str, move_data: dict, *, source_card_id: str = "", card_action_id: str = "", is_option_choice: bool = False, is_optional_action: bool = False, player_spy_count: int = 0, promotion_source_card_id: str = "", promotion_aspect: str = "", promotion_focus_aspect: str = "", node_names: dict[str, str] | None = None, player_available_aspects: frozenset[str] | None = None) -> str:
+def enrich_label(move_type: str, raw_label: str, move_data: dict, *, source_card_id: str = "", card_action_id: str = "", is_option_choice: bool = False, is_optional_action: bool = False, current_option_id: str = "", player_spy_count: int = 0, promotion_source_card_id: str = "", promotion_aspect: str = "", promotion_focus_aspect: str = "", node_names: dict[str, str] | None = None, player_available_aspects: frozenset[str] | None = None) -> str:
     if move_type not in _ENRICH_MOVES:
         return raw_label
 
@@ -273,6 +281,13 @@ def enrich_label(move_type: str, raw_label: str, move_data: dict, *, source_card
                 if source_name != promotion_source_card_id:
                     return f"{source_name}: Promote card {target_name}{aspect_suffix}{focus_suffix}"
             return f"Promote {target_name}{aspect_suffix}{focus_suffix}"
+        return raw_label
+
+    if move_type == "skip_promote":
+        if promotion_source_card_id:
+            source_name = _card_name(promotion_source_card_id)
+            if source_name != promotion_source_card_id:
+                return f"Skip promotion ({source_name})"
         return raw_label
 
     if move_type == "resolve_generic":
@@ -313,10 +328,14 @@ def enrich_label(move_type: str, raw_label: str, move_data: dict, *, source_card
                         return f"{card_name}: {desc}"
 
                 # 1b: target selection -> match the card's action_id, append target
-                for opt in options:
+                # When current_option_id is set, restrict search to that option
+                search_options = options
+                if not is_option_choice and current_option_id:
+                    search_options = [opt for opt in options if opt.get("option_id") == current_option_id]
+                for opt in search_options:
                     for act in opt.get("actions", []):
                         if act.get("action_id") == lookup_id:
-                            if act.get("op") in ("assassinate_troop", "supplant_troop", "move_troop", "return_unit"):
+                            if act.get("op") in ("assassinate_troop", "supplant_troop", "move_troop", "return_unit", "promote_card"):
                                 return raw_label
                             if _is_steal_custom_effect(act):
                                 return raw_label
@@ -332,7 +351,7 @@ def enrich_label(move_type: str, raw_label: str, move_data: dict, *, source_card
                 flat_actions = exec_model.get("actions", [])
                 for act in flat_actions:
                     if act.get("action_id") == lookup_id:
-                        if act.get("op") in ("assassinate_troop", "supplant_troop", "move_troop", "return_unit"):
+                        if act.get("op") in ("assassinate_troop", "supplant_troop", "move_troop", "return_unit", "promote_card"):
                             return raw_label
                         if _is_steal_custom_effect(act):
                             return raw_label
