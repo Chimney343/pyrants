@@ -49,7 +49,7 @@ Generated 2026-07-09. Updated 2026-08-12. Catalog: 125 cards. Tested: 80. Untest
 | Nothic | nothic |
 | ~~Puppeteer~~ | ~~puppeteer~~ |
 | Quaggoth | quaggoth |
-| Rath Modar | rath_modar |
+| ~~Rath Modar~~ | ~~rath_modar~~ |
 | Red Wyrmling | red_wyrmling |
 | Severin Silrajin | severin_silrajin |
 | Skeletal Horde | skeletal_horde |
