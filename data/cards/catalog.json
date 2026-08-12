@@ -9357,7 +9357,7 @@
                   "kind": "unspecified",
                   "value": null
                 },
-                "filters": [],
+                "filters": ["allow_white_troop"],
                 "source_fragment": "assassinate_troop",
                 "metadata": {}
               }
@@ -9426,7 +9426,7 @@
             "kind": "unspecified",
             "value": null
           },
-          "filters": [],
+          "filters": ["allow_white_troop"],
           "source_fragment": "assassinate_troop",
           "metadata": {}
         }

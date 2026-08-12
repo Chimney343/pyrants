@@ -330,6 +330,26 @@ def test_mind_flayer_option_2_assassinate_is_mandatory_when_targets_exist() -> N
     session.destroy()
 
 
+def test_mind_flayer_option_2_assassinate_white_troop() -> None:
+    eng = _make_engine()
+    session = make_card_test_session(
+        eng,
+        [_P1, _P2],
+        hand={_P1: [_CARD, "noble"]},
+        troops={_P1: {_SITE: [_P1, None, None, None, None]}},
+        current_player=_P1,
+    )
+    _set_troop_slots(session, _SITE, [_P1, "white", None, None, None])
+    _play_card(session)
+    _pick_modal_option(session, "option_2")
+    _resolve_generic(session, "noble")
+    _resolve_generic(session, _SITE, "1")
+    assert not _has_resolve_generic_moves(session)
+    assert "noble" in _devour_pile(session)
+    assert "white" in _trophy_hall(session, _P1)
+    session.destroy()
+
+
 # ---------------------------------------------------------------------------
 # Full resolution tests
 # ---------------------------------------------------------------------------
