@@ -12677,9 +12677,13 @@
                   "kind": "unspecified",
                   "value": null
                 },
-                "filters": [],
+                "filters": [
+                  "allow_white_troop"
+                ],
                 "source_fragment": "supplant_troop",
-                "metadata": {}
+                "metadata": {
+                  "requires_returned_spy_site": true
+                }
               }
             ]
           }
@@ -12724,9 +12728,13 @@
             "kind": "unspecified",
             "value": null
           },
-          "filters": [],
+          "filters": [
+            "allow_white_troop"
+          ],
           "source_fragment": "supplant_troop",
-          "metadata": {}
+          "metadata": {
+            "requires_returned_spy_site": true
+          }
         }
       ],
       "global_conditions": [],
