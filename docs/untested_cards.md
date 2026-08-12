@@ -1,6 +1,6 @@
 # Cards Without tests/c_engine/ Test Files
 
-Generated 2026-07-09. Updated 2026-08-12. Catalog: 125 cards. Tested: 79. Untested: 46.
+Generated 2026-07-09. Updated 2026-08-12. Catalog: 125 cards. Tested: 80. Untested: 45.
 
 ## Edge Cases
 
@@ -47,7 +47,7 @@ Generated 2026-07-09. Updated 2026-08-12. Catalog: 125 cards. Tested: 79. Untest
 | Night Hag | night_hag |
 | ~~Noble~~ | ~~noble~~ |
 | Nothic | nothic |
-| Puppeteer | puppeteer |
+| ~~Puppeteer~~ | ~~puppeteer~~ |
 | Quaggoth | quaggoth |
 | Rath Modar | rath_modar |
 | Red Wyrmling | red_wyrmling |
