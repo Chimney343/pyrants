@@ -505,6 +505,66 @@ def test_quaggoth_assassinate_count_snapshotted():
     assert total == 3, f"Expected 3 assassinations (majority controlled sites), got {total}"
 
 
+def test_marilith_devours_hand_card_and_gains_five_power():
+    from engine_c.bindings.session import CSession
+    from engine_c.bindings.ce_api import CEngine
+
+    engine = CEngine()
+    engine.initialize()
+    session = CSession.load(
+        "data/scenarios/batch_card_generation/031_seed_4_marilith.json", engine
+    )
+
+    s = session.state
+    assert s.current_player_id == "p1", "Expected p1 to be current player"
+    p_idx = s.player_index("p1")
+    power_before = s.resource_power
+    hand_before = s.player_hand(p_idx)
+    devour_before = list(s.devour_pile)
+    assert "marilith" in hand_before, "marilith must be in p1's hand"
+
+    moves = session.legal_moves()
+    card_move = next(
+        m for m in moves
+        if m.move_type == "play_card" and m.data.get("card_id") == "marilith"
+    )
+    session.submit_move(card_move)
+
+    moves = session.legal_moves()
+    gen = [m for m in moves if m.move_type == "resolve_generic"]
+    assert len(gen) > 0, "Expected devour_cost selection moves"
+    devour_move = gen[0]
+    devoured_card_id = devour_move.data.get("target_id") or devour_move.data.get("action_id")
+    session.submit_move(devour_move)
+
+    while True:
+        moves = session.legal_moves()
+        gen = [m for m in moves if m.move_type == "resolve_generic"]
+        if not gen:
+            break
+        session.submit_move(gen[0])
+
+    s = session.state
+    hand_after = s.player_hand(p_idx)
+    devour_after = list(s.devour_pile)
+    power_after = s.resource_power
+
+    assert power_after == power_before + 5, \
+        f"Expected +5 power, got {power_after} (was {power_before})"
+    assert len(hand_after) == len(hand_before) - 2, \
+        f"Expected hand -2 (play + devour), got {len(hand_before)} → {len(hand_after)}"
+    assert devoured_card_id not in hand_after, \
+        f"Devoured card {devoured_card_id} still in hand"
+    assert len(devour_after) == len(devour_before) + 1, \
+        f"Expected devour pile +1, got {len(devour_before)} → {len(devour_after)}"
+    assert devoured_card_id in devour_after, \
+        f"Devoured card {devoured_card_id} not found in devour pile"
+    assert "marilith" not in hand_after, \
+        "marilith should be in played cards, not hand"
+
+    session.destroy()
+
+
 def test_aerisi_kalinoth_free_recruit():
     """Aerisi Kalinoth: gain 1 power, place 1 spy, recruit free guile card costing ≤4."""
     from engine_c.bindings.session import CSession

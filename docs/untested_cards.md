@@ -38,7 +38,7 @@ Generated 2026-07-09. Catalog: 125 cards. Tested: 77. Untested: 48.
 | Grimlock | grimlock |
 | High Priest of Myrkul | high_priest_of_myrkul |
 | Kobold | kobold |
-| Marilith | marilith |
+| ~~Marilith~~ | ~~marilith~~ |
 | Masters of Sorcere | masters_of_sorcere |
 | Mercenary Squad | mercenary_squad |
 | Mind Flayer | mind_flayer |
