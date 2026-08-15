@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
@@ -231,3 +232,22 @@ def test_derro_view_reflects_discard() -> None:
     )
 
     session.destroy()
+
+
+def test_derro_catalog_encoding_auto_recruits_insane_outcast() -> None:
+    """Derro's second action must be ``custom_effect``/``give_insane_outcast_to_self``.
+
+    Regression guard: a catalog refactor changed this to ``recruit_card`` with
+    ``target_scope: market``, which asks the player to buy a market-row card and
+    can never deliver the Insane Outcast (it lives in a special stack, not the
+    market row).
+    """
+    catalog = json.loads((DATA_DIR / "cards" / "catalog.json").read_text(encoding="utf-8"))
+    derro = next(c for c in catalog["cards"] if c["card_id"] == "derro")
+
+    for action in (derro["execution_model"]["actions"][1], derro["actions"][1]):
+        assert action["op"] == "custom_effect", f"expected custom_effect, got {action['op']}"
+        assert action["target_scope"] == "self", f"expected target_scope self, got {action['target_scope']}"
+        assert action["metadata"] == {"effect_kind": "give_insane_outcast_to_self"}, (
+            f"expected give_insane_outcast_to_self, got {action['metadata']}"
+        )
