@@ -471,3 +471,31 @@ def test_gauth_option_2_targeted_discard_resolves_and_clears() -> None:
     assert _hand_count(session, _P2) == 2, "P2 should have discarded 1 (3→2)"
 
     session.destroy()
+
+
+def test_gauth_option_2_only_player_selectable_and_random_card_discarded() -> None:
+    """The discard step lets the player pick only the opponent, never a specific
+    card; the discarded card is random and lands in the discard pile."""
+    session = _build_session()
+    _set_deck(session, _P1, "noble", 5)
+    _set_opponent_hand(session, _P2, "soldier", 4)
+
+    _play_card(session)
+    _pick_option(session, "option_2")
+
+    target_moves = _resolve_generic_moves(session)
+    target_ids = [m.data.get("action_id") for m in target_moves]
+    assert target_ids == [_P2], (
+        f"Only the opponent player id should be selectable, not individual cards; got {target_ids}"
+    )
+
+    hand_before = _hand_count(session, _P2)
+    discard_before = _discard_count(session, _P2)
+
+    _pick_target_player(session, _P2)
+
+    assert not _has_pending_generic(session), "Pending generic must be cleared after discard"
+    assert _hand_count(session, _P2) == hand_before - 1, "Exactly 1 card should leave hand"
+    assert _discard_count(session, _P2) == discard_before + 1, "Discarded card should reach discard pile"
+
+    session.destroy()
