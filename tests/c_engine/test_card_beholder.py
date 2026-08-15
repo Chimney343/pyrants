@@ -14,11 +14,18 @@ from pathlib import Path
 _project_root = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(_project_root))
 from engine_c.bindings.engine_bindings import PHASE_MAIN, _lib
+from engine_c.bindings.session import CSession
+from engine_c.bindings.view import build_c_game_view
 from tests.c_engine.card_test_helpers import (
     _make_engine,
     _session_player_index,
     _sptr,
     make_card_test_session,
+)
+
+_SCENARIO = (
+    Path(__file__).resolve().parents[2]
+    / "data" / "scenarios" / "batch_card_generation" / "003_seed_4_beholder.json"
 )
 
 _SITE = "route_27"
@@ -67,10 +74,10 @@ def _troops_at_node(session, node_id):
     return []
 
 
-def _build_beholder_session(trophy_hall_entries=None):
+def _build_beholder_session(troop=_WHITE, trophy_hall_entries=None):
     """Build a session with p2 holding beholder.
 
-    Places a white troop at _SITE and a p2 spy for presence.
+    Places a troop (default white) at _SITE and a p2 spy for presence.
     Optionally pre-fills p2's trophy hall.
     """
     eng = _make_engine()
@@ -87,7 +94,7 @@ def _build_beholder_session(trophy_hall_entries=None):
     nid = _lib.intern(_SITE.encode())
     for ni in range(s.node_count):
         if s.nodes[ni].node_id == nid:
-            s.nodes[ni].troop_slots[0] = _lib.intern(_WHITE.encode())
+            s.nodes[ni].troop_slots[0] = _lib.intern(troop.encode())
             s.nodes[ni].troop_slot_count = 1
             break
 
@@ -145,23 +152,7 @@ def test_beholder_assassinate_white_troop():
 
 def test_beholder_assassinate_player_troop():
     """Player troop at a site with presence should be a valid assassinate target."""
-    eng = _make_engine()
-    session = make_card_test_session(
-        eng,
-        [_P1, _P2],
-        hand={_P2: [_BEHOLDER, "noble"]},
-        spies={_SITE: [_P2]},
-        current_player=_P2,
-    )
-    s = _sptr(session).contents
-    s.phase = PHASE_MAIN
-
-    nid = _lib.intern(_SITE.encode())
-    for ni in range(s.node_count):
-        if s.nodes[ni].node_id == nid:
-            s.nodes[ni].troop_slots[0] = _lib.intern(b"p1")
-            s.nodes[ni].troop_slot_count = 1
-            break
+    session = _build_beholder_session(troop=_P1)
 
     _play_beholder(session)
     assert _has_pending_generic(session)
@@ -311,3 +302,61 @@ def test_beholder_assassinated_troop_counts_toward_power():
     )
 
     session.destroy()
+
+
+def _white_target_in_presence(view):
+    """Return (node_id, slot_index) of a white troop at a node where the
+    current player has presence, or None."""
+    current = view.current_player_id
+    for n in view.board_nodes:
+        if current not in n.spies and current not in n.troop_slots:
+            continue
+        for slot, occ in enumerate(n.troop_slots):
+            if occ == "white":
+                return n.node_id, slot
+    return None
+
+
+def test_beholder_scenario_assassinates_white_troop():
+    """Shipped scenario: a white troop in the player's presence is offered and
+    assassinated end to end (board slot emptied, white trophy gained)."""
+    session = CSession.load(str(_SCENARIO))
+    try:
+        before = build_c_game_view(session)
+        assert before.current_player_id == _P2
+        target = _white_target_in_presence(before)
+        assert target is not None, "scenario must offer a white troop in current player's presence"
+        node_id, slot = target
+        trophies_before = list(before.current_player_trophy_hall)
+
+        card_move = next(
+            m for m in session.legal_moves()
+            if m.move_type == "play_card" and m.data.get("card_id") == _BEHOLDER
+        )
+        session.submit_move(card_move)
+
+        gen = [m for m in session.legal_moves() if m.move_type == "resolve_generic"]
+        white_move = next(
+            (m for m in gen if m.data.get("action_id") == node_id and m.data.get("target_id") == str(slot)),
+            None,
+        )
+        assert white_move is not None, (
+            f"expected a white-troop assassinate target at {node_id} slot {slot}"
+        )
+        session.submit_move(white_move)
+
+        while True:
+            gen = [m for m in session.legal_moves() if m.move_type == "resolve_generic"]
+            if not gen:
+                break
+            session.submit_move(gen[0])
+
+        after = build_c_game_view(session)
+        assert after.board_nodes_by_id[node_id].troop_slots[slot] is None, (
+            "white troop must be removed from the board"
+        )
+        assert after.current_player_trophy_hall == tuple(trophies_before) + ("white",), (
+            "assassinated white troop must go to the trophy hall"
+        )
+    finally:
+        session.destroy()

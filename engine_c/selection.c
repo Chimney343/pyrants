@@ -54,6 +54,8 @@ static int sel_assassinate_supplant(const GameState *state, Sym player_id,
     int requires_last = 0;
     int ignore_presence = 0;
     Sym last_site = SYM_NULL;
+    const char *op_name = intern_str(action->op);
+    int is_assassinate = op_name && strcmp(op_name, "assassinate_troop") == 0;
     for (int i = 0; i < action->filter_count; i++) {
         const char *f = intern_str(action->filters[i]);
         if (f && strcmp(f, "white_troop_only") == 0) white_only = 1;
@@ -91,7 +93,8 @@ static int sel_assassinate_supplant(const GameState *state, Sym player_id,
             Sym occ = state->nodes[i].troop_slots[s];
             if (occ == SYM_NULL || occ == player_id) continue;
             if (white_only && strcmp(intern_str(occ) ? intern_str(occ) : "", "white") != 0) continue;
-            if (!white_only && !allow_white && strcmp(intern_str(occ) ? intern_str(occ) : "", "white") == 0) continue;
+            if (!white_only && !allow_white && !is_assassinate
+                && strcmp(intern_str(occ) ? intern_str(occ) : "", "white") == 0) continue;
             char buf[16];
             snprintf(buf, sizeof(buf), "%d", s);
             out[w].type = MOVE_RESOLVE_GENERIC;
