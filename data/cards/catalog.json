@@ -11899,7 +11899,7 @@
       "deck_vp": 4,
       "inner_circle_vp": 8,
       "rules_text": "Supplant a troop. Return an enemy spy. Gain 1 VP for each total controlled site.",
-      "notes": "This is sequential, not modal. `Supplant a troop` uses normal supplant legality: any enemy troop at a site where you have presence. `Return enemy spy` uses normal enemy-spy return legality as a free card effect, so the target spy must be within your presence and returns to its owner's barracks. The VP clause counts all sites currently under your control.",
+      "notes": "This is sequential, not modal. `Supplant a troop` targets any enemy troop or white (neutral) troop at a site where you have presence. `Return enemy spy` uses normal enemy-spy return legality as a free card effect, so the target spy must be within your presence and returns to its owner's barracks. The VP clause counts all sites currently under your control.",
       "execution_model": {
         "kind": "sequence",
         "actions": [
@@ -11916,7 +11916,7 @@
             "filters": [
               "allow_white_troop"
             ],
-            "source_fragment": "supplant_troop",
+            "source_fragment": "supplant",
             "metadata": {}
           },
           {
@@ -11930,7 +11930,7 @@
               "value": null
             },
             "filters": [],
-            "source_fragment": "return_spy",
+            "source_fragment": "return_enemy_spy",
             "metadata": {
               "spy_owner": "opponent",
               "free_enemy_return": true
@@ -11970,7 +11970,7 @@
           "filters": [
             "allow_white_troop"
           ],
-          "source_fragment": "supplant_troop",
+          "source_fragment": "supplant",
           "metadata": {}
         },
         {
@@ -11984,7 +11984,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "return_spy",
+          "source_fragment": "return_enemy_spy",
           "metadata": {
             "spy_owner": "opponent",
             "free_enemy_return": true
