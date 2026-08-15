@@ -8,12 +8,11 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from engine_c.bindings.engine_bindings import _lib
-from engine_c.bindings.ce_api import CEngine
 from engine_c.bindings.session import CSession
 from tests.c_engine.card_test_helpers import (
     _make_engine,
-    _sptr,
     _session_player_index,
+    _sptr,
     make_card_test_session,
 )
 
@@ -188,5 +187,36 @@ def test_conjurer_mode_2_free_recruit_no_influence_deduction() -> None:
         f"Free recruit must not deduct influence: still {s.resource_pool.influence}"
     assert s.players[p1_idx].discard_pile_count == 1, \
         "Recruited noble should be in discard"
+
+    session.destroy()
+
+
+def test_conjurer_mode_2_return_spy_offers_only_own_spies() -> None:
+    """Return-spy selection must only offer the player's own spies, never an
+    enemy spy at a site the player occupies."""
+    eng = _make_engine()
+    session = make_card_test_session(
+        eng,
+        [_P1, _P2],
+        hand={_P1: ["conjurer"]},
+        spies={_SITE_GAUNTLGRYM: [_P1], "route_1": [_P2]},
+        troops={_P1: {"route_1": [_P1, None, None]}},
+        current_player=_P1,
+    )
+
+    play_conjurer = next(
+        m for m in session.legal_moves()
+        if m.move_type == "play_card" and m.data.get("card_id") == "conjurer"
+    )
+    session.submit_move(play_conjurer)
+
+    gen = [m for m in session.legal_moves() if m.move_type == "resolve_generic"]
+    opt2 = next(m for m in gen if m.data.get("action_id") == "option_2")
+    session.submit_move(opt2)
+
+    gen = [m for m in session.legal_moves() if m.move_type == "resolve_generic"]
+    return_targets = {m.data.get("action_id") for m in gen if m.data.get("action_id") is not None}
+    assert _SITE_GAUNTLGRYM in return_targets, "Own spy site must be a return target"
+    assert "route_1" not in return_targets, "Enemy spy site must NOT be a return target"
 
     session.destroy()

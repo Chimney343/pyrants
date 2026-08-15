@@ -2659,12 +2659,50 @@
                 "timing": "immediate",
                 "optional": false,
                 "quantity": {
-                  "kind": "variable_repeat",
+                  "kind": "unspecified",
                   "value": null
                 },
                 "filters": [],
-                "source_fragment": "return_spy_to_recruit_multiple_low_cost_cards",
-                "metadata": {}
+                "source_fragment": "return_own_spy",
+                "metadata": {
+                  "spy_owner": "self"
+                }
+              },
+              {
+                "action_id": "option_2_action_2",
+                "op": "recruit_card",
+                "target_scope": "market",
+                "timing": "immediate",
+                "optional": true,
+                "quantity": {
+                  "kind": "unspecified",
+                  "value": null
+                },
+                "filters": [
+                  "max_cost_3"
+                ],
+                "source_fragment": "recruit_low_cost_card",
+                "metadata": {
+                  "max_cost": 3
+                }
+              },
+              {
+                "action_id": "option_2_action_3",
+                "op": "recruit_card",
+                "target_scope": "market",
+                "timing": "immediate",
+                "optional": true,
+                "quantity": {
+                  "kind": "unspecified",
+                  "value": null
+                },
+                "filters": [
+                  "max_cost_3"
+                ],
+                "source_fragment": "recruit_low_cost_card",
+                "metadata": {
+                  "max_cost": 3
+                }
               }
             ]
           }
@@ -2692,12 +2730,50 @@
           "timing": "immediate",
           "optional": false,
           "quantity": {
-            "kind": "variable_repeat",
+            "kind": "unspecified",
             "value": null
           },
           "filters": [],
-          "source_fragment": "return_spy_to_recruit_multiple_low_cost_cards",
-          "metadata": {}
+          "source_fragment": "return_own_spy",
+          "metadata": {
+            "spy_owner": "self"
+          }
+        },
+        {
+          "action_id": "option_2_action_2",
+          "op": "recruit_card",
+          "target_scope": "market",
+          "timing": "immediate",
+          "optional": true,
+          "quantity": {
+            "kind": "unspecified",
+            "value": null
+          },
+          "filters": [
+            "max_cost_3"
+          ],
+          "source_fragment": "recruit_low_cost_card",
+          "metadata": {
+            "max_cost": 3
+          }
+        },
+        {
+          "action_id": "option_2_action_3",
+          "op": "recruit_card",
+          "target_scope": "market",
+          "timing": "immediate",
+          "optional": true,
+          "quantity": {
+            "kind": "unspecified",
+            "value": null
+          },
+          "filters": [
+            "max_cost_3"
+          ],
+          "source_fragment": "recruit_low_cost_card",
+          "metadata": {
+            "max_cost": 3
+          }
         }
       ],
       "global_conditions": [],
@@ -2705,11 +2781,16 @@
         "reads": [
           "player.spies_available",
           "board.nodes",
-          "board.spies"
+          "board.spies",
+          "market.row",
+          "card_catalog"
         ],
         "writes": [
           "board.spies",
-          "player.spies_available"
+          "player.spies_available",
+          "player.discard_pile",
+          "market.row",
+          "market.deck"
         ]
       },
       "effect_key": "generic_card",

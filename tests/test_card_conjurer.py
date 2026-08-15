@@ -57,6 +57,8 @@ def test_conjurer_option_2_return_spy_then_recruit_up_to_2_cost_3_or_less() -> N
     assert ret["target_scope"] == "board_site"
     assert ret["timing"] == "immediate"
     assert ret["optional"] is False
+    assert ret["quantity"]["kind"] == "unspecified"
+    assert ret.get("metadata", {}).get("spy_owner") == "self"
 
     rec1 = actions[1]
     assert rec1["op"] == "recruit_card"
