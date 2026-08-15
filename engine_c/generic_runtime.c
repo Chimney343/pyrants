@@ -206,7 +206,7 @@ int action_requires_selection(const CardAction *action) {
                     strstr(v, "self_purge_to_supply") ||
                     strcmp(v, "select_site") == 0 ||
                     strcmp(v, "lich_select_target_player") == 0 ||
-                    strcmp(v, "deploy_from_trophy_hall_with_presence") == 0)
+                    strcmp(v, "deploy_from_trophy_hall") == 0)
                     return 1;
             }
         }
@@ -687,6 +687,11 @@ GameState *apply_resolve_generic_choice(GameState *src, const Move *move) {
         p->current_action_count = ac;
         p->next_action_index = 0;
         p->awaiting_option = 0;
+        /* A fresh option starts with a clean selection context so a
+         * two-step effect (e.g. Mummy Lord's steal_white_trophy_to_board)
+         * re-enters its first step instead of reading a stale
+         * last_selection left over from the previous option. */
+        p->last_selection_count = 0;
         if (p->exec_kind == EXEC_REPEAT) p->remaining_repeats--;
     } else {
         const CardAction *action = pending_generic_active_action(p);
@@ -902,7 +907,7 @@ GameState *apply_resolve_generic_choice(GameState *src, const Move *move) {
                         if (tid != SYM_NULL) { sk[sc] = intern("hand_index"); sv[sc] = tid; sc++; }
                     } else if (effect_kind && strcmp(effect_kind, "lich_select_target_player") == 0) {
                         if (aid != SYM_NULL) { sk[sc] = intern("source_player_id"); sv[sc] = aid; sc++; }
-                    } else if (effect_kind && strcmp(effect_kind, "deploy_from_trophy_hall_with_presence") == 0) {
+                    } else if (effect_kind && strcmp(effect_kind, "deploy_from_trophy_hall") == 0) {
                         if (aid != SYM_NULL) { sk[sc] = intern("target_node_id"); sv[sc] = aid; sc++; }
                         if (tid != SYM_NULL) {
                             const char *ts = intern_str(tid);
@@ -929,6 +934,43 @@ GameState *apply_resolve_generic_choice(GameState *src, const Move *move) {
                                         }
                                     }
                                 }
+                            }
+                        }
+                    } else if (effect_kind && strcmp(effect_kind, "steal_white_trophy_to_board") == 0) {
+                        if (aid != SYM_NULL) {
+                            if (tid != SYM_NULL) {
+                                const char *ts = intern_str(tid);
+                                if (ts && strchr(ts, ':')) {
+                                    /* Step 2: "sp:ti:nid:slot" deploy selection. */
+                                    const char *c1 = strchr(ts, ':');
+                                    const char *c2 = c1 ? strchr(c1 + 1, ':') : NULL;
+                                    const char *c3 = c2 ? strchr(c2 + 1, ':') : NULL;
+                                    if (c1 && c2 && c3) {
+                                        int sp_len = (int)(c1 - ts);
+                                        int idx_len = (int)(c2 - c1 - 1);
+                                        int nid_len = (int)(c3 - c2 - 1);
+                                        char sp_buf[32], idx_buf[32], nid_buf[64];
+                                        if (sp_len > 0 && sp_len < (int)sizeof(sp_buf)
+                                            && idx_len > 0 && idx_len < (int)sizeof(idx_buf)
+                                            && nid_len > 0 && nid_len < (int)sizeof(nid_buf)) {
+                                            memcpy(sp_buf, ts, (size_t)sp_len); sp_buf[sp_len] = '\0';
+                                            memcpy(idx_buf, c1 + 1, (size_t)idx_len); idx_buf[idx_len] = '\0';
+                                            memcpy(nid_buf, c2 + 1, (size_t)nid_len); nid_buf[nid_len] = '\0';
+                                            if (sc + 4 <= 8) {
+                                                sk[sc] = intern("source_player_id"); sv[sc] = intern(sp_buf); sc++;
+                                                sk[sc] = intern("selected_trophy_index"); sv[sc] = intern(idx_buf); sc++;
+                                                sk[sc] = intern("target_node_id"); sv[sc] = intern(nid_buf); sc++;
+                                                sk[sc] = intern("target_slot_index"); sv[sc] = intern(c3 + 1); sc++;
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    /* Step 1: aid = player_id, tid = trophy index. */
+                                    sk[sc] = intern("source_player_id"); sv[sc] = aid; sc++;
+                                    sk[sc] = intern("selected_trophy_index"); sv[sc] = tid; sc++;
+                                }
+                            } else {
+                                sk[sc] = intern("source_player_id"); sv[sc] = aid; sc++;
                             }
                         }
                     } else if (aid != SYM_NULL) {

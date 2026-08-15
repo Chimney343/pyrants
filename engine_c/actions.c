@@ -592,8 +592,17 @@ static GameState *apply_devour(GameState *state, Sym player_id, const CardDefini
     Sym insane = intern("insane_outcast");
 
     if (strcmp(z, "hand") == 0) {
-        int idx = find_sel_int(sk, sv, sc, "hand_index", 0);
-        if (idx < ps->hand_count && (ps->hand[idx] == insane || state->devour_pile_count < MAX_ZONE_SIZE)) {
+        int idx = find_sel_int(sk, sv, sc, "hand_index", -1);
+        if (idx < 0) {
+            Sym target_card_id = find_sel(sk, sv, sc, "target_card_id");
+            if (target_card_id != SYM_NULL) {
+                for (int i = 0; i < ps->hand_count; i++) {
+                    if (ps->hand[i] == target_card_id) { idx = i; break; }
+                }
+            }
+        }
+        if (idx >= 0 && idx < ps->hand_count
+            && (ps->hand[idx] == insane || state->devour_pile_count < MAX_ZONE_SIZE)) {
             if (ps->hand[idx] != insane)
                 state->devour_pile[state->devour_pile_count++] = ps->hand[idx];
             for (int i = idx; i < ps->hand_count - 1; i++) ps->hand[i] = ps->hand[i + 1];
@@ -739,7 +748,7 @@ static GameState *apply_custom_effect(GameState *state, Sym player_id, const Car
         return state;
     } else if (strcmp(ek, "lich_select_target_player") == 0) {
         return state;
-    } else if (strcmp(ek, "deploy_from_trophy_hall_with_presence") == 0) {
+    } else if (strcmp(ek, "deploy_from_trophy_hall") == 0) {
         Sym source_player = find_sel(sk, sv, sc, "source_player_id");
         Sym trophy_idx_sym = find_sel(sk, sv, sc, "selected_trophy_index");
         Sym target_node = find_sel(sk, sv, sc, "target_node_id");
@@ -758,7 +767,6 @@ static GameState *apply_custom_effect(GameState *state, Sym player_id, const Car
         for (int t = trophy_idx; t < sp->trophy_hall_count - 1; t++)
             sp->trophy_hall[t] = sp->trophy_hall[t + 1];
         sp->trophy_hall_count--;
-        if (!has_presence(state, player_id, target_node)) return state;
         NodeState *ns = cow_node(state, target_node);
         if (!ns || target_slot < 0 || target_slot >= ns->troop_slot_count) return state;
         if (ns->troop_slots[target_slot] != SYM_NULL) return state;
@@ -779,6 +787,39 @@ static GameState *apply_custom_effect(GameState *state, Sym player_id, const Car
         PlayerState *sp = cow_player(state, source_player);
         if (!sp || trophy_idx >= sp->trophy_hall_count) return state;
         Sym trophy_owner = sp->trophy_hall[trophy_idx];
+        for (int t = trophy_idx; t < sp->trophy_hall_count - 1; t++)
+            sp->trophy_hall[t] = sp->trophy_hall[t + 1];
+        sp->trophy_hall_count--;
+        NodeState *ns = cow_node(state, target_node);
+        if (!ns || target_slot < 0 || target_slot >= ns->troop_slot_count) return state;
+        if (ns->troop_slots[target_slot] != SYM_NULL) return state;
+        ns->troop_slots[target_slot] = trophy_owner;
+    } else if (strcmp(ek, "steal_white_trophy_to_board") == 0) {
+        Sym source_player = find_sel(sk, sv, sc, "source_player_id");
+        Sym trophy_idx_sym = find_sel(sk, sv, sc, "selected_trophy_index");
+        Sym target_node = find_sel(sk, sv, sc, "target_node_id");
+        int target_slot = find_sel_int(sk, sv, sc, "target_slot_index", -1);
+        if (target_node == SYM_NULL || target_slot < 0) {
+            /* Step 1: the enemy white trophy has been chosen but not yet
+             * deployed. Keep the action pending so the engine re-emits the
+             * deploy selection. Cloning marks the state as progressed
+             * (nested) without advancing next_action_index. */
+            return engine_clone_cow(state);
+        }
+        if (source_player == SYM_NULL || trophy_idx_sym == SYM_NULL) return state;
+        const char *idx_str = intern_str(trophy_idx_sym);
+        int trophy_idx = idx_str ? atoi(idx_str) : -1;
+        int spi = -1;
+        for (int p = 0; p < state->player_count; p++)
+            if (state->players[p].player_id == source_player) { spi = p; break; }
+        if (spi < 0 || trophy_idx < 0) return state;
+        PlayerState *sp = cow_player(state, source_player);
+        if (!sp || trophy_idx >= sp->trophy_hall_count) return state;
+        Sym trophy_owner = sp->trophy_hall[trophy_idx];
+        {
+            const char *os = intern_str(trophy_owner);
+            if (!os || strcmp(os, "white") != 0) return state;
+        }
         for (int t = trophy_idx; t < sp->trophy_hall_count - 1; t++)
             sp->trophy_hall[t] = sp->trophy_hall[t + 1];
         sp->trophy_hall_count--;

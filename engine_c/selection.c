@@ -254,6 +254,58 @@ static int sel_custom_effect(const GameState *state, Sym player_id,
                     w++;
                 }
             }
+        } else if (strcmp(v, "steal_white_trophy_to_board") == 0) {
+            Sym source_player = find_ls_sym(pending, "source_player_id");
+            Sym trophy_idx_sym = find_ls_sym(pending, "selected_trophy_index");
+            if (source_player == SYM_NULL || trophy_idx_sym == SYM_NULL) {
+                /* Step 1: choose an enemy player's white trophy. */
+                for (int sp = 0; sp < state->player_count && w < max_out; sp++) {
+                    Sym sp_id = state->players[sp].player_id;
+                    if (sp_id == player_id) continue;
+                    for (int ti = 0; ti < state->players[sp].trophy_hall_count && w < max_out; ti++) {
+                        Sym occ = state->players[sp].trophy_hall[ti];
+                        const char *oc = intern_str(occ);
+                        if (!oc || strcmp(oc, "white") != 0) continue;
+                        char idx_buf[16];
+                        snprintf(idx_buf, sizeof(idx_buf), "%d", ti);
+                        out[w].type = MOVE_RESOLVE_GENERIC;
+                        out[w].data.resolve_generic.action_id = sp_id;
+                        out[w].data.resolve_generic.target_id = intern(idx_buf);
+                        out[w].data.resolve_generic.selection_index = 0;
+                        out[w].player_index = 0;
+                        w++;
+                    }
+                }
+            } else {
+                /* Step 2: deploy the stolen white trophy anywhere on the board
+                 * (no presence requirement). */
+                int spi = -1;
+                for (int p = 0; p < state->player_count; p++)
+                    if (state->players[p].player_id == source_player) { spi = p; break; }
+                if (spi < 0) continue;
+                const char *idx_str = intern_str(trophy_idx_sym);
+                int trophy_idx = idx_str ? atoi(idx_str) : -1;
+                if (trophy_idx < 0 || trophy_idx >= state->players[spi].trophy_hall_count) continue;
+                for (int ni = 0; ni < state->node_count && w < max_out; ni++) {
+                    Sym nid = state->nodes[ni].node_id;
+                    for (int s = 0; s < state->nodes[ni].troop_slot_count && w < max_out; s++) {
+                        if (state->nodes[ni].troop_slots[s] != SYM_NULL) continue;
+                        char buf[128];
+                        const char *sp_str = intern_str(source_player);
+                        const char *tn_str = intern_str(trophy_idx_sym);
+                        const char *nid_str = intern_str(nid);
+                        snprintf(buf, sizeof(buf), "%.24s:%.16s:%.48s:%d",
+                                 sp_str ? sp_str : "", tn_str ? tn_str : "",
+                                 nid_str ? nid_str : "", s);
+                        out[w].type = MOVE_RESOLVE_GENERIC;
+                        out[w].data.resolve_generic.action_id = nid;
+                        out[w].data.resolve_generic.target_id = intern(buf);
+                        out[w].data.resolve_generic.selection_index = 0;
+                        out[w].player_index = 0;
+                        w++;
+                    }
+                }
+            }
         } else if (strcmp(v, "lich_select_target_player") == 0) {
             Sym target_node = find_ls_sym(pending, "target_node_id");
             if (target_node == SYM_NULL) continue;
@@ -280,7 +332,7 @@ static int sel_custom_effect(const GameState *state, Sym player_id,
                 out[w].player_index = 0;
                 w++;
             }
-        } else if (strcmp(v, "deploy_from_trophy_hall_with_presence") == 0) {
+        } else if (strcmp(v, "deploy_from_trophy_hall") == 0) {
             Sym source_player = SYM_NULL;
             const char *color_filter = NULL;
             for (int mi = 0; mi < action->metadata_count; mi++) {
@@ -312,7 +364,6 @@ static int sel_custom_effect(const GameState *state, Sym player_id,
                         if (state->definition->board.nodes[j].node_id == nid)
                             { nd = &state->definition->board.nodes[j]; break; }
                     if (!nd || strcmp(intern_str(nd->kind), "site") != 0) continue;
-                    if (!has_presence(state, player_id, nid)) continue;
                     for (int s = 0; s < state->nodes[ni2].troop_slot_count && w < max_out; s++) {
                         if (state->nodes[ni2].troop_slots[s] != SYM_NULL) continue;
                         char tbuf[128];

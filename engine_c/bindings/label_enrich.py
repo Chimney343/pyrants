@@ -41,7 +41,7 @@ _EFFECT_KIND_DESCRIPTIONS = {
     "steal_from_selected_trophy": "Place stolen trophy on the board",
     "steal_white_trophy_to_board": "Take white trophy and deploy",
     "lich_select_target_player": "Choose opponent as trophy source",
-    "deploy_from_trophy_hall_with_presence": "Deploy trophy from trophy hall to a presence site",
+    "deploy_from_trophy_hall": "Deploy trophy from trophy hall to the board",
 }
 
 _FILTER_DESCRIPTIONS = {
@@ -213,7 +213,7 @@ def _is_steal_custom_effect(action: dict) -> bool:
     if isinstance(meta, dict):
         ek = meta.get("effect_kind", "")
         return ek in ("select_trophy_hall", "steal_from_selected_trophy", "steal_white_trophy_to_board", "steal_trophy_to_board",
-                      "deploy_from_trophy_hall_with_presence", "lich_select_target_player")
+                      "deploy_from_trophy_hall", "lich_select_target_player")
     return False
 
 

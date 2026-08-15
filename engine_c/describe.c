@@ -145,9 +145,11 @@ int engine_describe_move(const GameState *state, const Move *move,
             snprintf(buf, sizeof(buf), "Promote %s", name);
             break;
         }
-        case MOVE_SKIP_PROMOTE:
-            snprintf(buf, sizeof(buf), "Skip promotion");
+        case MOVE_SKIP_PROMOTE: {
+            const char *name = card_name_for(state, move->data.skip_promote.source_card_id);
+            snprintf(buf, sizeof(buf), "Skip promotion (%s)", name);
             break;
+        }
         case MOVE_RESOLVE_GENERIC: {
             Sym aid = move->data.resolve_generic.action_id;
             if (aid == SYM_NULL) {
@@ -160,8 +162,38 @@ int engine_describe_move(const GameState *state, const Move *move,
                         const char *name = card_name_for(state, aid);
                         snprintf(buf, sizeof(buf), "Devour %s", name);
                     } else if (op && strcmp(op, "promote_card") == 0) {
-                        const char *name = card_name_for(state, aid);
-                        snprintf(buf, sizeof(buf), "Promote %s", name);
+                        const char *sf = intern_str(act->source_fragment);
+                        Sym tid = move->data.resolve_generic.target_id;
+                        if (sf && strcmp(sf, "single_promote_from_multiple_zones") == 0 && tid != SYM_NULL) {
+                            const char *sz = intern_str(tid);
+                            const char *name = "?";
+                            int pi = -1;
+                            for (int i = 0; i < state->player_count; i++)
+                                if (state->players[i].player_id == state->current_player_id) { pi = i; break; }
+                            const char *zone_label = "?";
+                            if (sz && pi >= 0) {
+                                if (strcmp(sz, "played") == 0) {
+                                    name = card_name_for(state, aid);
+                                    zone_label = "played";
+                                } else if (strcmp(sz, "hand") == 0) {
+                                    const char *ais = intern_str(aid);
+                                    int idx = ais ? atoi(ais) : -1;
+                                    if (idx >= 0 && idx < state->players[pi].hand_count)
+                                        name = card_name_for(state, state->players[pi].hand[idx]);
+                                    zone_label = "hand";
+                                } else if (strcmp(sz, "discard") == 0) {
+                                    const char *ais = intern_str(aid);
+                                    int idx = ais ? atoi(ais) : -1;
+                                    if (idx >= 0 && idx < state->players[pi].discard_pile_count)
+                                        name = card_name_for(state, state->players[pi].discard_pile[idx]);
+                                    zone_label = "discard";
+                                }
+                            }
+                            snprintf(buf, sizeof(buf), "Promote %s (%s)", name, zone_label);
+                        } else {
+                            const char *name = card_name_for(state, aid);
+                            snprintf(buf, sizeof(buf), "Promote %s", name);
+                        }
                     } else if (op && strcmp(op, "recruit_card") == 0) {
                         const char *name = card_name_for(state, aid);
                         snprintf(buf, sizeof(buf), "Recruit %s", name);
@@ -322,6 +354,82 @@ int engine_describe_move(const GameState *state, const Move *move,
                                 }
                             }
                             snprintf(buf, sizeof(buf), "Place %s trophy at %s", trophy_type_buf, nl_buf);
+                        } else if (effect_kind && strcmp(effect_kind, "steal_white_trophy_to_board") == 0) {
+                            Sym tid = move->data.resolve_generic.target_id;
+                            const char *ts = tid != SYM_NULL ? intern_str(tid) : NULL;
+                            if (ts && strchr(ts, ':')) {
+                                const char *nid_str = intern_str(aid);
+                                char nl_buf[64];
+                                snprintf(nl_buf, sizeof(nl_buf), "%s",
+                                         node_label(nid_str, node_ids, node_labels, node_pair_count));
+                                snprintf(buf, sizeof(buf), "Place white trophy at %s", nl_buf);
+                            } else {
+                                char sp_label_buf[32];
+                                snprintf(sp_label_buf, sizeof(sp_label_buf), "%s",
+                                         _player_label(intern_str(aid)));
+                                snprintf(buf, sizeof(buf), "Take white trophy from %s trophy hall",
+                                         sp_label_buf);
+                            }
+                        } else if (effect_kind && strcmp(effect_kind, "lich_select_target_player") == 0) {
+                            char tgt_buf[32];
+                            snprintf(tgt_buf, sizeof(tgt_buf), "%s", _player_label(intern_str(aid)));
+                            snprintf(buf, sizeof(buf), "Choose %s as trophy source", tgt_buf);
+                        } else if (effect_kind && strcmp(effect_kind, "select_site") == 0) {
+                            const char *nid_str = intern_str(aid);
+                            char nl_buf[64];
+                            snprintf(nl_buf, sizeof(nl_buf), "%s", node_label(nid_str, node_ids, node_labels, node_pair_count));
+                            snprintf(buf, sizeof(buf), "Choose %s", nl_buf);
+                        } else if (effect_kind && (strcmp(effect_kind, "deploy_from_trophy_hall") == 0 ||
+                                                    strcmp(effect_kind, "deploy_white_from_trophy_hall_with_presence") == 0)) {
+                            Sym tid = move->data.resolve_generic.target_id;
+                            const char *nid_str = intern_str(aid);
+                            char nl_buf[64];
+                            snprintf(nl_buf, sizeof(nl_buf), "%s", node_label(nid_str, node_ids, node_labels, node_pair_count));
+                            char trophy_type_buf[32] = "troop";
+                            char src_buf[32] = "";
+                            if (tid != SYM_NULL) {
+                                const char *ts = intern_str(tid);
+                                if (ts) {
+                                    const char *c1 = strchr(ts, ':');
+                                    const char *c2 = c1 ? strchr(c1 + 1, ':') : NULL;
+                                    if (c1 && c2) {
+                                        int sp_len = (int)(c1 - ts);
+                                        if (sp_len > 0 && sp_len < (int)sizeof(src_buf)) {
+                                            memcpy(src_buf, ts, (size_t)sp_len);
+                                            src_buf[sp_len] = '\0';
+                                            char src_label_buf[32];
+                                            snprintf(src_label_buf, sizeof(src_label_buf), "%s", _player_label(src_buf));
+                                            snprintf(src_buf, sizeof(src_buf), "%s", src_label_buf);
+                                        }
+                                        int c1_plus_nul = (int)(c2 - c1 - 1);
+                                        char idx_buf[16];
+                                        if (c1_plus_nul > 0 && c1_plus_nul < (int)sizeof(idx_buf)) {
+                                            memcpy(idx_buf, c1 + 1, (size_t)c1_plus_nul);
+                                            idx_buf[c1_plus_nul] = '\0';
+                                            int ti = atoi(idx_buf);
+                                            char sp_buf2[32];
+                                            if (sp_len > 0 && sp_len < (int)sizeof(sp_buf2)) {
+                                                memcpy(sp_buf2, ts, (size_t)sp_len);
+                                                sp_buf2[sp_len] = '\0';
+                                                Sym sp_sym = intern(sp_buf2);
+                                                for (int p = 0; p < state->player_count; p++) {
+                                                    if (state->players[p].player_id == sp_sym
+                                                        && ti >= 0 && ti < state->players[p].trophy_hall_count) {
+                                                        Sym occ = state->players[p].trophy_hall[ti];
+                                                        const char *oc = intern_str(occ);
+                                                        if (oc && strcmp(oc, "white") == 0)
+                                                            snprintf(trophy_type_buf, sizeof(trophy_type_buf), "white");
+                                                        else if (oc)
+                                                            snprintf(trophy_type_buf, sizeof(trophy_type_buf), "%s", _player_label(oc));
+                                                        break;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            snprintf(buf, sizeof(buf), "Deploy %s from %s to %s", trophy_type_buf, src_buf[0] ? src_buf : "trophy hall", nl_buf);
                         } else if (effect_kind && strcmp(effect_kind, "self_purge_to_supply") == 0) {
                             const char *card_name = card_name_for(state, aid);
                             const char *source_name = card_name_for(state, state->pending_generic->source_card_id);
@@ -385,7 +493,18 @@ int engine_describe_move(const GameState *state, const Move *move,
                                                         }
                                                         if (ek && strcmp(ek, "take_from_devour_pile_to_discard") == 0)
                                                             snprintf(part_buf, sizeof(part_buf), "take from devour pile");
-                                                        else
+                                                        else if (ek && strcmp(ek, "steal_white_trophy_to_board") == 0)
+                                                            snprintf(part_buf, sizeof(part_buf), "take a white trophy and deploy it");
+                                                        else if (ek && strcmp(ek, "select_site") == 0) {
+                                                            int white_only = 0;
+                                                            for (int fi = 0; fi < a->filter_count; fi++) {
+                                                                const char *fl = intern_str(a->filters[fi]);
+                                                                if (fl && strcmp(fl, "white_troop_only") == 0) { white_only = 1; break; }
+                                                            }
+                                                            snprintf(part_buf, sizeof(part_buf),
+                                                                     white_only ? "Choose a site with a white troop"
+                                                                                : "Choose a site");
+                                                        } else
                                                             snprintf(part_buf, sizeof(part_buf), "%s", _humanize_id(op));
                                                     } else {
                                                         snprintf(part_buf, sizeof(part_buf), "%s", _humanize_id(op));
