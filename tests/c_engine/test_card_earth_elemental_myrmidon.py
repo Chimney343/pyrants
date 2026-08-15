@@ -7,6 +7,9 @@ excludes self via requires_another_played_card.
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 from engine_c.bindings.engine_bindings import PHASE_END_OF_TURN, _lib
 from tests.c_engine.card_test_helpers import (
     _make_engine,
@@ -17,6 +20,7 @@ from tests.c_engine.card_test_helpers import (
 _P1 = "p1"
 _P2 = "p2"
 _CARD = "earth_elemental_myrmidon"
+DATA_DIR = Path(__file__).resolve().parents[2] / "data"
 
 
 def _influence(session):
@@ -261,3 +265,22 @@ def test_sequential_play_order_matters():
     assert _CARD not in promote_targets
 
     session.destroy()
+
+
+def test_earth_elemental_myrmidon_catalog_encoding_requires_another_played_card():
+    """The promote action must carry ``requires_another_played_card`` in its metadata.
+
+    Regression guard: the deferred end-of-turn promotion targets "another played
+    card" and must exclude the source card itself. If the metadata flag is lost,
+    the engine offers self as a promote target and never falls back to
+    ``skip_promote`` when no other card was played this turn.
+    """
+    catalog = json.loads((DATA_DIR / "cards" / "catalog.json").read_text(encoding="utf-8"))
+    card = next(c for c in catalog["cards"] if c["card_id"] == "earth_elemental_myrmidon")
+
+    for action in (card["execution_model"]["actions"][1], card["actions"][1]):
+        assert action["op"] == "promote_card", f"expected promote_card, got {action['op']}"
+        assert action["timing"] == "end_of_turn", f"expected end_of_turn, got {action['timing']}"
+        assert action["metadata"].get("requires_another_played_card") is True, (
+            f"requires_another_played_card must be true, got {action['metadata']}"
+        )
