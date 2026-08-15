@@ -3708,7 +3708,7 @@
       "deck_vp": 5,
       "inner_circle_vp": 10,
       "rules_text": "Devour a card from your hand to supplant a white troop anywhere on the board. Then supplant 2 more white troops. Then each opponent recruits 2 Insane Outcasts.",
-      "notes": "This is one long additive sequence, not modal. It uses the established hand-devour cost rule, then resolves three total white-troop supplants, and finally makes each opponent recruit 2 Insane Outcasts.",
+      "notes": "This is one long additive sequence, not modal. It uses the established hand-devour cost rule, then resolves three total white-troop supplants: the first ignores presence (anywhere on the board, site or route), the next two are normal presence-limited white-troop supplants, and finally each opponent gains 2 Insane Outcasts.",
       "execution_model": {
         "kind": "sequence",
         "actions": [
@@ -3736,28 +3736,49 @@
             "timing": "immediate",
             "optional": false,
             "quantity": {
-              "kind": "variable_repeat",
-              "value": null
+              "kind": "fixed",
+              "value": 1
             },
             "filters": [
               "white_troop_only"
             ],
-            "source_fragment": "mass_supplant_white",
-            "metadata": {}
+            "source_fragment": "supplant_white_troop_anywhere",
+            "metadata": {
+              "targeting": "anywhere",
+              "ignore_presence_requirement": true
+            }
           },
           {
             "action_id": "action_3",
-            "op": "recruit_card",
-            "target_scope": "market",
+            "op": "supplant_troop",
+            "target_scope": "board_site",
             "timing": "immediate",
             "optional": false,
             "quantity": {
-              "kind": "variable_repeat",
-              "value": null
+              "kind": "fixed",
+              "value": 2
+            },
+            "filters": [
+              "white_troop_only"
+            ],
+            "source_fragment": "supplant_white_troop",
+            "metadata": {}
+          },
+          {
+            "action_id": "action_4",
+            "op": "custom_effect",
+            "target_scope": "opponent_player",
+            "timing": "immediate",
+            "optional": false,
+            "quantity": {
+              "kind": "fixed",
+              "value": 2
             },
             "filters": [],
-            "source_fragment": "mass_negative_recruit",
-            "metadata": {}
+            "source_fragment": "give_negative_card_to_each_opponent",
+            "metadata": {
+              "effect_kind": "give_insane_outcast_to_each_opponent"
+            }
           }
         ]
       },
@@ -3786,28 +3807,49 @@
           "timing": "immediate",
           "optional": false,
           "quantity": {
-            "kind": "variable_repeat",
-            "value": null
+            "kind": "fixed",
+            "value": 1
           },
           "filters": [
             "white_troop_only"
           ],
-          "source_fragment": "mass_supplant_white",
-          "metadata": {}
+          "source_fragment": "supplant_white_troop_anywhere",
+          "metadata": {
+            "targeting": "anywhere",
+            "ignore_presence_requirement": true
+          }
         },
         {
           "action_id": "action_3",
-          "op": "recruit_card",
-          "target_scope": "market",
+          "op": "supplant_troop",
+          "target_scope": "board_site",
           "timing": "immediate",
           "optional": false,
           "quantity": {
-            "kind": "variable_repeat",
-            "value": null
+            "kind": "fixed",
+            "value": 2
+          },
+          "filters": [
+            "white_troop_only"
+          ],
+          "source_fragment": "supplant_white_troop",
+          "metadata": {}
+        },
+        {
+          "action_id": "action_4",
+          "op": "custom_effect",
+          "target_scope": "opponent_player",
+          "timing": "immediate",
+          "optional": false,
+          "quantity": {
+            "kind": "fixed",
+            "value": 2
           },
           "filters": [],
-          "source_fragment": "mass_negative_recruit",
-          "metadata": {}
+          "source_fragment": "give_negative_card_to_each_opponent",
+          "metadata": {
+            "effect_kind": "give_insane_outcast_to_each_opponent"
+          }
         }
       ],
       "global_conditions": [],
@@ -3817,7 +3859,6 @@
           "devour_rules",
           "board.troop_slots",
           "presence_or_target_rules",
-          "market.row",
           "card_catalog"
         ],
         "writes": [
@@ -3825,9 +3866,7 @@
           "source_zone",
           "board.troop_slots",
           "player.trophy_hall",
-          "player.discard_pile",
-          "market.row",
-          "market.deck"
+          "player.discard_pile"
         ]
       },
       "effect_key": "generic_card",

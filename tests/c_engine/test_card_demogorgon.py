@@ -259,3 +259,32 @@ def test_demogorgon_end_to_end() -> None:
     )
 
     session.destroy()
+
+
+# ---------------------------------------------------------------------------
+# Test 4 — Engine: anywhere supplant includes a route (no presence required)
+# ---------------------------------------------------------------------------
+
+def test_anywhere_supplant_includes_route_without_presence() -> None:
+    eng = _init_engine()
+    session = make_card_test_session(
+        eng,
+        ["p1", "p2"],
+        hand={"p1": ["demogorgon", "soldier", "noble", "house_guard", "priestess_of_lolth"]},
+        troops={"p1": {"route_1": ["p1"]}},
+        current_player="p1",
+    )
+    _set_white_at(session, {"route_8": 0})
+
+    _play_card(session, "demogorgon")
+
+    devour = _find_resolve_move(session, "soldier")
+    assert devour
+    session.submit_move(devour)
+
+    anywhere_ids = _resolve_action_ids(session)
+    assert "route_8" in anywhere_ids, (
+        "a white troop on a route must be a legal anywhere-supplant target"
+    )
+
+    session.destroy()
