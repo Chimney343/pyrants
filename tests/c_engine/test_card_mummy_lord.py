@@ -24,6 +24,7 @@ CARD_ID = "mummy_lord"
 _SITE_A = "site_gauntlgrym"
 _SITE_B = "site_menzoberranzan"
 _SITE_C = "site_gracklstugh"
+_ROUTE = "route_1"
 
 
 def _play_card(session: CSession, card_id: str = CARD_ID) -> None:
@@ -213,6 +214,41 @@ def test_mummy_lord_option_2_deploys_anywhere_without_presence():
     assert deploy, "Deploy moves should exist even without presence at any site"
     session.submit_move(deploy[0])
     assert _trophy_hall(session, "p2") == []
+    session.destroy()
+
+
+def test_mummy_lord_option_2_step1_offers_only_white_trophies():
+    """Option 2 step 1 lists only enemy white trophies, never player-colored ones."""
+    eng = _make_engine()
+    session = make_card_test_session(eng, ["p1", "p2"], hand={"p1": [CARD_ID]}, current_player="p1")
+    _set_trophy_hall(session, "p2", ["p1", "white"])
+    _play_card(session)
+    _pick_option(session, "option_2")
+    offered = {(m.data.get("action_id"), m.data.get("target_id")) for m in _resolve_generic_moves(session)}
+    assert ("p2", "1") in offered, f"White trophy at index 1 should be offered, got {offered}"
+    assert ("p2", "0") not in offered, f"p1-colored trophy must not be offered, got {offered}"
+    session.destroy()
+
+
+def test_mummy_lord_option_2_deploys_to_route():
+    """Option 2 deploy targets include route nodes (anywhere on the board)."""
+    eng = _make_engine()
+    session = make_card_test_session(
+        eng, ["p1", "p2"],
+        hand={"p1": [CARD_ID]},
+        troops={"p2": {_SITE_B: ["p2", None, None]}},
+        current_player="p1",
+    )
+    _set_trophy_hall(session, "p2", ["white"])
+    _play_card(session)
+    _pick_option(session, "option_2")
+    _pick_trophy_from_player(session, "p2")
+    deploy = _resolve_generic_moves(session)
+    assert any(m.data.get("action_id") == _ROUTE for m in deploy), \
+        f"Route node {_ROUTE} should be a deploy target, got {[m.data for m in deploy]}"
+    _pick_deploy(session, _ROUTE, 0)
+    assert _trophy_hall(session, "p2") == []
+    assert "white" in _troops_at_node(session, _ROUTE)
     session.destroy()
 
 
