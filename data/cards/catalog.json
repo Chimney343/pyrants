@@ -1,6 +1,5 @@
 {
   "catalog_id": "base_catalog",
-  "version": "1.0.0",
   "cards": [
     {
       "card_id": "aboleth",
@@ -32,7 +31,7 @@
                   "value": 1
                 },
                 "filters": [],
-                "source_fragment": "place_spy",
+                "source_fragment": "spy_place",
                 "metadata": {}
               },
               {
@@ -46,7 +45,7 @@
                   "value": 1
                 },
                 "filters": [],
-                "source_fragment": "place_spy",
+                "source_fragment": "spy_place",
                 "metadata": {}
               }
             ]
@@ -65,7 +64,7 @@
                   "value": null
                 },
                 "filters": [],
-                "source_fragment": "draw_cards",
+                "source_fragment": "draw",
                 "metadata": {
                   "count_from": "spies_on_board"
                 }
@@ -86,7 +85,7 @@
             "value": 1
           },
           "filters": [],
-          "source_fragment": "place_spy",
+          "source_fragment": "spy_place",
           "metadata": {}
         },
         {
@@ -100,7 +99,7 @@
             "value": 1
           },
           "filters": [],
-          "source_fragment": "place_spy",
+          "source_fragment": "spy_place",
           "metadata": {}
         },
         {
@@ -114,7 +113,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "draw_cards",
+          "source_fragment": "draw",
           "metadata": {
             "count_from": "spies_on_board"
           }
@@ -172,7 +171,7 @@
             "filters": [
               "white_troop_only"
             ],
-            "source_fragment": "supplant_troop",
+            "source_fragment": "supplant_white_troop",
             "metadata": {}
           }
         ]
@@ -191,7 +190,7 @@
           "filters": [
             "white_troop_only"
           ],
-          "source_fragment": "supplant_troop",
+          "source_fragment": "supplant_white_troop",
           "metadata": {}
         }
       ],
@@ -239,7 +238,7 @@
                   "value": 2
                 },
                 "filters": [],
-                "source_fragment": "gain_resource",
+                "source_fragment": "gain_influence",
                 "metadata": {
                   "resource": "influence"
                 }
@@ -281,7 +280,7 @@
             "value": 2
           },
           "filters": [],
-          "source_fragment": "gain_resource",
+          "source_fragment": "gain_influence",
           "metadata": {
             "resource": "influence"
           }
@@ -353,7 +352,7 @@
               "value": 1
             },
             "filters": [],
-            "source_fragment": "gain_resource",
+            "source_fragment": "gain_power",
             "metadata": {
               "resource": "power"
             }
@@ -369,7 +368,7 @@
               "value": 1
             },
             "filters": [],
-            "source_fragment": "place_spy",
+            "source_fragment": "spy",
             "metadata": {}
           },
           {
@@ -383,7 +382,7 @@
               "value": null
             },
             "filters": [],
-            "source_fragment": "recruit_card",
+            "source_fragment": "recruit_aspect_filtered_card_by_cost",
             "metadata": {
               "required_aspect": "guile",
               "max_cost": 4
@@ -403,7 +402,7 @@
             "value": 1
           },
           "filters": [],
-          "source_fragment": "gain_resource",
+          "source_fragment": "gain_power",
           "metadata": {
             "resource": "power"
           }
@@ -419,7 +418,7 @@
             "value": 1
           },
           "filters": [],
-          "source_fragment": "place_spy",
+          "source_fragment": "spy",
           "metadata": {}
         },
         {
@@ -433,7 +432,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "recruit_card",
+          "source_fragment": "recruit_aspect_filtered_card_by_cost",
           "metadata": {
             "required_aspect": "guile",
             "max_cost": 4
@@ -491,25 +490,8 @@
                   "value": null
                 },
                 "filters": [],
-                "source_fragment": "place_spy",
+                "source_fragment": "spy",
                 "metadata": {}
-              },
-              {
-                "action_id": "option_1_action_2",
-                "op": "draw_cards",
-                "target_scope": "self",
-                "timing": "immediate",
-                "optional": false,
-                "quantity": {
-                  "kind": "fixed",
-                  "value": 1
-                },
-                "filters": [],
-                "source_fragment": "draw_cards",
-                "metadata": {
-                  "requires_focus": true,
-                  "focus_aspect": "guile"
-                }
               }
             ]
           },
@@ -527,24 +509,24 @@
                   "value": null
                 },
                 "filters": [],
-                "source_fragment": "return_spy",
+                "source_fragment": "return_own_spy",
                 "metadata": {
                   "spy_owner": "self"
                 }
               },
               {
-          "action_id": "option_2_action_2",
-          "op": "supplant_troop",
-          "target_scope": "board_site",
-          "timing": "immediate",
-          "optional": false,
-          "quantity": {
-            "kind": "unspecified",
-            "value": null
-          },
-          "filters": ["allow_white_troop"],
-          "source_fragment": "supplant_troop",
-          "metadata": {}
+                "action_id": "option_2_action_2",
+                "op": "assassinate_troop",
+                "target_scope": "board_site",
+                "timing": "immediate",
+                "optional": true,
+                "quantity": {
+                  "kind": "fixed",
+                  "value": 1
+                },
+                "filters": [],
+                "source_fragment": "deploy_troops_step_1",
+                "metadata": {}
               },
               {
                 "action_id": "option_2_action_3",
@@ -557,7 +539,7 @@
                   "value": 1
                 },
                 "filters": [],
-                "source_fragment": "deploy_troops",
+                "source_fragment": "deploy_troops_step_2",
                 "metadata": {}
               },
               {
@@ -571,7 +553,7 @@
                   "value": 1
                 },
                 "filters": [],
-                "source_fragment": "deploy_troops",
+                "source_fragment": "deploy_troops_step_3",
                 "metadata": {}
               },
               {
@@ -585,7 +567,7 @@
                   "value": 1
                 },
                 "filters": [],
-                "source_fragment": "draw_cards",
+                "source_fragment": "focus_draw",
                 "metadata": {
                   "requires_focus": true,
                   "focus_aspect": "guile"
@@ -607,25 +589,8 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "place_spy",
+          "source_fragment": "spy",
           "metadata": {}
-        },
-        {
-          "action_id": "option_1_action_2",
-          "op": "draw_cards",
-          "target_scope": "self",
-          "timing": "immediate",
-          "optional": false,
-          "quantity": {
-            "kind": "fixed",
-            "value": 1
-          },
-          "filters": [],
-          "source_fragment": "draw_cards",
-          "metadata": {
-            "requires_focus": true,
-            "focus_aspect": "guile"
-          }
         },
         {
           "action_id": "option_2_action_1",
@@ -638,23 +603,23 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "return_spy",
+          "source_fragment": "return_own_spy",
           "metadata": {
             "spy_owner": "self"
           }
         },
         {
           "action_id": "option_2_action_2",
-          "op": "deploy_troops",
+          "op": "assassinate_troop",
           "target_scope": "board_site",
           "timing": "immediate",
-          "optional": false,
+          "optional": true,
           "quantity": {
             "kind": "fixed",
             "value": 1
           },
           "filters": [],
-          "source_fragment": "deploy_troops",
+          "source_fragment": "deploy_troops_step_1",
           "metadata": {}
         },
         {
@@ -668,7 +633,7 @@
             "value": 1
           },
           "filters": [],
-          "source_fragment": "deploy_troops",
+          "source_fragment": "deploy_troops_step_2",
           "metadata": {}
         },
         {
@@ -682,7 +647,7 @@
             "value": 1
           },
           "filters": [],
-          "source_fragment": "deploy_troops",
+          "source_fragment": "deploy_troops_step_3",
           "metadata": {}
         },
         {
@@ -696,7 +661,7 @@
             "value": 1
           },
           "filters": [],
-          "source_fragment": "draw_cards",
+          "source_fragment": "focus_draw",
           "metadata": {
             "requires_focus": true,
             "focus_aspect": "guile"
@@ -724,9 +689,7 @@
           "board.spies",
           "player.spies_available",
           "board.troop_slots",
-          "player.barracks",
-          "player.hand",
-          "player.deck"
+          "player.barracks"
         ]
       },
       "effect_key": "generic_card",
@@ -758,7 +721,7 @@
               "value": null
             },
             "filters": [],
-            "source_fragment": "place_spy",
+            "source_fragment": "spy",
             "metadata": {}
           },
           {
@@ -791,7 +754,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "place_spy",
+          "source_fragment": "spy",
           "metadata": {}
         },
         {
@@ -848,7 +811,7 @@
       "deck_vp": 1,
       "inner_circle_vp": 3,
       "rules_text": "At end of turn, promote another card you played this turn. If this card would be discarded from hand to discard pile, you may choose to promote this card instead.",
-      "notes": "The self-promotion effect is an optional replacement effect that applies only when this card would move from hand to discard pile. This is enforced at the engine level (discard_hand_card helper) — whenever Ambassador would be discarded from hand (cleanup, force_discard, ability cost), it is promoted to the inner circle instead.",
+      "notes": "The self-promotion effect is an optional replacement effect that applies only when this card would move from hand to discard pile.",
       "execution_model": {
         "kind": "sequence",
         "actions": [
@@ -940,7 +903,7 @@
               "value": null
             },
             "filters": [],
-            "source_fragment": "devour",
+            "source_fragment": "hand_devour",
             "metadata": {
               "source_zone": "hand",
               "self_replace": false
@@ -959,7 +922,7 @@
             "filters": [
               "white_troop_only"
             ],
-            "source_fragment": "supplant_troop_anywhere",
+            "source_fragment": "supplant_white_troop_anywhere",
             "metadata": {
               "targeting": "anywhere",
               "ignore_presence_requirement": true
@@ -976,7 +939,7 @@
               "value": 1
             },
             "filters": [],
-            "source_fragment": "deploy_troops",
+            "source_fragment": "deploy_troop",
             "metadata": {}
           }
         ]
@@ -993,7 +956,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "devour",
+          "source_fragment": "hand_devour",
           "metadata": {
             "source_zone": "hand",
             "self_replace": false
@@ -1012,7 +975,7 @@
           "filters": [
             "white_troop_only"
           ],
-          "source_fragment": "supplant_troop_anywhere",
+          "source_fragment": "supplant_white_troop_anywhere",
           "metadata": {
             "targeting": "anywhere",
             "ignore_presence_requirement": true
@@ -1029,7 +992,7 @@
             "value": 1
           },
           "filters": [],
-          "source_fragment": "deploy_troops",
+          "source_fragment": "deploy_troop",
           "metadata": {}
         }
       ],
@@ -1079,7 +1042,7 @@
               "value": null
             },
             "filters": [],
-            "source_fragment": "place_spy",
+            "source_fragment": "spy",
             "metadata": {}
           },
           {
@@ -1093,7 +1056,7 @@
               "value": null
             },
             "filters": [],
-            "source_fragment": "gain_resource",
+            "source_fragment": "conditional_power_if_spy_present",
             "metadata": {
               "condition": "selected_node_total_spies_at_least",
               "min_spies": 2,
@@ -1115,7 +1078,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "place_spy",
+          "source_fragment": "spy",
           "metadata": {}
         },
         {
@@ -1129,7 +1092,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "gain_resource",
+          "source_fragment": "conditional_power_if_spy_present",
           "metadata": {
             "condition": "selected_node_total_spies_at_least",
             "min_spies": 2,
@@ -1185,7 +1148,7 @@
               "value": null
             },
             "filters": [],
-            "source_fragment": "assassinate_troop",
+            "source_fragment": "assassinate",
             "metadata": {}
           },
           {
@@ -1199,7 +1162,7 @@
               "value": null
             },
             "filters": [],
-            "source_fragment": "gain_resource",
+            "source_fragment": "scaled_power_from_trophy_hall",
             "metadata": {
               "effect_kind": "scaled_resource_from_player_zone",
               "source_zone": "trophy_hall",
@@ -1221,7 +1184,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "assassinate_troop",
+          "source_fragment": "assassinate",
           "metadata": {}
         },
         {
@@ -1235,7 +1198,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "gain_resource",
+          "source_fragment": "scaled_power_from_trophy_hall",
           "metadata": {
             "effect_kind": "scaled_resource_from_player_zone",
             "source_zone": "trophy_hall",
@@ -1288,7 +1251,7 @@
             "filters": [
               "white_troop_only"
             ],
-            "source_fragment": "supplant_troop_anywhere",
+            "source_fragment": "supplant_white_troop_anywhere",
             "metadata": {
               "targeting": "anywhere",
               "ignore_presence_requirement": true
@@ -1298,7 +1261,7 @@
             "action_id": "action_2",
             "op": "grant_vp",
             "target_scope": "self",
-            "timing": "end_of_turn",
+            "timing": "immediate",
             "optional": false,
             "quantity": {
               "kind": "unspecified",
@@ -1308,8 +1271,7 @@
             "source_fragment": "scaled_vp_from_white_trophies",
             "metadata": {
               "count_from": "trophy_hall_white",
-              "per": 3,
-              "as": "vp_tokens"
+              "per": 3
             }
           }
         ]
@@ -1328,7 +1290,7 @@
           "filters": [
             "white_troop_only"
           ],
-          "source_fragment": "supplant_troop_anywhere",
+          "source_fragment": "supplant_white_troop_anywhere",
           "metadata": {
             "targeting": "anywhere",
             "ignore_presence_requirement": true
@@ -1338,7 +1300,7 @@
           "action_id": "action_2",
           "op": "grant_vp",
           "target_scope": "self",
-          "timing": "end_of_turn",
+          "timing": "immediate",
           "optional": false,
           "quantity": {
             "kind": "unspecified",
@@ -1348,8 +1310,7 @@
           "source_fragment": "scaled_vp_from_white_trophies",
           "metadata": {
             "count_from": "trophy_hall_white",
-            "per": 3,
-            "as": "vp_tokens"
+            "per": 3
           }
         }
       ],
@@ -1391,14 +1352,12 @@
             "timing": "end_of_turn",
             "optional": false,
             "quantity": {
-              "kind": "fixed",
-              "value": 1
+              "kind": "unspecified",
+              "value": null
             },
             "filters": [],
             "source_fragment": "triggered_promote",
-            "metadata": {
-              "requires_another_played_card": true
-            }
+            "metadata": {}
           },
           {
             "action_id": "action_2",
@@ -1411,7 +1370,7 @@
               "value": null
             },
             "filters": [],
-            "source_fragment": "gain_resource",
+            "source_fragment": "focus_influence_bonus",
             "metadata": {
               "condition": "focus_aspect_present",
               "focus_aspect": "ambition",
@@ -1434,9 +1393,7 @@
           },
           "filters": [],
           "source_fragment": "triggered_promote",
-          "metadata": {
-            "requires_another_played_card": true
-          }
+          "metadata": {}
         },
         {
           "action_id": "action_2",
@@ -1449,7 +1406,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "gain_resource",
+          "source_fragment": "focus_influence_bonus",
           "metadata": {
             "condition": "focus_aspect_present",
             "focus_aspect": "ambition",
@@ -1516,7 +1473,7 @@
               "value": 1
             },
             "filters": [],
-            "source_fragment": "gain_resource",
+            "source_fragment": "gain_influence",
             "metadata": {
               "resource": "influence"
             }
@@ -1534,7 +1491,7 @@
             "filters": [
               "white_troop_only"
             ],
-            "source_fragment": "assassinate_troop",
+            "source_fragment": "assassinate_white_troop",
             "metadata": {}
           }
         ]
@@ -1551,7 +1508,7 @@
             "value": 1
           },
           "filters": [],
-          "source_fragment": "gain_resource",
+          "source_fragment": "gain_influence",
           "metadata": {
             "resource": "influence"
           }
@@ -1569,7 +1526,7 @@
           "filters": [
             "white_troop_only"
           ],
-          "source_fragment": "assassinate_troop",
+          "source_fragment": "assassinate_white_troop",
           "metadata": {}
         }
       ],
@@ -1619,7 +1576,7 @@
                   "value": 2
                 },
                 "filters": [],
-                "source_fragment": "gain_resource",
+                "source_fragment": "gain_power",
                 "metadata": {
                   "resource": "power"
                 }
@@ -1639,10 +1596,8 @@
                   "kind": "unspecified",
                   "value": null
                 },
-                "filters": [
-                  "allow_white_troop"
-                ],
-                "source_fragment": "assassinate_troop",
+                "filters": [],
+                "source_fragment": "assassinate",
                 "metadata": {}
               }
             ]
@@ -1661,7 +1616,7 @@
             "value": 2
           },
           "filters": [],
-          "source_fragment": "gain_resource",
+          "source_fragment": "gain_power",
           "metadata": {
             "resource": "power"
           }
@@ -1676,10 +1631,8 @@
             "kind": "unspecified",
             "value": null
           },
-          "filters": [
-            "allow_white_troop"
-          ],
-          "source_fragment": "assassinate_troop",
+          "filters": [],
+          "source_fragment": "assassinate",
           "metadata": {}
         }
       ],
@@ -1744,8 +1697,7 @@
             "source_fragment": "scaled_vp_from_promoted_cards",
             "metadata": {
               "count_from": "inner_circle_cards",
-              "per": 3,
-              "as": "vp_tokens"
+              "per": 3
             }
           }
         ]
@@ -1781,8 +1733,7 @@
           "source_fragment": "scaled_vp_from_promoted_cards",
           "metadata": {
             "count_from": "inner_circle_cards",
-            "per": 3,
-            "as": "vp_tokens"
+            "per": 3
           }
         }
       ],
@@ -1836,7 +1787,7 @@
               "value": 3
             },
             "filters": [],
-            "source_fragment": "gain_resource",
+            "source_fragment": "gain_influence",
             "metadata": {
               "resource": "influence"
             }
@@ -1852,7 +1803,7 @@
               "value": null
             },
             "filters": [],
-            "source_fragment": "return_unit",
+            "source_fragment": "return_other_player_unit",
             "metadata": {}
           }
         ]
@@ -1869,7 +1820,7 @@
             "value": 3
           },
           "filters": [],
-          "source_fragment": "gain_resource",
+          "source_fragment": "gain_influence",
           "metadata": {
             "resource": "influence"
           }
@@ -1885,7 +1836,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "return_unit",
+          "source_fragment": "return_other_player_unit",
           "metadata": {}
         }
       ],
@@ -1932,7 +1883,7 @@
               "value": 3
             },
             "filters": [],
-            "source_fragment": "gain_resource",
+            "source_fragment": "gain_power",
             "metadata": {
               "resource": "power"
             }
@@ -1951,7 +1902,7 @@
             "value": 3
           },
           "filters": [],
-          "source_fragment": "gain_resource",
+          "source_fragment": "gain_power",
           "metadata": {
             "resource": "power"
           }
@@ -1999,7 +1950,7 @@
                   "value": null
                 },
                 "filters": [],
-                "source_fragment": "place_spy",
+                "source_fragment": "spy",
                 "metadata": {}
               }
             ]
@@ -2018,8 +1969,8 @@
                   "value": null
                 },
                 "filters": [],
-                "source_fragment": "return_spy",
-                "metadata": { "spy_owner": "self" }
+                "source_fragment": "return_spy_for_power_and_influence",
+                "metadata": {}
               },
               {
                 "action_id": "option_2_action_2",
@@ -2032,7 +1983,7 @@
                   "value": 2
                 },
                 "filters": [],
-                "source_fragment": "gain_resource",
+                "source_fragment": "gain_power",
                 "metadata": {
                   "resource": "power"
                 }
@@ -2048,7 +1999,7 @@
                   "value": 2
                 },
                 "filters": [],
-                "source_fragment": "gain_resource",
+                "source_fragment": "gain_influence",
                 "metadata": {
                   "resource": "influence"
                 }
@@ -2069,7 +2020,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "place_spy",
+          "source_fragment": "spy",
           "metadata": {}
         },
         {
@@ -2083,8 +2034,8 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "return_spy",
-          "metadata": { "spy_owner": "self" }
+          "source_fragment": "return_spy_for_power_and_influence",
+          "metadata": {}
         },
         {
           "action_id": "option_2_action_2",
@@ -2097,7 +2048,7 @@
             "value": 2
           },
           "filters": [],
-          "source_fragment": "gain_resource",
+          "source_fragment": "gain_power",
           "metadata": {
             "resource": "power"
           }
@@ -2113,7 +2064,7 @@
             "value": 2
           },
           "filters": [],
-          "source_fragment": "gain_resource",
+          "source_fragment": "gain_influence",
           "metadata": {
             "resource": "influence"
           }
@@ -2160,7 +2111,7 @@
               "value": 3
             },
             "filters": [],
-            "source_fragment": "gain_resource",
+            "source_fragment": "gain_power",
             "metadata": {
               "resource": "power"
             }
@@ -2176,7 +2127,7 @@
               "value": null
             },
             "filters": [],
-            "source_fragment": "devour",
+            "source_fragment": "devour_market_card_and_self_replace",
             "metadata": {
               "source_zone": "market",
               "self_replace": true
@@ -2196,7 +2147,7 @@
             "value": 3
           },
           "filters": [],
-          "source_fragment": "gain_resource",
+          "source_fragment": "gain_power",
           "metadata": {
             "resource": "power"
           }
@@ -2212,7 +2163,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "devour",
+          "source_fragment": "devour_market_card_and_self_replace",
           "metadata": {
             "source_zone": "market",
             "self_replace": true
@@ -2276,9 +2227,7 @@
             },
             "filters": [],
             "source_fragment": "triggered_promote",
-            "metadata": {
-              "requires_another_played_card": true
-            }
+            "metadata": {}
           }
         ]
       },
@@ -2309,9 +2258,7 @@
           },
           "filters": [],
           "source_fragment": "triggered_promote",
-          "metadata": {
-            "requires_another_played_card": true
-          }
+          "metadata": {}
         }
       ],
       "global_conditions": [
@@ -2367,7 +2314,7 @@
               "value": null
             },
             "filters": [],
-            "source_fragment": "place_spy",
+            "source_fragment": "spy",
             "metadata": {}
           },
           {
@@ -2398,7 +2345,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "place_spy",
+          "source_fragment": "spy",
           "metadata": {}
         },
         {
@@ -2460,7 +2407,7 @@
               "value": null
             },
             "filters": [],
-            "source_fragment": "move_troop",
+            "source_fragment": "move_enemy_troop",
             "metadata": {}
           },
           {
@@ -2475,9 +2422,7 @@
             },
             "filters": [],
             "source_fragment": "triggered_promote",
-            "metadata": {
-              "requires_another_played_card": true
-            }
+            "metadata": {}
           }
         ]
       },
@@ -2493,7 +2438,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "move_troop",
+          "source_fragment": "move_enemy_troop",
           "metadata": {}
         },
         {
@@ -2508,9 +2453,7 @@
           },
           "filters": [],
           "source_fragment": "triggered_promote",
-          "metadata": {
-            "requires_another_played_card": true
-          }
+          "metadata": {}
         }
       ],
       "global_conditions": [
@@ -2568,7 +2511,7 @@
                   "value": null
                 },
                 "filters": [],
-                "source_fragment": "place_spy",
+                "source_fragment": "spy",
                 "metadata": {}
               }
             ]
@@ -2588,7 +2531,7 @@
                 },
                 "filters": [],
                 "source_fragment": "return_spy",
-                "metadata": { "spy_owner": "self" }
+                "metadata": {}
               },
               {
                 "action_id": "option_2_action_2",
@@ -2601,7 +2544,7 @@
                   "value": null
                 },
                 "filters": [],
-                "source_fragment": "assassinate_troop",
+                "source_fragment": "assassinate",
                 "metadata": {}
               }
             ]
@@ -2620,7 +2563,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "place_spy",
+          "source_fragment": "spy",
           "metadata": {}
         },
         {
@@ -2635,7 +2578,7 @@
           },
           "filters": [],
           "source_fragment": "return_spy",
-          "metadata": { "spy_owner": "self" }
+          "metadata": {}
         },
         {
           "action_id": "option_2_action_2",
@@ -2648,7 +2591,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "assassinate_troop",
+          "source_fragment": "assassinate",
           "metadata": {}
         }
       ],
@@ -2701,7 +2644,7 @@
                   "value": null
                 },
                 "filters": [],
-                "source_fragment": "place_spy",
+                "source_fragment": "spy",
                 "metadata": {}
               }
             ]
@@ -2720,44 +2663,8 @@
                   "value": null
                 },
                 "filters": [],
-                "source_fragment": "return_spy",
-                "metadata": { "spy_owner": "self" }
-              },
-              {
-                "action_id": "option_2_action_2",
-                "op": "recruit_card",
-                "target_scope": "market",
-                "timing": "immediate",
-                "optional": true,
-                "quantity": {
-                  "kind": "unspecified",
-                  "value": null
-                },
-                "filters": [
-                  "max_cost_3"
-                ],
-                "source_fragment": "recruit_card",
-                "metadata": {
-                  "max_cost": 3
-                }
-              },
-              {
-                "action_id": "option_2_action_3",
-                "op": "recruit_card",
-                "target_scope": "market",
-                "timing": "immediate",
-                "optional": true,
-                "quantity": {
-                  "kind": "unspecified",
-                  "value": null
-                },
-                "filters": [
-                  "max_cost_3"
-                ],
-                "source_fragment": "recruit_card",
-                "metadata": {
-                  "max_cost": 3
-                }
+                "source_fragment": "return_spy_to_recruit_multiple_low_cost_cards",
+                "metadata": {}
               }
             ]
           }
@@ -2775,7 +2682,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "place_spy",
+          "source_fragment": "spy",
           "metadata": {}
         },
         {
@@ -2789,44 +2696,8 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "return_spy",
-          "metadata": { "spy_owner": "self" }
-        },
-        {
-          "action_id": "option_2_action_2",
-          "op": "recruit_card",
-          "target_scope": "market",
-          "timing": "immediate",
-          "optional": true,
-          "quantity": {
-            "kind": "unspecified",
-            "value": null
-          },
-          "filters": [
-            "max_cost_3"
-          ],
-          "source_fragment": "recruit_card",
-          "metadata": {
-            "max_cost": 3
-          }
-        },
-        {
-          "action_id": "option_2_action_3",
-          "op": "recruit_card",
-          "target_scope": "market",
-          "timing": "immediate",
-          "optional": true,
-          "quantity": {
-            "kind": "unspecified",
-            "value": null
-          },
-          "filters": [
-            "max_cost_3"
-          ],
-          "source_fragment": "recruit_card",
-          "metadata": {
-            "max_cost": 3
-          }
+          "source_fragment": "return_spy_to_recruit_multiple_low_cost_cards",
+          "metadata": {}
         }
       ],
       "global_conditions": [],
@@ -2834,14 +2705,11 @@
         "reads": [
           "player.spies_available",
           "board.nodes",
-          "board.spies",
-          "player.discard",
-          "market.row"
+          "board.spies"
         ],
         "writes": [
           "board.spies",
-          "player.spies_available",
-          "player.discard"
+          "player.spies_available"
         ]
       },
       "effect_key": "generic_card",
@@ -2869,11 +2737,11 @@
             "timing": "immediate",
             "optional": false,
             "quantity": {
-              "kind": "fixed",
-              "value": 2
+              "kind": "unspecified",
+              "value": null
             },
             "filters": [],
-            "source_fragment": "move_troop",
+            "source_fragment": "move_enemy_troops",
             "metadata": {}
           },
           {
@@ -2888,9 +2756,7 @@
             },
             "filters": [],
             "source_fragment": "triggered_promote",
-            "metadata": {
-              "requires_another_played_card": true
-            }
+            "metadata": {}
           }
         ]
       },
@@ -2902,11 +2768,11 @@
           "timing": "immediate",
           "optional": false,
           "quantity": {
-            "kind": "fixed",
-            "value": 2
+            "kind": "unspecified",
+            "value": null
           },
           "filters": [],
-          "source_fragment": "move_troop",
+          "source_fragment": "move_enemy_troops",
           "metadata": {}
         },
         {
@@ -2921,9 +2787,7 @@
           },
           "filters": [],
           "source_fragment": "triggered_promote",
-          "metadata": {
-            "requires_another_played_card": true
-          }
+          "metadata": {}
         }
       ],
       "global_conditions": [
@@ -3072,7 +2936,7 @@
             "filters": [
               "white_troop_only"
             ],
-            "source_fragment": "assassinate_troop",
+            "source_fragment": "assassinate_white_troop",
             "metadata": {}
           },
           {
@@ -3086,7 +2950,7 @@
               "value": 2
             },
             "filters": [],
-            "source_fragment": "deploy_troops",
+            "source_fragment": "focus_deploy_troops",
             "metadata": {
               "requires_focus": true,
               "focus_aspect": "conquest"
@@ -3108,7 +2972,7 @@
           "filters": [
             "white_troop_only"
           ],
-          "source_fragment": "assassinate_troop",
+          "source_fragment": "assassinate_white_troop",
           "metadata": {}
         },
         {
@@ -3122,7 +2986,7 @@
             "value": 2
           },
           "filters": [],
-          "source_fragment": "deploy_troops",
+          "source_fragment": "focus_deploy_troops",
           "metadata": {
             "requires_focus": true,
             "focus_aspect": "conquest"
@@ -3178,7 +3042,7 @@
               "value": 2
             },
             "filters": [],
-            "source_fragment": "gain_resource",
+            "source_fragment": "gain_influence",
             "metadata": {
               "resource": "influence"
             }
@@ -3194,7 +3058,7 @@
               "value": null
             },
             "filters": [],
-            "source_fragment": "devour",
+            "source_fragment": "optional_devour_market_card",
             "metadata": {
               "source_zone": "market",
               "self_replace": false
@@ -3214,7 +3078,7 @@
             "value": 2
           },
           "filters": [],
-          "source_fragment": "gain_resource",
+          "source_fragment": "gain_influence",
           "metadata": {
             "resource": "influence"
           }
@@ -3230,7 +3094,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "devour",
+          "source_fragment": "optional_devour_market_card",
           "metadata": {
             "source_zone": "market",
             "self_replace": false
@@ -3283,7 +3147,7 @@
                   "value": 2
                 },
                 "filters": [],
-                "source_fragment": "gain_resource",
+                "source_fragment": "gain_influence",
                 "metadata": {
                   "resource": "influence"
                 }
@@ -3304,7 +3168,7 @@
                   "value": null
                 },
                 "filters": [],
-                "source_fragment": "devour",
+                "source_fragment": "self_devour",
                 "metadata": {
                   "source_zone": "played_self",
                   "self_replace": false
@@ -3315,16 +3179,14 @@
                 "op": "promote_card",
                 "target_scope": "self",
                 "timing": "end_of_turn",
-                "optional": true,
+                "optional": false,
                 "quantity": {
-                  "kind": "fixed",
-                  "value": 2
+                  "kind": "variable_repeat",
+                  "value": null
                 },
                 "filters": [],
                 "source_fragment": "triggered_multi_promote",
-                "metadata": {
-                  "requires_another_played_card": true
-                }
+                "metadata": {}
               }
             ]
           }
@@ -3342,7 +3204,7 @@
             "value": 2
           },
           "filters": [],
-          "source_fragment": "gain_resource",
+          "source_fragment": "gain_influence",
           "metadata": {
             "resource": "influence"
           }
@@ -3358,7 +3220,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "devour",
+          "source_fragment": "self_devour",
           "metadata": {
             "source_zone": "played_self",
             "self_replace": false
@@ -3369,16 +3231,14 @@
           "op": "promote_card",
           "target_scope": "self",
           "timing": "end_of_turn",
-          "optional": true,
+          "optional": false,
           "quantity": {
-            "kind": "fixed",
-            "value": 2
+            "kind": "variable_repeat",
+            "value": null
           },
           "filters": [],
           "source_fragment": "triggered_multi_promote",
-          "metadata": {
-            "requires_another_played_card": true
-          }
+          "metadata": {}
         }
       ],
       "global_conditions": [
@@ -3435,7 +3295,7 @@
               "value": null
             },
             "filters": [],
-            "source_fragment": "supplant_troop",
+            "source_fragment": "supplant",
             "metadata": {}
           },
           {
@@ -3469,7 +3329,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "supplant_troop",
+          "source_fragment": "supplant",
           "metadata": {}
         },
         {
@@ -3523,19 +3383,17 @@
         "actions": [
           {
             "action_id": "action_1",
-            "op": "custom_effect",
+            "op": "assassinate_troop",
             "target_scope": "board_site",
             "timing": "immediate",
-            "optional": false,
+            "optional": true,
             "quantity": {
-              "kind": "unspecified",
-              "value": null
+              "kind": "fixed",
+              "value": 1
             },
             "filters": [],
-            "source_fragment": "custom_effect",
-            "metadata": {
-              "effect_kind": "select_site"
-            }
+            "source_fragment": "assassinate_step_1",
+            "metadata": {}
           },
           {
             "action_id": "action_2",
@@ -3547,13 +3405,10 @@
               "kind": "fixed",
               "value": 1
             },
-            "filters": [
-              "allow_white_troop"
-            ],
-            "source_fragment": "assassinate_troop",
+            "filters": [],
+            "source_fragment": "assassinate_step_2",
             "metadata": {
-              "requires_last_selected_node": true,
-              "skip_advance_to_index": 4
+              "requires_last_selected_node": true
             }
           },
           {
@@ -3566,36 +3421,14 @@
               "kind": "fixed",
               "value": 1
             },
-            "filters": [
-              "allow_white_troop"
-            ],
-            "source_fragment": "assassinate_troop",
+            "filters": [],
+            "source_fragment": "assassinate_step_3",
             "metadata": {
-              "requires_last_selected_node": true,
-              "skip_advance_to_index": 4
+              "requires_last_selected_node": true
             }
           },
           {
             "action_id": "action_4",
-            "op": "assassinate_troop",
-            "target_scope": "board_site",
-            "timing": "immediate",
-            "optional": true,
-            "quantity": {
-              "kind": "fixed",
-              "value": 1
-            },
-            "filters": [
-              "allow_white_troop"
-            ],
-            "source_fragment": "assassinate_troop",
-            "metadata": {
-              "requires_last_selected_node": true,
-              "skip_advance_to_index": 4
-            }
-          },
-          {
-            "action_id": "action_5",
             "op": "gain_resource",
             "target_scope": "self",
             "timing": "immediate",
@@ -3605,7 +3438,7 @@
               "value": 1
             },
             "filters": [],
-            "source_fragment": "gain_resource",
+            "source_fragment": "gain_influence_per_troop_removed_by_effect",
             "metadata": {
               "resource": "influence",
               "count_from": "assassinations_by_source_effect"
@@ -3616,19 +3449,17 @@
       "actions": [
         {
           "action_id": "action_1",
-          "op": "custom_effect",
+          "op": "assassinate_troop",
           "target_scope": "board_site",
           "timing": "immediate",
-          "optional": false,
+          "optional": true,
           "quantity": {
-            "kind": "unspecified",
-            "value": null
+            "kind": "fixed",
+            "value": 1
           },
           "filters": [],
-          "source_fragment": "custom_effect",
-          "metadata": {
-            "effect_kind": "select_site"
-          }
+          "source_fragment": "assassinate_step_1",
+          "metadata": {}
         },
         {
           "action_id": "action_2",
@@ -3640,13 +3471,10 @@
             "kind": "fixed",
             "value": 1
           },
-          "filters": [
-            "allow_white_troop"
-          ],
-          "source_fragment": "assassinate_troop",
+          "filters": [],
+          "source_fragment": "assassinate_step_2",
           "metadata": {
-            "requires_last_selected_node": true,
-            "skip_advance_to_index": 4
+            "requires_last_selected_node": true
           }
         },
         {
@@ -3659,36 +3487,14 @@
             "kind": "fixed",
             "value": 1
           },
-          "filters": [
-            "allow_white_troop"
-          ],
-          "source_fragment": "assassinate_troop",
+          "filters": [],
+          "source_fragment": "assassinate_step_3",
           "metadata": {
-            "requires_last_selected_node": true,
-            "skip_advance_to_index": 4
+            "requires_last_selected_node": true
           }
         },
         {
           "action_id": "action_4",
-          "op": "assassinate_troop",
-          "target_scope": "board_site",
-          "timing": "immediate",
-          "optional": true,
-          "quantity": {
-            "kind": "fixed",
-            "value": 1
-          },
-          "filters": [
-            "allow_white_troop"
-          ],
-          "source_fragment": "assassinate_troop",
-          "metadata": {
-            "requires_last_selected_node": true,
-            "skip_advance_to_index": 4
-          }
-        },
-        {
-          "action_id": "action_5",
           "op": "gain_resource",
           "target_scope": "self",
           "timing": "immediate",
@@ -3698,7 +3504,7 @@
             "value": 1
           },
           "filters": [],
-          "source_fragment": "gain_resource",
+          "source_fragment": "gain_influence_per_troop_removed_by_effect",
           "metadata": {
             "resource": "influence",
             "count_from": "assassinations_by_source_effect"
@@ -3747,7 +3553,7 @@
               "value": 1
             },
             "filters": [],
-            "source_fragment": "assassinate_troop",
+            "source_fragment": "assassinate_step_1",
             "metadata": {}
           },
           {
@@ -3755,13 +3561,13 @@
             "op": "assassinate_troop",
             "target_scope": "board_site",
             "timing": "immediate",
-            "optional": false,
+            "optional": true,
             "quantity": {
               "kind": "fixed",
               "value": 1
             },
             "filters": [],
-            "source_fragment": "assassinate_troop",
+            "source_fragment": "assassinate_step_2",
             "metadata": {}
           }
         ]
@@ -3778,7 +3584,7 @@
             "value": 1
           },
           "filters": [],
-          "source_fragment": "assassinate_troop",
+          "source_fragment": "assassinate_step_1",
           "metadata": {}
         },
         {
@@ -3786,13 +3592,13 @@
           "op": "assassinate_troop",
           "target_scope": "board_site",
           "timing": "immediate",
-          "optional": false,
+          "optional": true,
           "quantity": {
             "kind": "fixed",
             "value": 1
           },
           "filters": [],
-          "source_fragment": "assassinate_troop",
+          "source_fragment": "assassinate_step_2",
           "metadata": {}
         }
       ],
@@ -3836,7 +3642,7 @@
               "value": null
             },
             "filters": [],
-            "source_fragment": "devour",
+            "source_fragment": "hand_devour",
             "metadata": {
               "source_zone": "hand",
               "self_replace": false
@@ -3849,49 +3655,28 @@
             "timing": "immediate",
             "optional": false,
             "quantity": {
-              "kind": "fixed",
-              "value": 1
+              "kind": "variable_repeat",
+              "value": null
             },
             "filters": [
               "white_troop_only"
             ],
-            "source_fragment": "supplant_troop_anywhere",
-            "metadata": {
-              "targeting": "anywhere",
-              "ignore_presence_requirement": true
-            }
-          },
-          {
-            "action_id": "action_3",
-            "op": "supplant_troop",
-            "target_scope": "board_site",
-            "timing": "immediate",
-            "optional": false,
-            "quantity": {
-              "kind": "fixed",
-              "value": 2
-            },
-            "filters": [
-              "white_troop_only"
-            ],
-            "source_fragment": "supplant_troop",
+            "source_fragment": "mass_supplant_white",
             "metadata": {}
           },
           {
-            "action_id": "action_4",
-            "op": "custom_effect",
-            "target_scope": "opponent_player",
+            "action_id": "action_3",
+            "op": "recruit_card",
+            "target_scope": "market",
             "timing": "immediate",
             "optional": false,
             "quantity": {
-              "kind": "fixed",
-              "value": 2
+              "kind": "variable_repeat",
+              "value": null
             },
             "filters": [],
-            "source_fragment": "custom_effect",
-            "metadata": {
-              "effect_kind": "give_insane_outcast_to_each_opponent"
-            }
+            "source_fragment": "mass_negative_recruit",
+            "metadata": {}
           }
         ]
       },
@@ -3907,7 +3692,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "devour",
+          "source_fragment": "hand_devour",
           "metadata": {
             "source_zone": "hand",
             "self_replace": false
@@ -3920,49 +3705,28 @@
           "timing": "immediate",
           "optional": false,
           "quantity": {
-            "kind": "fixed",
-            "value": 1
+            "kind": "variable_repeat",
+            "value": null
           },
           "filters": [
             "white_troop_only"
           ],
-          "source_fragment": "supplant_troop_anywhere",
-          "metadata": {
-            "targeting": "anywhere",
-            "ignore_presence_requirement": true
-          }
-        },
-        {
-          "action_id": "action_3",
-          "op": "supplant_troop",
-          "target_scope": "board_site",
-          "timing": "immediate",
-          "optional": false,
-          "quantity": {
-            "kind": "fixed",
-            "value": 2
-          },
-          "filters": [
-            "white_troop_only"
-          ],
-          "source_fragment": "supplant_troop",
+          "source_fragment": "mass_supplant_white",
           "metadata": {}
         },
         {
-          "action_id": "action_4",
-          "op": "custom_effect",
-          "target_scope": "opponent_player",
+          "action_id": "action_3",
+          "op": "recruit_card",
+          "target_scope": "market",
           "timing": "immediate",
           "optional": false,
           "quantity": {
-            "kind": "fixed",
-            "value": 2
+            "kind": "variable_repeat",
+            "value": null
           },
           "filters": [],
-          "source_fragment": "custom_effect",
-          "metadata": {
-            "effect_kind": "give_insane_outcast_to_each_opponent"
-          }
+          "source_fragment": "mass_negative_recruit",
+          "metadata": {}
         }
       ],
       "global_conditions": [],
@@ -4016,7 +3780,7 @@
             "filters": [
               "white_troop_only"
             ],
-            "source_fragment": "supplant_troop_anywhere",
+            "source_fragment": "supplant_white_troop_anywhere",
             "metadata": {
               "targeting": "anywhere",
               "ignore_presence_requirement": true
@@ -4033,7 +3797,7 @@
               "value": null
             },
             "filters": [],
-            "source_fragment": "custom_effect",
+            "source_fragment": "give_negative_card",
             "metadata": {
               "effect_kind": "give_insane_outcast_to_self"
             }
@@ -4054,7 +3818,7 @@
           "filters": [
             "white_troop_only"
           ],
-          "source_fragment": "supplant_troop_anywhere",
+          "source_fragment": "supplant_white_troop_anywhere",
           "metadata": {
             "targeting": "anywhere",
             "ignore_presence_requirement": true
@@ -4071,7 +3835,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "custom_effect",
+          "source_fragment": "give_negative_card",
           "metadata": {
             "effect_kind": "give_insane_outcast_to_self"
           }
@@ -4081,7 +3845,8 @@
       "state_contract": {
         "reads": [
           "board.troop_slots",
-          "presence_or_target_rules"
+          "presence_or_target_rules",
+          "card_catalog"
         ],
         "writes": [
           "board.troop_slots",
@@ -4118,7 +3883,7 @@
               "value": null
             },
             "filters": [],
-            "source_fragment": "supplant_troop",
+            "source_fragment": "supplant",
             "metadata": {}
           }
         ]
@@ -4135,7 +3900,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "supplant_troop",
+          "source_fragment": "supplant",
           "metadata": {}
         }
       ],
@@ -4183,28 +3948,9 @@
                   "value": 2
                 },
                 "filters": [],
-                "source_fragment": "gain_resource",
+                "source_fragment": "gain_power",
                 "metadata": {
                   "resource": "power"
-                }
-              },
-              {
-                "action_id": "option_1_action_2",
-                "op": "conditional_bonus",
-                "target_scope": "self",
-                "timing": "immediate",
-                "optional": false,
-                "quantity": {
-                  "kind": "unspecified",
-                  "value": null
-                },
-                "filters": [],
-                "source_fragment": "gain_resource",
-                "metadata": {
-                  "condition": "player_trophy_hall_non_white_at_least",
-                  "min_trophies": 5,
-                  "resource": "power",
-                  "amount": 2
                 }
               }
             ]
@@ -4223,7 +3969,7 @@
                   "value": 2
                 },
                 "filters": [],
-                "source_fragment": "gain_resource",
+                "source_fragment": "gain_influence",
                 "metadata": {
                   "resource": "influence"
                 }
@@ -4244,28 +3990,9 @@
             "value": 2
           },
           "filters": [],
-          "source_fragment": "gain_resource",
+          "source_fragment": "gain_power",
           "metadata": {
             "resource": "power"
-          }
-        },
-        {
-          "action_id": "option_1_action_2",
-          "op": "conditional_bonus",
-          "target_scope": "self",
-          "timing": "immediate",
-          "optional": false,
-          "quantity": {
-            "kind": "unspecified",
-            "value": null
-          },
-          "filters": [],
-          "source_fragment": "gain_resource",
-          "metadata": {
-            "condition": "player_trophy_hall_non_white_at_least",
-            "min_trophies": 5,
-            "resource": "power",
-            "amount": 2
           }
         },
         {
@@ -4279,7 +4006,7 @@
             "value": 2
           },
           "filters": [],
-          "source_fragment": "gain_resource",
+          "source_fragment": "gain_influence",
           "metadata": {
             "resource": "influence"
           }
@@ -4324,10 +4051,8 @@
               "kind": "unspecified",
               "value": null
             },
-            "filters": [
-              "allow_white_troop"
-            ],
-            "source_fragment": "assassinate_troop",
+            "filters": [],
+            "source_fragment": "assassinate",
             "metadata": {}
           },
           {
@@ -4341,7 +4066,7 @@
               "value": null
             },
             "filters": [],
-            "source_fragment": "gain_resource",
+            "source_fragment": "conditional_power_from_trophies",
             "metadata": {
               "condition": "player_trophy_hall_non_white_at_least",
               "min_trophies": 5,
@@ -4362,10 +4087,8 @@
             "kind": "unspecified",
             "value": null
           },
-          "filters": [
-            "allow_white_troop"
-          ],
-          "source_fragment": "assassinate_troop",
+          "filters": [],
+          "source_fragment": "assassinate",
           "metadata": {}
         },
         {
@@ -4379,7 +4102,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "gain_resource",
+          "source_fragment": "conditional_power_from_trophies",
           "metadata": {
             "condition": "player_trophy_hall_non_white_at_least",
             "min_trophies": 5,
@@ -4435,7 +4158,7 @@
               "value": null
             },
             "filters": [],
-            "source_fragment": "gain_resource",
+            "source_fragment": "conditional_influence_from_promoted_cards",
             "metadata": {
               "condition": "player_inner_circle_at_least",
               "min_cards": 4,
@@ -4473,7 +4196,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "gain_resource",
+          "source_fragment": "conditional_influence_from_promoted_cards",
           "metadata": {
             "condition": "player_inner_circle_at_least",
             "min_cards": 4,
@@ -4550,7 +4273,7 @@
               "value": 1
             },
             "filters": [],
-            "source_fragment": "gain_resource",
+            "source_fragment": "gain_influence",
             "metadata": {
               "resource": "influence"
             }
@@ -4566,7 +4289,7 @@
               "value": null
             },
             "filters": [],
-            "source_fragment": "return_unit",
+            "source_fragment": "return_enemy_unit",
             "metadata": {}
           },
           {
@@ -4580,7 +4303,7 @@
               "value": 1
             },
             "filters": [],
-            "source_fragment": "draw_cards",
+            "source_fragment": "focus_draw",
             "metadata": {
               "requires_focus": true,
               "focus_aspect": "ambition"
@@ -4600,7 +4323,7 @@
             "value": 1
           },
           "filters": [],
-          "source_fragment": "gain_resource",
+          "source_fragment": "gain_influence",
           "metadata": {
             "resource": "influence"
           }
@@ -4616,7 +4339,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "return_unit",
+          "source_fragment": "return_enemy_unit",
           "metadata": {}
         },
         {
@@ -4630,7 +4353,7 @@
             "value": 1
           },
           "filters": [],
-          "source_fragment": "draw_cards",
+          "source_fragment": "focus_draw",
           "metadata": {
             "requires_focus": true,
             "focus_aspect": "ambition"
@@ -4694,7 +4417,7 @@
               "value": 2
             },
             "filters": [],
-            "source_fragment": "gain_resource",
+            "source_fragment": "gain_influence",
             "metadata": {
               "resource": "influence"
             }
@@ -4706,8 +4429,8 @@
             "timing": "end_of_turn",
             "optional": false,
             "quantity": {
-              "kind": "fixed",
-              "value": 1
+              "kind": "unspecified",
+              "value": null
             },
             "filters": [],
             "source_fragment": "triggered_promote",
@@ -4729,7 +4452,7 @@
             "value": 2
           },
           "filters": [],
-          "source_fragment": "gain_resource",
+          "source_fragment": "gain_influence",
           "metadata": {
             "resource": "influence"
           }
@@ -4741,8 +4464,8 @@
           "timing": "end_of_turn",
           "optional": false,
           "quantity": {
-            "kind": "fixed",
-            "value": 1
+            "kind": "unspecified",
+            "value": null
           },
           "filters": [],
           "source_fragment": "triggered_promote",
@@ -4904,7 +4627,7 @@
                   "value": null
                 },
                 "filters": [],
-                "source_fragment": "place_spy",
+                "source_fragment": "spy",
                 "metadata": {}
               }
             ]
@@ -4924,7 +4647,7 @@
                   "value": null
                 },
                 "filters": [],
-                "source_fragment": "return_spy",
+                "source_fragment": "return_spy_for_power",
                 "metadata": {
                   "spy_owner": "self"
                 }
@@ -4940,7 +4663,7 @@
                   "value": 4
                 },
                 "filters": [],
-                "source_fragment": "gain_resource",
+                "source_fragment": "gain_4_power",
                 "metadata": {
                   "resource": "power"
                 }
@@ -4951,7 +4674,7 @@
       },
       "actions": [
         {
-          "action_id": "option_1_action_1",
+          "action_id": "action_1",
           "op": "place_spy",
           "target_scope": "board_site",
           "timing": "immediate",
@@ -4961,28 +4684,11 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "place_spy",
+          "source_fragment": "spy",
           "metadata": {}
         },
         {
-          "action_id": "option_1_action_2",
-          "op": "draw_cards",
-          "target_scope": "self",
-          "timing": "immediate",
-          "optional": false,
-          "quantity": {
-            "kind": "fixed",
-            "value": 1
-          },
-          "filters": [],
-          "source_fragment": "draw_cards",
-          "metadata": {
-            "requires_focus": true,
-            "focus_aspect": "guile"
-          }
-        },
-        {
-          "action_id": "option_2_action_1",
+          "action_id": "action_1",
           "op": "return_spy",
           "target_scope": "board_site",
           "timing": "immediate",
@@ -4992,7 +4698,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "return_spy",
+          "source_fragment": "return_spy_for_power",
           "metadata": {
             "spy_owner": "self"
           }
@@ -5008,7 +4714,7 @@
             "value": 4
           },
           "filters": [],
-          "source_fragment": "gain_resource",
+          "source_fragment": "gain_4_power",
           "metadata": {
             "resource": "power"
           }
@@ -5069,7 +4775,7 @@
               "value": null
             },
             "filters": [],
-            "source_fragment": "gain_resource",
+            "source_fragment": "focus_power_bonus",
             "metadata": {
               "condition": "focus_aspect_present",
               "focus_aspect": "malice",
@@ -5105,7 +4811,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "gain_resource",
+          "source_fragment": "focus_power_bonus",
           "metadata": {
             "condition": "focus_aspect_present",
             "focus_aspect": "malice",
@@ -5190,7 +4896,7 @@
                 "filters": [
                   "white_troop_only"
                 ],
-                "source_fragment": "assassinate_troop",
+                "source_fragment": "repeated_white_troop_assassinate",
                 "metadata": {}
               },
               {
@@ -5206,7 +4912,7 @@
                 "filters": [
                   "white_troop_only"
                 ],
-                "source_fragment": "assassinate_troop",
+                "source_fragment": "repeated_white_troop_assassinate",
                 "metadata": {}
               }
             ]
@@ -5241,7 +4947,7 @@
           "filters": [
             "white_troop_only"
           ],
-          "source_fragment": "assassinate_troop",
+          "source_fragment": "repeated_white_troop_assassinate",
           "metadata": {}
         },
         {
@@ -5257,7 +4963,7 @@
           "filters": [
             "white_troop_only"
           ],
-          "source_fragment": "assassinate_troop",
+          "source_fragment": "repeated_white_troop_assassinate",
           "metadata": {}
         }
       ],
@@ -5307,7 +5013,7 @@
                   "value": 2
                 },
                 "filters": [],
-                "source_fragment": "gain_resource",
+                "source_fragment": "gain_power",
                 "metadata": {
                   "resource": "power"
                 }
@@ -5323,7 +5029,7 @@
                   "value": 1
                 },
                 "filters": [],
-                "source_fragment": "draw_cards",
+                "source_fragment": "focus_draw",
                 "metadata": {
                   "requires_focus": true,
                   "focus_aspect": "malice"
@@ -5345,7 +5051,7 @@
                   "value": 2
                 },
                 "filters": [],
-                "source_fragment": "gain_resource",
+                "source_fragment": "gain_influence",
                 "metadata": {
                   "resource": "influence"
                 }
@@ -5361,7 +5067,7 @@
                   "value": 1
                 },
                 "filters": [],
-                "source_fragment": "draw_cards",
+                "source_fragment": "focus_draw",
                 "metadata": {
                   "requires_focus": true,
                   "focus_aspect": "malice"
@@ -5383,7 +5089,7 @@
             "value": 2
           },
           "filters": [],
-          "source_fragment": "gain_resource",
+          "source_fragment": "gain_power",
           "metadata": {
             "resource": "power"
           }
@@ -5399,7 +5105,7 @@
             "value": 1
           },
           "filters": [],
-          "source_fragment": "draw_cards",
+          "source_fragment": "focus_draw",
           "metadata": {
             "requires_focus": true,
             "focus_aspect": "malice"
@@ -5416,7 +5122,7 @@
             "value": 2
           },
           "filters": [],
-          "source_fragment": "gain_resource",
+          "source_fragment": "gain_influence",
           "metadata": {
             "resource": "influence"
           }
@@ -5432,7 +5138,7 @@
             "value": 1
           },
           "filters": [],
-          "source_fragment": "draw_cards",
+          "source_fragment": "focus_draw",
           "metadata": {
             "requires_focus": true,
             "focus_aspect": "malice"
@@ -5491,7 +5197,7 @@
               "value": 2
             },
             "filters": [],
-            "source_fragment": "gain_resource",
+            "source_fragment": "gain_power",
             "metadata": {
               "resource": "power"
             }
@@ -5526,9 +5232,9 @@
             "value": 2
           },
           "filters": [],
-          "source_fragment": "gain_resource",
+          "source_fragment": "gain_power",
           "metadata": {
-            "resource": "influence"
+            "resource": "power"
           }
         },
         {
@@ -5542,7 +5248,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "triggered_promote",
+          "source_fragment": "triggered_promote_aspect_filtered",
           "metadata": {
             "required_aspect": "obedience"
           }
@@ -5598,7 +5304,7 @@
               "value": 2
             },
             "filters": [],
-            "source_fragment": "gain_resource",
+            "source_fragment": "gain_power",
             "metadata": {
               "resource": "power"
             }
@@ -5614,11 +5320,10 @@
               "value": null
             },
             "filters": [],
-            "source_fragment": "devour",
+            "source_fragment": "optional_self_devour",
             "metadata": {
               "source_zone": "played_self",
-              "self_replace": false,
-              "skip_advance_to_index": "3"
+              "self_replace": false
             }
           },
           {
@@ -5631,10 +5336,8 @@
               "kind": "unspecified",
               "value": null
             },
-            "filters": [
-              "allow_white_troop"
-            ],
-            "source_fragment": "assassinate_troop",
+            "filters": [],
+            "source_fragment": "assassinate",
             "metadata": {}
           }
         ]
@@ -5651,7 +5354,7 @@
             "value": 2
           },
           "filters": [],
-          "source_fragment": "gain_resource",
+          "source_fragment": "gain_power",
           "metadata": {
             "resource": "power"
           }
@@ -5667,11 +5370,10 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "devour",
+          "source_fragment": "optional_self_devour",
           "metadata": {
             "source_zone": "played_self",
-            "self_replace": false,
-            "skip_advance_to_index": "3"
+            "self_replace": false
           }
         },
         {
@@ -5684,10 +5386,8 @@
             "kind": "unspecified",
             "value": null
           },
-          "filters": [
-            "allow_white_troop"
-          ],
-          "source_fragment": "assassinate_troop",
+          "filters": [],
+          "source_fragment": "assassinate",
           "metadata": {}
         }
       ],
@@ -5751,7 +5451,7 @@
               "value": null
             },
             "filters": [],
-            "source_fragment": "recruit_card",
+            "source_fragment": "recruit_aspect_filtered_card_by_cost",
             "metadata": {
               "required_aspect": "conquest",
               "max_cost": 4
@@ -5785,7 +5485,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "recruit_card",
+          "source_fragment": "recruit_aspect_filtered_card_by_cost",
           "metadata": {
             "required_aspect": "conquest",
             "max_cost": 4
@@ -5795,14 +5495,14 @@
       "global_conditions": [],
       "state_contract": {
         "reads": [
-          "player.barracks",
           "board.troop_slots",
+          "presence_or_target_rules",
           "market.row",
           "card_catalog"
         ],
         "writes": [
           "board.troop_slots",
-          "player.barracks",
+          "player.trophy_hall",
           "player.discard_pile",
           "market.row",
           "market.deck"
@@ -5841,7 +5541,7 @@
                   "value": 2
                 },
                 "filters": [],
-                "source_fragment": "gain_resource",
+                "source_fragment": "gain_influence",
                 "metadata": {
                   "resource": "influence"
                 }
@@ -5862,7 +5562,7 @@
                   "value": null
                 },
                 "filters": [],
-                "source_fragment": "draw_cards",
+                "source_fragment": "draw",
                 "metadata": {}
               },
               {
@@ -5895,7 +5595,7 @@
             "value": 2
           },
           "filters": [],
-          "source_fragment": "gain_resource",
+          "source_fragment": "gain_influence",
           "metadata": {
             "resource": "influence"
           }
@@ -5911,7 +5611,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "draw_cards",
+          "source_fragment": "draw",
           "metadata": {}
         },
         {
@@ -5978,7 +5678,7 @@
                   "value": null
                 },
                 "filters": [],
-                "source_fragment": "place_spy",
+                "source_fragment": "spy",
                 "metadata": {}
               }
             ]
@@ -5988,8 +5688,8 @@
             "actions": [
               {
                 "action_id": "option_2_action_1",
-                "op": "return_spy",
-                "target_scope": "board_site",
+                "op": "devour_cost",
+                "target_scope": "unknown",
                 "timing": "immediate",
                 "optional": false,
                 "quantity": {
@@ -5999,13 +5699,14 @@
                 "filters": [],
                 "source_fragment": "return_spy",
                 "metadata": {
-                  "spy_owner": "self"
+                  "source_zone": "unknown",
+                  "self_replace": false
                 }
               },
               {
                 "action_id": "option_2_action_2",
-                "op": "custom_effect",
-                "target_scope": "game_zone",
+                "op": "devour_cost",
+                "target_scope": "market",
                 "timing": "immediate",
                 "optional": false,
                 "quantity": {
@@ -6013,9 +5714,10 @@
                   "value": null
                 },
                 "filters": [],
-                "source_fragment": "devour",
+                "source_fragment": "play_top_devoured_as_market",
                 "metadata": {
-                  "effect_kind": "take_from_devour_pile_to_discard"
+                  "source_zone": "market",
+                  "self_replace": false
                 }
               }
             ]
@@ -6034,13 +5736,13 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "place_spy",
+          "source_fragment": "spy",
           "metadata": {}
         },
         {
           "action_id": "option_2_action_1",
-          "op": "return_spy",
-          "target_scope": "board_site",
+          "op": "devour_cost",
+          "target_scope": "unknown",
           "timing": "immediate",
           "optional": false,
           "quantity": {
@@ -6050,13 +5752,14 @@
           "filters": [],
           "source_fragment": "return_spy",
           "metadata": {
-            "spy_owner": "self"
+            "source_zone": "unknown",
+            "self_replace": false
           }
         },
         {
           "action_id": "option_2_action_2",
-          "op": "custom_effect",
-          "target_scope": "game_zone",
+          "op": "devour_cost",
+          "target_scope": "market",
           "timing": "immediate",
           "optional": false,
           "quantity": {
@@ -6064,9 +5767,10 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "devour",
+          "source_fragment": "play_top_devoured_as_market",
           "metadata": {
-            "effect_kind": "take_from_devour_pile_to_discard"
+            "source_zone": "market",
+            "self_replace": false
           }
         }
       ],
@@ -6075,13 +5779,14 @@
         "reads": [
           "player.spies_available",
           "board.nodes",
-          "devour_pile"
+          "source_zone",
+          "devour_rules"
         ],
         "writes": [
           "board.spies",
           "player.spies_available",
-          "devour_pile",
-          "player.discard_pile"
+          "devour_zone_or_equivalent",
+          "source_zone"
         ]
       },
       "effect_key": "generic_card",
@@ -6113,7 +5818,7 @@
               "value": 2
             },
             "filters": [],
-            "source_fragment": "gain_resource",
+            "source_fragment": "gain_power",
             "metadata": {
               "resource": "power"
             }
@@ -6129,7 +5834,7 @@
               "value": null
             },
             "filters": [],
-            "source_fragment": "custom_effect",
+            "source_fragment": "give_negative_card_to_each_opponent",
             "metadata": {
               "effect_kind": "give_insane_outcast_to_each_opponent"
             }
@@ -6148,7 +5853,7 @@
             "value": 2
           },
           "filters": [],
-          "source_fragment": "gain_resource",
+          "source_fragment": "gain_power",
           "metadata": {
             "resource": "power"
           }
@@ -6164,7 +5869,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "custom_effect",
+          "source_fragment": "give_negative_card_to_each_opponent",
           "metadata": {
             "effect_kind": "give_insane_outcast_to_each_opponent"
           }
@@ -6224,7 +5929,7 @@
               "value": null
             },
             "filters": [],
-            "source_fragment": "custom_effect",
+            "source_fragment": "give_insane_outcast_to_player_with_presence_at_deployed_site",
             "metadata": {
               "effect_kind": "give_insane_outcast_to_player_with_presence_on_last_selected_node"
             }
@@ -6257,7 +5962,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "custom_effect",
+          "source_fragment": "give_insane_outcast_to_player_with_presence_at_deployed_site",
           "metadata": {
             "effect_kind": "give_insane_outcast_to_player_with_presence_on_last_selected_node"
           }
@@ -6310,7 +6015,7 @@
               "value": null
             },
             "filters": [],
-            "source_fragment": "devour",
+            "source_fragment": "hand_devour",
             "metadata": {
               "source_zone": "hand",
               "self_replace": false
@@ -6327,7 +6032,7 @@
               "value": 1
             },
             "filters": [],
-            "source_fragment": "assassinate_troop",
+            "source_fragment": "assassinate_step_1",
             "metadata": {}
           },
           {
@@ -6341,7 +6046,7 @@
               "value": 1
             },
             "filters": [],
-            "source_fragment": "assassinate_troop",
+            "source_fragment": "assassinate_step_2",
             "metadata": {}
           }
         ]
@@ -6358,7 +6063,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "devour",
+          "source_fragment": "hand_devour",
           "metadata": {
             "source_zone": "hand",
             "self_replace": false
@@ -6375,7 +6080,7 @@
             "value": 1
           },
           "filters": [],
-          "source_fragment": "assassinate_troop",
+          "source_fragment": "assassinate_step_1",
           "metadata": {}
         },
         {
@@ -6389,7 +6094,7 @@
             "value": 1
           },
           "filters": [],
-          "source_fragment": "assassinate_troop",
+          "source_fragment": "assassinate_step_2",
           "metadata": {}
         }
       ],
@@ -6441,7 +6146,7 @@
                   "value": 1
                 },
                 "filters": [],
-                "source_fragment": "place_spy",
+                "source_fragment": "place_spy_step_1",
                 "metadata": {}
               },
               {
@@ -6455,7 +6160,7 @@
                   "value": 1
                 },
                 "filters": [],
-                "source_fragment": "place_spy",
+                "source_fragment": "place_spy_step_2",
                 "metadata": {}
               }
             ]
@@ -6474,7 +6179,7 @@
                   "value": null
                 },
                 "filters": [],
-                "source_fragment": "return_spy",
+                "source_fragment": "return_spy_for_site_supplant",
                 "metadata": {
                   "spy_owner": "self"
                 }
@@ -6492,10 +6197,9 @@
                 "filters": [
                   "allow_white_troop"
                 ],
-                "source_fragment": "supplant_troop",
+                "source_fragment": "multi_supplant",
                 "metadata": {
-                  "requires_returned_spy_site": true,
-                  "repeat_sequence_while_spies": true
+                  "requires_returned_spy_site": true
                 }
               }
             ]
@@ -6514,7 +6218,7 @@
             "value": 1
           },
           "filters": [],
-          "source_fragment": "place_spy",
+          "source_fragment": "place_spy_step_1",
           "metadata": {}
         },
         {
@@ -6528,7 +6232,7 @@
             "value": 1
           },
           "filters": [],
-          "source_fragment": "place_spy",
+          "source_fragment": "place_spy_step_2",
           "metadata": {}
         },
         {
@@ -6542,7 +6246,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "return_spy",
+          "source_fragment": "return_spy_for_site_supplant",
           "metadata": {
             "spy_owner": "self"
           }
@@ -6560,10 +6264,9 @@
           "filters": [
             "allow_white_troop"
           ],
-          "source_fragment": "supplant_troop",
+          "source_fragment": "multi_supplant",
           "metadata": {
-            "requires_returned_spy_site": true,
-            "repeat_sequence_while_spies": true
+            "requires_returned_spy_site": true
           }
         }
       ],
@@ -6613,26 +6316,8 @@
                   "value": null
                 },
                 "filters": [],
-                "source_fragment": "place_spy",
+                "source_fragment": "spy",
                 "metadata": {}
-              },
-              {
-                "action_id": "option_1_action_2",
-                "op": "supplant_troop",
-                "target_scope": "board_site",
-                "timing": "immediate",
-                "optional": false,
-                "quantity": {
-                  "kind": "unspecified",
-                  "value": null
-                },
-                "filters": [
-                  "allow_white_troop"
-                ],
-                "source_fragment": "supplant_troop",
-                "metadata": {
-                  "requires_last_selected_node": true
-                }
               }
             ]
           },
@@ -6651,9 +6336,7 @@
                 },
                 "filters": [],
                 "source_fragment": "return_spy",
-                "metadata": {
-                  "spy_owner": "self"
-                }
+                "metadata": {}
               },
               {
                 "action_id": "option_2_action_2",
@@ -6665,13 +6348,9 @@
                   "kind": "unspecified",
                   "value": null
                 },
-                "filters": [
-                  "allow_white_troop"
-                ],
-                "source_fragment": "supplant_troop",
-                "metadata": {
-                  "requires_returned_spy_site": true
-                }
+                "filters": [],
+                "source_fragment": "supplant",
+                "metadata": {}
               },
               {
                 "action_id": "option_2_action_3",
@@ -6706,26 +6385,8 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "place_spy",
+          "source_fragment": "spy",
           "metadata": {}
-        },
-        {
-          "action_id": "option_1_action_2",
-          "op": "supplant_troop",
-          "target_scope": "board_site",
-          "timing": "immediate",
-          "optional": false,
-          "quantity": {
-            "kind": "unspecified",
-            "value": null
-          },
-          "filters": [
-            "allow_white_troop"
-          ],
-          "source_fragment": "supplant_troop",
-          "metadata": {
-            "requires_last_selected_node": true
-          }
         },
         {
           "action_id": "option_2_action_1",
@@ -6739,9 +6400,7 @@
           },
           "filters": [],
           "source_fragment": "return_spy",
-          "metadata": {
-            "spy_owner": "self"
-          }
+          "metadata": {}
         },
         {
           "action_id": "option_2_action_2",
@@ -6753,13 +6412,9 @@
             "kind": "unspecified",
             "value": null
           },
-          "filters": [
-            "allow_white_troop"
-          ],
-          "source_fragment": "supplant_troop",
-          "metadata": {
-            "requires_returned_spy_site": true
-          }
+          "filters": [],
+          "source_fragment": "supplant",
+          "metadata": {}
         },
         {
           "action_id": "option_2_action_3",
@@ -6826,7 +6481,7 @@
               "value": null
             },
             "filters": [],
-            "source_fragment": "place_spy",
+            "source_fragment": "spy",
             "metadata": {}
           },
           {
@@ -6840,7 +6495,7 @@
               "value": null
             },
             "filters": [],
-            "source_fragment": "gain_resource",
+            "source_fragment": "conditional_influence_if_enemy_troop_present",
             "metadata": {
               "condition": "selected_node_has_other_player_troop",
               "resource": "influence",
@@ -6861,7 +6516,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "place_spy",
+          "source_fragment": "spy",
           "metadata": {}
         },
         {
@@ -6875,7 +6530,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "gain_resource",
+          "source_fragment": "conditional_influence_if_enemy_troop_present",
           "metadata": {
             "condition": "selected_node_has_other_player_troop",
             "resource": "influence",
@@ -6944,7 +6599,7 @@
               "value": 2
             },
             "filters": [],
-            "source_fragment": "draw_cards",
+            "source_fragment": "on_opponent_discard_draw",
             "metadata": {}
           }
         ]
@@ -6975,7 +6630,7 @@
             "value": 2
           },
           "filters": [],
-          "source_fragment": "draw_cards",
+          "source_fragment": "on_opponent_discard_draw",
           "metadata": {}
         }
       ],
@@ -7029,7 +6684,7 @@
               "value": null
             },
             "filters": [],
-            "source_fragment": "move_troop",
+            "source_fragment": "move_enemy_troop",
             "metadata": {}
           },
           {
@@ -7060,7 +6715,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "move_troop",
+          "source_fragment": "move_enemy_troop",
           "metadata": {}
         },
         {
@@ -7129,7 +6784,7 @@
               "value": null
             },
             "filters": [],
-            "source_fragment": "return_unit",
+            "source_fragment": "return_enemy_unit",
             "metadata": {}
           },
           {
@@ -7163,7 +6818,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "return_unit",
+          "source_fragment": "return_enemy_unit",
           "metadata": {}
         },
         {
@@ -7219,8 +6874,8 @@
       "secondary_aspects": [
         "drow"
       ],
-      "deck_vp": 1,
-      "inner_circle_vp": 3,
+      "deck_vp": 13,
+      "inner_circle_vp": 0,
       "rules_text": "Gain 2 power.",
       "notes": "Simple fixed resource card.",
       "execution_model": {
@@ -7237,7 +6892,7 @@
               "value": 2
             },
             "filters": [],
-            "source_fragment": "gain_resource",
+            "source_fragment": "gain_power",
             "metadata": {
               "resource": "power"
             }
@@ -7256,7 +6911,7 @@
             "value": 2
           },
           "filters": [],
-          "source_fragment": "gain_resource",
+          "source_fragment": "gain_power",
           "metadata": {
             "resource": "power"
           }
@@ -7304,7 +6959,7 @@
                   "value": null
                 },
                 "filters": [],
-                "source_fragment": "place_spy",
+                "source_fragment": "spy",
                 "metadata": {}
               }
             ]
@@ -7323,7 +6978,7 @@
                   "value": null
                 },
                 "filters": [],
-                "source_fragment": "return_spy",
+                "source_fragment": "return_spy_for_influence_with_focus_bonus",
                 "metadata": {
                   "spy_owner": "self"
                 }
@@ -7339,7 +6994,7 @@
                   "value": 3
                 },
                 "filters": [],
-                "source_fragment": "gain_resource",
+                "source_fragment": "gain_influence",
                 "metadata": {
                   "resource": "influence"
                 }
@@ -7355,7 +7010,7 @@
                   "value": null
                 },
                 "filters": [],
-                "source_fragment": "gain_resource",
+                "source_fragment": "focus_gain_power",
                 "metadata": {
                   "condition": "focus_aspect_present",
                   "focus_aspect": "guile",
@@ -7379,7 +7034,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "place_spy",
+          "source_fragment": "spy",
           "metadata": {}
         },
         {
@@ -7393,7 +7048,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "return_spy",
+          "source_fragment": "return_spy_for_influence_with_focus_bonus",
           "metadata": {
             "spy_owner": "self"
           }
@@ -7409,7 +7064,7 @@
             "value": 3
           },
           "filters": [],
-          "source_fragment": "gain_resource",
+          "source_fragment": "gain_influence",
           "metadata": {
             "resource": "influence"
           }
@@ -7425,7 +7080,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "gain_resource",
+          "source_fragment": "focus_gain_power",
           "metadata": {
             "condition": "focus_aspect_present",
             "focus_aspect": "guile",
@@ -7480,7 +7135,7 @@
               "value": 4
             },
             "filters": [],
-            "source_fragment": "gain_resource",
+            "source_fragment": "gain_power",
             "metadata": {
               "resource": "power"
             }
@@ -7496,7 +7151,7 @@
               "value": null
             },
             "filters": [],
-            "source_fragment": "gain_resource",
+            "source_fragment": "focus_gain_power",
             "metadata": {
               "condition": "focus_aspect_present",
               "focus_aspect": "malice",
@@ -7518,7 +7173,7 @@
             "value": 4
           },
           "filters": [],
-          "source_fragment": "gain_resource",
+          "source_fragment": "gain_power",
           "metadata": {
             "resource": "power"
           }
@@ -7534,7 +7189,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "gain_resource",
+          "source_fragment": "focus_gain_power",
           "metadata": {
             "condition": "focus_aspect_present",
             "focus_aspect": "malice",
@@ -7590,7 +7245,7 @@
               "value": null
             },
             "filters": [],
-            "source_fragment": "place_spy",
+            "source_fragment": "spy",
             "metadata": {}
           },
           {
@@ -7604,7 +7259,7 @@
               "value": null
             },
             "filters": [],
-            "source_fragment": "gain_resource",
+            "source_fragment": "conditional_power_if_enemy_troop_present",
             "metadata": {
               "condition": "selected_node_has_other_player_troop",
               "resource": "power",
@@ -7625,7 +7280,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "place_spy",
+          "source_fragment": "spy",
           "metadata": {}
         },
         {
@@ -7639,7 +7294,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "gain_resource",
+          "source_fragment": "conditional_power_if_enemy_troop_present",
           "metadata": {
             "condition": "selected_node_has_other_player_troop",
             "resource": "power",
@@ -7698,7 +7353,7 @@
                   "value": null
                 },
                 "filters": [],
-                "source_fragment": "place_spy",
+                "source_fragment": "spy",
                 "metadata": {}
               }
             ]
@@ -7717,7 +7372,7 @@
                   "value": null
                 },
                 "filters": [],
-                "source_fragment": "return_spy",
+                "source_fragment": "return_spy_for_cards",
                 "metadata": {
                   "spy_owner": "self"
                 }
@@ -7752,7 +7407,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "place_spy",
+          "source_fragment": "spy",
           "metadata": {}
         },
         {
@@ -7766,7 +7421,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "return_spy",
+          "source_fragment": "return_spy_for_cards",
           "metadata": {
             "spy_owner": "self"
           }
@@ -7831,7 +7486,7 @@
                   "value": 2
                 },
                 "filters": [],
-                "source_fragment": "gain_resource",
+                "source_fragment": "gain_influence",
                 "metadata": {
                   "resource": "influence"
                 }
@@ -7851,8 +7506,8 @@
                   "kind": "unspecified",
                   "value": null
                 },
-                "filters": ["allow_white_troop"],
-                "source_fragment": "assassinate_troop",
+                "filters": [],
+                "source_fragment": "assassinate",
                 "metadata": {}
               }
             ]
@@ -7871,7 +7526,7 @@
             "value": 2
           },
           "filters": [],
-          "source_fragment": "gain_resource",
+          "source_fragment": "gain_influence",
           "metadata": {
             "resource": "influence"
           }
@@ -7887,7 +7542,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "assassinate_troop",
+          "source_fragment": "assassinate",
           "metadata": {}
         }
       ],
@@ -7918,7 +7573,7 @@
       "deck_vp": -1,
       "inner_circle_vp": 0,
       "rules_text": "You may discard a card from your hand to return this card to supply. If this card would be devoured or promoted, return it to supply instead.",
-      "notes": "This hand ability works only while Insane Outcast is in your hand. You must discard another card from hand to return Insane Outcast to supply; it cannot discard itself as the cost. This is anti-deck-clog text for a negative-VP card opponents can force into your deck. The devour/promote protection is a passive rule enforced at the engine level: when Insane Outcast would be devoured or promoted, it is removed from its current zone and returned to the supply stack instead of going to the devour pile or inner circle.",
+      "notes": "This hand ability works only while Insane Outcast is in your hand. You must discard another card from hand to return Insane Outcast to supply; it cannot discard itself as the cost. This is anti-deck-clog text for a negative-VP card opponents can force into your deck.",
       "execution_model": {
         "kind": "sequence",
         "actions": [
@@ -7933,7 +7588,7 @@
               "value": null
             },
             "filters": [],
-            "source_fragment": "custom_effect",
+            "source_fragment": "self_purge_to_supply",
             "metadata": {
               "effect_kind": "self_purge_to_supply"
             }
@@ -7952,7 +7607,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "custom_effect",
+          "source_fragment": "self_purge_to_supply",
           "metadata": {
             "effect_kind": "self_purge_to_supply"
           }
@@ -8005,7 +7660,7 @@
                   "value": 3
                 },
                 "filters": [],
-                "source_fragment": "gain_resource",
+                "source_fragment": "gain_influence",
                 "metadata": {
                   "resource": "influence"
                 }
@@ -8026,7 +7681,7 @@
                   "value": null
                 },
                 "filters": [],
-                "source_fragment": "return_unit",
+                "source_fragment": "return_units",
                 "metadata": {}
               },
               {
@@ -8040,7 +7695,7 @@
                   "value": null
                 },
                 "filters": [],
-                "source_fragment": "return_unit",
+                "source_fragment": "return_units",
                 "metadata": {}
               }
             ]
@@ -8059,7 +7714,7 @@
             "value": 3
           },
           "filters": [],
-          "source_fragment": "gain_resource",
+          "source_fragment": "gain_influence",
           "metadata": {
             "resource": "influence"
           }
@@ -8075,7 +7730,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "return_unit",
+          "source_fragment": "return_units",
           "metadata": {}
         },
         {
@@ -8089,7 +7744,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "return_unit",
+          "source_fragment": "return_units",
           "metadata": {}
         }
       ],
@@ -8140,7 +7795,7 @@
                   "value": null
                 },
                 "filters": [],
-                "source_fragment": "place_spy",
+                "source_fragment": "spy",
                 "metadata": {}
               }
             ]
@@ -8159,7 +7814,7 @@
                   "value": null
                 },
                 "filters": [],
-                "source_fragment": "return_spy",
+                "source_fragment": "return_spy_for_power_and_influence",
                 "metadata": {
                   "spy_owner": "self"
                 }
@@ -8175,7 +7830,7 @@
                   "value": 2
                 },
                 "filters": [],
-                "source_fragment": "gain_resource",
+                "source_fragment": "gain_power",
                 "metadata": {
                   "resource": "power"
                 }
@@ -8191,7 +7846,7 @@
                   "value": 2
                 },
                 "filters": [],
-                "source_fragment": "gain_resource",
+                "source_fragment": "gain_influence",
                 "metadata": {
                   "resource": "influence"
                 }
@@ -8212,7 +7867,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "place_spy",
+          "source_fragment": "spy",
           "metadata": {}
         },
         {
@@ -8226,7 +7881,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "return_spy",
+          "source_fragment": "return_spy_for_power_and_influence",
           "metadata": {
             "spy_owner": "self"
           }
@@ -8242,7 +7897,7 @@
             "value": 2
           },
           "filters": [],
-          "source_fragment": "gain_resource",
+          "source_fragment": "gain_power",
           "metadata": {
             "resource": "power"
           }
@@ -8258,7 +7913,7 @@
             "value": 2
           },
           "filters": [],
-          "source_fragment": "gain_resource",
+          "source_fragment": "gain_influence",
           "metadata": {
             "resource": "influence"
           }
@@ -8309,7 +7964,7 @@
                   "value": 1
                 },
                 "filters": [],
-                "source_fragment": "deploy_troops",
+                "source_fragment": "deploy",
                 "metadata": {}
               }
             ]
@@ -8330,7 +7985,7 @@
                 "filters": [
                   "white_troop_only"
                 ],
-                "source_fragment": "assassinate_troop",
+                "source_fragment": "assassinate_white_troop",
                 "metadata": {}
               }
             ]
@@ -8349,7 +8004,7 @@
             "value": 1
           },
           "filters": [],
-          "source_fragment": "deploy_troops",
+          "source_fragment": "deploy",
           "metadata": {}
         },
         {
@@ -8365,7 +8020,7 @@
           "filters": [
             "white_troop_only"
           ],
-          "source_fragment": "assassinate_troop",
+          "source_fragment": "assassinate_white_troop",
           "metadata": {}
         }
       ],
@@ -8407,11 +8062,11 @@
             "timing": "immediate",
             "optional": false,
             "quantity": {
-              "kind": "fixed",
-              "value": 1
+              "kind": "unspecified",
+              "value": null
             },
             "filters": [],
-            "source_fragment": "place_spy",
+            "source_fragment": "spy",
             "metadata": {}
           },
           {
@@ -8419,7 +8074,7 @@
             "op": "custom_effect",
             "target_scope": "self",
             "timing": "immediate",
-            "optional": true,
+            "optional": false,
             "quantity": {
               "kind": "fixed",
               "value": 1
@@ -8445,7 +8100,7 @@
             "filters": [],
             "source_fragment": "lich_take_trophy",
             "metadata": {
-              "effect_kind": "deploy_from_trophy_hall_with_presence",
+              "effect_kind": "deploy_from_trophy_hall",
               "trophy_source_player": "lich_target_player",
               "trophy_color_filter": "any"
             }
@@ -8463,7 +8118,7 @@
             "filters": [],
             "source_fragment": "lich_take_trophy",
             "metadata": {
-              "effect_kind": "deploy_from_trophy_hall_with_presence",
+              "effect_kind": "deploy_from_trophy_hall",
               "trophy_source_player": "lich_target_player",
               "trophy_color_filter": "any"
             }
@@ -8478,11 +8133,11 @@
           "timing": "immediate",
           "optional": false,
           "quantity": {
-            "kind": "fixed",
-            "value": 1
+            "kind": "unspecified",
+            "value": null
           },
           "filters": [],
-          "source_fragment": "place_spy",
+          "source_fragment": "spy",
           "metadata": {}
         },
         {
@@ -8490,7 +8145,7 @@
           "op": "custom_effect",
           "target_scope": "self",
           "timing": "immediate",
-          "optional": true,
+          "optional": false,
           "quantity": {
             "kind": "fixed",
             "value": 1
@@ -8516,7 +8171,7 @@
           "filters": [],
           "source_fragment": "lich_take_trophy",
           "metadata": {
-            "effect_kind": "deploy_from_trophy_hall_with_presence",
+            "effect_kind": "deploy_from_trophy_hall",
             "trophy_source_player": "lich_target_player",
             "trophy_color_filter": "any"
           }
@@ -8534,7 +8189,7 @@
           "filters": [],
           "source_fragment": "lich_take_trophy",
           "metadata": {
-            "effect_kind": "deploy_from_trophy_hall_with_presence",
+            "effect_kind": "deploy_from_trophy_hall",
             "trophy_source_player": "lich_target_player",
             "trophy_color_filter": "any"
           }
@@ -8550,17 +8205,16 @@
         "reads": [
           "player.spies_available",
           "board.nodes",
+          "player.barracks",
           "board.troop_slots",
-          "presence_or_target_rules",
-          "custom_rules",
           "player.trophy_hall"
         ],
         "writes": [
           "board.spies",
           "player.spies_available",
           "board.troop_slots",
-          "player.trophy_hall",
-          "custom_state"
+          "player.barracks",
+          "player.trophy_hall"
         ]
       },
       "effect_key": "generic_card",
@@ -8592,7 +8246,7 @@
               "value": null
             },
             "filters": [],
-            "source_fragment": "devour",
+            "source_fragment": "hand_devour",
             "metadata": {
               "source_zone": "hand",
               "self_replace": false
@@ -8609,7 +8263,7 @@
               "value": 5
             },
             "filters": [],
-            "source_fragment": "gain_resource",
+            "source_fragment": "gain_power",
             "metadata": {
               "resource": "power"
             }
@@ -8628,7 +8282,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "devour",
+          "source_fragment": "hand_devour",
           "metadata": {
             "source_zone": "hand",
             "self_replace": false
@@ -8645,7 +8299,7 @@
             "value": 5
           },
           "filters": [],
-          "source_fragment": "gain_resource",
+          "source_fragment": "gain_power",
           "metadata": {
             "resource": "power"
           }
@@ -8693,7 +8347,7 @@
               "value": 1
             },
             "filters": [],
-            "source_fragment": "gain_resource",
+            "source_fragment": "gain_influence",
             "metadata": {
               "resource": "influence"
             }
@@ -8710,9 +8364,7 @@
             },
             "filters": [],
             "source_fragment": "triggered_promote",
-            "metadata": {
-              "requires_another_played_card": true
-            }
+            "metadata": {}
           },
           {
             "action_id": "action_3",
@@ -8728,7 +8380,7 @@
               "aspect_ambition_only",
               "max_cost_4"
             ],
-            "source_fragment": "recruit_card",
+            "source_fragment": "recruit_aspect_filtered_card_by_cost",
             "metadata": {
               "required_aspect": "ambition",
               "max_cost": 4
@@ -8748,7 +8400,7 @@
             "value": 1
           },
           "filters": [],
-          "source_fragment": "gain_resource",
+          "source_fragment": "gain_influence",
           "metadata": {
             "resource": "influence"
           }
@@ -8765,9 +8417,7 @@
           },
           "filters": [],
           "source_fragment": "triggered_promote",
-          "metadata": {
-            "requires_another_played_card": true
-          }
+          "metadata": {}
         },
         {
           "action_id": "action_3",
@@ -8783,7 +8433,7 @@
             "aspect_ambition_only",
             "max_cost_4"
           ],
-          "source_fragment": "recruit_card",
+          "source_fragment": "recruit_aspect_filtered_card_by_cost",
           "metadata": {
             "required_aspect": "ambition",
             "max_cost": 4
@@ -8839,34 +8489,17 @@
             "actions": [
               {
                 "action_id": "option_1_action_1",
-                "op": "place_spy",
+                "op": "deploy_troops",
                 "target_scope": "board_site",
                 "timing": "immediate",
                 "optional": false,
                 "quantity": {
-                  "kind": "unspecified",
-                  "value": null
-                },
-                "filters": [],
-                "source_fragment": "place_spy",
-                "metadata": {}
-              },
-              {
-                "action_id": "option_1_action_2",
-                "op": "draw_cards",
-                "target_scope": "self",
-                "timing": "immediate",
-                "optional": false,
-                "quantity": {
                   "kind": "fixed",
-                  "value": 1
+                  "value": 4
                 },
                 "filters": [],
-                "source_fragment": "draw_cards",
-                "metadata": {
-                  "requires_focus": true,
-                  "focus_aspect": "guile"
-                }
+                "source_fragment": "deploy",
+                "metadata": {}
               }
             ]
           },
@@ -8886,7 +8519,7 @@
                 "filters": [
                   "white_troop_only"
                 ],
-                "source_fragment": "supplant_troop_anywhere",
+                "source_fragment": "supplant_white_troop_anywhere",
                 "metadata": {
                   "targeting": "anywhere",
                   "ignore_presence_requirement": true
@@ -8908,7 +8541,7 @@
             "value": 4
           },
           "filters": [],
-          "source_fragment": "deploy_troops",
+          "source_fragment": "deploy",
           "metadata": {}
         },
         {
@@ -8924,7 +8557,7 @@
           "filters": [
             "white_troop_only"
           ],
-          "source_fragment": "supplant_troop_anywhere",
+          "source_fragment": "supplant_white_troop_anywhere",
           "metadata": {
             "targeting": "anywhere",
             "ignore_presence_requirement": true
@@ -8977,7 +8610,7 @@
                   "value": 1
                 },
                 "filters": [],
-                "source_fragment": "place_spy",
+                "source_fragment": "spy",
                 "metadata": {}
               },
               {
@@ -8991,7 +8624,7 @@
                   "value": 1
                 },
                 "filters": [],
-                "source_fragment": "place_spy",
+                "source_fragment": "spy",
                 "metadata": {}
               }
             ]
@@ -9010,7 +8643,7 @@
                   "value": null
                 },
                 "filters": [],
-                "source_fragment": "return_spy",
+                "source_fragment": "return_spy_for_power",
                 "metadata": {
                   "spy_owner": "self"
                 }
@@ -9026,7 +8659,7 @@
                   "value": 4
                 },
                 "filters": [],
-                "source_fragment": "gain_resource",
+                "source_fragment": "gain_power",
                 "metadata": {
                   "resource": "power"
                 }
@@ -9047,7 +8680,7 @@
             "value": 1
           },
           "filters": [],
-          "source_fragment": "place_spy",
+          "source_fragment": "spy",
           "metadata": {}
         },
         {
@@ -9061,7 +8694,7 @@
             "value": 1
           },
           "filters": [],
-          "source_fragment": "place_spy",
+          "source_fragment": "spy",
           "metadata": {}
         },
         {
@@ -9075,7 +8708,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "return_spy",
+          "source_fragment": "return_spy_for_power",
           "metadata": {
             "spy_owner": "self"
           }
@@ -9091,7 +8724,7 @@
             "value": 4
           },
           "filters": [],
-          "source_fragment": "gain_resource",
+          "source_fragment": "gain_power",
           "metadata": {
             "resource": "power"
           }
@@ -9140,7 +8773,7 @@
               "value": null
             },
             "filters": [],
-            "source_fragment": "custom_effect",
+            "source_fragment": "mill_deck",
             "metadata": {
               "effect_kind": "mill_deck_to_discard"
             }
@@ -9173,7 +8806,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "custom_effect",
+          "source_fragment": "mill_deck",
           "metadata": {
             "effect_kind": "mill_deck_to_discard"
           }
@@ -9303,7 +8936,7 @@
                   "value": null
                 },
                 "filters": [],
-                "source_fragment": "devour",
+                "source_fragment": "hand_devour",
                 "metadata": {
                   "source_zone": "hand",
                   "self_replace": false
@@ -9320,7 +8953,7 @@
                   "value": 3
                 },
                 "filters": [],
-                "source_fragment": "gain_resource",
+                "source_fragment": "gain_influence",
                 "metadata": {
                   "resource": "influence"
                 }
@@ -9341,7 +8974,7 @@
                   "value": null
                 },
                 "filters": [],
-                "source_fragment": "devour",
+                "source_fragment": "hand_devour",
                 "metadata": {
                   "source_zone": "hand",
                   "self_replace": false
@@ -9357,8 +8990,8 @@
                   "kind": "unspecified",
                   "value": null
                 },
-                "filters": ["allow_white_troop"],
-                "source_fragment": "assassinate_troop",
+                "filters": [],
+                "source_fragment": "assassinate",
                 "metadata": {}
               }
             ]
@@ -9377,7 +9010,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "devour",
+          "source_fragment": "hand_devour",
           "metadata": {
             "source_zone": "hand",
             "self_replace": false
@@ -9394,7 +9027,7 @@
             "value": 3
           },
           "filters": [],
-          "source_fragment": "gain_resource",
+          "source_fragment": "gain_influence",
           "metadata": {
             "resource": "influence"
           }
@@ -9410,7 +9043,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "devour",
+          "source_fragment": "hand_devour",
           "metadata": {
             "source_zone": "hand",
             "self_replace": false
@@ -9426,8 +9059,8 @@
             "kind": "unspecified",
             "value": null
           },
-          "filters": ["allow_white_troop"],
-          "source_fragment": "assassinate_troop",
+          "filters": [],
+          "source_fragment": "assassinate",
           "metadata": {}
         }
       ],
@@ -9477,7 +9110,7 @@
               "value": null
             },
             "filters": [],
-            "source_fragment": "assassinate_troop",
+            "source_fragment": "assassinate",
             "metadata": {}
           },
           {
@@ -9508,7 +9141,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "assassinate_troop",
+          "source_fragment": "assassinate",
           "metadata": {}
         },
         {
@@ -9560,7 +9193,7 @@
       "deck_vp": 1,
       "inner_circle_vp": 3,
       "rules_text": "Choose exactly one mode. Either deploy 3 troops, or devour this card to assassinate up to 3 white troops at a single site.",
-      "notes": "Uses established modal `or` semantics. The second mode first devours the played Minotaur Skeleton itself (played_self devour, reusing the Cultist of Myrkul self-devour rule), then the player chooses a single site with at least one white troop (presence not required), then may assassinate up to 3 white troops at that site (each individually declinable), mirroring the Death Tyrant select_site + repeated assassinate pattern restricted to white troops.",
+      "notes": "Uses established modal `or` semantics. The second mode mirrors existing single-site repeated white-troop assassination patterns.",
       "execution_model": {
         "kind": "modal_choice",
         "selection": "exactly_one",
@@ -9598,7 +9231,7 @@
                   "value": null
                 },
                 "filters": [],
-                "source_fragment": "devour",
+                "source_fragment": "self_devour",
                 "metadata": {
                   "source_zone": "played_self",
                   "self_replace": false
@@ -9606,22 +9239,19 @@
               },
               {
                 "action_id": "option_2_action_2",
-                "op": "custom_effect",
+                "op": "assassinate_troop",
                 "target_scope": "board_site",
                 "timing": "immediate",
-                "optional": false,
+                "optional": true,
                 "quantity": {
-                  "kind": "unspecified",
-                  "value": null
+                  "kind": "fixed",
+                  "value": 1
                 },
                 "filters": [
                   "white_troop_only"
                 ],
-                "source_fragment": "devour",
-                "metadata": {
-                  "effect_kind": "select_site",
-                  "ignore_presence_requirement": true
-                }
+                "source_fragment": "self_devour_multi_white_assassinate_single_site",
+                "metadata": {}
               },
               {
                 "action_id": "option_2_action_3",
@@ -9636,10 +9266,9 @@
                 "filters": [
                   "white_troop_only"
                 ],
-                "source_fragment": "devour",
+                "source_fragment": "self_devour_multi_white_assassinate_single_site",
                 "metadata": {
-                  "requires_last_selected_node": true,
-                  "ignore_presence_requirement": true
+                  "requires_last_selected_node": true
                 }
               },
               {
@@ -9655,29 +9284,9 @@
                 "filters": [
                   "white_troop_only"
                 ],
-                "source_fragment": "devour",
+                "source_fragment": "self_devour_multi_white_assassinate_single_site",
                 "metadata": {
-                  "requires_last_selected_node": true,
-                  "ignore_presence_requirement": true
-                }
-              },
-              {
-                "action_id": "option_2_action_5",
-                "op": "assassinate_troop",
-                "target_scope": "board_site",
-                "timing": "immediate",
-                "optional": true,
-                "quantity": {
-                  "kind": "fixed",
-                  "value": 1
-                },
-                "filters": [
-                  "white_troop_only"
-                ],
-                "source_fragment": "devour",
-                "metadata": {
-                  "requires_last_selected_node": true,
-                  "ignore_presence_requirement": true
+                  "requires_last_selected_node": true
                 }
               }
             ]
@@ -9710,7 +9319,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "devour",
+          "source_fragment": "self_devour",
           "metadata": {
             "source_zone": "played_self",
             "self_replace": false
@@ -9718,22 +9327,19 @@
         },
         {
           "action_id": "option_2_action_2",
-          "op": "custom_effect",
+          "op": "assassinate_troop",
           "target_scope": "board_site",
           "timing": "immediate",
-          "optional": false,
+          "optional": true,
           "quantity": {
-            "kind": "unspecified",
-            "value": null
+            "kind": "fixed",
+            "value": 1
           },
           "filters": [
             "white_troop_only"
           ],
-          "source_fragment": "devour",
-          "metadata": {
-            "effect_kind": "select_site",
-            "ignore_presence_requirement": true
-          }
+          "source_fragment": "self_devour_multi_white_assassinate_single_site",
+          "metadata": {}
         },
         {
           "action_id": "option_2_action_3",
@@ -9748,10 +9354,9 @@
           "filters": [
             "white_troop_only"
           ],
-          "source_fragment": "devour",
+          "source_fragment": "self_devour_multi_white_assassinate_single_site",
           "metadata": {
-            "requires_last_selected_node": true,
-            "ignore_presence_requirement": true
+            "requires_last_selected_node": true
           }
         },
         {
@@ -9767,29 +9372,9 @@
           "filters": [
             "white_troop_only"
           ],
-          "source_fragment": "devour",
+          "source_fragment": "self_devour_multi_white_assassinate_single_site",
           "metadata": {
-            "requires_last_selected_node": true,
-            "ignore_presence_requirement": true
-          }
-        },
-        {
-          "action_id": "option_2_action_5",
-          "op": "assassinate_troop",
-          "target_scope": "board_site",
-          "timing": "immediate",
-          "optional": true,
-          "quantity": {
-            "kind": "fixed",
-            "value": 1
-          },
-          "filters": [
-            "white_troop_only"
-          ],
-          "source_fragment": "devour",
-          "metadata": {
-            "requires_last_selected_node": true,
-            "ignore_presence_requirement": true
+            "requires_last_selected_node": true
           }
         }
       ],
@@ -9798,13 +9383,17 @@
         "reads": [
           "player.barracks",
           "board.troop_slots",
-          "presence_or_target_rules"
+          "presence_or_target_rules",
+          "source_zone",
+          "player.played_cards",
+          "devour_rules"
         ],
         "writes": [
           "board.troop_slots",
           "player.barracks",
           "player.trophy_hall",
-          "devour_zone_or_equivalent"
+          "devour_zone_or_equivalent",
+          "player.played_cards"
         ]
       },
       "effect_key": "generic_card",
@@ -9843,7 +9432,7 @@
                 "filters": [
                   "white_troop_only"
                 ],
-                "source_fragment": "assassinate_troop",
+                "source_fragment": "white_troop_assassinate",
                 "metadata": {}
               }
             ]
@@ -9861,29 +9450,10 @@
                   "kind": "unspecified",
                   "value": null
                 },
-                "filters": [
-                  "white_troop_only",
-                  "exclude_self"
-                ],
-                "source_fragment": "select_trophy_hall",
-                "metadata": {
-                  "effect_kind": "select_trophy_hall"
-                }
-              },
-              {
-                "action_id": "option_2_action_2",
-                "op": "custom_effect",
-                "target_scope": "self",
-                "timing": "immediate",
-                "optional": false,
-                "quantity": {
-                  "kind": "unspecified",
-                  "value": null
-                },
                 "filters": [],
-                "source_fragment": "steal_from_selected_trophy",
+                "source_fragment": "white_trophy_relocate",
                 "metadata": {
-                  "effect_kind": "steal_from_selected_trophy"
+                  "effect_kind": "steal_white_trophy_to_board"
                 }
               }
             ]
@@ -9904,7 +9474,7 @@
           "filters": [
             "white_troop_only"
           ],
-          "source_fragment": "assassinate_troop",
+          "source_fragment": "white_troop_assassinate",
           "metadata": {}
         },
         {
@@ -9917,29 +9487,10 @@
             "kind": "unspecified",
             "value": null
           },
-          "filters": [
-            "white_troop_only",
-            "exclude_self"
-          ],
-          "source_fragment": "select_trophy_hall",
-          "metadata": {
-            "effect_kind": "select_trophy_hall"
-          }
-        },
-        {
-          "action_id": "option_2_action_2",
-          "op": "custom_effect",
-          "target_scope": "self",
-          "timing": "immediate",
-          "optional": false,
-          "quantity": {
-            "kind": "unspecified",
-            "value": null
-          },
           "filters": [],
-          "source_fragment": "steal_from_selected_trophy",
+          "source_fragment": "white_trophy_relocate",
           "metadata": {
-            "effect_kind": "steal_from_selected_trophy"
+            "effect_kind": "steal_white_trophy_to_board"
           }
         }
       ],
@@ -9947,11 +9498,13 @@
       "state_contract": {
         "reads": [
           "board.troop_slots",
-          "player.trophy_hall"
+          "presence_or_target_rules",
+          "custom_rules"
         ],
         "writes": [
           "board.troop_slots",
-          "player.trophy_hall"
+          "player.trophy_hall",
+          "custom_state"
         ]
       },
       "effect_key": "generic_card",
@@ -9983,7 +9536,7 @@
               "value": 2
             },
             "filters": [],
-            "source_fragment": "gain_resource",
+            "source_fragment": "gain_influence",
             "metadata": {
               "resource": "influence"
             }
@@ -9999,7 +9552,7 @@
               "value": null
             },
             "filters": [],
-            "source_fragment": "custom_effect",
+            "source_fragment": "give_negative_card",
             "metadata": {
               "effect_kind": "give_insane_outcast_to_selected_player"
             }
@@ -10018,7 +9571,7 @@
             "value": 2
           },
           "filters": [],
-          "source_fragment": "gain_resource",
+          "source_fragment": "gain_influence",
           "metadata": {
             "resource": "influence"
           }
@@ -10034,7 +9587,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "custom_effect",
+          "source_fragment": "give_negative_card",
           "metadata": {
             "effect_kind": "give_insane_outcast_to_selected_player"
           }
@@ -10080,7 +9633,7 @@
               "value": null
             },
             "filters": [],
-            "source_fragment": "custom_effect",
+            "source_fragment": "give_negative_card",
             "metadata": {
               "effect_kind": "give_insane_outcast_to_selected_player"
             }
@@ -10097,9 +9650,7 @@
             },
             "filters": [],
             "source_fragment": "triggered_promote",
-            "metadata": {
-              "requires_another_played_card": "true"
-            }
+            "metadata": {}
           }
         ]
       },
@@ -10115,7 +9666,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "custom_effect",
+          "source_fragment": "give_negative_card",
           "metadata": {
             "effect_kind": "give_insane_outcast_to_selected_player"
           }
@@ -10132,9 +9683,7 @@
           },
           "filters": [],
           "source_fragment": "triggered_promote",
-          "metadata": {
-            "requires_another_played_card": "true"
-          }
+          "metadata": {}
         }
       ],
       "global_conditions": [
@@ -10187,7 +9736,7 @@
               "value": 3
             },
             "filters": [],
-            "source_fragment": "gain_resource",
+            "source_fragment": "gain_influence",
             "metadata": {
               "resource": "influence"
             }
@@ -10220,7 +9769,7 @@
             "value": 3
           },
           "filters": [],
-          "source_fragment": "gain_resource",
+          "source_fragment": "gain_influence",
           "metadata": {
             "resource": "influence"
           }
@@ -10294,7 +9843,7 @@
                   "value": 3
                 },
                 "filters": [],
-                "source_fragment": "gain_resource",
+                "source_fragment": "gain_influence",
                 "metadata": {
                   "resource": "influence"
                 }
@@ -10334,7 +9883,7 @@
             "value": 3
           },
           "filters": [],
-          "source_fragment": "gain_resource",
+          "source_fragment": "gain_influence",
           "metadata": {
             "resource": "influence"
           }
@@ -10383,8 +9932,8 @@
       ],
       "deck_vp": 4,
       "inner_circle_vp": 8,
-      "rules_text": "Deploy 4 troops. Each opponent discards a random card.",
-      "notes": "Multi-deploy means four free troop placements using normal deploy legality. If the player cannot place all four troops, the action is illegal. Immediately after deploying, each opponent discards 1 random card from hand (no minimum hand size requirement).",
+      "rules_text": "Deploy 4 troops. At end of turn, each opponent discards a card.",
+      "notes": "Multi-deploy means four free troop placements using normal deploy legality. If the player cannot place all four troops, the action is illegal. The end-of-turn discard makes each opponent discard 1 card from hand.",
       "execution_model": {
         "kind": "sequence",
         "actions": [
@@ -10406,7 +9955,7 @@
             "action_id": "action_2",
             "op": "force_discard",
             "target_scope": "opponent",
-            "timing": "immediate",
+            "timing": "end_of_turn",
             "optional": false,
             "quantity": {
               "kind": "variable_repeat",
@@ -10437,7 +9986,7 @@
           "action_id": "action_2",
           "op": "force_discard",
           "target_scope": "opponent",
-          "timing": "immediate",
+          "timing": "end_of_turn",
           "optional": false,
           "quantity": {
             "kind": "variable_repeat",
@@ -10501,7 +10050,7 @@
                   "value": null
                 },
                 "filters": [],
-                "source_fragment": "place_spy",
+                "source_fragment": "spy",
                 "metadata": {}
               }
             ]
@@ -10520,7 +10069,7 @@
                   "value": null
                 },
                 "filters": [],
-                "source_fragment": "return_spy",
+                "source_fragment": "return_spy_for_cards",
                 "metadata": {
                   "spy_owner": "self"
                 }
@@ -10555,7 +10104,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "place_spy",
+          "source_fragment": "spy",
           "metadata": {}
         },
         {
@@ -10569,7 +10118,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "return_spy",
+          "source_fragment": "return_spy_for_cards",
           "metadata": {
             "spy_owner": "self"
           }
@@ -10630,7 +10179,7 @@
               "value": 1
             },
             "filters": [],
-            "source_fragment": "gain_resource",
+            "source_fragment": "gain_influence",
             "metadata": {
               "resource": "influence"
             }
@@ -10649,7 +10198,7 @@
             "value": 1
           },
           "filters": [],
-          "source_fragment": "gain_resource",
+          "source_fragment": "gain_influence",
           "metadata": {
             "resource": "influence"
           }
@@ -10697,7 +10246,7 @@
                   "value": null
                 },
                 "filters": [],
-                "source_fragment": "place_spy",
+                "source_fragment": "spy",
                 "metadata": {}
               }
             ]
@@ -10716,25 +10265,11 @@
                   "value": null
                 },
                 "filters": [],
-                "source_fragment": "return_spy",
-                "metadata": { "spy_owner": "self" }
-              },
-              {
-                "action_id": "option_2_action_2",
-                "op": "draw_cards",
-                "target_scope": "self",
-                "timing": "immediate",
-                "optional": false,
-                "quantity": {
-                  "kind": "fixed",
-                  "value": 1
-                },
-                "filters": [],
-                "source_fragment": "draw_cards",
+                "source_fragment": "return_spy_draw",
                 "metadata": {}
               },
               {
-                "action_id": "option_2_action_3",
+                "action_id": "option_2_action_2",
                 "op": "force_discard",
                 "target_scope": "opponent",
                 "timing": "immediate",
@@ -10763,7 +10298,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "place_spy",
+          "source_fragment": "spy",
           "metadata": {}
         },
         {
@@ -10777,25 +10312,11 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "return_spy",
-          "metadata": { "spy_owner": "self" }
-        },
-        {
-          "action_id": "option_2_action_2",
-          "op": "draw_cards",
-          "target_scope": "self",
-          "timing": "immediate",
-          "optional": false,
-          "quantity": {
-            "kind": "fixed",
-            "value": 1
-          },
-          "filters": [],
-          "source_fragment": "draw_cards",
+          "source_fragment": "return_spy_draw",
           "metadata": {}
         },
         {
-          "action_id": "option_2_action_3",
+          "action_id": "option_2_action_2",
           "op": "force_discard",
           "target_scope": "opponent",
           "timing": "immediate",
@@ -10856,7 +10377,7 @@
             "filters": [
               "white_troop_only"
             ],
-            "source_fragment": "supplant_troop_anywhere",
+            "source_fragment": "supplant_white_troop_anywhere",
             "metadata": {
               "targeting": "anywhere",
               "ignore_presence_requirement": true
@@ -10878,7 +10399,7 @@
           "filters": [
             "white_troop_only"
           ],
-          "source_fragment": "supplant_troop_anywhere",
+          "source_fragment": "supplant_white_troop_anywhere",
           "metadata": {
             "targeting": "anywhere",
             "ignore_presence_requirement": true
@@ -10909,7 +10430,7 @@
       ],
       "deck_vp": 3,
       "inner_circle_vp": 7,
-      "rules_text": "Gain 2 influence. At end of turn, promote another played card. Focus Ambition: at end of turn, promote another played card.",
+      "rules_text": "Gain 2 influence. At end of turn, promote another played card. Focus: at end of turn, promote another played card.",
       "notes": "If the focus condition is met, Ogremoch gains a second separate end-of-turn `promote another played card` trigger on top of the base one.",
       "execution_model": {
         "kind": "sequence",
@@ -10925,7 +10446,7 @@
               "value": 2
             },
             "filters": [],
-            "source_fragment": "gain_resource",
+            "source_fragment": "gain_influence",
             "metadata": {
               "resource": "influence"
             }
@@ -10978,7 +10499,7 @@
             "value": 2
           },
           "filters": [],
-          "source_fragment": "gain_resource",
+          "source_fragment": "gain_influence",
           "metadata": {
             "resource": "influence"
           }
@@ -11074,7 +10595,7 @@
             "filters": [
               "white_troop_only"
             ],
-            "source_fragment": "supplant_troop_anywhere",
+            "source_fragment": "supplant_white_troop_anywhere",
             "metadata": {
               "targeting": "anywhere",
               "ignore_presence_requirement": true
@@ -11091,7 +10612,7 @@
               "value": 2
             },
             "filters": [],
-            "source_fragment": "deploy_troops",
+            "source_fragment": "focus_deploy_troops",
             "metadata": {
               "requires_focus": true,
               "focus_aspect": "conquest"
@@ -11113,7 +10634,7 @@
           "filters": [
             "white_troop_only"
           ],
-          "source_fragment": "supplant_troop_anywhere",
+          "source_fragment": "supplant_white_troop_anywhere",
           "metadata": {
             "targeting": "anywhere",
             "ignore_presence_requirement": true
@@ -11130,7 +10651,7 @@
             "value": 2
           },
           "filters": [],
-          "source_fragment": "deploy_troops",
+          "source_fragment": "focus_deploy_troops",
           "metadata": {
             "requires_focus": true,
             "focus_aspect": "conquest"
@@ -11188,7 +10709,7 @@
               "value": null
             },
             "filters": [],
-            "source_fragment": "devour",
+            "source_fragment": "hand_devour",
             "metadata": {
               "source_zone": "hand",
               "self_replace": false
@@ -11205,7 +10726,7 @@
               "value": 5
             },
             "filters": [],
-            "source_fragment": "gain_resource",
+            "source_fragment": "gain_power_from_devour",
             "metadata": {
               "resource": "power"
             }
@@ -11221,7 +10742,7 @@
               "value": 1
             },
             "filters": [],
-            "source_fragment": "assassinate_troop",
+            "source_fragment": "assassinate_step_1",
             "metadata": {}
           },
           {
@@ -11235,30 +10756,13 @@
               "value": 1
             },
             "filters": [],
-            "source_fragment": "assassinate_troop",
+            "source_fragment": "assassinate_step_2",
             "metadata": {}
           },
           {
             "action_id": "action_5",
-            "op": "custom_effect",
-            "target_scope": "self",
-            "timing": "immediate",
-            "optional": true,
-            "quantity": {
-              "kind": "unspecified",
-              "value": null
-            },
-            "filters": [],
-            "source_fragment": "select_trophy_hall",
-            "metadata": {
-              "effect_kind": "select_trophy_hall",
-              "skip_advance_to_index": "6"
-            }
-          },
-          {
-            "action_id": "action_6",
-            "op": "custom_effect",
-            "target_scope": "self",
+            "op": "deploy_troops",
+            "target_scope": "board_site",
             "timing": "immediate",
             "optional": false,
             "quantity": {
@@ -11266,43 +10770,8 @@
               "value": null
             },
             "filters": [],
-            "source_fragment": "steal_from_selected_trophy",
-            "metadata": {
-              "effect_kind": "steal_from_selected_trophy"
-            }
-          },
-          {
-            "action_id": "action_7",
-            "op": "custom_effect",
-            "target_scope": "self",
-            "timing": "immediate",
-            "optional": true,
-            "quantity": {
-              "kind": "unspecified",
-              "value": null
-            },
-            "filters": [],
-            "source_fragment": "select_trophy_hall",
-            "metadata": {
-              "effect_kind": "select_trophy_hall",
-              "skip_advance_to_index": "8"
-            }
-          },
-          {
-            "action_id": "action_8",
-            "op": "custom_effect",
-            "target_scope": "self",
-            "timing": "immediate",
-            "optional": false,
-            "quantity": {
-              "kind": "unspecified",
-              "value": null
-            },
-            "filters": [],
-            "source_fragment": "steal_from_selected_trophy",
-            "metadata": {
-              "effect_kind": "steal_from_selected_trophy"
-            }
+            "source_fragment": "redeploy_captured_units",
+            "metadata": {}
           }
         ]
       },
@@ -11318,7 +10787,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "devour",
+          "source_fragment": "hand_devour",
           "metadata": {
             "source_zone": "hand",
             "self_replace": false
@@ -11335,7 +10804,7 @@
             "value": 5
           },
           "filters": [],
-          "source_fragment": "gain_resource",
+          "source_fragment": "gain_power_from_devour",
           "metadata": {
             "resource": "power"
           }
@@ -11351,7 +10820,7 @@
             "value": 1
           },
           "filters": [],
-          "source_fragment": "assassinate_troop",
+          "source_fragment": "assassinate_step_1",
           "metadata": {}
         },
         {
@@ -11365,30 +10834,13 @@
             "value": 1
           },
           "filters": [],
-          "source_fragment": "assassinate_troop",
+          "source_fragment": "assassinate_step_2",
           "metadata": {}
         },
         {
           "action_id": "action_5",
-          "op": "custom_effect",
-          "target_scope": "self",
-          "timing": "immediate",
-          "optional": true,
-          "quantity": {
-            "kind": "unspecified",
-            "value": null
-          },
-          "filters": [],
-          "source_fragment": "select_trophy_hall",
-          "metadata": {
-            "effect_kind": "select_trophy_hall",
-            "skip_advance_to_index": "6"
-          }
-        },
-        {
-          "action_id": "action_6",
-          "op": "custom_effect",
-          "target_scope": "self",
+          "op": "deploy_troops",
+          "target_scope": "board_site",
           "timing": "immediate",
           "optional": false,
           "quantity": {
@@ -11396,43 +10848,8 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "steal_from_selected_trophy",
-          "metadata": {
-            "effect_kind": "steal_from_selected_trophy"
-          }
-        },
-        {
-          "action_id": "action_7",
-          "op": "custom_effect",
-          "target_scope": "self",
-          "timing": "immediate",
-          "optional": true,
-          "quantity": {
-            "kind": "unspecified",
-            "value": null
-          },
-          "filters": [],
-          "source_fragment": "select_trophy_hall",
-          "metadata": {
-            "effect_kind": "select_trophy_hall",
-            "skip_advance_to_index": "8"
-          }
-        },
-        {
-          "action_id": "action_8",
-          "op": "custom_effect",
-          "target_scope": "self",
-          "timing": "immediate",
-          "optional": false,
-          "quantity": {
-            "kind": "unspecified",
-            "value": null
-          },
-          "filters": [],
-          "source_fragment": "steal_from_selected_trophy",
-          "metadata": {
-            "effect_kind": "steal_from_selected_trophy"
-          }
+          "source_fragment": "redeploy_captured_units",
+          "metadata": {}
         }
       ],
       "global_conditions": [],
@@ -11443,14 +10860,15 @@
           "custom_rules",
           "board.troop_slots",
           "presence_or_target_rules",
-          "player.trophy_hall"
+          "player.barracks"
         ],
         "writes": [
           "devour_zone_or_equivalent",
           "source_zone",
           "custom_state",
           "board.troop_slots",
-          "player.trophy_hall"
+          "player.trophy_hall",
+          "player.barracks"
         ]
       },
       "effect_key": "generic_card",
@@ -11482,7 +10900,7 @@
               "value": 2
             },
             "filters": [],
-            "source_fragment": "gain_resource",
+            "source_fragment": "gain_influence",
             "metadata": {
               "resource": "influence"
             }
@@ -11501,7 +10919,7 @@
             "value": 2
           },
           "filters": [],
-          "source_fragment": "gain_resource",
+          "source_fragment": "gain_influence",
           "metadata": {
             "resource": "influence"
           }
@@ -11545,7 +10963,7 @@
               "value": 2
             },
             "filters": [],
-            "source_fragment": "gain_resource",
+            "source_fragment": "gain_influence",
             "metadata": {
               "resource": "influence"
             }
@@ -11562,9 +10980,7 @@
             },
             "filters": [],
             "source_fragment": "triggered_promote",
-            "metadata": {
-              "requires_another_played_card": true
-            }
+            "metadata": {}
           }
         ]
       },
@@ -11580,7 +10996,7 @@
             "value": 2
           },
           "filters": [],
-          "source_fragment": "gain_resource",
+          "source_fragment": "gain_influence",
           "metadata": {
             "resource": "influence"
           }
@@ -11597,9 +11013,7 @@
           },
           "filters": [],
           "source_fragment": "triggered_promote",
-          "metadata": {
-            "requires_another_played_card": true
-          }
+          "metadata": {}
         }
       ],
       "global_conditions": [
@@ -11654,7 +11068,7 @@
             "filters": [
               "white_troop_only"
             ],
-            "source_fragment": "assassinate_troop",
+            "source_fragment": "repeated_white_troop_assassinate_by_controlled_sites",
             "metadata": {
               "count_from": "controlled_sites"
             }
@@ -11675,7 +11089,7 @@
           "filters": [
             "white_troop_only"
           ],
-          "source_fragment": "assassinate_troop",
+          "source_fragment": "repeated_white_troop_assassinate_by_controlled_sites",
           "metadata": {
             "count_from": "controlled_sites"
           }
@@ -11696,8 +11110,8 @@
       "effect_payload": {}
     },
     {
-      "card_id": "rath_modar",
-      "name": "Rath Modar",
+      "card_id": "rather_modar",
+      "name": "Rather Modar",
       "cost": 6,
       "aspect": "guile",
       "secondary_aspects": [
@@ -11735,7 +11149,7 @@
               "value": null
             },
             "filters": [],
-            "source_fragment": "place_spy",
+            "source_fragment": "spy",
             "metadata": {}
           }
         ]
@@ -11766,7 +11180,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "place_spy",
+          "source_fragment": "spy",
           "metadata": {}
         }
       ],
@@ -11815,7 +11229,7 @@
               "value": 1
             },
             "filters": [],
-            "source_fragment": "gain_resource",
+            "source_fragment": "gain_power",
             "metadata": {
               "resource": "power"
             }
@@ -11833,7 +11247,7 @@
             "filters": [
               "white_troop_only"
             ],
-            "source_fragment": "assassinate_troop",
+            "source_fragment": "assassinate_white_troop",
             "metadata": {}
           }
         ]
@@ -11850,7 +11264,7 @@
             "value": 1
           },
           "filters": [],
-          "source_fragment": "gain_resource",
+          "source_fragment": "gain_power",
           "metadata": {
             "resource": "power"
           }
@@ -11868,7 +11282,7 @@
           "filters": [
             "white_troop_only"
           ],
-          "source_fragment": "assassinate_troop",
+          "source_fragment": "assassinate_white_troop",
           "metadata": {}
         }
       ],
@@ -12053,7 +11467,7 @@
               "value": 2
             },
             "filters": [],
-            "source_fragment": "gain_resource",
+            "source_fragment": "gain_power_and_influence",
             "metadata": {
               "resource": "power"
             }
@@ -12069,7 +11483,7 @@
               "value": 2
             },
             "filters": [],
-            "source_fragment": "gain_resource",
+            "source_fragment": "gain_power_and_influence",
             "metadata": {
               "resource": "influence"
             }
@@ -12088,7 +11502,7 @@
             "value": 2
           },
           "filters": [],
-          "source_fragment": "gain_resource",
+          "source_fragment": "gain_power_and_influence",
           "metadata": {
             "resource": "power"
           }
@@ -12104,7 +11518,7 @@
             "value": 2
           },
           "filters": [],
-          "source_fragment": "gain_resource",
+          "source_fragment": "gain_power_and_influence",
           "metadata": {
             "resource": "influence"
           }
@@ -12147,10 +11561,8 @@
               "kind": "fixed",
               "value": 1
             },
-            "filters": [
-              "allow_white_troop"
-            ],
-            "source_fragment": "assassinate_troop",
+            "filters": [],
+            "source_fragment": "assassinate_step_1",
             "metadata": {}
           },
           {
@@ -12163,10 +11575,8 @@
               "kind": "fixed",
               "value": 1
             },
-            "filters": [
-              "allow_white_troop"
-            ],
-            "source_fragment": "assassinate_troop",
+            "filters": [],
+            "source_fragment": "assassinate_step_2",
             "metadata": {}
           },
           {
@@ -12199,10 +11609,8 @@
             "kind": "fixed",
             "value": 1
           },
-          "filters": [
-            "allow_white_troop"
-          ],
-          "source_fragment": "assassinate_troop",
+          "filters": [],
+          "source_fragment": "assassinate_step_1",
           "metadata": {}
         },
         {
@@ -12215,10 +11623,8 @@
             "kind": "fixed",
             "value": 1
           },
-          "filters": [
-            "allow_white_troop"
-          ],
-          "source_fragment": "assassinate_troop",
+          "filters": [],
+          "source_fragment": "assassinate_step_2",
           "metadata": {}
         },
         {
@@ -12291,7 +11697,7 @@
               "value": 5
             },
             "filters": [],
-            "source_fragment": "gain_resource",
+            "source_fragment": "gain_power",
             "metadata": {
               "resource": "power"
             }
@@ -12310,7 +11716,7 @@
             "value": 5
           },
           "filters": [],
-          "source_fragment": "gain_resource",
+          "source_fragment": "gain_power",
           "metadata": {
             "resource": "power"
           }
@@ -12368,11 +11774,10 @@
               "value": null
             },
             "filters": [],
-            "source_fragment": "devour",
+            "source_fragment": "optional_self_devour",
             "metadata": {
               "source_zone": "played_self",
-              "self_replace": false,
-              "skip_advance_to_index": "3"
+              "self_replace": false
             }
           },
           {
@@ -12382,11 +11787,11 @@
             "timing": "immediate",
             "optional": false,
             "quantity": {
-              "kind": "fixed",
-              "value": 3
+              "kind": "unspecified",
+              "value": null
             },
             "filters": [],
-            "source_fragment": "deploy_troops",
+            "source_fragment": "extra_deploy",
             "metadata": {}
           }
         ]
@@ -12417,11 +11822,10 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "devour",
+          "source_fragment": "optional_self_devour",
           "metadata": {
             "source_zone": "played_self",
-            "self_replace": false,
-            "skip_advance_to_index": "3"
+            "self_replace": false
           }
         },
         {
@@ -12431,11 +11835,11 @@
           "timing": "immediate",
           "optional": false,
           "quantity": {
-            "kind": "fixed",
-            "value": 3
+            "kind": "unspecified",
+            "value": null
           },
           "filters": [],
-          "source_fragment": "deploy_troops",
+          "source_fragment": "extra_deploy",
           "metadata": {}
         }
       ],
@@ -12483,7 +11887,7 @@
               "value": 1
             },
             "filters": [],
-            "source_fragment": "gain_resource",
+            "source_fragment": "gain_power",
             "metadata": {
               "resource": "power"
             }
@@ -12502,7 +11906,7 @@
             "value": 1
           },
           "filters": [],
-          "source_fragment": "gain_resource",
+          "source_fragment": "gain_power",
           "metadata": {
             "resource": "power"
           }
@@ -12546,7 +11950,7 @@
               "value": 2
             },
             "filters": [],
-            "source_fragment": "gain_resource",
+            "source_fragment": "gain_power_and_influence",
             "metadata": {
               "resource": "power"
             }
@@ -12559,10 +11963,10 @@
             "optional": false,
             "quantity": {
               "kind": "fixed",
-              "value": 1
+              "value": 2
             },
             "filters": [],
-            "source_fragment": "gain_resource",
+            "source_fragment": "gain_power_and_influence",
             "metadata": {
               "resource": "influence"
             }
@@ -12581,7 +11985,7 @@
             "value": 2
           },
           "filters": [],
-          "source_fragment": "gain_resource",
+          "source_fragment": "gain_power_and_influence",
           "metadata": {
             "resource": "power"
           }
@@ -12597,7 +12001,7 @@
             "value": 2
           },
           "filters": [],
-          "source_fragment": "gain_resource",
+          "source_fragment": "gain_power_and_influence",
           "metadata": {
             "resource": "influence"
           }
@@ -12645,7 +12049,7 @@
                   "value": null
                 },
                 "filters": [],
-                "source_fragment": "place_spy",
+                "source_fragment": "spy",
                 "metadata": {}
               }
             ]
@@ -12665,7 +12069,7 @@
                 },
                 "filters": [],
                 "source_fragment": "return_spy",
-                "metadata": { "spy_owner": "self" }
+                "metadata": {}
               },
               {
                 "action_id": "option_2_action_2",
@@ -12677,13 +12081,9 @@
                   "kind": "unspecified",
                   "value": null
                 },
-                "filters": [
-                  "allow_white_troop"
-                ],
-                "source_fragment": "supplant_troop",
-                "metadata": {
-                  "requires_returned_spy_site": true
-                }
+                "filters": [],
+                "source_fragment": "supplant",
+                "metadata": {}
               }
             ]
           }
@@ -12701,7 +12101,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "place_spy",
+          "source_fragment": "spy",
           "metadata": {}
         },
         {
@@ -12716,7 +12116,7 @@
           },
           "filters": [],
           "source_fragment": "return_spy",
-          "metadata": { "spy_owner": "self" }
+          "metadata": {}
         },
         {
           "action_id": "option_2_action_2",
@@ -12728,13 +12128,9 @@
             "kind": "unspecified",
             "value": null
           },
-          "filters": [
-            "allow_white_troop"
-          ],
-          "source_fragment": "supplant_troop",
-          "metadata": {
-            "requires_returned_spy_site": true
-          }
+          "filters": [],
+          "source_fragment": "supplant",
+          "metadata": {}
         }
       ],
       "global_conditions": [],
@@ -12782,7 +12178,7 @@
               "value": null
             },
             "filters": [],
-            "source_fragment": "place_spy",
+            "source_fragment": "spy",
             "metadata": {}
           }
         ]
@@ -12799,7 +12195,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "place_spy",
+          "source_fragment": "spy",
           "metadata": {}
         }
       ],
@@ -12843,7 +12239,7 @@
               "value": null
             },
             "filters": [],
-            "source_fragment": "devour",
+            "source_fragment": "hand_devour",
             "metadata": {
               "source_zone": "hand",
               "self_replace": false
@@ -12860,7 +12256,7 @@
               "value": null
             },
             "filters": [],
-            "source_fragment": "place_spy",
+            "source_fragment": "spy",
             "metadata": {}
           },
           {
@@ -12873,13 +12269,9 @@
               "kind": "unspecified",
               "value": null
             },
-            "filters": [
-              "allow_white_troop"
-            ],
-            "source_fragment": "assassinate_troop",
-            "metadata": {
-              "requires_last_selected_node": true
-            }
+            "filters": [],
+            "source_fragment": "assassinate",
+            "metadata": {}
           }
         ]
       },
@@ -12895,7 +12287,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "devour",
+          "source_fragment": "hand_devour",
           "metadata": {
             "source_zone": "hand",
             "self_replace": false
@@ -12912,7 +12304,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "place_spy",
+          "source_fragment": "spy",
           "metadata": {}
         },
         {
@@ -12925,13 +12317,9 @@
             "kind": "unspecified",
             "value": null
           },
-          "filters": [
-            "allow_white_troop"
-          ],
-          "source_fragment": "assassinate_troop",
-          "metadata": {
-            "requires_last_selected_node": true
-          }
+          "filters": [],
+          "source_fragment": "assassinate",
+          "metadata": {}
         }
       ],
       "global_conditions": [],
@@ -13188,7 +12576,7 @@
             "filters": [
               "white_troop_only"
             ],
-            "source_fragment": "assassinate_troop",
+            "source_fragment": "assassinate_white_troop_step_1",
             "metadata": {}
           },
           {
@@ -13204,7 +12592,7 @@
             "filters": [
               "white_troop_only"
             ],
-            "source_fragment": "assassinate_troop",
+            "source_fragment": "assassinate_white_troop_step_2",
             "metadata": {}
           }
         ]
@@ -13223,7 +12611,7 @@
           "filters": [
             "white_troop_only"
           ],
-          "source_fragment": "assassinate_troop",
+          "source_fragment": "assassinate_white_troop_step_1",
           "metadata": {}
         },
         {
@@ -13239,7 +12627,7 @@
           "filters": [
             "white_troop_only"
           ],
-          "source_fragment": "assassinate_troop",
+          "source_fragment": "assassinate_white_troop_step_2",
           "metadata": {}
         }
       ],
@@ -13287,7 +12675,7 @@
                   "value": null
                 },
                 "filters": [],
-                "source_fragment": "supplant_troop",
+                "source_fragment": "supplant",
                 "metadata": {}
               }
             ]
@@ -13323,8 +12711,7 @@
                 "source_fragment": "scaled_vp",
                 "metadata": {
                   "count_from": "inner_circle_cards",
-                  "per": 3,
-                  "as": "vp_tokens"
+                  "per": 3
                 }
               }
             ]
@@ -13343,7 +12730,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "supplant_troop",
+          "source_fragment": "supplant",
           "metadata": {}
         },
         {
@@ -13374,8 +12761,7 @@
           "source_fragment": "scaled_vp",
           "metadata": {
             "count_from": "inner_circle_cards",
-            "per": 3,
-            "as": "vp_tokens"
+            "per": 3
           }
         }
       ],
@@ -13428,7 +12814,7 @@
               "value": 1
             },
             "filters": [],
-            "source_fragment": "gain_resource",
+            "source_fragment": "gain_influence",
             "metadata": {
               "resource": "influence"
             }
@@ -13444,7 +12830,7 @@
               "value": null
             },
             "filters": [],
-            "source_fragment": "return_unit",
+            "source_fragment": "return_enemy_unit",
             "metadata": {}
           }
         ]
@@ -13461,7 +12847,7 @@
             "value": 1
           },
           "filters": [],
-          "source_fragment": "gain_resource",
+          "source_fragment": "gain_influence",
           "metadata": {
             "resource": "influence"
           }
@@ -13477,7 +12863,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "return_unit",
+          "source_fragment": "return_enemy_unit",
           "metadata": {}
         }
       ],
@@ -13509,7 +12895,7 @@
       "deck_vp": 2,
       "inner_circle_vp": 5,
       "rules_text": "Assassinate a troop. Recruit a Malice card that costs 4 or less.",
-      "notes": "Free assassinate a troop (player or white). Free recruit a Malice card costing 4 or less from market.",
+      "notes": "Straight additive effect card. Bare `assassinate a troop` uses the established free standard assassinate rule.",
       "execution_model": {
         "kind": "sequence",
         "actions": [
@@ -13523,9 +12909,7 @@
               "kind": "unspecified",
               "value": null
             },
-            "filters": [
-              "allow_white_troop"
-            ],
+            "filters": [],
             "source_fragment": "assassinate_troop",
             "metadata": {}
           },
@@ -13539,15 +12923,9 @@
               "kind": "unspecified",
               "value": null
             },
-            "filters": [
-              "aspect_malice_only",
-              "max_cost_4"
-            ],
-            "source_fragment": "recruit_card",
-            "metadata": {
-              "required_aspect": "malice",
-              "max_cost": 4
-            }
+            "filters": [],
+            "source_fragment": "recruit_aspect_filtered_card_by_cost",
+            "metadata": {}
           }
         ]
       },
@@ -13562,9 +12940,7 @@
             "kind": "unspecified",
             "value": null
           },
-          "filters": [
-            "allow_white_troop"
-          ],
+          "filters": [],
           "source_fragment": "assassinate_troop",
           "metadata": {}
         },
@@ -13578,15 +12954,9 @@
             "kind": "unspecified",
             "value": null
           },
-          "filters": [
-            "aspect_malice_only",
-            "max_cost_4"
-          ],
-          "source_fragment": "recruit_card",
-          "metadata": {
-            "required_aspect": "malice",
-            "max_cost": 4
-          }
+          "filters": [],
+          "source_fragment": "recruit_aspect_filtered_card_by_cost",
+          "metadata": {}
         }
       ],
       "global_conditions": [],
@@ -13595,8 +12965,7 @@
           "board.troop_slots",
           "presence_or_target_rules",
           "market.row",
-          "card_catalog",
-          "card_costs"
+          "card_catalog"
         ],
         "writes": [
           "board.troop_slots",
@@ -13639,7 +13008,7 @@
                   "value": null
                 },
                 "filters": [],
-                "source_fragment": "place_spy",
+                "source_fragment": "spy",
                 "metadata": {}
               }
             ]
@@ -13658,7 +13027,7 @@
                   "value": null
                 },
                 "filters": [],
-                "source_fragment": "return_spy",
+                "source_fragment": "return_spy_for_power",
                 "metadata": {
                   "spy_owner": "self"
                 }
@@ -13674,7 +13043,7 @@
                   "value": 5
                 },
                 "filters": [],
-                "source_fragment": "gain_resource",
+                "source_fragment": "gain_power",
                 "metadata": {
                   "resource": "power"
                 }
@@ -13695,7 +13064,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "place_spy",
+          "source_fragment": "spy",
           "metadata": {}
         },
         {
@@ -13709,7 +13078,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "return_spy",
+          "source_fragment": "return_spy_for_power",
           "metadata": {
             "spy_owner": "self"
           }
@@ -13725,7 +13094,7 @@
             "value": 5
           },
           "filters": [],
-          "source_fragment": "gain_resource",
+          "source_fragment": "gain_power",
           "metadata": {
             "resource": "power"
           }
@@ -13778,7 +13147,7 @@
                   "value": null
                 },
                 "filters": [],
-                "source_fragment": "place_spy",
+                "source_fragment": "spy",
                 "metadata": {}
               }
             ]
@@ -13797,7 +13166,7 @@
                   "value": null
                 },
                 "filters": [],
-                "source_fragment": "return_spy",
+                "source_fragment": "return_spy_for_influence",
                 "metadata": {
                   "spy_owner": "self"
                 }
@@ -13813,7 +13182,7 @@
                   "value": 3
                 },
                 "filters": [],
-                "source_fragment": "gain_resource",
+                "source_fragment": "gain_influence",
                 "metadata": {
                   "resource": "influence"
                 }
@@ -13834,7 +13203,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "place_spy",
+          "source_fragment": "spy",
           "metadata": {}
         },
         {
@@ -13848,7 +13217,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "return_spy",
+          "source_fragment": "return_spy_for_influence",
           "metadata": {
             "spy_owner": "self"
           }
@@ -13864,7 +13233,7 @@
             "value": 3
           },
           "filters": [],
-          "source_fragment": "gain_resource",
+          "source_fragment": "gain_influence",
           "metadata": {
             "resource": "influence"
           }
@@ -13911,25 +13280,8 @@
               "value": 2
             },
             "filters": [],
-            "source_fragment": "deploy_troops",
+            "source_fragment": "deploy_troops_with_focus_draw",
             "metadata": {}
-          },
-          {
-            "action_id": "action_2",
-            "op": "draw_cards",
-            "target_scope": "self",
-            "timing": "immediate",
-            "optional": false,
-            "quantity": {
-              "kind": "fixed",
-              "value": 1
-            },
-            "filters": [],
-            "source_fragment": "draw_cards",
-            "metadata": {
-              "requires_focus": true,
-              "focus_aspect": "conquest"
-            }
           }
         ]
       },
@@ -13945,25 +13297,8 @@
             "value": 2
           },
           "filters": [],
-          "source_fragment": "deploy_troops",
+          "source_fragment": "deploy_troops_with_focus_draw",
           "metadata": {}
-        },
-        {
-          "action_id": "action_2",
-          "op": "draw_cards",
-          "target_scope": "self",
-          "timing": "immediate",
-          "optional": false,
-          "quantity": {
-            "kind": "fixed",
-            "value": 1
-          },
-          "filters": [],
-          "source_fragment": "draw_cards",
-          "metadata": {
-            "requires_focus": true,
-            "focus_aspect": "conquest"
-          }
         }
       ],
       "global_conditions": [
@@ -14017,7 +13352,7 @@
             "filters": [
               "white_troop_only"
             ],
-            "source_fragment": "assassinate_troop",
+            "source_fragment": "assassinate_white_troop",
             "metadata": {}
           },
           {
@@ -14032,9 +13367,7 @@
             },
             "filters": [],
             "source_fragment": "triggered_promote_aspect_filtered",
-            "metadata": {
-              "required_aspect": "obedience"
-            }
+            "metadata": {}
           }
         ]
       },
@@ -14052,7 +13385,7 @@
           "filters": [
             "white_troop_only"
           ],
-          "source_fragment": "assassinate_troop",
+          "source_fragment": "assassinate_white_troop",
           "metadata": {}
         },
         {
@@ -14067,9 +13400,7 @@
           },
           "filters": [],
           "source_fragment": "triggered_promote_aspect_filtered",
-          "metadata": {
-            "required_aspect": "obedience"
-          }
+          "metadata": {}
         }
       ],
       "global_conditions": [
@@ -14128,7 +13459,7 @@
                   "value": 1
                 },
                 "filters": [],
-                "source_fragment": "deploy_troops",
+                "source_fragment": "deploy",
                 "metadata": {}
               }
             ]
@@ -14149,7 +13480,7 @@
                 "filters": [
                   "white_troop_only"
                 ],
-                "source_fragment": "assassinate_troop",
+                "source_fragment": "assassinate_white_troop",
                 "metadata": {}
               }
             ]
@@ -14168,7 +13499,7 @@
             "value": 1
           },
           "filters": [],
-          "source_fragment": "deploy_troops",
+          "source_fragment": "deploy",
           "metadata": {}
         },
         {
@@ -14184,7 +13515,7 @@
           "filters": [
             "white_troop_only"
           ],
-          "source_fragment": "assassinate_troop",
+          "source_fragment": "assassinate_white_troop",
           "metadata": {}
         }
       ],
@@ -14247,8 +13578,7 @@
             "source_fragment": "scaled_vp_from_controlled_sites",
             "metadata": {
               "count_from": "controlled_sites",
-              "per": 2,
-              "as": "vp_tokens"
+              "per": 2
             }
           }
         ]
@@ -14282,8 +13612,7 @@
           "source_fragment": "scaled_vp_from_controlled_sites",
           "metadata": {
             "count_from": "controlled_sites",
-            "per": 2,
-            "as": "vp_tokens"
+            "per": 2
           }
         }
       ],
@@ -14343,7 +13672,7 @@
               "value": null
             },
             "filters": [],
-            "source_fragment": "devour",
+            "source_fragment": "optional_market_devour",
             "metadata": {
               "source_zone": "market",
               "self_replace": false
@@ -14377,7 +13706,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "devour",
+          "source_fragment": "optional_market_devour",
           "metadata": {
             "source_zone": "market",
             "self_replace": false
@@ -14432,7 +13761,7 @@
                   "value": 2
                 },
                 "filters": [],
-                "source_fragment": "gain_resource",
+                "source_fragment": "gain_power",
                 "metadata": {
                   "resource": "power"
                 }
@@ -14453,7 +13782,7 @@
                   "value": null
                 },
                 "filters": [],
-                "source_fragment": "devour",
+                "source_fragment": "devour_from_hand",
                 "metadata": {
                   "source_zone": "hand",
                   "self_replace": false
@@ -14470,7 +13799,7 @@
                   "value": null
                 },
                 "filters": [],
-                "source_fragment": "supplant_troop",
+                "source_fragment": "supplant",
                 "metadata": {}
               }
             ]
@@ -14489,7 +13818,7 @@
             "value": 2
           },
           "filters": [],
-          "source_fragment": "gain_resource",
+          "source_fragment": "gain_power",
           "metadata": {
             "resource": "power"
           }
@@ -14505,7 +13834,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "devour",
+          "source_fragment": "devour_from_hand",
           "metadata": {
             "source_zone": "hand",
             "self_replace": false
@@ -14522,7 +13851,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "supplant_troop",
+          "source_fragment": "supplant",
           "metadata": {}
         }
       ],
@@ -14572,7 +13901,7 @@
               "value": null
             },
             "filters": [],
-            "source_fragment": "place_spy",
+            "source_fragment": "spy",
             "metadata": {}
           },
           {
@@ -14586,11 +13915,10 @@
               "value": null
             },
             "filters": [],
-            "source_fragment": "devour",
+            "source_fragment": "optional_self_devour",
             "metadata": {
               "source_zone": "played_self",
-              "self_replace": false,
-              "skip_advance_to_index": "3"
+              "self_replace": false
             }
           },
           {
@@ -14604,10 +13932,8 @@
               "value": null
             },
             "filters": [],
-            "source_fragment": "assassinate_troop",
-            "metadata": {
-              "requires_last_selected_node": true
-            }
+            "source_fragment": "assassinate_there",
+            "metadata": {}
           }
         ]
       },
@@ -14623,7 +13949,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "place_spy",
+          "source_fragment": "spy",
           "metadata": {}
         },
         {
@@ -14637,11 +13963,10 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "devour",
+          "source_fragment": "optional_self_devour",
           "metadata": {
             "source_zone": "played_self",
-            "self_replace": false,
-            "skip_advance_to_index": "3"
+            "self_replace": false
           }
         },
         {
@@ -14655,10 +13980,8 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "assassinate_troop",
-          "metadata": {
-            "requires_last_selected_node": true
-          }
+          "source_fragment": "assassinate_there",
+          "metadata": {}
         }
       ],
       "global_conditions": [],
@@ -14709,7 +14032,7 @@
               "value": 1
             },
             "filters": [],
-            "source_fragment": "gain_resource",
+            "source_fragment": "gain_influence",
             "metadata": {
               "resource": "influence"
             }
@@ -14726,9 +14049,7 @@
             },
             "filters": [],
             "source_fragment": "triggered_promote",
-            "metadata": {
-              "requires_another_played_card": true
-            }
+            "metadata": {}
           }
         ]
       },
@@ -14744,7 +14065,7 @@
             "value": 1
           },
           "filters": [],
-          "source_fragment": "gain_resource",
+          "source_fragment": "gain_influence",
           "metadata": {
             "resource": "influence"
           }
@@ -14761,9 +14082,7 @@
           },
           "filters": [],
           "source_fragment": "triggered_promote",
-          "metadata": {
-            "requires_another_played_card": true
-          }
+          "metadata": {}
         }
       ],
       "global_conditions": [
@@ -14816,7 +14135,7 @@
               "value": null
             },
             "filters": [],
-            "source_fragment": "place_spy",
+            "source_fragment": "spy",
             "metadata": {}
           },
           {
@@ -14829,13 +14148,9 @@
               "kind": "unspecified",
               "value": null
             },
-            "filters": [
-              "allow_white_troop"
-            ],
-            "source_fragment": "assassinate_troop",
-            "metadata": {
-              "requires_last_selected_node": true
-            }
+            "filters": [],
+            "source_fragment": "assassinate",
+            "metadata": {}
           },
           {
             "action_id": "action_3",
@@ -14848,7 +14163,7 @@
               "value": null
             },
             "filters": [],
-            "source_fragment": "place_spy",
+            "source_fragment": "focus_spy",
             "metadata": {
               "requires_focus": true,
               "focus_aspect": "guile"
@@ -14868,7 +14183,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "place_spy",
+          "source_fragment": "spy",
           "metadata": {}
         },
         {
@@ -14881,13 +14196,9 @@
             "kind": "unspecified",
             "value": null
           },
-          "filters": [
-            "allow_white_troop"
-          ],
-          "source_fragment": "assassinate_troop",
-          "metadata": {
-            "requires_last_selected_node": true
-          }
+          "filters": [],
+          "source_fragment": "assassinate",
+          "metadata": {}
         },
         {
           "action_id": "action_3",
@@ -14900,7 +14211,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "place_spy",
+          "source_fragment": "focus_spy",
           "metadata": {
             "requires_focus": true,
             "focus_aspect": "guile"
@@ -14962,7 +14273,7 @@
               "value": null
             },
             "filters": [],
-            "source_fragment": "devour",
+            "source_fragment": "inner_circle_devour",
             "metadata": {
               "source_zone": "inner_circle",
               "self_replace": false
@@ -14979,7 +14290,7 @@
               "value": 3
             },
             "filters": [],
-            "source_fragment": "gain_resource",
+            "source_fragment": "gain_influence",
             "metadata": {
               "resource": "influence"
             }
@@ -14989,17 +14300,14 @@
             "op": "promote_card",
             "target_scope": "self",
             "timing": "end_of_turn",
-            "optional": true,
+            "optional": false,
             "quantity": {
-              "kind": "fixed",
-              "value": 2
+              "kind": "variable_repeat",
+              "value": null
             },
             "filters": [],
             "source_fragment": "triggered_multi_promote",
-            "metadata": {
-              "requires_another_played_card": true,
-              "repeat_while_targets": true
-            }
+            "metadata": {}
           }
         ]
       },
@@ -15015,7 +14323,7 @@
             "value": null
           },
           "filters": [],
-          "source_fragment": "devour",
+          "source_fragment": "inner_circle_devour",
           "metadata": {
             "source_zone": "inner_circle",
             "self_replace": false
@@ -15032,7 +14340,7 @@
             "value": 3
           },
           "filters": [],
-          "source_fragment": "gain_resource",
+          "source_fragment": "gain_influence",
           "metadata": {
             "resource": "influence"
           }
@@ -15042,17 +14350,14 @@
           "op": "promote_card",
           "target_scope": "self",
           "timing": "end_of_turn",
-          "optional": true,
+          "optional": false,
           "quantity": {
-            "kind": "fixed",
-            "value": 2
+            "kind": "variable_repeat",
+            "value": null
           },
           "filters": [],
           "source_fragment": "triggered_multi_promote",
-          "metadata": {
-            "requires_another_played_card": true,
-            "repeat_while_targets": true
-          }
+          "metadata": {}
         }
       ],
       "global_conditions": [
