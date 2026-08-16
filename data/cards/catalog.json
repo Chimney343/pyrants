@@ -1357,7 +1357,9 @@
             },
             "filters": [],
             "source_fragment": "triggered_promote",
-            "metadata": {}
+            "metadata": {
+              "requires_another_played_card": true
+            }
           },
           {
             "action_id": "action_2",
@@ -1393,7 +1395,9 @@
           },
           "filters": [],
           "source_fragment": "triggered_promote",
-          "metadata": {}
+          "metadata": {
+            "requires_another_played_card": true
+          }
         },
         {
           "action_id": "action_2",
