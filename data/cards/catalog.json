@@ -13030,8 +13030,8 @@
       ],
       "deck_vp": 2,
       "inner_circle_vp": 5,
-      "rules_text": "Assassinate a troop. Recruit a Malice card that costs 4 or less.",
-      "notes": "Straight additive effect card. Bare `assassinate a troop` uses the established free standard assassinate rule.",
+      "rules_text": "Assassinate a troop. You may recruit a Malice card that costs 4 or less without paying its cost.",
+      "notes": "Straight additive effect card. Bare `assassinate a troop` uses the established free standard assassinate rule. The recruit is optional and free (max_cost 4 implies no influence paid).",
       "execution_model": {
         "kind": "sequence",
         "actions": [
@@ -13054,14 +13054,20 @@
             "op": "recruit_card",
             "target_scope": "market",
             "timing": "immediate",
-            "optional": false,
+            "optional": true,
             "quantity": {
               "kind": "unspecified",
               "value": null
             },
-            "filters": [],
+            "filters": [
+              "aspect_malice_only",
+              "max_cost_4"
+            ],
             "source_fragment": "recruit_aspect_filtered_card_by_cost",
-            "metadata": {}
+            "metadata": {
+              "required_aspect": "malice",
+              "max_cost": 4
+            }
           }
         ]
       },
@@ -13085,14 +13091,20 @@
           "op": "recruit_card",
           "target_scope": "market",
           "timing": "immediate",
-          "optional": false,
+          "optional": true,
           "quantity": {
             "kind": "unspecified",
             "value": null
           },
-          "filters": [],
+          "filters": [
+            "aspect_malice_only",
+            "max_cost_4"
+          ],
           "source_fragment": "recruit_aspect_filtered_card_by_cost",
-          "metadata": {}
+          "metadata": {
+            "required_aspect": "malice",
+            "max_cost": 4
+          }
         }
       ],
       "global_conditions": [],

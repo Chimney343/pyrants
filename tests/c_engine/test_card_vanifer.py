@@ -3,8 +3,8 @@
 - Free recruit Malice card from market costing <= 4
 """
 
-from engine_c.bindings.session import CSession
 from engine_c.bindings.engine_bindings import _lib
+from engine_c.bindings.session import CSession
 from tests.c_engine.card_test_helpers import (
     _make_engine,
     _session_player_index,
@@ -41,10 +41,7 @@ def _discard_contains(session: CSession, pid: str, card_id: str) -> bool:
         return False
     target = _lib.intern(card_id.encode())
     ps = _sptr(session).contents.players[pi]
-    for i in range(ps.discard_pile_count):
-        if ps.discard_pile[i] == target:
-            return True
-    return False
+    return any(ps.discard_pile[i] == target for i in range(ps.discard_pile_count))
 
 
 def test_vanifer_assassinate_includes_white_troops():
@@ -197,12 +194,60 @@ def test_vanifer_recruit_is_free():
     moves = session.legal_moves()
     session.submit_move([m for m in moves if m.move_type == "resolve_generic"][0])
 
-    # Resolve recruit
+    # Resolve recruit (skip move is index 0 for optional actions; pick the target)
     moves2 = session.legal_moves()
     recruit_moves = [m for m in moves2 if m.move_type == "resolve_generic"]
     assert len(recruit_moves) >= 1, "Should have at least one recruit target"
-    session.submit_move(recruit_moves[0])
+    recruit_move = next(
+        m for m in recruit_moves if m.data.get("action_id") == "fire_elemental_myrmidon"
+    )
+    session.submit_move(recruit_move)
 
     # Card should be in discard pile (recruited for free)
     assert _discard_contains(session, _P2, "fire_elemental_myrmidon"), \
         "fire_elemental_myrmidon should be in discard pile after free recruit"
+
+
+def test_vanifer_recruit_is_optional():
+    """Vanifer's recruit should be skippable — the player may decline the free recruit."""
+    eng = _make_engine()
+    session = make_card_test_session(
+        eng,
+        [_P1, _P2],
+        hand={_P2: ["vanifer"]},
+        troops={
+            _P2: {_SITE_GAUNTLGRYM: [_P2, _P1]},
+        },
+        current_player=_P2,
+    )
+
+    s = _sptr(session).contents
+    s.resource_pool.influence = 0
+    s.market.row_count = 1
+    s.market.row[0] = _lib.intern(b"fire_elemental_myrmidon")
+
+    for m in session.legal_moves():
+        if m.move_type == "play_card" and m.data.get("card_id") == "vanifer":
+            session.submit_move(m)
+            break
+
+    assert _has_pending_generic(session)
+
+    # Resolve assassinate
+    moves = session.legal_moves()
+    session.submit_move([m for m in moves if m.move_type == "resolve_generic"][0])
+
+    # On the recruit action: a skip move must be offered alongside the recruit target
+    moves2 = session.legal_moves()
+    recruit_moves = [m for m in moves2 if m.move_type == "resolve_generic"]
+    skip_count = sum(1 for m in recruit_moves if m.data.get("action_id") is None)
+    target_count = sum(1 for m in recruit_moves if m.data.get("action_id") is not None)
+    assert skip_count == 1, f"Expected 1 skip move for optional recruit, got {skip_count}"
+    assert target_count >= 1, "Expected at least one recruit target"
+
+    # Skip the recruit — no card should be added to the discard pile
+    skip = next(m for m in recruit_moves if m.data.get("action_id") is None)
+    session.submit_move(skip)
+
+    assert not _discard_contains(session, _P2, "fire_elemental_myrmidon"), \
+        "fire_elemental_myrmidon should not be recruited when the recruit is skipped"
