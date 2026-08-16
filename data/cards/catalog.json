@@ -12189,7 +12189,9 @@
                 },
                 "filters": [],
                 "source_fragment": "return_spy",
-                "metadata": {}
+                "metadata": {
+                  "spy_owner": "self"
+                }
               },
               {
                 "action_id": "option_2_action_2",
@@ -12203,7 +12205,9 @@
                 },
                 "filters": [],
                 "source_fragment": "supplant",
-                "metadata": {}
+                "metadata": {
+                  "requires_returned_spy_site": true
+                }
               }
             ]
           }
@@ -12236,7 +12240,9 @@
           },
           "filters": [],
           "source_fragment": "return_spy",
-          "metadata": {}
+          "metadata": {
+            "spy_owner": "self"
+          }
         },
         {
           "action_id": "option_2_action_2",
@@ -12250,7 +12256,9 @@
           },
           "filters": [],
           "source_fragment": "supplant",
-          "metadata": {}
+          "metadata": {
+            "requires_returned_spy_site": true
+          }
         }
       ],
       "global_conditions": [],

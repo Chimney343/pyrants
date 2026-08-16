@@ -5,11 +5,11 @@ Spellspinner (3-cost, Guile/Drow) — modal, choose exactly one:
   option_1: place a spy.
   option_2: return one of your spies, then supplant a troop at that same site.
 
-The option_2 supplant carries two catalog signals that the C engine honours:
-  - `filters: ["allow_white_troop"]`  → a white troop is a valid supplant target.
-  - `metadata: {"requires_returned_spy_site": true}` → the supplant is constrained
-    to the site the spy was returned from (see `sel_assassinate_supplant` in
-    engine_c/selection.c, which reads the pending `node_id` selection key).
+The option_2 supplant is constrained to the site the spy was returned from
+(`metadata: {"requires_returned_spy_site": true}`, honoured by
+`sel_assassinate_supplant` in engine_c/selection.c, which reads the pending
+`node_id` selection key). The supplant targets enemy troops only — no
+`allow_white_troop` filter, so white troops are excluded.
 """
 
 from __future__ import annotations
@@ -116,7 +116,7 @@ def test_spellspinner_execution_model():
 
     supplant = opt2[1]
     assert supplant["target_scope"] == "board_site"
-    assert supplant["filters"] == ["allow_white_troop"]
+    assert supplant["filters"] == []
     assert supplant["metadata"] == {"requires_returned_spy_site": True}
 
     assert card["cost"] == 3
@@ -196,8 +196,8 @@ def test_spellspinner_option2_supplant_constrained_to_returned_spy_site():
     session.destroy()
 
 
-def test_spellspinner_option2_supplants_white_troop_at_returned_site():
-    """The supplant at the returned spy's site may target a white troop."""
+def test_spellspinner_option2_does_not_supplant_white_troop():
+    """The supplant at the returned spy's site may NOT target a white troop."""
     session = make_card_test_session(
         _make_engine(), [_P1, _P2],
         hand={_P1: ["spellspinner"]},
@@ -214,12 +214,38 @@ def test_spellspinner_option2_supplants_white_troop_at_returned_site():
     session.submit_move(return_moves[0].move)
 
     supplant_moves = _labeled_moves(session, "supplant")
-    assert supplant_moves, (
-        f"Expected a supplant move for the white troop, labels: {[m.label for m in supplant_moves]}"
+    assert not supplant_moves, (
+        f"White troop must NOT be a supplant target, labels: {[m.label for m in supplant_moves]}"
     )
-    session.submit_move(supplant_moves[0].move)
 
-    assert not _has_pending_generic(session), "Expected card to fully resolve"
+    session.destroy()
+
+
+def test_spellspinner_option2_supplant_offers_enemy_not_white():
+    """At the returned spy's site, the supplant offers an enemy troop but NOT a white troop."""
+    session = make_card_test_session(
+        _make_engine(), [_P1, _P2],
+        hand={_P1: ["spellspinner"]},
+        troops={_P1: {_SITE_A: [_P1, _P2, "white", None, None, None]}},
+        spies={_SITE_A: [_P1]},
+        current_player=_P1,
+    )
+
+    _play_spellspinner(session)
+    _choose_option(session, "option_2")
+
+    return_moves = _labeled_moves(session, "return spy")
+    assert return_moves, f"No return-spy moves, labels: {[m.label for m in return_moves]}"
+    session.submit_move(return_moves[0].move)
+
+    supplant_moves = _labeled_moves(session, "supplant")
+    labels = [m.label.lower() for m in supplant_moves]
+    assert any("player 2" in label for label in labels), (
+        f"Enemy (p2) troop should be a supplant target, got: {labels}"
+    )
+    assert not any("white" in label for label in labels), (
+        f"White troop must NOT be a supplant target, got: {labels}"
+    )
 
     session.destroy()
 
@@ -261,13 +287,16 @@ def test_spellspinner_option2_full_state_effects():
 
 
 def test_spellspinner_option2_return_spy_only_own_spies():
-    """Return-spy selection offers only the player's own spies (spy_owner=self)."""
+    """Return-spy selection offers only the player's own spies (spy_owner=self),
+    even when the player has presence at an enemy spy's site."""
     session = make_card_test_session(
         _make_engine(), [_P1, _P2],
         hand={_P1: ["spellspinner"]},
         troops={
-            _P1: {_SITE_A: [_P1, _P2, None, None, None, None]},
-            _P2: {_SITE_B: [_P2, None, None, None, None]},
+            _P1: {
+                _SITE_A: [_P1, _P2, None, None, None, None],
+                _SITE_B: [_P1, _P2, None, None, None, None],
+            },
         },
         spies={_SITE_A: [_P1], _SITE_B: [_P2]},
         current_player=_P1,
