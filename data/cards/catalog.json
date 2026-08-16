@@ -1697,7 +1697,8 @@
             "source_fragment": "scaled_vp_from_promoted_cards",
             "metadata": {
               "count_from": "inner_circle_cards",
-              "per": 3
+              "per": 3,
+              "as": "vp_tokens"
             }
           }
         ]
@@ -1733,7 +1734,8 @@
           "source_fragment": "scaled_vp_from_promoted_cards",
           "metadata": {
             "count_from": "inner_circle_cards",
-            "per": 3
+            "per": 3,
+            "as": "vp_tokens"
           }
         }
       ],
@@ -13511,7 +13513,9 @@
             },
             "filters": [],
             "source_fragment": "triggered_promote_aspect_filtered",
-            "metadata": {}
+            "metadata": {
+              "required_aspect": "obedience"
+            }
           }
         ]
       },
@@ -13544,7 +13548,9 @@
           },
           "filters": [],
           "source_fragment": "triggered_promote_aspect_filtered",
-          "metadata": {}
+          "metadata": {
+            "required_aspect": "obedience"
+          }
         }
       ],
       "global_conditions": [
