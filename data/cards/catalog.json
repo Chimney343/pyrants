@@ -3650,7 +3650,7 @@
             "op": "assassinate_troop",
             "target_scope": "board_site",
             "timing": "immediate",
-            "optional": true,
+            "optional": false,
             "quantity": {
               "kind": "fixed",
               "value": 1
@@ -3681,7 +3681,7 @@
           "op": "assassinate_troop",
           "target_scope": "board_site",
           "timing": "immediate",
-          "optional": true,
+          "optional": false,
           "quantity": {
             "kind": "fixed",
             "value": 1

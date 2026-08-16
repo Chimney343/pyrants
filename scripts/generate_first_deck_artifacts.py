@@ -914,7 +914,7 @@ def _apply_catalog_overrides(cards: list[dict[str, Any]]) -> None:
             "op": "assassinate_troop",
             "target_scope": "board_site",
             "timing": "immediate",
-            "optional": True,
+            "optional": False,
             "quantity": {"kind": "fixed", "value": 1},
             "filters": [],
             "source_fragment": "assassinate_step_2",
