@@ -250,6 +250,46 @@ def test_spellspinner_option2_supplant_offers_enemy_not_white():
     session.destroy()
 
 
+def test_spellspinner_option2_supplant_choose_which_enemy_troop():
+    """With multiple enemy troops at the returned spy's site, the player chooses
+    exactly which one to supplant — it is not auto-resolved."""
+    session = make_card_test_session(
+        _make_engine(), [_P1, _P2, "p3"],
+        hand={_P1: ["spellspinner"]},
+        troops={_P1: {_SITE_A: [_P1, _P2, "p3", None, None, None]}},
+        spies={_SITE_A: [_P1]},
+        current_player=_P1,
+    )
+
+    _play_spellspinner(session)
+    _choose_option(session, "option_2")
+
+    return_moves = _labeled_moves(session, "return spy")
+    assert return_moves, f"No return-spy moves, labels: {[m.label for m in return_moves]}"
+    session.submit_move(return_moves[0].move)
+
+    supplant_moves = _labeled_moves(session, "supplant")
+    labels = [m.label.lower() for m in supplant_moves]
+    assert any("player 2" in label for label in labels), (
+        f"p2 troop should be a supplant choice, got: {labels}"
+    )
+    assert any("player 3" in label for label in labels), (
+        f"p3 troop should be a supplant choice, got: {labels}"
+    )
+
+    # Choose p2 explicitly; p3 must survive.
+    p2_move = next(m for m in supplant_moves if "player 2" in m.label.lower())
+    session.submit_move(p2_move.move)
+
+    troops = _troops_at_node(session, _SITE_A)
+    assert "p2" not in troops, f"p2 should be supplanted, got {troops}"
+    assert "p3" in troops, f"p3 should remain untouched, got {troops}"
+    assert "p1" in troops, "p1's own troop should replace the supplanted enemy"
+    assert not _has_pending_generic(session), "card should fully resolve after one supplant"
+
+    session.destroy()
+
+
 def test_spellspinner_option2_full_state_effects():
     """Return a spy, then supplant an enemy troop: spy returns to barracks,
     enemy troop moves to the trophy hall, and an own troop is placed."""
