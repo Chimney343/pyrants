@@ -322,3 +322,81 @@ def test_option_2_no_other_played_card_still_skippable():
         raise AssertionError(f"EOT should be resolvable, got: {move_types}")
 
     session.destroy()
+
+
+def test_option_2_promote_capped_at_two_with_three_other_cards():
+    """Option 2 promotes at most 2 cards even when 3 other cards were played.
+
+    The card text says "up to 2 other cards": with three other played cards,
+    only two promotion opportunities are offered before EOT resolves. This
+    locks the quantity=fixed:2 encoding (not variable_repeat, which would
+    offer a third promotion).
+    """
+    session = _build_session(hand={_P1: [_CARD, "noble", "soldier", "priestess_of_lolth"]})
+
+    _play_card(session)
+    assert _has_pending_generic(session)
+
+    for m in session.legal_moves():
+        if m.move_type == "resolve_generic" and m.data.get("action_id") == "option_2":
+            session.submit_move(m)
+            break
+    else:
+        session.destroy()
+        raise AssertionError("option_2 not found")
+
+    _select_devour_self(session)
+    assert not _has_pending_generic(session)
+
+    for card in ["noble", "soldier", "priestess_of_lolth"]:
+        for m in session.legal_moves():
+            if m.move_type == "play_card" and m.data.get("card_id") == card:
+                session.submit_move(m)
+                break
+        else:
+            session.destroy()
+            raise AssertionError(f"{card} not playable")
+    _end_main_phase(session)
+
+    s = _sptr(session).contents
+    assert s.phase == PHASE_END_OF_TURN
+
+    moves = session.legal_moves()
+    move_types = {m.move_type for m in moves}
+    assert "promote_card" in move_types, f"First promotion expected, got: {move_types}"
+    assert "skip_promote" in move_types, f"Skip expected (optional=true), got: {move_types}"
+
+    promote_moves = [m for m in moves if m.move_type == "promote_card"]
+    promote_targets = {m.data.get("card_id") for m in promote_moves}
+    assert promote_targets == {"noble", "soldier", "priestess_of_lolth"}, (
+        f"All three other cards should be targets, got: {promote_targets}"
+    )
+
+    session.submit_move([m for m in promote_moves if m.data.get("card_id") == "noble"][0])
+    assert "noble" in _inner_circle_ids(session, _P1)
+
+    moves2 = session.legal_moves()
+    promote_moves2 = [m for m in moves2 if m.move_type == "promote_card"]
+    targets2 = {m.data.get("card_id") for m in promote_moves2}
+    assert targets2 == {"soldier", "priestess_of_lolth"}, (
+        f"Second promotion should target the two remaining cards, got: {targets2}"
+    )
+    assert any(m.move_type == "skip_promote" for m in moves2), "Second promotion skippable"
+
+    session.submit_move([m for m in promote_moves2 if m.data.get("card_id") == "soldier"][0])
+    assert "soldier" in _inner_circle_ids(session, _P1)
+
+    moves3 = session.legal_moves()
+    move_types3 = {m.move_type for m in moves3}
+    assert "promote_card" not in move_types3, (
+        f"Third promotion must not be offered (cap is 2), got: {move_types3}"
+    )
+    assert "resolve_end_of_turn" in move_types3, (
+        f"After two promotions, EOT should resolve. Got: {move_types3}"
+    )
+    assert "priestess_of_lolth" in _played_ids(session, _P1), (
+        "Priestess remains played (not promoted past the cap)"
+    )
+    assert "priestess_of_lolth" not in _inner_circle_ids(session, _P1)
+
+    session.destroy()
