@@ -761,3 +761,30 @@ class TestNoRegressionsWithFocusParam:
             player_available_aspects=frozenset({"malice"}),
         )
         assert result == "Ettin: Deploy troops (x3)"
+
+
+class TestGhostOptionLabels:
+    """Ghost: modal choice place_spy / return_spy + take_from_devour_pile_to_discard."""
+
+    def test_option_1_label(self):
+        result = enrich_label(
+            "resolve_generic",
+            "Resolve option_1",
+            {"action_id": "option_1", "selection_index": 0},
+            source_card_id="ghost",
+            is_option_choice=True,
+        )
+        assert result == "Ghost: Place spy"
+
+    def test_option_2_label(self):
+        result = enrich_label(
+            "resolve_generic",
+            "Resolve option_2",
+            {"action_id": "option_2", "selection_index": 0},
+            source_card_id="ghost",
+            is_option_choice=True,
+        )
+        assert result == (
+            "Ghost: Return spy and take the top card from the devour pile "
+            "into your discard pile"
+        )

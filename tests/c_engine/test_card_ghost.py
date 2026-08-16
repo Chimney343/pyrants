@@ -8,6 +8,7 @@ Verifies:
 
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
@@ -72,6 +73,17 @@ def _set_devour_pile(session: CSession, card_ids: list[str]) -> None:
     s.devour_pile_count = min(len(card_ids), MAX_ZONE_SIZE)
     for j, cid in enumerate(card_ids[:MAX_ZONE_SIZE]):
         s.devour_pile[j] = _lib.intern(cid.encode())
+
+
+def _resolve_moves(session: CSession) -> list:
+    return [m for m in session.legal_moves() if m.move_type == "resolve_generic"]
+
+
+def _option_move(session: CSession, option_id: str):
+    return next(
+        (m for m in _resolve_moves(session) if m.data.get("action_id") == option_id),
+        None,
+    )
 
 
 def test_ghost_option_1_place_spy() -> None:
@@ -240,3 +252,97 @@ def test_ghost_devour_pile_order_top_is_last() -> None:
         f"Oldest devour card soldier should NOT be taken, got: {discard}"
     )
     session.destroy()
+
+
+def test_ghost_option_2_unavailable_without_own_spy() -> None:
+    """Option 2 is marked unavailable when the player has no own spy on board."""
+    eng = _make_engine()
+    session = make_card_test_session(
+        eng,
+        [_P1, _P2],
+        hand={_P1: [CARD_ID]},
+        current_player=_P1,
+    )
+
+    play_move = next(
+        m for m in session.legal_moves()
+        if m.move_type == "play_card" and m.data.get("card_id") == CARD_ID
+    )
+    session.submit_move(play_move)
+
+    opt2 = _option_move(session, "option_2")
+    assert opt2 is not None, "option_2 should still be offered"
+    assert opt2.data.get("target_id") == "unavailable", (
+        f"option_2 should be unavailable without an own spy, got: {opt2.data}"
+    )
+    session.destroy()
+
+
+def test_ghost_option_2_ignores_enemy_spies() -> None:
+    """Option 2 cannot target an opponent's spy (spy_owner: self)."""
+    eng = _make_engine()
+    session = make_card_test_session(
+        eng,
+        [_P1, _P2],
+        hand={_P1: [CARD_ID]},
+        spies={_SITE_A: [_P2]},
+        current_player=_P1,
+    )
+
+    play_move = next(
+        m for m in session.legal_moves()
+        if m.move_type == "play_card" and m.data.get("card_id") == CARD_ID
+    )
+    session.submit_move(play_move)
+
+    opt2 = _option_move(session, "option_2")
+    assert opt2 is not None, "option_2 should still be offered"
+    assert opt2.data.get("target_id") == "unavailable", (
+        f"option_2 should be unavailable with only an enemy spy present, got: {opt2.data}"
+    )
+    session.destroy()
+
+
+def test_ghost_option_2_offers_all_own_spy_sites() -> None:
+    """Option 2 offers every site holding one of the player's own spies."""
+    eng = _make_engine()
+    session = make_card_test_session(
+        eng,
+        [_P1, _P2],
+        hand={_P1: [CARD_ID]},
+        spies={_SITE_A: [_P1], _SITE_B: [_P1]},
+        current_player=_P1,
+    )
+
+    play_move = next(
+        m for m in session.legal_moves()
+        if m.move_type == "play_card" and m.data.get("card_id") == CARD_ID
+    )
+    session.submit_move(play_move)
+
+    session.submit_move(_option_move(session, "option_2"))
+
+    targets = {m.data.get("action_id") for m in _resolve_moves(session)}
+    assert targets == {_SITE_A, _SITE_B}, (
+        f"Expected both own-spy sites as targets, got: {targets}"
+    )
+    session.destroy()
+
+
+def test_ghost_catalog_execution_model_encodes_return_spy_and_devour_take() -> None:
+    """Lock the catalog encoding: option_2 is return_spy + take_from_devour_pile_to_discard."""
+    catalog_path = Path(__file__).resolve().parents[2] / "data" / "cards" / "catalog.json"
+    catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
+    ghost = next(c for c in catalog["cards"] if c["card_id"] == CARD_ID)
+
+    em = ghost["execution_model"]
+    assert em["kind"] == "modal_choice"
+    assert [o["option_id"] for o in em["options"]] == ["option_1", "option_2"]
+
+    opt1_actions = em["options"][0]["actions"]
+    assert [a["op"] for a in opt1_actions] == ["place_spy"]
+
+    opt2_actions = em["options"][1]["actions"]
+    assert [a["op"] for a in opt2_actions] == ["return_spy", "custom_effect"]
+    assert opt2_actions[0]["metadata"].get("spy_owner") == "self"
+    assert opt2_actions[1]["metadata"].get("effect_kind") == "take_from_devour_pile_to_discard"

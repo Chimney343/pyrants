@@ -42,6 +42,7 @@ _EFFECT_KIND_DESCRIPTIONS = {
     "steal_white_trophy_to_board": "Take white trophy and deploy",
     "lich_select_target_player": "Choose opponent as trophy source",
     "deploy_from_trophy_hall": "Deploy trophy from trophy hall to the board",
+    "take_from_devour_pile_to_discard": "take the top card from the devour pile into your discard pile",
 }
 
 _FILTER_DESCRIPTIONS = {
