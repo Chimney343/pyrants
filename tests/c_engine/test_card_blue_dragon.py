@@ -23,6 +23,13 @@ def _player_inner_circle_count(session: CSession, pid: str) -> int:
     return _sptr(session).contents.players[pi].inner_circle_count
 
 
+def _player_score(session: CSession, pid: str) -> int:
+    pi = _session_player_index(session, pid)
+    if pi < 0:
+        return 0
+    return _sptr(session).contents.players[pi].score
+
+
 def _build_blue_dragon_session(
     inner_circle_cards: list[str] | None = None,
     played_cards: list[str] | None = None,
@@ -98,6 +105,7 @@ def test_blue_dragon_vp_awarded_per_three_inner_circle():
     )
 
     before_tokens = _player_vp_tokens(session, _P1)
+    before_score = _player_score(session, _P1)
     _play_blue_dragon_and_promote_two(session)
 
     tokens_after = _player_vp_tokens(session, _P1)
@@ -108,6 +116,10 @@ def test_blue_dragon_vp_awarded_per_three_inner_circle():
     assert tokens_after == before_tokens + expected_vp, (
         f"Expected {expected_vp} VP token(s) ({ic_count} inner circle // 3), "
         f"got vp_tokens={tokens_after} (was {before_tokens})"
+    )
+    assert _player_score(session, _P1) == before_score, (
+        f"Score must not change (VP goes to vp_tokens), "
+        f"was {before_score}, now {_player_score(session, _P1)}"
     )
 
     session.destroy()
@@ -154,6 +166,36 @@ def test_blue_dragon_vp_four_inner_circle_rounds_down():
     assert tokens_after == before_tokens + 1, (
         f"Expected 1 VP token (4 inner circle // 3 = 1), "
         f"got vp_tokens={tokens_after}"
+    )
+
+    session.destroy()
+
+
+def test_blue_dragon_nine_inner_circle_three_vp_tokens():
+    """9+ inner circle cards after promotions → 3 VP tokens (043 scenario)."""
+    session = _build_blue_dragon_session(
+        inner_circle_cards=[
+            "priestess_of_lolth", "kobold", "noble", "house_guard",
+            "watcher_of_thay", "noble", "umber_hulk",
+        ],
+        played_cards=["noble", "soldier"],
+    )
+
+    before_tokens = _player_vp_tokens(session, _P1)
+    before_score = _player_score(session, _P1)
+    _play_blue_dragon_and_promote_two(session)
+
+    ic_count = _player_inner_circle_count(session, _P1)
+    tokens_after = _player_vp_tokens(session, _P1)
+
+    assert ic_count == 9, f"Expected 9 inner circle cards, got {ic_count}"
+    assert tokens_after == before_tokens + 3, (
+        f"Expected 3 VP tokens (9 inner circle // 3 = 3), "
+        f"got vp_tokens={tokens_after}"
+    )
+    assert _player_score(session, _P1) == before_score, (
+        f"Score must not change (VP goes to vp_tokens), "
+        f"was {before_score}, now {_player_score(session, _P1)}"
     )
 
     session.destroy()
