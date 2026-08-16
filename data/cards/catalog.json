@@ -2818,8 +2818,8 @@
             "timing": "immediate",
             "optional": false,
             "quantity": {
-              "kind": "unspecified",
-              "value": null
+              "kind": "fixed",
+              "value": 2
             },
             "filters": [],
             "source_fragment": "move_enemy_troops",
@@ -2837,7 +2837,9 @@
             },
             "filters": [],
             "source_fragment": "triggered_promote",
-            "metadata": {}
+            "metadata": {
+              "requires_another_played_card": true
+            }
           }
         ]
       },
@@ -2849,8 +2851,8 @@
           "timing": "immediate",
           "optional": false,
           "quantity": {
-            "kind": "unspecified",
-            "value": null
+            "kind": "fixed",
+            "value": 2
           },
           "filters": [],
           "source_fragment": "move_enemy_troops",
@@ -2868,7 +2870,9 @@
           },
           "filters": [],
           "source_fragment": "triggered_promote",
-          "metadata": {}
+          "metadata": {
+            "requires_another_played_card": true
+          }
         }
       ],
       "global_conditions": [
