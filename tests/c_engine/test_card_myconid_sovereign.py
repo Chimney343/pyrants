@@ -2,24 +2,19 @@
 
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from engine_c.bindings.ce_api import CEngine
-from engine_c.bindings.engine_bindings import (
-    _lib, MOVE_PLAY_CARD, MOVE_END_MAIN_PHASE,
-    MOVE_RESOLVE_END_OF_TURN, MOVE_PROMOTE_CARD, MOVE_SKIP_PROMOTE,
-    MOVE_RESOLVE_GENERIC, PHASE_END_OF_TURN,
-)
+from engine_c.bindings.engine_bindings import _lib
 from engine_c.bindings.session import CSession
 from engine_c.bindings.view import build_c_game_view
 from tests.c_engine.card_test_helpers import make_card_test_session
 
 DATA_DIR = Path(__file__).resolve().parents[2] / "data"
-
-import ctypes
 
 
 def _legal_move_types(session: CSession):
@@ -191,3 +186,22 @@ def test_myconid_sovereign_promotes_correct_card():
     assert "myconid_sovereign" in played_after, f"myconid_sovereign should still be played: {played_after}"
 
     session.destroy()
+
+
+def test_myconid_sovereign_catalog_encoding_requires_another_played_card():
+    """The promote action must carry ``requires_another_played_card`` in its metadata.
+
+    Regression guard: the deferred end-of-turn promotion targets "another played
+    card" and must exclude Myconid Sovereign itself. If the metadata flag is lost,
+    the engine offers self as a promote target and never falls back to
+    ``skip_promote`` when no other card was played this turn.
+    """
+    catalog = json.loads((DATA_DIR / "cards" / "catalog.json").read_text(encoding="utf-8"))
+    card = next(c for c in catalog["cards"] if c["card_id"] == "myconid_sovereign")
+
+    for action in (card["execution_model"]["actions"][1], card["actions"][1]):
+        assert action["op"] == "promote_card", f"expected promote_card, got {action['op']}"
+        assert action["timing"] == "end_of_turn", f"expected end_of_turn, got {action['timing']}"
+        assert action["metadata"].get("requires_another_played_card") is True, (
+            f"requires_another_played_card must be true, got {action['metadata']}"
+        )
