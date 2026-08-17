@@ -5457,7 +5457,8 @@
             "source_fragment": "optional_self_devour",
             "metadata": {
               "source_zone": "played_self",
-              "self_replace": false
+              "self_replace": false,
+              "skip_advance_to_index": "3"
             }
           },
           {
@@ -5507,7 +5508,8 @@
           "source_fragment": "optional_self_devour",
           "metadata": {
             "source_zone": "played_self",
-            "self_replace": false
+            "self_replace": false,
+            "skip_advance_to_index": "3"
           }
         },
         {
