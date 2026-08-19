@@ -1,4 +1,4 @@
-"""Generate reachable card scenarios for the Tyrants board."""
+"""Generate reachable card scenarios for the Tyrants board (C engine)."""
 
 from __future__ import annotations
 
@@ -12,21 +12,17 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from engine_c.bindings.scenario_search import (  # noqa: E402, I001
-    StopConditions,
     ensure_card_scenario_c,
     generate_card_scenarios_c,
     save_c_scenario,
-    write_forced_injection_notes as write_forced_injection_notes_c,
 )
-from game_setup.scenarios import save_game_state  # noqa: E402
-from game_setup.state_generator import (  # noqa: E402
+from game_setup.scenario_generation.rosters import (  # noqa: E402
     DEFAULT_BOARD_PATH,
     DEFAULT_CARD_PATH,
     DEFAULT_ROSTERS_PATH,
     DEFAULT_SETUP_PATH,
     FORCED_INJECTIONS_FILENAME,
-    ensure_card_scenario,
-    generate_card_scenarios,
+    StopConditions,
     iter_roster_card_ids,
     write_forced_injection_notes,
 )
@@ -58,11 +54,8 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--quiet", action="store_true", help="Suppress per-card output")
     parser.add_argument("--workers", type=int, default=1, help="Number of parallel workers (default: 1)")
     parser.add_argument("--pretty", action="store_true", help="Write pretty-printed JSON (indent=2)")
-    parser.add_argument("--legacy-market", action="store_true", help="Use legacy market-scoping (ad-hoc filtering)")
     parser.add_argument("--require-spy-on-board", action="store_true", help="Require current player to have a spy on the board")
     parser.add_argument("--require-aspect", type=str, default=None, help="Require N cards of ASPECT in hand (format: ASPECT:COUNT, e.g. guile:2)")
-    parser.add_argument("--engine", type=str, default="c", choices=["c", "python"],
-                        help="Engine to use: c (default) or python")
     return parser.parse_args(argv)
 
 
@@ -99,44 +92,24 @@ def _build_stop_conditions(args: argparse.Namespace) -> StopConditions:
     )
 
 
-def _use_c_engine(args: argparse.Namespace) -> bool:
-    return args.engine == "c" and not args.legacy_market
-
-
 def _run_single_card_mode(args: argparse.Namespace, player_ids: list[str]) -> None:
     card_id = args.card_id
     conditions = _build_stop_conditions(args)
     logger.info("Searching for card scenario card_id=%s seed=%d", card_id, args.base_seed)
 
-    if _use_c_engine(args):
-        state, injection_note, market_deck_ids, special_stacks_present = ensure_card_scenario_c(
-            card_id,
-            board_path=args.board_path,
-            card_path=args.card_path,
-            setup_path=args.setup_path,
-            rosters_path=args.rosters_path,
-            player_ids=player_ids,
-            base_seed=args.base_seed,
-            max_attempts=args.max_attempts,
-            max_steps_per_attempt=args.max_steps,
-            verbose=True,
-            conditions=conditions,
-        )
-    else:
-        state, injection_note, market_deck_ids, special_stacks_present = ensure_card_scenario(
-            card_id,
-            board_path=args.board_path,
-            card_path=args.card_path,
-            setup_path=args.setup_path,
-            rosters_path=args.rosters_path,
-            player_ids=player_ids,
-            base_seed=args.base_seed,
-            max_attempts=args.max_attempts,
-            max_steps_per_attempt=args.max_steps,
-            verbose=True,
-            legacy_market=args.legacy_market,
-            conditions=conditions,
-        )
+    state, injection_note, market_deck_ids, special_stacks_present = ensure_card_scenario_c(
+        card_id,
+        board_path=args.board_path,
+        card_path=args.card_path,
+        setup_path=args.setup_path,
+        rosters_path=args.rosters_path,
+        player_ids=player_ids,
+        base_seed=args.base_seed,
+        max_attempts=args.max_attempts,
+        max_steps_per_attempt=args.max_steps,
+        verbose=True,
+        conditions=conditions,
+    )
 
     filename = f"{card_id}_seed_{args.base_seed}.json"
     path = args.output_dir / filename
@@ -150,32 +123,19 @@ def _run_single_card_mode(args: argparse.Namespace, player_ids: list[str]) -> No
         tags = ["generated", "cards", "reachable", "playable_now"]
         description = f"Reachable 4-player Tyrants scenario for {card_id}"
 
-    if _use_c_engine(args):
-        save_c_scenario(
-            state,
-            path,
-            scenario_id=f"card_{card_id}",
-            description=description,
-            tags=tags,
-            card_under_test=card_id,
-            market_deck_ids=market_deck_ids,
-            special_stacks_present=special_stacks_present,
-            pretty=args.pretty,
-        )
-        state.destroy()
-        notes_path = write_forced_injection_notes_c(args.output_dir, forced_notes)
-    else:
-        save_game_state(
-            state,
-            path,
-            scenario_id=f"card_{card_id}",
-            description=description,
-            tags=tags,
-            card_under_test=card_id,
-            market_deck_ids=market_deck_ids,
-            special_stacks_present=special_stacks_present,
-        )
-        notes_path = write_forced_injection_notes(args.output_dir, forced_notes)
+    save_c_scenario(
+        state,
+        path,
+        scenario_id=f"card_{card_id}",
+        description=description,
+        tags=tags,
+        card_under_test=card_id,
+        market_deck_ids=market_deck_ids,
+        special_stacks_present=special_stacks_present,
+        pretty=args.pretty,
+    )
+    state.destroy()
+    notes_path = write_forced_injection_notes(args.output_dir, forced_notes)
 
     print(f"Saved: {path}")
     logger.info("Scenario saved card_id=%s path=%s seed=%d", card_id, path, args.base_seed)
@@ -203,37 +163,20 @@ def _run_batch_mode(args: argparse.Namespace, player_ids: list[str]) -> None:
         print(f"  output: {args.output_dir}")
         print()
 
-    if _use_c_engine(args):
-        saved, missing = generate_card_scenarios_c(
-            args.output_dir,
-            board_path=args.board_path,
-            card_path=args.card_path,
-            setup_path=args.setup_path,
-            rosters_path=args.rosters_path,
-            player_ids=player_ids,
-            base_seed=args.base_seed,
-            max_attempts=args.max_attempts,
-            max_steps_per_attempt=args.max_steps,
-            workers=args.workers,
-            pretty=args.pretty,
-            conditions=conditions,
-        )
-    else:
-        saved, missing = generate_card_scenarios(
-            args.output_dir,
-            board_path=args.board_path,
-            card_path=args.card_path,
-            setup_path=args.setup_path,
-            rosters_path=args.rosters_path,
-            player_ids=player_ids,
-            base_seed=args.base_seed,
-            max_attempts=args.max_attempts,
-            max_steps_per_attempt=args.max_steps,
-            workers=args.workers,
-            pretty=args.pretty,
-            legacy_market=args.legacy_market,
-            conditions=conditions,
-        )
+    saved, missing = generate_card_scenarios_c(
+        args.output_dir,
+        board_path=args.board_path,
+        card_path=args.card_path,
+        setup_path=args.setup_path,
+        rosters_path=args.rosters_path,
+        player_ids=player_ids,
+        base_seed=args.base_seed,
+        max_attempts=args.max_attempts,
+        max_steps_per_attempt=args.max_steps,
+        workers=args.workers,
+        pretty=args.pretty,
+        conditions=conditions,
+    )
 
     notes_path = args.output_dir / FORCED_INJECTIONS_FILENAME
     forced_notes = json.loads(notes_path.read_text(encoding="utf-8")) if notes_path.exists() else []

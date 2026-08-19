@@ -10,15 +10,14 @@ from pathlib import Path
 
 
 def compute_final_scores(state) -> dict:
-    """Backend-aware compute_final_scores.
+    """Return final scores via the C-engine adapter.
 
-    When ``state._adapter`` is present (C engine), delegates to the adapter.
-    Otherwise calls ``engine.scoring.compute_final_scores`` on the wrapped state.
+    The C backend always carries a ``_adapter``; when absent there is no
+    Python engine to fall back on, so an empty dict is returned.
     """
     if hasattr(state, "_adapter") and state._adapter is not None:
         return state._adapter.final_scores()
-    from engine.scoring import compute_final_scores as _py_compute_final_scores
-    return _py_compute_final_scores(state._engine)
+    return {}
 
 
 def resolve_winner_id(state, winner: int | None, num_players: int) -> str | None:

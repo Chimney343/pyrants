@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from engine.state import BoardDefinition, NodeKind
+from game_setup.types import BoardDefinition, NodeKind
 
 
 class Coordinate(BaseModel):

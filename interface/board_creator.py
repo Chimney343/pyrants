@@ -11,9 +11,9 @@ from enum import Enum
 from pathlib import Path
 from tkinter import filedialog, messagebox, simpledialog, ttk
 
-from engine.state import NodeKind
 from game_setup.board_package import BoardPackageDefinition
 from game_setup.loaders import _read_json, _write_json
+from game_setup.types import NodeKind
 from interface._canvas_scroll import bind_canvas_scrolling
 from interface.background_manager import BackgroundImageManager
 from interface.board_renderer import BoardRenderer

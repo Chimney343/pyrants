@@ -281,6 +281,29 @@ class PyrantsCState(pyspiel.State):
         new._adapter = new_adapter
         return new
 
+    def decode_action(self, aid: int):
+        indexed = self._cached_indexed_moves
+        if indexed is None:
+            indexed = compute_c_action_map(self._adapter)
+        return indexed[int(aid)][1]
+
+    def move_to_str(self, move) -> str:
+        return str(move)
+
+    def move_to_payload(self, move) -> dict:
+        return move.to_payload()
+
+    def final_scores(self) -> dict:
+        if self._adapter is None:
+            return {}
+        if self._adapter.is_terminal():
+            return self._adapter.final_scores()
+        result = {}
+        for pid in self._game.get_player_ids():
+            idx = self._player_index(pid)
+            result[pid] = self._adapter.player_score(idx)
+        return result
+
     def resample_from_infostate(self, player, rng):
         if self._adapter is None:
             return self

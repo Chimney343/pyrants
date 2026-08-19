@@ -10,7 +10,7 @@ from __future__ import annotations
 import tkinter as tk
 from collections.abc import Callable, Sequence
 
-from engine.state import NodeKind
+from game_setup.types import NodeKind
 from interface.board_view import BoardNodeView
 
 SITE_EDGE_FILL = "#b6792c"

@@ -1,13 +1,12 @@
 """Protocol defining the session interface used by the game viewer.
 
-Both game_session.GameSession and engine_c.bindings.session.CSession
-satisfy this protocol, allowing the viewer to swap backends via
-the --engine flag.
+``engine_c.bindings.session.CSession`` satisfies this protocol; the viewer is
+C-engine only.
 """
 
 from __future__ import annotations
 
-from typing import Protocol, Sequence, runtime_checkable
+from typing import Protocol, runtime_checkable
 
 
 @runtime_checkable
@@ -21,4 +20,4 @@ class SessionLike(Protocol):
     def submit_move(self, move) -> object | None: ...
     def save(self, path: str) -> None: ...
     @classmethod
-    def load(cls, path: str, **kwargs) -> "SessionLike": ...
+    def load(cls, path: str, **kwargs) -> SessionLike: ...

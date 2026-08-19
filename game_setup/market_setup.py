@@ -20,6 +20,10 @@ logger = logging.getLogger(__name__)
 ABERRATIONS_DECK_ID = "aberrations"
 SPECIAL_RECRUIT_IDS: frozenset[str] = frozenset({"house_guard", "priestess_of_lolth", "insane_outcast"})
 
+HOUSE_GUARD_RECRUIT_SLOT = 100
+PRIESTESS_RECRUIT_SLOT = 101
+INSANE_OUTCAST_RECRUIT_SLOT = 102
+
 
 @dataclass(frozen=True)
 class DeckProfile:

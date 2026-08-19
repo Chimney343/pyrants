@@ -10,8 +10,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from engine.state import NodeKind
 from game_setup.board_package import BoardPackageDefinition
+from game_setup.types import NodeKind
 
 
 @dataclass(frozen=True)

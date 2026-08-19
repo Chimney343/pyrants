@@ -5,9 +5,8 @@ from __future__ import annotations
 import tkinter as tk
 from typing import Any
 
-from engine.state import NodeKind
 from game_setup.board_package import BoardPackageDefinition
-from game_view import GameView
+from game_setup.types import NodeKind
 from interface.board_view import BoardNodeView, build_node_views_from_package
 from interface.shared_board_renderer import (
     DEFAULT_ROUTE_FILL,
@@ -85,7 +84,7 @@ class GameBoardRenderer:
         self,
         canvas: tk.Canvas,
         package: BoardPackageDefinition,
-        view: GameView,
+        view: Any,
         *,
         highlighted_node_id: str | None = None,
         scale: float = 1.0,
