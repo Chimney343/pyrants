@@ -228,5 +228,8 @@ __marimo__/
 .vscode/
 .kilo/agent-manager.json
 
+# Claude Code skills: local junction to .kilo/skills (see scripts/link_claude_skills.ps1)
+.claude/skills/
+
 # Run outputs (profiler dumps, simulation results, reports)
 artifacts/
