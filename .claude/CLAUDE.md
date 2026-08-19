@@ -11,31 +11,22 @@
 > (documentation, ownership, history, decisions). **Always verify against
 > actual source files before making changes** — the index may be stale.
 
-Last indexed: 2026-06-23 (commit f68a728). Confidence: 100%.
+Last indexed: 2026-08-19 (commit 3e8de52). Confidence: 100%.
 ### Architecture
-Repo is a hybrid C/Python game engine for the card game PyRants: it consumes JSON-based game configuration and card definitions, transforms them through a state machine implemented in C and Python (with C bindings for performance), and produces serialized game states, legal move lists, observation tensors, and reward signals suitable for reinforcement learning agents in the OpenSpiel framework. | Layer | Technology | Role |
-|-------|------------|------|
-| Core engine | C (engine_c/) | Performance-critical game state management, move validation, and RNG |
-| Bindings | Python (engine_c/bindings/, ce_api.py) | C-to-Python FFI wrappers enabling Python-side game logic |
-| Game logic | Python (engine/, game_setup/) | Rule interpretation, scoring, board setup, error handling |
-| RL integration | Python (openspiel_pyrants/) | OpenSpiel-compatible Game and Observer interfaces |
-| Configuration | JSON (39.5% of codebase) | Card definitions, game variants, and scenario parameters |
-| Language mix | C (4%), C++ (2.6%), JavaScript (1.9%), Python (27.8%), Markdown (23.3%), Shell (0.3%) | |
-
-
-
-The repository does not specify explicit entry-point scripts, but the following modules represent the main invocation paths based on file analysis:
-
-- **openspiel_pyrants/game.py** — OpenSpiel Game class constructor, receives game parameters and kicks off the Python-based game loop. - **openspiel_pyrants/game_c.py** — Alternative entry using the C engine backend for faster simulation. - **engine_c/bindings/engine_bindings.py** — Exposes the C engine’s State, Arena, and RNG objects to Python; loaded by any Python-side game runner.
+Repowise is a card-game engine and research platform: it consumes declarative card catalogs and scenario rosters authored as JSON/data files, packages them into playable game boards through Python setup loaders, executes the full game rule logic in a C engine exposed via Python bindings, and produces both a reinforcement-learning interface through an OpenSpiel integration and a visual playthrough viewer for humans. The repository is a monorepo that spans the entire pipeline from data authoring (data/cards/catalog.json, scenario generation rosters) through game configuration (game_setup/), core simulation (engine_c/), language bindings (engine_c/bindings/), research APIs (openspiel_pyrants/), and a display layer (interface/game_viewer.py). With 972 files and roughly 212k lines of code split primarily between JSON data (50.5%), Python (23.5%), and Markdown (18.9%), the codebase positions the C engine as a compact, high-performance core (state management, RNG, arena and internals are all C headers) while keeping orchestration, setup, and research-facing tooling in Python. - **Core engine — C/C++:** engine_c/ implements the game state machine, RNG, arena management, and internal data structures (state.h, intern.h, rng.h, arena.h).
 ### Key Modules
 | Module | Purpose | Owner |
 |--------|---------|-------|
-| `community-1` | The tests/legacy_engine module is the integration and testing layer for the lega | — |
-| `community-0` | The engine_c module is the **generic action resolution subsystem** of the game e | — |
-| `community-3` | The tests/c_engine module is the validation and integration‑support layer for th | — |
-| `community-2` | The tests module is the **validation layer** of the Tyrants game engine — it exe | — |
+| `community-1` | The tests/c_engine module is the verification stage of repowise's game-engine pi | — |
+| `community-0` | The engine_c module is the generic card-choice execution subsystem of the game e | — |
+| `community-3` | The tests/c_engine module is the behavior-verification harness for repowise's C  | — |
+| `community-2` | The interface module is the presentation and client-interaction layer of the rep | — |
 | `community-248` | The **tests** module is the verification subsystem of repowise — it consumes gen | — |
-| `community-4` | The tests/c_engine module is the integration and unit test suite for the **C gam | — |
+| `community-4` | The tests/c_engine module is the behavioral conformance layer for repowise's C e | — |
+| `community-6` | The **scripts** module is the integration and validation layer of the Pyrants ga | — |
+| `community-5` | The game_setup module is the **game initialization and scenario generation subsy | — |
+| `community-7` | The **skill-creator** module is the iterative optimisation pipeline for repowise | — |
+| `community-400` | The data/scenarios module is the **validation and test harness** for the scenari | — |
 ### Entry Points
 - `.augment/skills/impeccable/scripts/cleanup-deprecated.mjs`
 - `.augment/skills/impeccable/scripts/design-parser.mjs`
@@ -54,44 +45,44 @@ The repository does not specify explicit entry-point scripts, but the following 
 ### Architectural Layers
 | Layer | Files | Purpose |
 |-------|-------|---------|
-| Deck Artifact Generator | 35 | Generates initial deck artifacts for the first deck setup. |
-| Test Suite and Manifests | 37 | Contains test cases for deck rosters, effect families schema, engine purity, alo |
-| Deck Roster Data | 6 | JSON data file containing the roster for the first deck. |
-| Interface Package Init | 7 | Package initialization file for the interface module. |
-| Scripts Package Init | 2 | Package initialization file for the scripts module. |
-| pyproject | 1 |  |
-| agents | 1 |  |
-| product | 1 |  |
-| skills/grug-brain-development | 1 |  |
-| skills-lock | 1 |  |
+| Session Protocol Interface | 47 | Defines the abstract protocol and base classes for session management. |
+| Determinization C Extension | 57 | Provides C-accelerated determinization utilities for the openspiel_pyrants libra |
+| Utility Scripts Collection | 29 | Contains various scripts for data enrichment, artifact generation, and performan |
+| Test Scenario Data | 19 | Provides JSON test scenarios and configuration for card generation unit tests. |
+| Engine C Build Scripts | 116 | Build and profiling scripts (Makefile and shell script) for the C engine compone |
+| Game Setup & Scenario Generation | 18 | Handles loading, generating, and searching game scenarios and market setups for  |
+| OpenSpiel Integration Tests | 20 | Test suite and runner scripts for OpenSpiel Pyrants game engine integration, inc |
+| Skill Creator Pipeline | 5 | Scripts for generating, evaluating, and improving skill descriptions in an agent |
+| Catalog Audit Scripts | 2 | Scripts for auditing and generating execution reports for a catalog of items. |
+| Skill Validation & Packaging | 2 | Scripts for quick validation and packaging of skills in the skill creator framew |
 
 ### Guided Tour (8 steps)
-1. **Game Session Entry Point** — `game_session.py`
-2. **Core Game State Definition** — `engine/state.py`
-3. **Game Moves and Actions** — `engine/moves.py`
-4. **Rules and Validation** — `engine/rules.py`
-5. **Game Setup and Data Loading** — `game_setup/loaders.py`
-6. **Game Content Data Files** — `data/cards/effect_families.json`
+1. **Project Overview and Entry Points** — `README.md`
+2. **C Engine Core State and Logic** — `engine_c/state.h`
+3. **Python-C Bindings Interface** — `engine_c/bindings/engine_bindings.py`
+4. **Python Game State and Rules** — `engine/state.py`
+5. **OpenSpiel Game Integration** — `openspiel_pyrants/__init__.py`
+6. **Testing Patterns and Helpers** — `tests/c_engine/card_test_helpers.py`
 ... and 2 more steps
 ### Hotspots (High Churn)
 | File | Churn | 90d Commits | Owner |
 |------|-------|-------------|-------|
-| `data/cards/catalog.json` | 100.0th %ile | 23 | Chimney343 |
-| `interface/game_viewer.py` | 99.9th %ile | 15 | Chimney343 |
-| `engine/rules.py` | 99.8th %ile | 7 | Chimney343 |
-| `tests/test_rules.py` | 99.7th %ile | 4 | Chimney343 |
-| `game_setup/scenario_generation/card_scenarios.py` | 99.7th %ile | 4 | Chimney343 |
+| `data/cards/catalog.json` | 100.0th %ile | 58 | Chimney343 |
+| `interface/game_viewer.py` | 99.9th %ile | 20 | Chimney343 |
+| `engine/rules.py` | 99.9th %ile | 9 | Chimney343 |
+| `game_setup/scenario_generation/card_scenarios.py` | 99.8th %ile | 6 | Chimney343 |
+| `engine_c/generic_runtime.c` | 99.7th %ile | 22 | Chimney343 |
 
 ## Code health
-Hotspot health: 6.46/10 (stable) ·
-Average: 7.19/10 ·
+Hotspot health: 6.53/10 (stable) ·
+Average: 7.56/10 ·
 Worst: 1.0/10 (`engine/rules.py`)
 
 ### Critical biomarkers
 - `engine/rules.py` — untested hotspot — impact −2.0
 - `engine/helpers.py` — untested hotspot — impact −2.0
 - `engine/state.py` — untested hotspot — impact −2.0
-- `engine_c/state.h` — untested hotspot — impact −2.0
+- `engine_c/bindings/ce_api.py` — untested hotspot — impact −2.0
 - `engine_c/bindings/view.py` — untested hotspot — impact −2.0
 
 ### Repowise MCP Tools

@@ -6,7 +6,7 @@
   "mcp": {
     "repowise": {
       "type": "local",
-      "command": ["repowise", "mcp", "C:\\Users\\mkkom\\pyrants", "--transport", "stdio"],
+      "command": ["C:\\Users\\mkkom\\.local\\bin\\repowise.exe", "mcp", "C:\\Users\\mkkom\\pyrants", "--transport", "stdio"],
       "enabled": true
     }
   }
