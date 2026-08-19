@@ -5,21 +5,13 @@ Use this file for the current engine surface, the active gameplay backlog, and t
 ## Source Of Truth
 
 Implementation:
-- `engine/state.py`
-- `engine/moves.py`
-- `engine/rules.py`
-- `engine/scoring.py`
-- `game_session.py`
-- `game_view.py`
-- `game_simulation.py`
+- `engine_c/` (C engine: state, rules, moves, phases, scoring, generic_runtime)
+- `engine_c/bindings/` (Python bindings to `engine_c.dll`)
+- `interface/game_viewer.py`
 
 Checks:
-- `tests/test_rules.py`
-- `tests/test_state_machine.py`
-- `tests/test_scoring.py`
-- `tests/test_game_session.py`
-- `tests/test_game_simulation.py`
-- `tests/test_game_view.py`
+- `engine_c/tests/` (C unit tests)
+- `tests/c_engine/` (C-binding tests)
 
 Supporting status files:
 - `docs/cards-status.md`
@@ -30,10 +22,10 @@ Supporting status files:
 - The core turn loop exists: setup (mandatory free troop placement), draw, main phase, end of turn, cleanup, and game over are all in place.
 - Each player places one free troop on a site during the SETUP phase before any hand is dealt. Only after every player has placed does the game draw 5 cards per player and enter MAIN.
 - The engine uses pure state models, legal-move generation, and move application as its main control flow.
-- Generic-card execution is live in `engine/rules.py`, including targeted, modal, and repeat selection flows.
-- Headless session, simulation, and replay support are in place through `game_session.py`, `game_simulation.py`, and the viewer tools.
+- Generic-card execution is live in the C engine, including targeted, modal, and repeat selection flows.
+- Headless session, simulation, and scenario save/load are in place through `engine_c/bindings/session.py` and the viewer tools.
 - The current test suite is green, so the implemented behavior is consistent at the present coverage level.
-- Initial placement moves (`InitialPlacementMove`) are legal only during SETUP and target site nodes with empty troop slots. Routes are excluded.
+- Initial placement moves are legal only during SETUP and target site nodes with empty troop slots. Routes are excluded.
 
 ## Awaiting
 

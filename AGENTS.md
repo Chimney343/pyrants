@@ -4,16 +4,16 @@
 
 > **READ THIS FIRST — AGENT DIRECTIVE**
 >
-> 1. **The engine you must work on is written in C and lives in `/engine_c`.** All engine logic, rules, state, and simulation work should target the C codebase under `/engine_c`. The Python `engine/` directory is a **deprecated legacy port** — do not treat it as the engine, do not extend it, and only touch it when explicitly asked. Before editing anything engine-related, orient yourself in `/engine_c` first.
+> 1. **The engine is written in C and lives in `/engine_c`.** All engine logic, rules, state, and simulation work must target the C codebase under `/engine_c`. The legacy Python `engine/` directory has been removed — `/engine_c` is the only engine. Before editing anything engine-related, orient yourself in `/engine_c` first.
 > 2. **Use the Repowise MCP tools everywhere possible.** This repo is indexed by Repowise. Prefer Repowise tools (`get_answer`, `get_context`, `get_symbol`, `search_codebase`, `get_why`, `get_risk`, `get_dead_code`, `get_overview`) over manual `grep`/`Read` loops for orientation, discovery, rationale, and risk assessment. See the **Repowise MCP Tools** section below for the full tool guide. Always verify Repowise output against the actual source files before making changes, and heed any `stale_warning` in `_meta`.
 
 ## CRITICAL: Engine Language
 
-When discussing the **engine**, always remember: the engine is written in **C**, located at `/engine_c`. Never treat the Python `engine/` directory as if it is the engine itself — it is an old Python version of the C engine.
+When discussing the **engine**, always remember: the engine is written in **C**, located at `/engine_c`. There is no Python engine — `/engine_c` is the only implementation.
 
 ## Project Overview
 
-**pyrants** is a turn-based board game engine for *Tyrants of the Underdark*. The active engine is written in **C** and lives in `/engine_c`; it is a pure library (no I/O) exposing state, rules, moves, phases, scoring, a card-effect runtime, player-view projection, save/load, and JSON loading via cJSON. A Python package wraps the C engine (bindings in `engine_c/bindings/`) and provides the terminal UI, simulation, OpenSpiel integration, and tooling. The legacy `engine/` directory is a **deprecated Python port** — do not extend it.
+**pyrants** is a turn-based board game engine for *Tyrants of the Underdark*. The engine is written in **C** and lives in `/engine_c`; it is a pure library (no I/O) exposing state, rules, moves, phases, scoring, a card-effect runtime, player-view projection, save/load, and JSON loading via cJSON. A Python package wraps the C engine (bindings in `engine_c/bindings/`) and provides the terminal UI, simulation, OpenSpiel integration, and tooling. The legacy Python `engine/` directory has been removed.
 
 Python side: Python 3.12+, Pydantic-typed state, headless simulation, terminal UI interface.
 
@@ -23,13 +23,12 @@ Python side: Python 3.12+, Pydantic-typed state, headless simulation, terminal U
 /engine_c              C engine (source of truth): *.c/*.h, compile.bat, Makefile, engine_c.dll
 /engine_c/bindings     Python ctypes/CPython bindings to engine_c.dll
 /engine_c/tests        C unit tests (test_view, test_describe, test_saveload, test_generic_actions)
-/engine                DEPRECATED legacy Python engine — do not extend
-/interface             Terminal UI (renderer, viewers, board creator, CLI)
+/interface             Terminal UI (renderers, game viewer, board creator)
 /openspiel_pyrants     OpenSpiel pyspiel wrapper + determinization
-/game_setup            Loaders, state generator, board package, scenarios
+/game_setup            Loaders, market setup, board package, types, scenario generation
 /data                  JSON content: boards, cards, decks, layouts, scenarios
 /tests                 pytest suite (Python side, incl. C-binding tests)
-/scripts               Benchmarks, random walk, scenario/deck generation, IS-MCTS runner
+/scripts               Scenario/deck generation, IS-MCTS runner, catalog audit
 ```
 
 ## Directory Map
@@ -39,14 +38,13 @@ Python side: Python 3.12+, Pydantic-typed state, headless simulation, terminal U
 | `engine_c/` | **Active C engine**: state, rules, moves, phases, scoring, generic_runtime, actions, selection, player_view, loader, view, describe, saveload |
 | `engine_c/bindings/` | Python bindings to `engine_c.dll` (session runner, etc.) |
 | `engine_c/tests/` | C unit tests (`test_view.c`, `test_describe.c`, `test_saveload.c`, `test_generic_actions.c`) |
-| `engine/` | **DEPRECATED** legacy Python port — only touch when explicitly asked |
-| `interface/` | Terminal UI: board renderer, game viewer, replay viewer, board creator, CLI parser |
+| `interface/` | Terminal UI: board renderer, game viewer, board creator |
 | `openspiel_pyrants/` | OpenSpiel wrapper: game, state, action encoding, observer, determinization |
-| `game_setup/` | Loaders, state generator, board package, scenarios, random state search |
+| `game_setup/` | Loaders, market setup, board package, types, random state search |
 | `game_setup/scenario_generation/` | Card scenario discovery and injection |
 | `data/` | JSON content: boards, cards (catalog, effect families, schemas), decks (11 rosters), layouts (2), scenarios (125+ card scenarios) |
-| `tests/` | pytest suite: 40 test files covering rules, state, scoring, CLI, scenarios, board, renderer, viewer, simulation, session, engine purity, card model, generic interpreter, C bindings |
-| `scripts/` | Utilities: benchmark, random walk, catalog audit, scenario generation, deck artifact generation, review workbook, execution audit, IS-MCTS runner |
+| `tests/` | pytest suite covering board, renderer, scenario market policy, C bindings |
+| `scripts/` | Utilities: catalog audit, scenario generation, deck artifact generation, review workbook, execution audit, IS-MCTS runner |
 | `docs/` | Game manual, engine/cards/board-creator status docs |
 | `assets/` | Board/map images |
 | `artifacts/` | Run outputs: replay logs, profiler data, card stuck reports, catalog consistency reports |
@@ -55,13 +53,9 @@ Python side: Python 3.12+, Pydantic-typed state, headless simulation, terminal U
 
 | File | Purpose | How to run |
 |------|---------|-----------|
-| `game_session.py` | Shared session controller (state + move log snapshots) | `python game_session.py` |
-| `game_simulation.py` | Headless simulation runner | `just game-simulate` or `python game_simulation.py --players 2 --seed 42 --policy random` |
-| `game_view.py` | Structured game state projection (no I/O) | Import only |
-| `interface/game_viewer.py` | Interactive terminal game viewer (defaults to `--engine c`) | `just game-viewer` (C) / `just game-viewer-py` (legacy Python) |
-| `interface/replay_viewer.py` | Step through saved replays | `just replay-viewer` |
+| `interface/game_viewer.py` | Interactive terminal game viewer (C engine) | `just game-viewer` |
 | `interface/board_creator.py` | Interactive board creator | `just board-creator` |
-| `scripts/run_ismcts.py` | IS-MCTS bot runner against OpenSpiel wrapper | `just ismcts` (Python backend) / `just ismcts-c` (C backend) |
+| `scripts/run_ismcts.py` | IS-MCTS bot runner against OpenSpiel wrapper (C backend) | `just ismcts` |
 | `engine_c/bindings/` | C engine Python bindings | `just simulate-c` |
 
 ## Setup Commands
@@ -81,10 +75,9 @@ Python side: Python 3.12+, Pydantic-typed state, headless simulation, terminal U
   cd engine_c && make && make test
   ```
 - Interactive terminal viewer (C backend by default): `just game-viewer`
-- Headless simulation: `just game-simulate` (override `players`, `seed`, `policy`, `max_steps`)
-- Replay viewer: `just replay-viewer`
+- Headless simulation: `just simulate-c` (override `players`, `seed`, `max_steps`)
 - Board creator: `just board-creator`
-- IS-MCTS: `just ismcts` (Python backend) or `just ismcts-c` (C backend); quick smoke: `just ismcts-quick`
+- IS-MCTS: `just ismcts` (C backend); quick smoke: `just ismcts-quick`
 - Hot-reload is not used; this is a CLI/library project — re-run the relevant command after edits.
 - After editing C sources, **rebuild** (`just build-c`) before running Python tools that load `engine_c.dll`.
 
@@ -92,15 +85,15 @@ Python side: Python 3.12+, Pydantic-typed state, headless simulation, terminal U
 
 **Python tests** (pytest, `testpaths = ["tests"]`, naming `tests/test_*.py`):
 - Run all: `just test` (== `.venv/Scripts/python.exe -m pytest -q`)
-- Run one file: `python -m pytest tests/test_rules_basics.py`
-- Run by name/keyword: `python -m pytest -k "promotion"` ; by node id: `python -m pytest tests/test_rules_basics.py::test_name`
+- Run one file: `python -m pytest tests/test_board_package.py`
+- Run by name/keyword: `python -m pytest -k "promotion"` ; by node id: `python -m pytest tests/test_board_package.py::test_name`
 - OpenSpiel wrapper tests: `just openspiel-test`
 - Coverage: `python -m pytest --cov` (no fixed threshold; keep new code covered)
 
 **C engine tests** (`engine_c/`):
 - Build + run the C suite: `just build-c` (compiles and runs `test_engine`, `test_view`, `test_describe`, `test_generic_actions`, `test_saveload`)
 - Run already-built C test binaries: `just test-c`
-- Python-side C-binding tests: `just test-c-python` (runs `tests/test_engine_c.py -v`)
+- Python-side C-binding tests: `just test-c-python` (runs `pytest tests/c_engine -v`)
 - C test sources live in `engine_c/tests/` (`test_view.c`, `test_describe.c`, `test_saveload.c`, `test_generic_actions.c`) plus top-level `engine_c/test_engine.c`, `test_generic.c`, `test_intern_c.c`.
 
 **Always run both `ruff check .` and the relevant test suite before committing.** Add or update tests for any code you change.
@@ -109,15 +102,15 @@ Python side: Python 3.12+, Pydantic-typed state, headless simulation, terminal U
 
 - **Python:** ruff (line-length 120, target `py312`); selected rules `E,F,I,B,UP,SIM` (E501 ignored). Run `ruff check .` before committing.
 - **C:** `-Wall -Wextra -std=c11` (GCC) / `/W3 /std:c11 /MT` (MSVC). Keep the engine pure — no I/O, no platform-specific calls in library sources.
-- **Engine purity:** `engine_c/` (and the legacy `engine/`) must contain no I/O and no side effects. Enforced on the Python side by `tests/test_engine_purity.py`.
+- **Engine purity:** `engine_c/` must contain no I/O and no side effects. The C engine is a pure library by construction.
 - **Domain types:** Pydantic models for Python domain types; pure-function state transitions on the C side (`apply(state, move) -> state'`).
-- **File organization:** headers (`*.h`) declare public surfaces; implementations in matching `*.c`. New engine features go in `/engine_c`, never in `/engine`.
+- **File organization:** headers (`*.h`) declare public surfaces; implementations in matching `*.c`. New engine features go in `/engine_c`.
 
 ## Build and Deployment
 
 - **C build (Windows/MSVC):** `just build-c` → `engine_c/compile.bat [debug|release]` produces `libengine.lib`, `test_*.exe`, and `engine_c.dll` (exports per `engine_c.def`).
 - **C build (GCC/MinGW/Linux/macOS):** `cd engine_c && make` → `libengine.a`; `make test` builds and runs `test_engine`.
-- **Python:** no separate build step; install deps and run. The C `engine_c.dll` must be built and present for any `--engine c` tooling or C-binding tests to work.
+- **Python:** no separate build step; install deps and run. The C `engine_c.dll` must be built and present for any C-engine tooling or C-binding tests to work.
 - **CI:** no `.github/workflows` present in the repo; validation is local (`just test`, `just build-c`, `just test-c-python`, `ruff check .`).
 - **Artifacts:** generated outputs (replays, profiler, stuck reports) go under `artifacts/` and are not shipped.
 
@@ -125,8 +118,7 @@ Python side: Python 3.12+, Pydantic-typed state, headless simulation, terminal U
 
 - Title format: `[area] Brief description` (e.g. `[engine-c] fix promotion edge case`, `[ui] add replay scrubber`).
 - Required pre-commit checks: `ruff check .`, `just test`, `just build-c` + `just test-c` / `just test-c-python` (when touching `/engine_c` or bindings).
-- Engine changes must keep `tests/test_engine_purity.py` green and add/extend C or Python tests covering the new behavior.
-- Do not extend the deprecated `engine/` Python port in a PR unless explicitly scoped.
+- Engine changes must add/extend C or Python tests covering the new behavior.
 - Keep commits focused; do not mix engine, UI, and data-format changes in one PR.
 
 ## Debugging and Troubleshooting
@@ -134,11 +126,7 @@ Python side: Python 3.12+, Pydantic-typed state, headless simulation, terminal U
 - **`engine_c.dll` not found / import errors from bindings:** rebuild with `just build-c` and ensure the DLL is in `engine_c/` on the loader's path.
 - **C tests fail to link:** rerun `just build-c` from a clean state (`cd engine_c && nmake /f Makefile clean` or delete `*.obj`/`*.lib`); confirm VS 2022 Build Tools + C++ workload are installed.
 - **Stale Repowise index:** the auto-generated block below may lag HEAD; trust source files first and heed any `stale_warning` in `_meta` from Repowise tools.
-- **Card-stuck states:** `just card-stuck-check` (and CI variant `just card-stuck-check-ci`) detect rosters that deadlock; reports written to `artifacts/card_stuck_report.json`.
-- **Performance profiling:** `just ismcts-perf` / `just ismcts-c-perf` produce cProfile output under `artifacts/ismcts/`.
-
-> **Note:** The Repowise index below was last generated 2026-06-04 (commit `2a60abe`).
-> Current HEAD is `e7791be` (3 commits ahead). The index is stale.
+- **Performance profiling:** `just ismcts-perf` produces cProfile output under `artifacts/ismcts/`.
 
 <!-- REPOWISE:START — Do not edit below this line. Auto-generated by Repowise. -->
 ## IMPORTANT: Codebase Intelligence Instructions for pyrants
@@ -148,39 +136,40 @@ Python side: Python 3.12+, Pydantic-typed state, headless simulation, terminal U
 > (documentation, ownership, history, decisions). **Always verify against
 > actual source files before making changes** — the index may be stale.
 
-Last indexed: 2026-06-04 (commit 2a60abe). Confidence: 100%.
+Last indexed: 2026-06-27 (commit c4d2e5d). Confidence: 100%.
 ### Architecture
-**Repo** is a turn-based board game engine: it consumes scenario definitions and board packages from JSON and TOML configuration files, processes them through a game-setup pipeline that validates components and initializes a state machine, then executes player moves through a rules engine that enforces game logic, phases, and scoring, ultimately producing a rendered board view via a Python interface and optionally generating simulation traces for replay analysis. | Layer | Technology | Purpose |
-|---|---|---|
-| Core Engine | Python 3.x | State management, rule enforcement, move execution, scoring |
-| Game Setup | Python, JSON, TOML | Parsing scenario definitions, board components, validation |
-| Interface | Python (likely Pygame or Tkinter) | Real-time rendering of board view with camera zoom |
-| Frontend (optional) | TypeScript (.kilo package) | Could provide an alternative web/desktop UI |
-| Configuration | JSON, YAML, TOML | Game scenario and catalog files |
-| Tooling | Justfile, Claude | Automation, documentation |
+This repository implements a hybrid Python/C game engine for the card game **Pyrants** (a variant of the classic game “Ruritania”): it ingests game configuration files and board package definitions, applies turn-based game rules via a C‑core state machine exposed through Python bindings, executes moves with a deterministic random‑number generator and scoring logic, and produces serialized game states for both interactive play and reinforcement learning training through an OpenSpiel integration. ---
 
 
 
-- **game_session.py** – Primary interactive entry point for a live game session (state-driven, user moves). - **game_simulation.py** – Headless simulation mode: runs automated moves or replays for testing and analysis. - **game_view.py** – Possibly a viewer entry point to replay saved states or visualize scenarios.
+| Layer | Technology | Details |
+|-------|------------|---------|
+| **Core engine** | C (C11) | High‑performance state machine (engine_c/state.h, engine_c/arena.h, engine_c/intern.h). Runtime logic in engine_c/actions.c, engine_c/generic_runtime.c. |
+| **Python bindings** | C Extension (CPython) | Bindings at engine_c/bindings/ (engine_bindings.py, ce_api.py, session.py).
 ### Key Modules
 | Module | Purpose | Owner |
 |--------|---------|-------|
-| `community-1` | The tests module is the quality assurance layer of repowise's Tyrants of the Und | — |
-| `community-0` | The skills/impeccable module is the **skill lifecycle and injection subsystem**  | — |
-| `community-3` | The interface module is the graphical presentation and authoring subsystem of th | — |
-| `community-2` | The tests module is the verification and validation layer of the repowise system | — |
+| `community-1` | The tests/legacy_engine module is the **legacy game engine reference implementat | — |
+| `community-0` | The engine_c module is the **core game-engine implementation layer** of the card | — |
+| `community-3` | The openspiel_pyrants module is the **OpenSpiel integration layer** for the Pyra | — |
+| `community-2` | The skills/impeccable module is the live-variant orchestration layer within the  | — |
 | `community-248` | The **tests** module is the verification subsystem of repowise — it consumes gen | — |
+| `community-4` | The tests/c_engine module is the **integration test suite** for the repowise C-e | — |
+| `community-6` | The game_setup module is the **game-state construction and scenario generation l | — |
+| `community-5` | The **interface** module is the presentation layer of the repowise board-game ap | — |
+| `community-7` | The skills/skill-creator module is the core **skill optimization engine** in the | — |
+| `community-400` | The data/scenarios module is the **validation and test harness** for the scenari | — |
 ### Entry Points
-- `.agents/skills/impeccable/scripts/cleanup-deprecated.mjs`
-- `.agents/skills/impeccable/scripts/design-parser.mjs`
-- `.agents/skills/impeccable/scripts/detect-csp.mjs`
-- `.agents/skills/impeccable/scripts/is-generated.mjs`
-- `.agents/skills/impeccable/scripts/live-accept.mjs`
-- `.agents/skills/impeccable/scripts/live-browser.js`
-- `.agents/skills/impeccable/scripts/live-inject.mjs`
-- `.agents/skills/impeccable/scripts/live-poll.mjs`
-- `.agents/skills/impeccable/scripts/live-server.mjs`
-- `.agents/skills/impeccable/scripts/live-wrap.mjs`
+- `.augment/skills/impeccable/scripts/cleanup-deprecated.mjs`
+- `.augment/skills/impeccable/scripts/design-parser.mjs`
+- `.augment/skills/impeccable/scripts/detect-csp.mjs`
+- `.augment/skills/impeccable/scripts/is-generated.mjs`
+- `.augment/skills/impeccable/scripts/live-accept.mjs`
+- `.augment/skills/impeccable/scripts/live-browser.js`
+- `.augment/skills/impeccable/scripts/live-inject.mjs`
+- `.augment/skills/impeccable/scripts/live-poll.mjs`
+- `.augment/skills/impeccable/scripts/live-server.mjs`
+- `.augment/skills/impeccable/scripts/live-wrap.mjs`
 ### Tech Stack
 **Languages:** Python
 **Frameworks:** Pydantic
@@ -188,45 +177,45 @@ Last indexed: 2026-06-04 (commit 2a60abe). Confidence: 100%.
 ### Architectural Layers
 | Layer | Files | Purpose |
 |-------|-------|---------|
-| Deck Artifact Generator | 35 | Generates initial deck artifacts for the first deck setup. |
-| Test Suite and Manifests | 37 | Contains test cases for deck rosters, effect families schema, engine purity, alo |
-| Deck Roster Data | 6 | JSON data file containing the roster for the first deck. |
-| Interface Package Init | 7 | Package initialization file for the interface module. |
-| Scripts Package Init | 2 | Package initialization file for the scripts module. |
-| pyproject | 1 |  |
-| agents | 1 |  |
-| product | 1 |  |
-| skills/grug-brain-development | 1 |  |
-| skills-lock | 1 |  |
+| Determinization Core | 47 | Core module implementing determinization logic for the PyRants OpenSpiel environ |
+| Utility Scripts | 58 | Collection of automation scripts for building workbooks, enriching catalogs, fin |
+| Test Scenario Data | 19 | Test fixtures and JSON scenario files used for verifying card generation and beh |
+| Architecture Decision Record | 31 | Records the architecture decision to treat the C engine as the source of truth. |
+| Archived Planning Documents | 62 | Collection of archived planning documents, sweep results, and implementation not |
+| Board Interface Rendering | 15 | Handles the visual representation and rendering of the game board, including can |
+| Game Setup Loading | 14 | Manages the loading and generation of game scenarios, card data, market setup, a |
+| Skill Creator Utilities | 5 | Provides utility scripts for evaluating, generating reports, and improving descr |
+| Skill Packaging Tools | 2 | Contains scripts for quick validation and packaging of skills for deployment in  |
+| Catalog Audit Scripts | 2 | Automated auditing and execution reporting for the game's catalog system to ensu |
 
-### Guided Tour (8 steps)
-1. **Game Session Entry Point** — `game_session.py`
-2. **Core Game State Definition** — `engine/state.py`
-3. **Game Moves and Actions** — `engine/moves.py`
-4. **Rules and Validation** — `engine/rules.py`
-5. **Game Setup and Data Loading** — `game_setup/loaders.py`
-6. **Game Content Data Files** — `data/cards/effect_families.json`
-... and 2 more steps
+### Guided Tour (10 steps)
+1. **Project Overview** — `README.md`
+2. **OpenSpiel Game Integration** — `openspiel_pyrants/__init__.py`
+3. **C Engine Core** — `engine_c/state.h`
+4. **Python Bindings to C Engine** — `engine_c/bindings/engine_bindings.py`
+5. **Python Engine Logic** — `engine/state.py`
+6. **Game Setup and Loading** — `game_setup/loaders.py`
+... and 4 more steps
 ### Hotspots (High Churn)
 | File | Churn | 90d Commits | Owner |
 |------|-------|-------------|-------|
-| `engine/rules.py` | 100.0th %ile | 3 | Chimney343 |
-| `tests/test_generic_interpreter.py` | 99.7th %ile | 3 | Chimney343 |
-| `interface/game_viewer.py` | 99.4th %ile | 3 | Chimney343 |
-| `interface/board_creator.py` | 99.1th %ile | 2 | Chimney343 |
-| `data/cards/catalog.json` | 98.9th %ile | 2 | Chimney343 |
+| `data/cards/catalog.json` | 100.0th %ile | 27 | Chimney343 |
+| `tests/test_rules.py` | 99.8th %ile | 4 | Chimney343 |
+| `interface/game_viewer.py` | 99.6th %ile | 17 | Chimney343 |
+| `tests/test_rules_cards_a_m.py` | 99.5th %ile | 7 | Chimney343 |
+| `data/scenarios/pending_modal_choice.json` | 99.4th %ile | 4 | Chimney343 |
 
 ## Code health
-Hotspot health: 7.25/10 (stable) ·
-Average: 7.46/10 ·
-Worst: 5.3/10 (`.augment/skills/impeccable/scripts/design-parser.mjs`)
+Hotspot health: 6.49/10 (stable) ·
+Average: 7.21/10 ·
+Worst: 1.0/10 (`engine/rules.py`)
 
 ### Critical biomarkers
+- `.agents/skills/skill-creator/scripts/run_eval.py` — nested complexity (run_single_query) — impact −2.0
+- `engine/helpers.py` — untested hotspot — impact −2.0
+- `engine/rules.py` — untested hotspot — impact −2.0
 - `engine/state.py` — untested hotspot — impact −2.0
-- `.agents/skills/impeccable/scripts/live-browser.js` — large method (<anonymous>) — impact −1.1
-- `game_view.py` — complex method (describe_move) — impact −0.5
-- `.agents/skills/impeccable/scripts/live-server.mjs` — complex method (createRequestHandler) — impact −0.5
-- `.agents/skills/impeccable/scripts/live-server.mjs` — complex method (validateEvent) — impact −0.5
+- `engine_c/state.h` — untested hotspot — impact −2.0
 
 ### Repowise MCP Tools
 

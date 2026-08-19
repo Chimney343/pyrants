@@ -1,6 +1,6 @@
 # Pyrants
 
-Python engine and terminal UI for *Tyrants of the Underdark*, a deck-building area-control board game.
+C engine (via Python bindings) and terminal UI for *Tyrants of the Underdark*, a deck-building area-control board game.
 
 The engine is pure — it takes a game state and a move, returns a new state. No side effects, no I/O. The interface layer renders the board in the terminal and handles player interaction.
 
@@ -27,24 +27,23 @@ just test    # verify the install works
 |---------|-------------|
 | `just board-creator` | Build and edit board topology and layouts |
 | `just game-viewer` | Play interactively in the terminal |
-| `just game-simulate` | Run headless simulations (auto-play) |
-| `just replay-viewer` | Step through a recorded simulation |
+| `just simulate-c` | Run a headless simulation (auto-play) |
 | `just test` | Run the test suite |
 
-Each command accepts `--help` via `just <name>-help`, e.g. `just game-simulate-help`.
+Each command accepts `--help` via `just <name>-help`, e.g. `just game-viewer-help`.
 
 ## Architecture
 
 ```
-engine/         Pure game logic — state, moves, rules, phases, scoring
-interface/      Terminal UI — board renderer, dialogs, parser, viewers
-game_setup/     Loaders that assemble game state from JSON data files
-game_session.py Shared session controller (used by simulation and interactive play)
+engine_c/       C engine — state, rules, moves, phases, scoring (pure, no I/O)
+engine_c/bindings/  Python bindings to the C engine DLL
+interface/      Terminal UI — board renderer, game viewer, board creator
+game_setup/     Loaders that assemble game definitions from JSON data files
 data/           JSON fixtures — boards, cards, decks, layouts, scenarios
 tests/          pytest suite
 ```
 
-The engine has no I/O. It imports nothing from `interface/` or `game_setup/`. This keeps it testable and reusable across the simulation, interactive viewer, and replay viewer.
+The engine has no I/O. It imports nothing from `interface/` or `game_setup/`. This keeps it testable and reusable across the simulation, interactive viewer, and OpenSpiel wrapper.
 
 ## Data Format
 
