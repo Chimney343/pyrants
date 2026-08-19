@@ -1,0 +1,98 @@
+{
+  "card_id": "umber_hulk",
+  "name": "Umber Hulk",
+  "cost": 4,
+  "aspect": "conquest",
+  "secondary_aspects": [
+    "monstrosity"
+  ],
+  "deck_vp": 2,
+  "inner_circle_vp": 4,
+  "rules_text": "Deploy 3 troops. If an opponent causes you to discard this card, that opponent discards a card.",
+  "notes": "The trigger applies only when an opponent effect makes this card move from hand to discard pile. When that happens, the same opponent discards 1 card from hand.",
+  "execution_model": {
+    "kind": "sequence",
+    "actions": [
+      {
+        "action_id": "action_1",
+        "op": "deploy_troops",
+        "target_scope": "board_site",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "fixed",
+          "value": 3
+        },
+        "filters": [],
+        "source_fragment": "deploy_troops",
+        "metadata": {}
+      },
+      {
+        "action_id": "action_2",
+        "op": "force_discard",
+        "target_scope": "opponent",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "on_opponent_discard_punish",
+        "metadata": {}
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "action_1",
+      "op": "deploy_troops",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 3
+      },
+      "filters": [],
+      "source_fragment": "deploy_troops",
+      "metadata": {}
+    },
+    {
+      "action_id": "action_2",
+      "op": "force_discard",
+      "target_scope": "opponent",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "on_opponent_discard_punish",
+      "metadata": {}
+    }
+  ],
+  "global_conditions": [
+    {
+      "condition_type": "conditional_gate",
+      "description": "Effect has conditional branch or threshold requirement"
+    }
+  ],
+  "state_contract": {
+    "reads": [
+      "player.barracks",
+      "board.troop_slots",
+      "player.hand",
+      "threshold_or_target_rules"
+    ],
+    "writes": [
+      "board.troop_slots",
+      "player.barracks",
+      "player.hand",
+      "player.discard_pile"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

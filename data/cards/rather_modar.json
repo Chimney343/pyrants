@@ -1,0 +1,94 @@
+{
+  "card_id": "rather_modar",
+  "name": "Rather Modar",
+  "cost": 6,
+  "aspect": "guile",
+  "secondary_aspects": [
+    "human"
+  ],
+  "deck_vp": 2,
+  "inner_circle_vp": 5,
+  "rules_text": "Draw 2 cards. Place a spy.",
+  "notes": "Straight additive effect card. The spy instruction uses the established default spy placement rule.",
+  "execution_model": {
+    "kind": "sequence",
+    "actions": [
+      {
+        "action_id": "action_1",
+        "op": "draw_cards",
+        "target_scope": "self",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "fixed",
+          "value": 2
+        },
+        "filters": [],
+        "source_fragment": "draw_cards",
+        "metadata": {}
+      },
+      {
+        "action_id": "action_2",
+        "op": "place_spy",
+        "target_scope": "board_site",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "spy",
+        "metadata": {}
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "action_1",
+      "op": "draw_cards",
+      "target_scope": "self",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 2
+      },
+      "filters": [],
+      "source_fragment": "draw_cards",
+      "metadata": {}
+    },
+    {
+      "action_id": "action_2",
+      "op": "place_spy",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "spy",
+      "metadata": {}
+    }
+  ],
+  "global_conditions": [],
+  "state_contract": {
+    "reads": [
+      "player.deck",
+      "player.discard_pile",
+      "player.spies_available",
+      "board.nodes"
+    ],
+    "writes": [
+      "player.hand",
+      "player.deck",
+      "player.discard_pile",
+      "board.spies",
+      "player.spies_available"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

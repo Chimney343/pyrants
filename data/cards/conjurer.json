@@ -1,0 +1,182 @@
+{
+  "card_id": "conjurer",
+  "name": "Conjurer",
+  "cost": 5,
+  "aspect": "guile",
+  "secondary_aspects": [
+    "human"
+  ],
+  "deck_vp": 2,
+  "inner_circle_vp": 3,
+  "rules_text": "Choose exactly one mode. Either place a spy, or return one of your spies to recruit up to 2 cards that cost 3 or less.",
+  "notes": "Recruit up to 2 market cards costing 3 or less. Each recruited card follows normal recruit destination rules and goes to your discard pile.",
+  "execution_model": {
+    "kind": "modal_choice",
+    "selection": "exactly_one",
+    "options": [
+      {
+        "option_id": "option_1",
+        "actions": [
+          {
+            "action_id": "option_1_action_1",
+            "op": "place_spy",
+            "target_scope": "board_site",
+            "timing": "immediate",
+            "optional": false,
+            "quantity": {
+              "kind": "unspecified",
+              "value": null
+            },
+            "filters": [],
+            "source_fragment": "spy",
+            "metadata": {}
+          }
+        ]
+      },
+      {
+        "option_id": "option_2",
+        "actions": [
+          {
+            "action_id": "option_2_action_1",
+            "op": "return_spy",
+            "target_scope": "board_site",
+            "timing": "immediate",
+            "optional": false,
+            "quantity": {
+              "kind": "unspecified",
+              "value": null
+            },
+            "filters": [],
+            "source_fragment": "return_own_spy",
+            "metadata": {
+              "spy_owner": "self"
+            }
+          },
+          {
+            "action_id": "option_2_action_2",
+            "op": "recruit_card",
+            "target_scope": "market",
+            "timing": "immediate",
+            "optional": true,
+            "quantity": {
+              "kind": "unspecified",
+              "value": null
+            },
+            "filters": [
+              "max_cost_3"
+            ],
+            "source_fragment": "recruit_low_cost_card",
+            "metadata": {
+              "max_cost": 3
+            }
+          },
+          {
+            "action_id": "option_2_action_3",
+            "op": "recruit_card",
+            "target_scope": "market",
+            "timing": "immediate",
+            "optional": true,
+            "quantity": {
+              "kind": "unspecified",
+              "value": null
+            },
+            "filters": [
+              "max_cost_3"
+            ],
+            "source_fragment": "recruit_low_cost_card",
+            "metadata": {
+              "max_cost": 3
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "option_1_action_1",
+      "op": "place_spy",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "spy",
+      "metadata": {}
+    },
+    {
+      "action_id": "option_2_action_1",
+      "op": "return_spy",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "return_own_spy",
+      "metadata": {
+        "spy_owner": "self"
+      }
+    },
+    {
+      "action_id": "option_2_action_2",
+      "op": "recruit_card",
+      "target_scope": "market",
+      "timing": "immediate",
+      "optional": true,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [
+        "max_cost_3"
+      ],
+      "source_fragment": "recruit_low_cost_card",
+      "metadata": {
+        "max_cost": 3
+      }
+    },
+    {
+      "action_id": "option_2_action_3",
+      "op": "recruit_card",
+      "target_scope": "market",
+      "timing": "immediate",
+      "optional": true,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [
+        "max_cost_3"
+      ],
+      "source_fragment": "recruit_low_cost_card",
+      "metadata": {
+        "max_cost": 3
+      }
+    }
+  ],
+  "global_conditions": [],
+  "state_contract": {
+    "reads": [
+      "player.spies_available",
+      "board.nodes",
+      "board.spies",
+      "market.row",
+      "card_catalog"
+    ],
+    "writes": [
+      "board.spies",
+      "player.spies_available",
+      "player.discard_pile",
+      "market.row",
+      "market.deck"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

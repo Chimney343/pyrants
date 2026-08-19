@@ -9,7 +9,7 @@ EXPORTS
     engine_winner
     engine_public_view
     engine_private_view
-    engine_load_definition
+    engine_load_definition_json
     engine_apply_setup_json
     engine_clone_cow
     advance_phase

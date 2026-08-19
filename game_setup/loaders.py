@@ -3,22 +3,19 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Iterable
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
-from engine.state import (
-    BoardDefinition,
-    CardCatalog,
-    GameDefinition,
-    SetupDefinition,
-    build_initial_game_state,
-)
 from game_setup.board_package import (
     BoardLayoutDefinition,
     BoardPackageDefinition,
     make_default_layout,
 )
+from game_setup.types import BoardDefinition, CardCatalog, GameDefinition, SetupDefinition
+
+ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_CARDS_DIR = ROOT / "data" / "cards"
 
 
 def _read_json(path: Path) -> dict[str, Any]:
@@ -27,6 +24,57 @@ def _read_json(path: Path) -> dict[str, Any]:
     if not isinstance(loaded, dict):
         raise ValueError(f"JSON file must contain an object at top level: {path}")
     return loaded
+
+
+def _read_json_any(path: Path) -> Any:
+    with path.open("r", encoding="utf-8") as handle:
+        return json.load(handle)
+
+
+def assemble_catalog_payload(cards_path: Path) -> dict[str, Any]:
+    """Assemble a catalog payload from a card directory or a legacy file.
+
+    A directory is treated as a card directory only when it contains a
+    ``manifest.json`` with a ``catalog_id``. Every ``*.json`` file in the
+    directory that is a JSON object with a string ``card_id`` key is treated
+    as one card; everything else (``manifest.json``, ``cards_OCR.json``, a
+    legacy combined ``catalog.json``) is skipped. Card order is the sorted
+    filename order.
+
+    A file argument is the legacy single-file catalog and is read as-is.
+    """
+    cards_path = Path(cards_path)
+    if cards_path.is_dir():
+        manifest_path = cards_path / "manifest.json"
+        if not manifest_path.is_file():
+            raise ValueError(
+                f"Card directory {cards_path} has no manifest.json; "
+                "expected a catalog manifest with a catalog_id"
+            )
+        manifest = _read_json(manifest_path)
+        catalog_id = manifest.get("catalog_id")
+        if not isinstance(catalog_id, str) or not catalog_id:
+            raise ValueError(f"manifest.json in {cards_path} has no catalog_id")
+
+        cards: list[dict[str, Any]] = []
+        for path in sorted(cards_path.glob("*.json")):
+            if path.name == "manifest.json":
+                continue
+            try:
+                data = _read_json_any(path)
+            except (OSError, ValueError):
+                continue
+            if isinstance(data, dict) and isinstance(data.get("card_id"), str):
+                cards.append(data)
+        return {"catalog_id": catalog_id, "cards": cards}
+
+    return _read_json(cards_path)
+
+
+@lru_cache(maxsize=None)
+def assemble_catalog_text(cards_path: Path) -> str:
+    """Return the assembled catalog as an indented JSON string (LF-newline)."""
+    return json.dumps(assemble_catalog_payload(cards_path), indent=2) + "\n"
 
 
 def load_deck_rosters(decks_dir: Path) -> list[dict[str, Any]]:
@@ -83,36 +131,17 @@ def build_game_definition_from_files(
     setup_path: Path,
     definition_id: str = "base_game",
 ) -> GameDefinition:
-    """Load definitions from JSON files and build an immutable game definition."""
+    """Load definitions from files and build an immutable game definition.
+
+    *card_path* is dir-or-file: a card directory (assembled via
+    :func:`assemble_catalog_payload`) or a legacy single-file catalog.
+    """
 
     return build_game_definition_from_dicts(
         board_data=_read_json(board_path),
-        card_data=_read_json(card_path),
+        card_data=assemble_catalog_payload(card_path),
         setup_data=_read_json(setup_path),
         definition_id=definition_id,
-    )
-
-
-def create_game_state_from_files(
-    board_path: Path,
-    card_path: Path,
-    setup_path: Path,
-    player_ids: Iterable[str],
-    definition_id: str = "base_game",
-    seed: int | None = None,
-):
-    """Build immutable definitions from files and return a seeded initial game state."""
-
-    definition = build_game_definition_from_files(
-        board_path=board_path,
-        card_path=card_path,
-        setup_path=setup_path,
-        definition_id=definition_id,
-    )
-    return build_initial_game_state(
-        definition,
-        player_ids=player_ids,
-        shuffle_seed=seed or 0,
     )
 
 
@@ -160,17 +189,24 @@ def save_board_package_to_files(
 
 
 def load_card_catalog(card_path: Path) -> CardCatalog:
-    """Load a single card catalog from a JSON file."""
-    return CardCatalog.model_validate(_read_json(card_path))
+    """Load a card catalog from a directory (assembled) or a legacy file."""
+    return CardCatalog.model_validate(assemble_catalog_payload(card_path))
 
 
 def build_catalog_registry(cards_dir: Path) -> dict[str, CardCatalog]:
-    """Load every JSON file in cards_dir, parse as CardCatalog, key by catalog_id.
+    """Load card catalogs keyed by catalog_id.
 
-    Files that fail validation as CardCatalog are silently skipped.
+    A directory containing ``manifest.json`` (with a ``catalog_id``) is
+    treated as one catalog assembled from its per-card files. Otherwise every
+    ``*.json`` file is parsed as a standalone ``CardCatalog``; files that fail
+    validation are silently skipped.
     """
     registry: dict[str, CardCatalog] = {}
     if not cards_dir.is_dir():
+        return registry
+    if (cards_dir / "manifest.json").is_file():
+        catalog = CardCatalog.model_validate(assemble_catalog_payload(cards_dir))
+        registry[catalog.catalog_id] = catalog
         return registry
     for path in sorted(cards_dir.glob("*.json")):
         try:
@@ -193,5 +229,4 @@ def resolve_catalog(catalog_id: str, registry: dict[str, CardCatalog]) -> CardCa
 
 def default_catalog_registry() -> dict[str, CardCatalog]:
     """Build a registry from the project-default data/cards/ directory."""
-    cards_dir = Path(__file__).resolve().parents[1] / "data" / "cards"
-    return build_catalog_registry(cards_dir)
+    return build_catalog_registry(DEFAULT_CARDS_DIR)

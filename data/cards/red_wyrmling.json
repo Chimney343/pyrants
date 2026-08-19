@@ -1,0 +1,95 @@
+{
+  "card_id": "red_wyrmling",
+  "name": "Red Wyrmling",
+  "cost": 5,
+  "aspect": "malice",
+  "secondary_aspects": [
+    "dragon"
+  ],
+  "deck_vp": 3,
+  "inner_circle_vp": 5,
+  "rules_text": "Gain 2 power and 2 influence.",
+  "notes": "Simple fixed resource card with no timing or targeting questions.",
+  "execution_model": {
+    "kind": "sequence",
+    "actions": [
+      {
+        "action_id": "action_1",
+        "op": "gain_resource",
+        "target_scope": "self",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "fixed",
+          "value": 2
+        },
+        "filters": [],
+        "source_fragment": "gain_power_and_influence",
+        "metadata": {
+          "resource": "power"
+        }
+      },
+      {
+        "action_id": "action_2",
+        "op": "gain_resource",
+        "target_scope": "self",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "fixed",
+          "value": 2
+        },
+        "filters": [],
+        "source_fragment": "gain_power_and_influence",
+        "metadata": {
+          "resource": "influence"
+        }
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "action_1",
+      "op": "gain_resource",
+      "target_scope": "self",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 2
+      },
+      "filters": [],
+      "source_fragment": "gain_power_and_influence",
+      "metadata": {
+        "resource": "power"
+      }
+    },
+    {
+      "action_id": "action_2",
+      "op": "gain_resource",
+      "target_scope": "self",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 2
+      },
+      "filters": [],
+      "source_fragment": "gain_power_and_influence",
+      "metadata": {
+        "resource": "influence"
+      }
+    }
+  ],
+  "global_conditions": [],
+  "state_contract": {
+    "reads": [
+      "effect_payload"
+    ],
+    "writes": [
+      "resource_pool"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

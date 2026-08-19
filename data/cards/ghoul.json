@@ -1,0 +1,97 @@
+{
+  "card_id": "ghoul",
+  "name": "Ghoul",
+  "cost": 4,
+  "aspect": "malice",
+  "secondary_aspects": [
+    "undead"
+  ],
+  "deck_vp": 2,
+  "inner_circle_vp": 4,
+  "rules_text": "Gain 2 power. Give an Insane Outcast to each opponent.",
+  "notes": "`Give insane outcast to each opponent` uses the same resolved Insane Outcast transfer rule as Myconid Sovereign, repeated for every opponent.",
+  "execution_model": {
+    "kind": "sequence",
+    "actions": [
+      {
+        "action_id": "action_1",
+        "op": "gain_resource",
+        "target_scope": "self",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "fixed",
+          "value": 2
+        },
+        "filters": [],
+        "source_fragment": "gain_power",
+        "metadata": {
+          "resource": "power"
+        }
+      },
+      {
+        "action_id": "action_2",
+        "op": "custom_effect",
+        "target_scope": "opponent_player",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "give_negative_card_to_each_opponent",
+        "metadata": {
+          "effect_kind": "give_insane_outcast_to_each_opponent"
+        }
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "action_1",
+      "op": "gain_resource",
+      "target_scope": "self",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 2
+      },
+      "filters": [],
+      "source_fragment": "gain_power",
+      "metadata": {
+        "resource": "power"
+      }
+    },
+    {
+      "action_id": "action_2",
+      "op": "custom_effect",
+      "target_scope": "opponent_player",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "give_negative_card_to_each_opponent",
+      "metadata": {
+        "effect_kind": "give_insane_outcast_to_each_opponent"
+      }
+    }
+  ],
+  "global_conditions": [],
+  "state_contract": {
+    "reads": [
+      "effect_payload",
+      "custom_rules"
+    ],
+    "writes": [
+      "resource_pool",
+      "custom_state"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

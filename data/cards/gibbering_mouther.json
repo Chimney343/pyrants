@@ -1,0 +1,100 @@
+{
+  "card_id": "gibbering_mouther",
+  "name": "Gibbering Mouther",
+  "cost": 2,
+  "aspect": "conquest",
+  "secondary_aspects": [
+    "aberration"
+  ],
+  "deck_vp": 1,
+  "inner_circle_vp": 3,
+  "rules_text": "Deploy 2 troops. Choose a player who has Presence in the same site as one of the troops you deployed. That player adds an Insane Outcast to their discard pile.",
+  "notes": "The workbook rider text is malformed. The resolved effect gives the Insane Outcast using the established transfer rule to a player who has presence in the same site as one of the deployed troops.",
+  "execution_model": {
+    "kind": "sequence",
+    "actions": [
+      {
+        "action_id": "action_1",
+        "op": "deploy_troops",
+        "target_scope": "board_site",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "fixed",
+          "value": 2
+        },
+        "filters": [],
+        "source_fragment": "deploy_troops",
+        "metadata": {}
+      },
+      {
+        "action_id": "action_2",
+        "op": "custom_effect",
+        "target_scope": "opponent_player",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "give_insane_outcast_to_player_with_presence_at_deployed_site",
+        "metadata": {
+          "effect_kind": "give_insane_outcast_to_player_with_presence_on_last_selected_node"
+        }
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "action_1",
+      "op": "deploy_troops",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 2
+      },
+      "filters": [],
+      "source_fragment": "deploy_troops",
+      "metadata": {}
+    },
+    {
+      "action_id": "action_2",
+      "op": "custom_effect",
+      "target_scope": "opponent_player",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "give_insane_outcast_to_player_with_presence_at_deployed_site",
+      "metadata": {
+        "effect_kind": "give_insane_outcast_to_player_with_presence_on_last_selected_node"
+      }
+    }
+  ],
+  "global_conditions": [
+    {
+      "condition_type": "conditional_gate",
+      "description": "Effect has conditional branch or threshold requirement"
+    }
+  ],
+  "state_contract": {
+    "reads": [
+      "player.barracks",
+      "board.troop_slots",
+      "condition_context"
+    ],
+    "writes": [
+      "board.troop_slots",
+      "player.barracks",
+      "resource_pool_or_followup_actions"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

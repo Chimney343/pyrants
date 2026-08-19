@@ -1,0 +1,131 @@
+{
+  "card_id": "wraith",
+  "name": "Wraith",
+  "cost": 2,
+  "aspect": "guile",
+  "secondary_aspects": [
+    "undead"
+  ],
+  "deck_vp": 0,
+  "inner_circle_vp": 1,
+  "rules_text": "Place a spy. You may devour this card to assassinate a troop there.",
+  "notes": "`There` refers to the site where the spy was placed. The assassinate uses standard assassinate legality at that site, and devouring this card is the cost for that rider.",
+  "execution_model": {
+    "kind": "sequence",
+    "actions": [
+      {
+        "action_id": "action_1",
+        "op": "place_spy",
+        "target_scope": "board_site",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "spy",
+        "metadata": {}
+      },
+      {
+        "action_id": "action_2",
+        "op": "devour_cost",
+        "target_scope": "played_self",
+        "timing": "immediate",
+        "optional": true,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "optional_self_devour",
+        "metadata": {
+          "source_zone": "played_self",
+          "self_replace": false
+        }
+      },
+      {
+        "action_id": "action_3",
+        "op": "assassinate_troop",
+        "target_scope": "board_site",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "assassinate_there",
+        "metadata": {}
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "action_1",
+      "op": "place_spy",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "spy",
+      "metadata": {}
+    },
+    {
+      "action_id": "action_2",
+      "op": "devour_cost",
+      "target_scope": "played_self",
+      "timing": "immediate",
+      "optional": true,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "optional_self_devour",
+      "metadata": {
+        "source_zone": "played_self",
+        "self_replace": false
+      }
+    },
+    {
+      "action_id": "action_3",
+      "op": "assassinate_troop",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "assassinate_there",
+      "metadata": {}
+    }
+  ],
+  "global_conditions": [],
+  "state_contract": {
+    "reads": [
+      "player.spies_available",
+      "board.nodes",
+      "source_zone",
+      "devour_rules",
+      "board.troop_slots",
+      "presence_or_target_rules"
+    ],
+    "writes": [
+      "board.spies",
+      "player.spies_available",
+      "devour_zone_or_equivalent",
+      "source_zone",
+      "board.troop_slots",
+      "player.trophy_hall"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

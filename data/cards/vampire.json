@@ -1,0 +1,143 @@
+{
+  "card_id": "vampire",
+  "name": "Vampire",
+  "cost": 7,
+  "aspect": "ambition",
+  "secondary_aspects": [
+    "undead"
+  ],
+  "deck_vp": 4,
+  "inner_circle_vp": 7,
+  "rules_text": "Choose exactly one mode. Either supplant a troop, or promote a card from your discard pile and then gain 1 VP for every 3 promoted cards.",
+  "notes": "Uses the established modal `or` rule. The VP scaling follows the established promoted-card counting rule and rounds down by groups of 3.",
+  "execution_model": {
+    "kind": "modal_choice",
+    "selection": "exactly_one",
+    "options": [
+      {
+        "option_id": "option_1",
+        "actions": [
+          {
+            "action_id": "option_1_action_1",
+            "op": "supplant_troop",
+            "target_scope": "board_site",
+            "timing": "immediate",
+            "optional": false,
+            "quantity": {
+              "kind": "unspecified",
+              "value": null
+            },
+            "filters": [],
+            "source_fragment": "supplant",
+            "metadata": {}
+          }
+        ]
+      },
+      {
+        "option_id": "option_2",
+        "actions": [
+          {
+            "action_id": "option_2_action_1",
+            "op": "promote_card",
+            "target_scope": "self",
+            "timing": "immediate",
+            "optional": false,
+            "quantity": {
+              "kind": "unspecified",
+              "value": null
+            },
+            "filters": [],
+            "source_fragment": "promote_from_discard",
+            "metadata": {}
+          },
+          {
+            "action_id": "option_2_action_2",
+            "op": "grant_vp",
+            "target_scope": "self",
+            "timing": "immediate",
+            "optional": false,
+            "quantity": {
+              "kind": "unspecified",
+              "value": null
+            },
+            "filters": [],
+            "source_fragment": "scaled_vp",
+            "metadata": {
+              "count_from": "inner_circle_cards",
+              "per": 3
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "option_1_action_1",
+      "op": "supplant_troop",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "supplant",
+      "metadata": {}
+    },
+    {
+      "action_id": "option_2_action_1",
+      "op": "promote_card",
+      "target_scope": "self",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "promote_from_discard",
+      "metadata": {}
+    },
+    {
+      "action_id": "option_2_action_2",
+      "op": "grant_vp",
+      "target_scope": "self",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "scaled_vp",
+      "metadata": {
+        "count_from": "inner_circle_cards",
+        "per": 3
+      }
+    }
+  ],
+  "global_conditions": [],
+  "state_contract": {
+    "reads": [
+      "board.troop_slots",
+      "presence_or_target_rules",
+      "player.played_cards",
+      "player.hand",
+      "player.discard_pile",
+      "vp_scale_source"
+    ],
+    "writes": [
+      "board.troop_slots",
+      "player.trophy_hall",
+      "player.inner_circle",
+      "player.played_cards",
+      "player.hand",
+      "player.discard_pile",
+      "player.vp_tokens_or_score"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

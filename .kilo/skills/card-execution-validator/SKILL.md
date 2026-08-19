@@ -8,7 +8,7 @@ description: Validate that a Tyrants of the Underdraft card's execution model is
 This skill drives a **human-in-the-loop, card-by-card** review of the C engine's
 card interpretation. The engine is written in C and lives in `/engine_c`; the
 Python `engine/` directory is a deprecated port — never extend it. The catalog
-of card execution models is `data/cards/catalog.json`. Each of the 125 cards has
+of card execution models is `data/cards/*.json`. Each of the 125 cards has
 a corresponding saved scenario the human plays through to judge correctness.
 
 The unit of work is **one card**. You and the human iterate on that card until
@@ -21,7 +21,7 @@ A card's behavior flows through three layers. A "card doesn't work" report is
 almost always a defect in exactly one of them, and diagnosing which one is most
 of the job:
 
-1. **Catalog (`data/cards/catalog.json`)** — the `execution_model` is the source
+1. **Catalog (`data/cards/*.json`)** — the `execution_model` is the source
    of truth for what the card *should* do. If it's mis-specified, no engine can
    get it right. Symptoms: the engine faithfully executes something that isn't
    what `rules_text` says.
@@ -42,7 +42,7 @@ guess wastes a rebuild cycle.
 | Thing | Path |
 |-------|------|
 | Per-card scenarios (one per card) | `data/scenarios/batch_card_generation/*_<card_id>.json` (e.g. `001_seed_4_aboleth.json`); also `data/scenarios/random_card_generation/` |
-| Card execution models | `data/cards/catalog.json` (each card's `execution_model` field) |
+| Card execution models | `data/cards/*.json` (each card's `execution_model` field) |
 | Effect family schema | `data/cards/effect_families.json`, `effect_families.schema.json` |
 | C engine core | `engine_c/generic_runtime.c` / `.h`, `engine_c/actions.c`, `engine_c/helpers.c`, `engine_c/selection.c` |
 | C state / pending choice | `engine_c/state.h` (`PendingGenericChoiceState`, `CardAction`) |
@@ -96,7 +96,7 @@ Decide catalog vs. C engine vs. GUI using the symptom map in
 `references/catalog_and_engine_map.md` and the questions below. Verify by
 reading the actual source — never assume.
 
-- **Is the `execution_model` in `catalog.json` a faithful encoding of
+- **Is the `execution_model` in the per-card catalog files a faithful encoding of
   `rules_text`?** Read the card's entry. Check each `op`, `target_scope`,
   `quantity`, `filters`, and `metadata` against `rules_text`. If the encoding is
   wrong, **the fix is the catalog**, not the engine.
@@ -119,7 +119,7 @@ Before writing new C, find a sibling card whose `execution_model` already works
 and mirror its handling. The workflow:
 
 1. Find cards using the same `op` / `target_scope`:
-   `rg '"op": "<op>"' data/cards/catalog.json`.
+   `rg '"op": "<op>"' data/cards/*.json`.
 2. Find their applier in `engine_c/generic_runtime.c`:
    `rg '<op>' engine_c/generic_runtime.c`.
 3. Pick the closest sibling (same scope, same quantity kind, similar filters,

@@ -2,16 +2,15 @@
 
 from __future__ import annotations
 
-import json
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-
 from engine_c.bindings.ce_api import CEngine
 from engine_c.bindings.engine_bindings import _lib
 from engine_c.bindings.session import CSession
 from engine_c.bindings.view import build_c_game_view
+from game_setup.loaders import assemble_catalog_payload
 from tests.c_engine.card_test_helpers import make_card_test_session
 
 DATA_DIR = Path(__file__).resolve().parents[2] / "data"
@@ -77,7 +76,7 @@ def test_myconid_sovereign_cannot_promote_self():
     """Myconid Sovereign's end-of-turn promote must exclude itself."""
     eng = CEngine()
     eng.initialize(
-        catalog_path=str(DATA_DIR / "cards" / "catalog.json"),
+        catalog_path=str(DATA_DIR / "cards"),
         board_path=str(DATA_DIR / "boards" / "tyrants_of_the_underdark.json"),
         setup_path=str(DATA_DIR / "decks" / "base_setup.json"),
     )
@@ -113,7 +112,7 @@ def test_myconid_sovereign_skip_with_no_other_cards():
     """When only Myconid Sovereign is played, skip_promote should be available."""
     eng = CEngine()
     eng.initialize(
-        catalog_path=str(DATA_DIR / "cards" / "catalog.json"),
+        catalog_path=str(DATA_DIR / "cards"),
         board_path=str(DATA_DIR / "boards" / "tyrants_of_the_underdark.json"),
         setup_path=str(DATA_DIR / "decks" / "base_setup.json"),
     )
@@ -146,7 +145,7 @@ def test_myconid_sovereign_promotes_correct_card():
     """Promoting noble via Myconid Sovereign should move noble to inner circle."""
     eng = CEngine()
     eng.initialize(
-        catalog_path=str(DATA_DIR / "cards" / "catalog.json"),
+        catalog_path=str(DATA_DIR / "cards"),
         board_path=str(DATA_DIR / "boards" / "tyrants_of_the_underdark.json"),
         setup_path=str(DATA_DIR / "decks" / "base_setup.json"),
     )
@@ -196,7 +195,7 @@ def test_myconid_sovereign_catalog_encoding_requires_another_played_card():
     the engine offers self as a promote target and never falls back to
     ``skip_promote`` when no other card was played this turn.
     """
-    catalog = json.loads((DATA_DIR / "cards" / "catalog.json").read_text(encoding="utf-8"))
+    catalog = assemble_catalog_payload(DATA_DIR / "cards")
     card = next(c for c in catalog["cards"] if c["card_id"] == "myconid_sovereign")
 
     for action in (card["execution_model"]["actions"][1], card["actions"][1]):

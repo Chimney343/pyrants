@@ -1,0 +1,110 @@
+{
+  "card_id": "imix",
+  "name": "Imix",
+  "cost": 6,
+  "aspect": "malice",
+  "secondary_aspects": [
+    "elemental prince"
+  ],
+  "deck_vp": 3,
+  "inner_circle_vp": 6,
+  "rules_text": "Gain 4 power. If the focus condition is met for Malice, gain 2 power.",
+  "notes": "Simple fixed resource card plus separate same-resource focus bonus.",
+  "execution_model": {
+    "kind": "sequence",
+    "actions": [
+      {
+        "action_id": "action_1",
+        "op": "gain_resource",
+        "target_scope": "self",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "fixed",
+          "value": 4
+        },
+        "filters": [],
+        "source_fragment": "gain_power",
+        "metadata": {
+          "resource": "power"
+        }
+      },
+      {
+        "action_id": "action_2",
+        "op": "conditional_bonus",
+        "target_scope": "self",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "focus_gain_power",
+        "metadata": {
+          "condition": "focus_aspect_present",
+          "focus_aspect": "malice",
+          "resource": "power",
+          "amount": 2
+        }
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "action_1",
+      "op": "gain_resource",
+      "target_scope": "self",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 4
+      },
+      "filters": [],
+      "source_fragment": "gain_power",
+      "metadata": {
+        "resource": "power"
+      }
+    },
+    {
+      "action_id": "action_2",
+      "op": "conditional_bonus",
+      "target_scope": "self",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "focus_gain_power",
+      "metadata": {
+        "condition": "focus_aspect_present",
+        "focus_aspect": "malice",
+        "resource": "power",
+        "amount": 2
+      }
+    }
+  ],
+  "global_conditions": [
+    {
+      "condition_type": "focus_check",
+      "description": "Requires matching-aspect support card in hand or played zone"
+    },
+    {
+      "condition_type": "conditional_gate",
+      "description": "Effect has conditional branch or threshold requirement"
+    }
+  ],
+  "state_contract": {
+    "reads": [
+      "effect_payload"
+    ],
+    "writes": [
+      "resource_pool"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

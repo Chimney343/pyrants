@@ -58,6 +58,15 @@ def _target_owner_from_label(label: str) -> str:
     return parts[1]
 
 
+def _first_player_owned_target(view):
+    """First assassinate target owned by a player (not a neutral white troop)."""
+    for m in view.legal_moves:
+        owner = _target_owner_from_label(m.label)
+        if owner not in ("white", "empty"):
+            return m
+    return None
+
+
 def test_mindwitness_discards_owners_random_card() -> None:
     """Assassinating a player troop triggers random discard from that owner's hand."""
     session = CSession.load(str(SCENARIO_PATH))
@@ -68,7 +77,8 @@ def test_mindwitness_discards_owners_random_card() -> None:
             break
 
     view = build_c_game_view(session)
-    target_move = view.legal_moves[0]
+    target_move = _first_player_owned_target(view)
+    assert target_move is not None, "Expected a player-owned assassinate target"
     owner = _target_owner_from_label(target_move.label)
     owner_before = _player_state(session, owner)
 
@@ -99,7 +109,8 @@ def test_mindwitness_no_discard_when_hand_too_small() -> None:
             break
 
     view = build_c_game_view(session)
-    target_move = view.legal_moves[0]
+    target_move = _first_player_owned_target(view)
+    assert target_move is not None, "Expected a player-owned assassinate target"
     owner = _target_owner_from_label(target_move.label)
 
     # Strip the targeted player's hand down to 2 cards so the discard condition fails

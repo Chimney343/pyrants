@@ -2,14 +2,15 @@
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
-CATALOG_PATH = Path(__file__).resolve().parents[1] / "data" / "cards" / "catalog.json"
+from game_setup.loaders import assemble_catalog_payload
+
+CATALOG_PATH = Path(__file__).resolve().parents[1] / "data" / "cards"
 
 
 def test_neogi_execution_model_deploys_four_and_random_mass_discard() -> None:
-    catalog = json.loads(CATALOG_PATH.read_text(encoding="utf-8"))
+    catalog = assemble_catalog_payload(CATALOG_PATH)
     cards = catalog if isinstance(catalog, list) else catalog.get("cards", catalog)
     neogi = next(c for c in cards if c.get("card_id") == "neogi")
 

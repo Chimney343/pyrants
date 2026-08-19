@@ -1,7 +1,7 @@
 """Python wrapper around engine_build_view — projects CGameView into Python dataclasses.
 
 Maps Sym→str via the DLL's intern_str and enriches card IDs with catalog
-metadata (name, cost, aspect, rules) loaded once from data/cards/catalog.json.
+metadata (name, cost, aspect, rules) assembled once from data/cards/.
 
 Usage:
     from engine_c.bindings.view import build_c_game_view
@@ -11,10 +11,11 @@ Usage:
 from __future__ import annotations
 
 import ctypes
-import json
 from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
+
+from game_setup.loaders import assemble_catalog_payload
 
 from .engine_bindings import (
     PHASE_CLEANUP,
@@ -135,12 +136,10 @@ class CLegalMoveView:
 
 
 def _load_catalog() -> dict[str, dict]:
-    catalog_path = Path(__file__).parent.parent.parent / "data" / "cards" / "catalog.json"
-    with open(catalog_path, encoding="utf-8") as f:
-        raw = json.load(f)
-    cards = raw.get("cards", raw) if isinstance(raw, dict) else raw
+    cards_dir = Path(__file__).parent.parent.parent / "data" / "cards"
+    payload = assemble_catalog_payload(cards_dir)
     result: dict[str, dict] = {}
-    for entry in cards:
+    for entry in payload.get("cards", []):
         cid = entry.get("card_id", "")
         if cid:
             result[cid] = entry

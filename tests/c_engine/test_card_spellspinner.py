@@ -14,12 +14,12 @@ The option_2 supplant is constrained to the site the spy was returned from
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 from engine_c.bindings.engine_bindings import _lib
 from engine_c.bindings.session import CSession
 from engine_c.bindings.view import build_c_game_view
+from game_setup.loaders import assemble_catalog_payload
 from tests.c_engine.card_test_helpers import (
     _make_engine,
     _session_player_index,
@@ -98,7 +98,7 @@ def _labeled_moves(session: CSession, label_substr: str) -> list:
 
 def test_spellspinner_execution_model():
     """The catalog encodes the modal choice and the option_2 supplant signals."""
-    catalog = json.loads((DATA_DIR / "cards" / "catalog.json").read_text(encoding="utf-8"))
+    catalog = assemble_catalog_payload(DATA_DIR / "cards")
     cards = catalog if isinstance(catalog, list) else catalog.get("cards", catalog)
     card = next(c for c in cards if c.get("card_id") == "spellspinner")
 

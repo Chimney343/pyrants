@@ -1,0 +1,106 @@
+{
+  "card_id": "ulitharid",
+  "name": "Ulitharid",
+  "cost": 6,
+  "aspect": "ambition",
+  "secondary_aspects": [
+    "illithid"
+  ],
+  "deck_vp": 3,
+  "inner_circle_vp": 6,
+  "rules_text": "Choose a market card that costs 4 or less. Play it immediately by resolving its instructions without recruiting it. After its full effect finishes, devour that card. While it is being played this way, it does not count for aspect checks or end-of-turn effects.",
+  "notes": "This is a temporary market-card play effect with a cost cap and an immediate post-resolution devour.",
+  "execution_model": {
+    "kind": "sequence",
+    "actions": [
+      {
+        "action_id": "action_1",
+        "op": "play_card",
+        "target_scope": "inner_circle_or_market",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "play",
+        "metadata": {
+          "source_zone": "market",
+          "max_cost": 4
+        }
+      },
+      {
+        "action_id": "action_2",
+        "op": "devour_cost",
+        "target_scope": "unknown",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "devour",
+        "metadata": {
+          "source_zone": "market",
+          "self_replace": false,
+          "requires_last_selected_market_slot": true
+        }
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "action_1",
+      "op": "play_card",
+      "target_scope": "inner_circle_or_market",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "play",
+      "metadata": {
+        "source_zone": "market",
+        "max_cost": 4
+      }
+    },
+    {
+      "action_id": "action_2",
+      "op": "devour_cost",
+      "target_scope": "unknown",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "devour",
+      "metadata": {
+        "source_zone": "market",
+        "self_replace": false,
+        "requires_last_selected_market_slot": true
+      }
+    }
+  ],
+  "global_conditions": [],
+  "state_contract": {
+    "reads": [
+      "player.inner_circle",
+      "card_catalog",
+      "source_zone",
+      "devour_rules"
+    ],
+    "writes": [
+      "player.played_cards",
+      "devour_zone_or_equivalent",
+      "source_zone"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

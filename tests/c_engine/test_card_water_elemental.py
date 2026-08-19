@@ -66,7 +66,7 @@ def test_water_elemental_deploys_two_troops_no_focus():
     playing it should deploy 2 troops and NOT draw a card."""
     eng = CEngine()
     eng.initialize(
-        catalog_path=str(DATA_DIR / "cards" / "catalog.json"),
+        catalog_path=str(DATA_DIR / "cards"),
         board_path=str(DATA_DIR / "boards" / "tyrants_of_the_underdark.json"),
         setup_path=str(DATA_DIR / "decks" / "base_setup.json"),
     )
@@ -117,7 +117,7 @@ def test_water_elemental_deploys_two_troops_with_focus():
     playing it should deploy 2 troops AND draw 1 card."""
     eng = CEngine()
     eng.initialize(
-        catalog_path=str(DATA_DIR / "cards" / "catalog.json"),
+        catalog_path=str(DATA_DIR / "cards"),
         board_path=str(DATA_DIR / "boards" / "tyrants_of_the_underdark.json"),
         setup_path=str(DATA_DIR / "decks" / "base_setup.json"),
     )

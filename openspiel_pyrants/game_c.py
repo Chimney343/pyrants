@@ -14,7 +14,7 @@ from openspiel_pyrants.action_encoding_c import NUM_DISTINCT_ACTIONS
 
 _DATA_DIR = Path(__file__).resolve().parents[1] / "data"
 _DEFAULT_BOARD = _DATA_DIR / "boards" / "tyrants_of_the_underdark.json"
-_DEFAULT_CARDS = _DATA_DIR / "cards" / "catalog.json"
+_DEFAULT_CARDS = _DATA_DIR / "cards"
 _DEFAULT_SETUP = _DATA_DIR / "decks" / "base_setup.json"
 
 _DEFAULT_PARAMS = {

@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 from engine_c.bindings.ce_api import CEngine
 from engine_c.bindings.engine_bindings import _lib
 from engine_c.bindings.session import CSession
+from game_setup.loaders import assemble_catalog_payload
 from tests.c_engine.card_test_helpers import make_card_test_session
 
 DATA_DIR = Path(__file__).resolve().parents[2] / "data"
@@ -65,7 +65,7 @@ def test_black_wyrmling_gains_influence_and_assassinates_white_troop() -> None:
     """Play at site with presence + white troop: gain 1 influence, assassinate the white troop."""
     eng = CEngine()
     eng.initialize(
-        catalog_path=str(DATA_DIR / "cards" / "catalog.json"),
+        catalog_path=str(DATA_DIR / "cards"),
         board_path=str(DATA_DIR / "boards" / "tyrants_of_the_underdark.json"),
         setup_path=str(DATA_DIR / "decks" / "base_setup.json"),
     )
@@ -114,7 +114,7 @@ def test_black_wyrmling_no_valid_target_auto_resolves() -> None:
     """When no white troop exists on board, gain influence and auto-resolve with no pending state."""
     eng = CEngine()
     eng.initialize(
-        catalog_path=str(DATA_DIR / "cards" / "catalog.json"),
+        catalog_path=str(DATA_DIR / "cards"),
         board_path=str(DATA_DIR / "boards" / "tyrants_of_the_underdark.json"),
         setup_path=str(DATA_DIR / "decks" / "base_setup.json"),
     )
@@ -149,7 +149,7 @@ def test_black_wyrmling_only_targets_white_troops() -> None:
     """At a site with non-white enemy troops, no resolve_generic moves should be generated."""
     eng = CEngine()
     eng.initialize(
-        catalog_path=str(DATA_DIR / "cards" / "catalog.json"),
+        catalog_path=str(DATA_DIR / "cards"),
         board_path=str(DATA_DIR / "boards" / "tyrants_of_the_underdark.json"),
         setup_path=str(DATA_DIR / "decks" / "base_setup.json"),
     )
@@ -181,7 +181,7 @@ def test_black_wyrmling_requires_presence_for_target_site() -> None:
     """White troop at a site without presence should not be targetable."""
     eng = CEngine()
     eng.initialize(
-        catalog_path=str(DATA_DIR / "cards" / "catalog.json"),
+        catalog_path=str(DATA_DIR / "cards"),
         board_path=str(DATA_DIR / "boards" / "tyrants_of_the_underdark.json"),
         setup_path=str(DATA_DIR / "decks" / "base_setup.json"),
     )
@@ -214,7 +214,7 @@ def test_black_wyrmling_trophy_hall_contains_assassinated_white() -> None:
     """Assassinated white troop should appear in the trophy hall as 'white'."""
     eng = CEngine()
     eng.initialize(
-        catalog_path=str(DATA_DIR / "cards" / "catalog.json"),
+        catalog_path=str(DATA_DIR / "cards"),
         board_path=str(DATA_DIR / "boards" / "tyrants_of_the_underdark.json"),
         setup_path=str(DATA_DIR / "decks" / "base_setup.json"),
     )
@@ -243,7 +243,7 @@ def test_black_wyrmling_influence_gained_even_without_white_target() -> None:
     """Influence is gained regardless of whether an assassinate target exists."""
     eng = CEngine()
     eng.initialize(
-        catalog_path=str(DATA_DIR / "cards" / "catalog.json"),
+        catalog_path=str(DATA_DIR / "cards"),
         board_path=str(DATA_DIR / "boards" / "tyrants_of_the_underdark.json"),
         setup_path=str(DATA_DIR / "decks" / "base_setup.json"),
     )
@@ -264,9 +264,7 @@ def test_black_wyrmling_influence_gained_even_without_white_target() -> None:
 
 def test_black_wyrmling_catalog_structure() -> None:
     """Verify execution_model: sequence with gain_resource + assassinate_troop."""
-    catalog_path = DATA_DIR / "cards" / "catalog.json"
-    with open(catalog_path, encoding="utf-8") as f:
-        catalog = json.load(f)
+    catalog = assemble_catalog_payload(DATA_DIR / "cards")
 
     card = None
     for c in catalog["cards"]:

@@ -1,0 +1,103 @@
+{
+  "card_id": "wyrmspeaker",
+  "name": "Wyrmspeaker",
+  "cost": 3,
+  "aspect": "ambition",
+  "secondary_aspects": [
+    "dwarf"
+  ],
+  "deck_vp": 1,
+  "inner_circle_vp": 3,
+  "rules_text": "Gain 1 influence. At end of turn, promote a played card other than this card.",
+  "notes": "This uses the same target rule as Cleric of Laogzed: it must promote a different played card. If there is no other played card at end of turn, the effect does nothing.",
+  "execution_model": {
+    "kind": "sequence",
+    "actions": [
+      {
+        "action_id": "action_1",
+        "op": "gain_resource",
+        "target_scope": "self",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "fixed",
+          "value": 1
+        },
+        "filters": [],
+        "source_fragment": "gain_influence",
+        "metadata": {
+          "resource": "influence"
+        }
+      },
+      {
+        "action_id": "action_2",
+        "op": "promote_card",
+        "target_scope": "self",
+        "timing": "end_of_turn",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "triggered_promote",
+        "metadata": {}
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "action_1",
+      "op": "gain_resource",
+      "target_scope": "self",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 1
+      },
+      "filters": [],
+      "source_fragment": "gain_influence",
+      "metadata": {
+        "resource": "influence"
+      }
+    },
+    {
+      "action_id": "action_2",
+      "op": "promote_card",
+      "target_scope": "self",
+      "timing": "end_of_turn",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "triggered_promote",
+      "metadata": {}
+    }
+  ],
+  "global_conditions": [
+    {
+      "condition_type": "timing_trigger",
+      "description": "Effect includes deferred or triggered timing"
+    }
+  ],
+  "state_contract": {
+    "reads": [
+      "effect_payload",
+      "player.played_cards",
+      "player.hand",
+      "player.discard_pile"
+    ],
+    "writes": [
+      "resource_pool",
+      "player.inner_circle",
+      "player.played_cards",
+      "player.hand",
+      "player.discard_pile"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

@@ -16,6 +16,7 @@ site, and each of the three assassinate actions is optional.
 from __future__ import annotations
 
 from engine_c.bindings.engine_bindings import PHASE_MAIN, _lib
+from game_setup.loaders import assemble_catalog_payload
 from tests.c_engine.card_test_helpers import (
     _make_engine,
     _session_player_index,
@@ -344,12 +345,9 @@ def test_option_2_assassinates_only_one_when_one_white_present():
 def test_catalog_execution_model_devour_then_3_optional_white_assassinate():
     """Catalog encodes: devour(self) then 3 optional white-troop-only assassinate
     with the site locked after the first."""
-    import json
     from pathlib import Path
 
-    catalog = json.loads(
-        (Path(__file__).resolve().parents[2] / "data" / "cards" / "catalog.json").read_text(encoding="utf-8")
-    )
+    catalog = assemble_catalog_payload(Path(__file__).resolve().parents[2] / "data" / "cards")
     card = next(c for c in catalog["cards"] if c["card_id"] == _CARD)
     option_2 = next(o for o in card["execution_model"]["options"] if o["option_id"] == "option_2")
     actions = option_2["actions"]

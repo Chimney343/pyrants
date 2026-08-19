@@ -1,0 +1,161 @@
+{
+  "card_id": "death_tyrant",
+  "name": "Death Tyrant",
+  "cost": 7,
+  "aspect": "malice",
+  "secondary_aspects": [
+    "aberration"
+  ],
+  "deck_vp": 3,
+  "inner_circle_vp": 6,
+  "rules_text": "Assassinate up to 3 troops at a single site. Gain 1 influence for each troop removed by this effect.",
+  "notes": "This uses the same free card-effect assassinate semantics as Beholder, repeated up to 3 times at one site. The influence gain equals the actual number of troops removed by the effect.",
+  "execution_model": {
+    "kind": "sequence",
+    "actions": [
+      {
+        "action_id": "action_1",
+        "op": "assassinate_troop",
+        "target_scope": "board_site",
+        "timing": "immediate",
+        "optional": true,
+        "quantity": {
+          "kind": "fixed",
+          "value": 1
+        },
+        "filters": [],
+        "source_fragment": "assassinate_step_1",
+        "metadata": {}
+      },
+      {
+        "action_id": "action_2",
+        "op": "assassinate_troop",
+        "target_scope": "board_site",
+        "timing": "immediate",
+        "optional": true,
+        "quantity": {
+          "kind": "fixed",
+          "value": 1
+        },
+        "filters": [],
+        "source_fragment": "assassinate_step_2",
+        "metadata": {
+          "requires_last_selected_node": true
+        }
+      },
+      {
+        "action_id": "action_3",
+        "op": "assassinate_troop",
+        "target_scope": "board_site",
+        "timing": "immediate",
+        "optional": true,
+        "quantity": {
+          "kind": "fixed",
+          "value": 1
+        },
+        "filters": [],
+        "source_fragment": "assassinate_step_3",
+        "metadata": {
+          "requires_last_selected_node": true
+        }
+      },
+      {
+        "action_id": "action_4",
+        "op": "gain_resource",
+        "target_scope": "self",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "fixed",
+          "value": 1
+        },
+        "filters": [],
+        "source_fragment": "gain_influence_per_troop_removed_by_effect",
+        "metadata": {
+          "resource": "influence",
+          "count_from": "assassinations_by_source_effect"
+        }
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "action_1",
+      "op": "assassinate_troop",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": true,
+      "quantity": {
+        "kind": "fixed",
+        "value": 1
+      },
+      "filters": [],
+      "source_fragment": "assassinate_step_1",
+      "metadata": {}
+    },
+    {
+      "action_id": "action_2",
+      "op": "assassinate_troop",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": true,
+      "quantity": {
+        "kind": "fixed",
+        "value": 1
+      },
+      "filters": [],
+      "source_fragment": "assassinate_step_2",
+      "metadata": {
+        "requires_last_selected_node": true
+      }
+    },
+    {
+      "action_id": "action_3",
+      "op": "assassinate_troop",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": true,
+      "quantity": {
+        "kind": "fixed",
+        "value": 1
+      },
+      "filters": [],
+      "source_fragment": "assassinate_step_3",
+      "metadata": {
+        "requires_last_selected_node": true
+      }
+    },
+    {
+      "action_id": "action_4",
+      "op": "gain_resource",
+      "target_scope": "self",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 1
+      },
+      "filters": [],
+      "source_fragment": "gain_influence_per_troop_removed_by_effect",
+      "metadata": {
+        "resource": "influence",
+        "count_from": "assassinations_by_source_effect"
+      }
+    }
+  ],
+  "global_conditions": [],
+  "state_contract": {
+    "reads": [
+      "board.troop_slots",
+      "presence_or_target_rules",
+      "custom_rules"
+    ],
+    "writes": [
+      "board.troop_slots",
+      "player.trophy_hall",
+      "custom_state"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

@@ -4,6 +4,7 @@
 #include "rng.h"
 #include "loader.h"
 #include "moves.h"
+#include "tests/catalog_dir.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -104,17 +105,7 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    const char *catalog_path = "../../data/cards/catalog.json";
-    const char *board_path   = "../../data/boards/tyrants_of_the_underdark.json";
-    const char *setup_path   = "../../data/decks/base_setup.json";
-
-    GameDefinition *def = engine_load_definition(catalog_path, board_path, setup_path, arena);
-    if (!def) {
-        catalog_path = "../data/cards/catalog.json";
-        board_path   = "../data/boards/tyrants_of_the_underdark.json";
-        setup_path   = "../data/decks/base_setup.json";
-        def = engine_load_definition(catalog_path, board_path, setup_path, arena);
-    }
+    GameDefinition *def = test_load_definition(arena);
 
     if (!def || def->catalog.card_count == 0) {
         fprintf(stderr, "Failed to load game definition\n");

@@ -43,7 +43,7 @@ def test_vrock_option_1_places_spy() -> None:
     """Option 1: place a spy on a board site."""
     eng = CEngine()
     eng.initialize(
-        catalog_path=str(DATA_DIR / "cards" / "catalog.json"),
+        catalog_path=str(DATA_DIR / "cards"),
         board_path=str(DATA_DIR / "boards" / "tyrants_of_the_underdark.json"),
         setup_path=str(DATA_DIR / "decks" / "base_setup.json"),
     )
@@ -98,7 +98,7 @@ def test_vrock_option_2_returns_spy_and_grants_5_power() -> None:
     """Option 2: return own spy from board to barracks and gain 5 power."""
     eng = CEngine()
     eng.initialize(
-        catalog_path=str(DATA_DIR / "cards" / "catalog.json"),
+        catalog_path=str(DATA_DIR / "cards"),
         board_path=str(DATA_DIR / "boards" / "tyrants_of_the_underdark.json"),
         setup_path=str(DATA_DIR / "decks" / "base_setup.json"),
     )
@@ -159,7 +159,7 @@ def test_vrock_option_2_not_available_without_own_spy_on_board() -> None:
     """Option 2 should not be selectable when player has no spies on board."""
     eng = CEngine()
     eng.initialize(
-        catalog_path=str(DATA_DIR / "cards" / "catalog.json"),
+        catalog_path=str(DATA_DIR / "cards"),
         board_path=str(DATA_DIR / "boards" / "tyrants_of_the_underdark.json"),
         setup_path=str(DATA_DIR / "decks" / "base_setup.json"),
     )

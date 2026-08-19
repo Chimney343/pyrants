@@ -1,0 +1,98 @@
+{
+  "card_id": "neogi",
+  "name": "Neogi",
+  "cost": 7,
+  "aspect": "conquest",
+  "secondary_aspects": [
+    "aberration"
+  ],
+  "deck_vp": 4,
+  "inner_circle_vp": 8,
+  "rules_text": "Deploy 4 troops. At end of turn, each opponent discards a card.",
+  "notes": "Multi-deploy means four free troop placements using normal deploy legality. If the player cannot place all four troops, the action is illegal. The end-of-turn discard makes each opponent discard 1 card from hand.",
+  "execution_model": {
+    "kind": "sequence",
+    "actions": [
+      {
+        "action_id": "action_1",
+        "op": "deploy_troops",
+        "target_scope": "board_site",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "fixed",
+          "value": 4
+        },
+        "filters": [],
+        "source_fragment": "deploy_troops",
+        "metadata": {}
+      },
+      {
+        "action_id": "action_2",
+        "op": "force_discard",
+        "target_scope": "opponent",
+        "timing": "end_of_turn",
+        "optional": false,
+        "quantity": {
+          "kind": "variable_repeat",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "end_of_turn_mass_discard",
+        "metadata": {}
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "action_1",
+      "op": "deploy_troops",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 4
+      },
+      "filters": [],
+      "source_fragment": "deploy_troops",
+      "metadata": {}
+    },
+    {
+      "action_id": "action_2",
+      "op": "force_discard",
+      "target_scope": "opponent",
+      "timing": "end_of_turn",
+      "optional": false,
+      "quantity": {
+        "kind": "variable_repeat",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "end_of_turn_mass_discard",
+      "metadata": {}
+    }
+  ],
+  "global_conditions": [
+    {
+      "condition_type": "timing_trigger",
+      "description": "Effect includes deferred or triggered timing"
+    }
+  ],
+  "state_contract": {
+    "reads": [
+      "player.barracks",
+      "board.troop_slots",
+      "player.hand",
+      "threshold_or_target_rules"
+    ],
+    "writes": [
+      "board.troop_slots",
+      "player.barracks",
+      "player.hand",
+      "player.discard_pile"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

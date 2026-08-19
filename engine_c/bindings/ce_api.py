@@ -15,6 +15,8 @@ Usage:
 import ctypes
 from pathlib import Path
 
+from game_setup.loaders import assemble_catalog_text
+
 from .engine_bindings import (
     MAX_PLAYERS,
     MOVE_ACTIVATE_ABILITY,
@@ -90,6 +92,12 @@ class CMoveWrapper:
 
     __slots__ = ("_c_move", "_move_type", "_data")
 
+    _NAME_NORMALIZE = {
+        "activate_ability": "activate_card_ability",
+        "decline_ability": "decline_card_ability",
+        "resolve_generic": "resolve_generic_choice",
+    }
+
     def __init__(self, c_move: CMove):
         self._c_move = c_move
         self._move_type = _MOVE_TYPE_MAP.get(c_move.type, "unknown")
@@ -133,6 +141,8 @@ class CMoveWrapper:
             }
         elif mt == "promote_card":
             self._data = {"card_id": _sym_str(m.data.promote_card.card_id)}
+        elif mt == "skip_promote":
+            self._data = {"source_card_id": _sym_str(m.data.skip_promote.source_card_id)}
         elif mt == "resolve_generic":
             self._data = {
                 "action_id": _sym_str(m.data.resolve_generic.action_id),
@@ -155,8 +165,18 @@ class CMoveWrapper:
     def __deepcopy__(self, memo):
         return self
 
+    def __str__(self) -> str:
+        data = self.data
+        if data:
+            return f"{self._move_type}({', '.join(f'{k}={v!r}' for k, v in data.items())})"
+        return self._move_type
+
     def __repr__(self) -> str:
         return f"CMove({self._move_type}, {self.data})"
+
+    def to_payload(self) -> dict:
+        normalized = self._NAME_NORMALIZE.get(self._move_type, self._move_type)
+        return {"move_type": normalized, **self.data}
 
 
 class CState:
@@ -271,7 +291,7 @@ class CEngine:
 
     Usage:
         eng = CEngine()
-        eng.initialize("data/cards/catalog.json", "data/boards/...", "data/decks/...")
+        eng.initialize("data/cards", "data/boards/...", "data/decks/...")
         state = eng.create_game(["p1", "p2"], seed=42)
         moves = eng.legal_moves(state)
         state2 = eng.apply(state, moves[0])
@@ -286,6 +306,7 @@ class CEngine:
         self._arena = None
         self._initialized = False
         self._catalog_path = None
+        self._catalog_json = None
         self._board_path = None
         self._setup_path = None
 
@@ -318,7 +339,7 @@ class CEngine:
                 _lib.register_default_effects()
                 CEngine._globally_initialized = True
 
-        catalog_path = catalog_path or str(_data_dir() / "cards" / "catalog.json")
+        catalog_path = catalog_path or str(_data_dir() / "cards")
         board_path = board_path or str(_data_dir() / "boards" / "tyrants_of_the_underdark.json")
         setup_path = setup_path or str(_data_dir() / "decks" / "base_setup.json")
 
@@ -326,12 +347,16 @@ class CEngine:
         self._board_path = board_path
         self._setup_path = setup_path
 
+        catalog_json = assemble_catalog_text(Path(catalog_path))
+
         self._arena = _lib.arena_create(16 * 1024 * 1024)
-        self._definition = _lib.engine_load_definition(
-            catalog_path.encode(), board_path.encode(), setup_path.encode(), self._arena
+        self._definition = _lib.engine_load_definition_json(
+            catalog_json.encode(), board_path.encode(), setup_path.encode(), self._arena
         )
         if not self._definition:
             raise RuntimeError("Failed to load game definition in C engine")
+
+        self._catalog_json = catalog_json
 
         if setup_data_json:
             ret = _lib.engine_apply_setup_json(

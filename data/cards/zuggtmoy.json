@@ -1,0 +1,141 @@
+{
+  "card_id": "zuggtmoy",
+  "name": "Zuggtmoy",
+  "cost": 6,
+  "aspect": "ambition",
+  "secondary_aspects": [
+    "fiend"
+  ],
+  "deck_vp": 3,
+  "inner_circle_vp": 6,
+  "rules_text": "Devour a card in your inner circle to gain 3 influence and at end of turn promote up to 2 other played cards.",
+  "notes": "Devouring a card in your inner circle means devouring one of your promoted cards from that zone as a required cost, sending it to the normal devour pile permanently. The end-of-turn clause promotes up to 2 other played cards.",
+  "execution_model": {
+    "kind": "sequence",
+    "actions": [
+      {
+        "action_id": "action_1",
+        "op": "devour_cost",
+        "target_scope": "inner_circle",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "inner_circle_devour",
+        "metadata": {
+          "source_zone": "inner_circle",
+          "self_replace": false
+        }
+      },
+      {
+        "action_id": "action_2",
+        "op": "gain_resource",
+        "target_scope": "self",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "fixed",
+          "value": 3
+        },
+        "filters": [],
+        "source_fragment": "gain_influence",
+        "metadata": {
+          "resource": "influence"
+        }
+      },
+      {
+        "action_id": "action_3",
+        "op": "promote_card",
+        "target_scope": "self",
+        "timing": "end_of_turn",
+        "optional": false,
+        "quantity": {
+          "kind": "variable_repeat",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "triggered_multi_promote",
+        "metadata": {}
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "action_1",
+      "op": "devour_cost",
+      "target_scope": "inner_circle",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "inner_circle_devour",
+      "metadata": {
+        "source_zone": "inner_circle",
+        "self_replace": false
+      }
+    },
+    {
+      "action_id": "action_2",
+      "op": "gain_resource",
+      "target_scope": "self",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 3
+      },
+      "filters": [],
+      "source_fragment": "gain_influence",
+      "metadata": {
+        "resource": "influence"
+      }
+    },
+    {
+      "action_id": "action_3",
+      "op": "promote_card",
+      "target_scope": "self",
+      "timing": "end_of_turn",
+      "optional": false,
+      "quantity": {
+        "kind": "variable_repeat",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "triggered_multi_promote",
+      "metadata": {}
+    }
+  ],
+  "global_conditions": [
+    {
+      "condition_type": "timing_trigger",
+      "description": "Effect includes deferred or triggered timing"
+    }
+  ],
+  "state_contract": {
+    "reads": [
+      "source_zone",
+      "devour_rules",
+      "custom_rules",
+      "player.played_cards",
+      "player.hand",
+      "player.discard_pile"
+    ],
+    "writes": [
+      "devour_zone_or_equivalent",
+      "source_zone",
+      "custom_state",
+      "player.inner_circle",
+      "player.played_cards",
+      "player.hand",
+      "player.discard_pile"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

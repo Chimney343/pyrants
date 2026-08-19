@@ -1,0 +1,191 @@
+{
+  "card_id": "orcus",
+  "name": "Orcus",
+  "cost": 8,
+  "aspect": "malice",
+  "secondary_aspects": [
+    "fiend"
+  ],
+  "deck_vp": 5,
+  "inner_circle_vp": 10,
+  "rules_text": "Devour a card from your hand for 5 power. Assassinate 2 troops. Take up to 2 troops from any trophy halls and deploy them anywhere on the board.",
+  "notes": "The workbook rider text is malformed. The resolved effect takes up to 2 troops from any trophy halls and deploys them anywhere on the board after the hand-devour power gain and the two assassinations.",
+  "execution_model": {
+    "kind": "sequence",
+    "actions": [
+      {
+        "action_id": "action_1",
+        "op": "devour_cost",
+        "target_scope": "hand",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "hand_devour",
+        "metadata": {
+          "source_zone": "hand",
+          "self_replace": false
+        }
+      },
+      {
+        "action_id": "action_2",
+        "op": "gain_resource",
+        "target_scope": "self",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "fixed",
+          "value": 5
+        },
+        "filters": [],
+        "source_fragment": "gain_power_from_devour",
+        "metadata": {
+          "resource": "power"
+        }
+      },
+      {
+        "action_id": "action_3",
+        "op": "assassinate_troop",
+        "target_scope": "board_site",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "fixed",
+          "value": 1
+        },
+        "filters": [],
+        "source_fragment": "assassinate_step_1",
+        "metadata": {}
+      },
+      {
+        "action_id": "action_4",
+        "op": "assassinate_troop",
+        "target_scope": "board_site",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "fixed",
+          "value": 1
+        },
+        "filters": [],
+        "source_fragment": "assassinate_step_2",
+        "metadata": {}
+      },
+      {
+        "action_id": "action_5",
+        "op": "deploy_troops",
+        "target_scope": "board_site",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "redeploy_captured_units",
+        "metadata": {}
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "action_1",
+      "op": "devour_cost",
+      "target_scope": "hand",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "hand_devour",
+      "metadata": {
+        "source_zone": "hand",
+        "self_replace": false
+      }
+    },
+    {
+      "action_id": "action_2",
+      "op": "gain_resource",
+      "target_scope": "self",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 5
+      },
+      "filters": [],
+      "source_fragment": "gain_power_from_devour",
+      "metadata": {
+        "resource": "power"
+      }
+    },
+    {
+      "action_id": "action_3",
+      "op": "assassinate_troop",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 1
+      },
+      "filters": [],
+      "source_fragment": "assassinate_step_1",
+      "metadata": {}
+    },
+    {
+      "action_id": "action_4",
+      "op": "assassinate_troop",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 1
+      },
+      "filters": [],
+      "source_fragment": "assassinate_step_2",
+      "metadata": {}
+    },
+    {
+      "action_id": "action_5",
+      "op": "deploy_troops",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "redeploy_captured_units",
+      "metadata": {}
+    }
+  ],
+  "global_conditions": [],
+  "state_contract": {
+    "reads": [
+      "source_zone",
+      "devour_rules",
+      "custom_rules",
+      "board.troop_slots",
+      "presence_or_target_rules",
+      "player.barracks"
+    ],
+    "writes": [
+      "devour_zone_or_equivalent",
+      "source_zone",
+      "custom_state",
+      "board.troop_slots",
+      "player.trophy_hall",
+      "player.barracks"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

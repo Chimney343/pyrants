@@ -3,15 +3,24 @@
 Death Tyrant: Assassinate up to 3 troops at a single site.
 Gain 1 influence for each troop removed by this effect.
 
-Execution model:
-  1. select_site (mandatory, requires presence)
-  2. assassinate_troop x3 (each optional, allow_white_troop, locked to selected site)
-  3. gain_resource influence (count = assassinations_by_source_effect)
+Execution model (sequence):
+  1. assassinate_troop (optional) — first assassination may target any site
+     where the player has presence and an enemy/white troop sits.
+  2. assassinate_troop (optional, requires_last_selected_node) — locked to the
+     site chosen in the first assassination.
+  3. assassinate_troop (optional, requires_last_selected_node) — locked to the
+     same site.
+  4. gain_resource influence (count = assassinations_by_source_effect).
+
+These tests lock in that (a) the first assassination offers any legal site,
+(b) every subsequent assassination is restricted to the site chosen first, and
+(c) influence equals the number of troops actually removed.
 """
 
 from __future__ import annotations
 
 from engine_c.bindings.engine_bindings import PHASE_MAIN, _lib
+from game_setup.loaders import assemble_catalog_payload
 from tests.c_engine.card_test_helpers import (
     _make_engine,
     _session_player_index,
@@ -80,33 +89,16 @@ def _play_card(session, card_id=_CARD):
     raise AssertionError(f"{card_id} not playable")
 
 
-def _select_site(session, node_id):
-    for m in session.legal_moves():
-        if (m.move_type == "resolve_generic"
-                and m.data.get("action_id") == node_id
-                and m.data.get("target_id") is None):
-            session.submit_move(m)
-            return
-    session.destroy()
-    raise AssertionError(
-        f"Site {node_id} not selectable; legal: {[(m.move_type, m.data) for m in session.legal_moves()]}"
-    )
-
-
-def _site_selection_moves(session):
-    return [
-        m for m in session.legal_moves()
-        if m.move_type == "resolve_generic"
-        and m.data.get("action_id") is not None
-        and m.data.get("target_id") is None
-    ]
-
-
 def _assassinate_moves(session):
+    """Moves that pick a troop slot to assassinate (action_id=site, target_id=slot)."""
     return [
         m for m in session.legal_moves()
         if m.move_type == "resolve_generic" and m.data.get("target_id") is not None
     ]
+
+
+def _assassinate_sites(session):
+    return {m.data.get("action_id") for m in _assassinate_moves(session)}
 
 
 def _submit_assassinate_at(session, node_id, slot_index):
@@ -126,13 +118,52 @@ def _submit_skip(session):
     return False
 
 
+def _drain(session):
+    """Decline any remaining optional actions until the card fully resolves."""
+    while _has_pending_generic(session):
+        assert _submit_skip(session), (
+            f"Should be able to skip remaining actions; "
+            f"legal: {[(m.move_type, m.data) for m in session.legal_moves()]}"
+        )
+
+
 # ---------------------------------------------------------------------------
 # Tests
 # ---------------------------------------------------------------------------
 
 
+def test_first_assassinate_offers_any_site_subsequent_locked_to_same_site():
+    """First assassination may target any legal site; later ones only the chosen site."""
+    session = _build_session(
+        spies={_SITE_A: [_P1], _SITE_B: [_P1]},
+        troops={_P1: {
+            _SITE_A: [_P2, _P2, _P2],
+            _SITE_B: [_P2, _P2, _P2],
+        }},
+    )
+
+    _play_card(session)
+    assert _has_pending_generic(session), "Should await the first assassination"
+
+    # First assassination: both sites with presence + enemy troops are offered.
+    assert _assassinate_sites(session) == {_SITE_A, _SITE_B}, (
+        f"First assassinate should offer both sites, got {_assassinate_sites(session)}"
+    )
+
+    assert _submit_assassinate_at(session, _SITE_A, 0), "Should assassinate a troop at site A"
+
+    # Subsequent assassinations must be locked to site A.
+    assert _has_pending_generic(session), "Should await a second assassination"
+    assert _assassinate_sites(session) == {_SITE_A}, (
+        f"Second assassinate must be locked to {_SITE_A}, got {_assassinate_sites(session)}"
+    )
+
+    _drain(session)
+    session.destroy()
+
+
 def test_assassinates_3_troops_and_gains_3_influence():
-    """Play Death Tyrant, select a site, assassinate all 3 troops, verify influence=3."""
+    """Assassinate all 3 troops at one site; influence increases by exactly 3."""
     session = _build_session(
         spies={_SITE_A: [_P1]},
         troops={_P1: {_SITE_A: [_P2, _P2, _P2]}},
@@ -141,25 +172,24 @@ def test_assassinates_3_troops_and_gains_3_influence():
     inf_before = _influence(session)
     _play_card(session)
 
-    assert _has_pending_generic(session), "Should await site selection after playing Death Tyrant"
-    _select_site(session, _SITE_A)
-
     for slot in (0, 1, 2):
         assert _has_pending_generic(session), f"Should await assassinate #{slot + 1}"
         assert _submit_assassinate_at(session, _SITE_A, slot), (
-            f"Should be able to assassinate troop at slot {slot}"
+            f"Should assassinate troop at slot {slot}"
         )
 
     assert not _has_pending_generic(session), "Should resolve after all assassinations"
-    assert _troops_at_node(session, _SITE_A) == [None, None, None], "All troops should be removed"
-    assert _influence(session) == inf_before + 3, f"Influence should increase by 3, got {_influence(session) - inf_before}"
-    assert _P2 in _trophy_hall(session, _P1), "Assassinated troops should go to active player's trophy hall"
+    assert _troops_at_node(session, _SITE_A) == [None, None, None], "All troops removed"
+    assert _influence(session) == inf_before + 3, (
+        f"Influence should be +3, got {_influence(session) - inf_before}"
+    )
+    assert _trophy_hall(session, _P1).count(_P2) == 3, "3 troops should enter the trophy hall"
 
     session.destroy()
 
 
 def test_can_stop_after_one_assassination():
-    """Assassinate 1 troop then skip; skip_advance_to_index jumps to gain_resource. Influence=1."""
+    """Assassinate 1 troop, decline the rest; influence increases by exactly 1."""
     session = _build_session(
         spies={_SITE_A: [_P1]},
         troops={_P1: {_SITE_A: [_P2, _P2, _P2]}},
@@ -167,22 +197,21 @@ def test_can_stop_after_one_assassination():
 
     inf_before = _influence(session)
     _play_card(session)
-    _select_site(session, _SITE_A)
 
     assert _submit_assassinate_at(session, _SITE_A, 0), "Should assassinate first troop"
-
-    if _has_pending_generic(session):
-        assert _submit_skip(session), "Should be able to skip remaining"
+    _drain(session)
 
     assert not _has_pending_generic(session)
     assert _troops_at_node(session, _SITE_A) == [None, _P2, _P2]
-    assert _influence(session) == inf_before + 1, f"Influence should be +1, got {_influence(session) - inf_before}"
+    assert _influence(session) == inf_before + 1, (
+        f"Influence should be +1, got {_influence(session) - inf_before}"
+    )
 
     session.destroy()
 
 
-def test_decline_all_assassinations_after_site_selection():
-    """Skip the first assassinate; skip_advance_to_index:4 jumps to gain_resource (auto-resolves). Influence=0."""
+def test_decline_all_assassinations_gains_no_influence():
+    """Declining every assassination removes nothing and gains no influence."""
     session = _build_session(
         spies={_SITE_A: [_P1]},
         troops={_P1: {_SITE_A: [_P2, _P2, _P2]}},
@@ -190,19 +219,19 @@ def test_decline_all_assassinations_after_site_selection():
 
     inf_before = _influence(session)
     _play_card(session)
-    _select_site(session, _SITE_A)
+    assert _has_pending_generic(session)
 
-    assert _submit_skip(session), "Should be able to skip the assassinate action"
+    _drain(session)
 
     assert not _has_pending_generic(session)
-    assert _troops_at_node(session, _SITE_A) == [_P2, _P2, _P2], "No troops should be removed"
-    assert _influence(session) == inf_before, f"Influence should be unchanged, got delta {_influence(session) - inf_before}"
+    assert _troops_at_node(session, _SITE_A) == [_P2, _P2, _P2], "No troops removed"
+    assert _influence(session) == inf_before, "Influence unchanged"
 
     session.destroy()
 
 
-def test_no_targets_at_selected_site_resolves_with_zero_influence():
-    """Site with no troops: card resolves immediately after site selection, no influence gained."""
+def test_no_enemy_troops_resolves_with_zero_influence():
+    """With no enemy troops anywhere, the card resolves immediately with no influence."""
     session = _build_session(
         spies={_SITE_A: [_P1]},
         troops={_P1: {_SITE_A: [None, None, None]}},
@@ -211,17 +240,14 @@ def test_no_targets_at_selected_site_resolves_with_zero_influence():
     inf_before = _influence(session)
     _play_card(session)
 
-    assert _has_pending_generic(session)
-    _select_site(session, _SITE_A)
-
-    assert not _has_pending_generic(session), "Should auto-resolve when no troops at site"
-    assert _influence(session) == inf_before, f"Influence should remain {inf_before}, got {_influence(session)}"
+    assert not _has_pending_generic(session), "Should auto-resolve when no targets exist"
+    assert _influence(session) == inf_before, "Influence unchanged"
 
     session.destroy()
 
 
-def test_assassinates_white_troops():
-    """Death Tyrant can assassinate white troops (allow_white_troop filter)."""
+def test_assassinates_white_troop():
+    """Death Tyrant may assassinate a white troop (standard free-assassinate semantics)."""
     session = _build_session(
         spies={_SITE_A: [_P1]},
         troops={_P1: {_SITE_A: [_WHITE, _P2, None]}},
@@ -229,73 +255,20 @@ def test_assassinates_white_troops():
 
     inf_before = _influence(session)
     _play_card(session)
-    _select_site(session, _SITE_A)
 
-    assert _submit_assassinate_at(session, _SITE_A, 0), "Should assassinate white troop at slot 0"
-
-    if _has_pending_generic(session):
-        assert _submit_skip(session)
+    assert _submit_assassinate_at(session, _SITE_A, 0), "Should assassinate the white troop"
+    _drain(session)
 
     assert not _has_pending_generic(session)
     assert _troops_at_node(session, _SITE_A) == [None, _P2, None]
-    assert _influence(session) == inf_before + 1, f"Influence should be +1, got {_influence(session) - inf_before}"
-    trophy = _trophy_hall(session, _P1)
-    assert _WHITE in trophy, f"White troop should be in trophy hall, got {trophy}"
+    assert _influence(session) == inf_before + 1
+    assert _WHITE in _trophy_hall(session, _P1), "White troop should land in the trophy hall"
 
     session.destroy()
 
 
-def test_assassinate_moves_locked_to_selected_site():
-    """Assassinate moves after site selection must only target the chosen site."""
-    session = _build_session(
-        spies={_SITE_A: [_P1], _SITE_B: [_P1]},
-        troops={_P1: {
-            _SITE_A: [_P2, _P2, None],
-            _SITE_B: [_P2, None, None],
-        }},
-    )
-
-    _play_card(session)
-    _select_site(session, _SITE_A)
-
-    targets = {m.data.get("action_id") for m in _assassinate_moves(session)}
-    assert targets == {_SITE_A}, f"All assassinate targets must be {_SITE_A}, got {targets}"
-
-    session.destroy()
-
-
-def test_site_selection_requires_presence():
-    """Only sites where the player has presence are offered for selection."""
-    session = _build_session(
-        spies={_SITE_A: [_P1]},
-        troops={_P2: {_SITE_A: [_P2, _P2, _P2]}},
-    )
-
-    _play_card(session)
-
-    offered = {m.data.get("action_id") for m in _site_selection_moves(session)}
-    assert _SITE_A in offered, f"Site with spy presence must be offered: {offered}"
-
-    session.destroy()
-
-
-def test_cannot_select_site_without_presence():
-    """Site without p1 presence and without p1 troops should not be offered."""
-    session = _build_session(
-        spies={},
-        troops={_P2: {_SITE_A: [_P2, _P2, _P2]}},
-    )
-
-    _play_card(session)
-
-    offered = {m.data.get("action_id") for m in _site_selection_moves(session)}
-    assert _SITE_A not in offered, f"Site without presence must not be offered: {offered}"
-
-    session.destroy()
-
-
-def test_gains_influence_equal_to_assassinated_count():
-    """Influence gain matches actual number of troops removed, not the max 3."""
+def test_gains_influence_equal_to_actual_count():
+    """Influence equals troops actually removed (2 of a possible 3)."""
     session = _build_session(
         spies={_SITE_A: [_P1]},
         troops={_P1: {_SITE_A: [_P2, _P2, None]}},
@@ -303,16 +276,111 @@ def test_gains_influence_equal_to_assassinated_count():
 
     inf_before = _influence(session)
     _play_card(session)
-    _select_site(session, _SITE_A)
 
     assert _submit_assassinate_at(session, _SITE_A, 0)
     assert _submit_assassinate_at(session, _SITE_A, 1)
-
-    if _has_pending_generic(session):
-        assert _submit_skip(session)
+    _drain(session)
 
     assert not _has_pending_generic(session)
     assert _troops_at_node(session, _SITE_A) == [None, None, None]
-    assert _influence(session) == inf_before + 2, f"Influence should be +2 (2 troops removed), got {_influence(session) - inf_before}"
+    assert _influence(session) == inf_before + 2, (
+        f"Influence should be +2 (2 troops removed), got {_influence(session) - inf_before}"
+    )
 
     session.destroy()
+
+
+def test_second_assassinate_cannot_switch_site_after_first():
+    """The chosen site is sticky across all three assassinations."""
+    session = _build_session(
+        spies={_SITE_A: [_P1], _SITE_B: [_P1]},
+        troops={_P1: {
+            _SITE_A: [_P2, _P2, _P2],
+            _SITE_B: [_P2, None, None],
+        }},
+    )
+
+    _play_card(session)
+    assert _submit_assassinate_at(session, _SITE_A, 0)
+
+    # A troop still remains at site B, but the second assassination may not target it.
+    assert _assassinate_sites(session) == {_SITE_A}, (
+        f"Second assassinate must not offer {_SITE_B}, got {_assassinate_sites(session)}"
+    )
+    assert not _submit_assassinate_at(session, _SITE_B, 0), "Site B must not be targetable"
+
+    _drain(session)
+    session.destroy()
+
+
+def test_first_assassinate_requires_presence():
+    """A site with enemy troops but no player presence is not offered."""
+    session = _build_session(
+        spies={_SITE_A: [_P1]},
+        troops={_P1: {
+            _SITE_A: [_P2, _P2, None],
+            _SITE_B: [_P2, _P2, _P2],
+        }},
+    )
+
+    _play_card(session)
+    assert _has_pending_generic(session)
+
+    assert _assassinate_sites(session) == {_SITE_A}, (
+        f"Only sites where the player has presence should be offered, got {_assassinate_sites(session)}"
+    )
+    assert not _submit_assassinate_at(session, _SITE_B, 0), "Site B (no presence) must not be targetable"
+
+    _drain(session)
+    session.destroy()
+
+
+def test_cannot_assassinate_own_troop():
+    """The player's own troops at a site are not valid assassination targets."""
+    session = _build_session(
+        spies={_SITE_A: [_P1]},
+        troops={_P1: {_SITE_A: [_P1, _P2, None]}},
+    )
+
+    _play_card(session)
+    assert _has_pending_generic(session)
+
+    slots = {
+        m.data.get("target_id")
+        for m in _assassinate_moves(session)
+        if m.data.get("action_id") == _SITE_A
+    }
+    assert slots == {"1"}, f"Only the enemy troop slot should be targetable, got {slots}"
+    assert not _submit_assassinate_at(session, _SITE_A, 0), "Own troop (slot 0) must not be targetable"
+
+    session.destroy()
+
+
+def test_catalog_execution_model_locks_subsequent_assassinations():
+    """The catalog encodes the site-lock: first assassinate free, later ones locked."""
+    from pathlib import Path
+
+    catalog = assemble_catalog_payload(Path(__file__).resolve().parents[2] / "data" / "cards")
+    card = next(c for c in catalog["cards"] if c["card_id"] == _CARD)
+    actions = card["execution_model"]["actions"]
+
+    assert [a["op"] for a in actions] == [
+        "assassinate_troop",
+        "assassinate_troop",
+        "assassinate_troop",
+        "gain_resource",
+    ]
+
+    assert actions[0]["optional"] is True, "First assassination must be optional"
+    assert "requires_last_selected_node" not in actions[0]["metadata"], (
+        "First assassination must be free to choose any site"
+    )
+    for a in actions[1:3]:
+        assert a["optional"] is True, "Each subsequent assassination must be optional"
+        assert a["metadata"].get("requires_last_selected_node") is True, (
+            "Second and third assassinations must be locked to the first site"
+        )
+
+    gain = actions[3]
+    assert gain["metadata"].get("resource") == "influence"
+    assert gain["metadata"].get("count_from") == "assassinations_by_source_effect"

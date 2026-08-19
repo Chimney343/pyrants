@@ -139,7 +139,7 @@ class CSession:
         *,
         move_count: int = 0,
         is_terminal: bool = False,
-        catalog_path: str = "data/cards/catalog.json",
+        catalog_path: str = "data/cards",
         board_path: str = "data/boards/tyrants_of_the_underdark.json",
         setup_path: str = "data/decks/base_setup.json",
     ) -> str:
@@ -160,7 +160,7 @@ class CSession:
 
     def save(self, path: str) -> None:
         """Serialize the current game state to a JSON scenario file."""
-        catalog_path = self._engine._catalog_path or "data/cards/catalog.json"
+        catalog_path = self._engine._catalog_path or "data/cards"
         board_path = self._engine._board_path or "data/boards/tyrants_of_the_underdark.json"
         setup_path = self._engine._setup_path or "data/decks/base_setup.json"
 
@@ -191,9 +191,13 @@ class CSession:
             engine.initialize()
 
         arena = engine._arena
+        catalog_json = engine._catalog_json
+        if not catalog_json:
+            raise RuntimeError("Engine has no assembled catalog JSON; call initialize() first")
+
         move_count = c_int(0)
         state_ptr = _lib.engine_deserialize_state(
-            json_text.encode(), None, arena, ctypes.byref(move_count),
+            json_text.encode(), catalog_json.encode(), arena, ctypes.byref(move_count),
         )
         if not state_ptr:
             raise RuntimeError(f"Failed to deserialize scenario from {path}")

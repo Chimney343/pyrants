@@ -1,0 +1,147 @@
+{
+  "card_id": "marlos_urnrayle",
+  "name": "Marlos Urnrayle",
+  "cost": 5,
+  "aspect": "ambition",
+  "secondary_aspects": [
+    "medusa"
+  ],
+  "deck_vp": 2,
+  "inner_circle_vp": 5,
+  "rules_text": "Gain 1 influence. At end of turn, promote another played card. Then recruit an Ambition card that costs 4 or less.",
+  "notes": "The row has three functional parts. The promote clause uses the established `another played card` rule and does nothing if no other played card exists.",
+  "execution_model": {
+    "kind": "sequence",
+    "actions": [
+      {
+        "action_id": "action_1",
+        "op": "gain_resource",
+        "target_scope": "self",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "fixed",
+          "value": 1
+        },
+        "filters": [],
+        "source_fragment": "gain_influence",
+        "metadata": {
+          "resource": "influence"
+        }
+      },
+      {
+        "action_id": "action_2",
+        "op": "promote_card",
+        "target_scope": "self",
+        "timing": "end_of_turn",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "triggered_promote",
+        "metadata": {}
+      },
+      {
+        "action_id": "action_3",
+        "op": "recruit_card",
+        "target_scope": "market",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [
+          "aspect_ambition_only",
+          "max_cost_4"
+        ],
+        "source_fragment": "recruit_aspect_filtered_card_by_cost",
+        "metadata": {
+          "required_aspect": "ambition",
+          "max_cost": 4
+        }
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "action_1",
+      "op": "gain_resource",
+      "target_scope": "self",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 1
+      },
+      "filters": [],
+      "source_fragment": "gain_influence",
+      "metadata": {
+        "resource": "influence"
+      }
+    },
+    {
+      "action_id": "action_2",
+      "op": "promote_card",
+      "target_scope": "self",
+      "timing": "end_of_turn",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "triggered_promote",
+      "metadata": {}
+    },
+    {
+      "action_id": "action_3",
+      "op": "recruit_card",
+      "target_scope": "market",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [
+        "aspect_ambition_only",
+        "max_cost_4"
+      ],
+      "source_fragment": "recruit_aspect_filtered_card_by_cost",
+      "metadata": {
+        "required_aspect": "ambition",
+        "max_cost": 4
+      }
+    }
+  ],
+  "global_conditions": [
+    {
+      "condition_type": "timing_trigger",
+      "description": "Effect includes deferred or triggered timing"
+    }
+  ],
+  "state_contract": {
+    "reads": [
+      "effect_payload",
+      "player.played_cards",
+      "player.hand",
+      "player.discard_pile",
+      "market.row",
+      "card_catalog"
+    ],
+    "writes": [
+      "resource_pool",
+      "player.inner_circle",
+      "player.played_cards",
+      "player.hand",
+      "player.discard_pile",
+      "market.row",
+      "market.deck"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

@@ -1,0 +1,108 @@
+{
+  "card_id": "high_priest_of_myrkul",
+  "name": "High Priest of Myrkul",
+  "cost": 6,
+  "aspect": "ambition",
+  "secondary_aspects": [
+    "human"
+  ],
+  "deck_vp": 3,
+  "inner_circle_vp": 6,
+  "rules_text": "Return another player's troop or spy. At end of turn, you may promote any number of Undead cards you played this turn (zero, one, some, or all).",
+  "notes": "The promote clause is optional-flexible: you may promote zero through all qualifying cards. Qualifying cards are cards from the Undead deck.",
+  "execution_model": {
+    "kind": "sequence",
+    "actions": [
+      {
+        "action_id": "action_1",
+        "op": "return_unit",
+        "target_scope": "opponent_unit",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "return_enemy_unit",
+        "metadata": {}
+      },
+      {
+        "action_id": "action_2",
+        "op": "promote_card",
+        "target_scope": "self",
+        "timing": "end_of_turn",
+        "optional": true,
+        "quantity": {
+          "kind": "variable_repeat",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "triggered_multi_promote_by_tag",
+        "metadata": {
+          "required_secondary_aspect": "undead",
+          "repeat_while_targets": true
+        }
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "action_1",
+      "op": "return_unit",
+      "target_scope": "opponent_unit",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "return_enemy_unit",
+      "metadata": {}
+    },
+    {
+      "action_id": "action_2",
+      "op": "promote_card",
+      "target_scope": "self",
+      "timing": "end_of_turn",
+      "optional": true,
+      "quantity": {
+        "kind": "variable_repeat",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "triggered_multi_promote_by_tag",
+      "metadata": {
+        "required_secondary_aspect": "undead",
+        "repeat_while_targets": true
+      }
+    }
+  ],
+  "global_conditions": [
+    {
+      "condition_type": "timing_trigger",
+      "description": "Effect includes deferred or triggered timing"
+    }
+  ],
+  "state_contract": {
+    "reads": [
+      "board.troop_slots",
+      "board.spies",
+      "player.played_cards",
+      "player.hand",
+      "player.discard_pile"
+    ],
+    "writes": [
+      "board.troop_slots",
+      "board.spies",
+      "player.spies_available",
+      "player.inner_circle",
+      "player.played_cards",
+      "player.hand",
+      "player.discard_pile"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

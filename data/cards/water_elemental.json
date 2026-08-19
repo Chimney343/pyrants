@@ -1,0 +1,70 @@
+{
+  "card_id": "water_elemental",
+  "name": "Water Elemental",
+  "cost": 2,
+  "aspect": "conquest",
+  "secondary_aspects": [
+    "elemental"
+  ],
+  "deck_vp": 1,
+  "inner_circle_vp": 2,
+  "rules_text": "Deploy 2 troops. If the focus condition is met for Conquest, draw a card.",
+  "notes": "Straight additive effect card with a separate Conquest focus draw bonus.",
+  "execution_model": {
+    "kind": "sequence",
+    "actions": [
+      {
+        "action_id": "action_1",
+        "op": "deploy_troops",
+        "target_scope": "board_site",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "fixed",
+          "value": 2
+        },
+        "filters": [],
+        "source_fragment": "deploy_troops_with_focus_draw",
+        "metadata": {}
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "action_1",
+      "op": "deploy_troops",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 2
+      },
+      "filters": [],
+      "source_fragment": "deploy_troops_with_focus_draw",
+      "metadata": {}
+    }
+  ],
+  "global_conditions": [
+    {
+      "condition_type": "focus_check",
+      "description": "Requires matching-aspect support card in hand or played zone"
+    },
+    {
+      "condition_type": "conditional_gate",
+      "description": "Effect has conditional branch or threshold requirement"
+    }
+  ],
+  "state_contract": {
+    "reads": [
+      "player.barracks",
+      "board.troop_slots"
+    ],
+    "writes": [
+      "board.troop_slots",
+      "player.barracks"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

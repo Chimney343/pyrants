@@ -2,14 +2,15 @@
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
-CATALOG_PATH = Path(__file__).resolve().parents[1] / "data" / "cards" / "catalog.json"
+from game_setup.loaders import assemble_catalog_payload
+
+CATALOG_PATH = Path(__file__).resolve().parents[1] / "data" / "cards"
 
 
 def test_mercenary_squad_execution_model_deploys_three_troops() -> None:
-    catalog = json.loads(CATALOG_PATH.read_text(encoding="utf-8"))
+    catalog = assemble_catalog_payload(CATALOG_PATH)
     cards = catalog if isinstance(catalog, list) else catalog.get("cards", catalog)
     ms = next(c for c in cards if c.get("card_id") == "mercenary_squad")
 

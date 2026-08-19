@@ -1,0 +1,121 @@
+{
+  "card_id": "black_earth_cultist",
+  "name": "Black Earth Cultist",
+  "cost": 2,
+  "aspect": "ambition",
+  "secondary_aspects": [
+    "human"
+  ],
+  "deck_vp": 1,
+  "inner_circle_vp": 2,
+  "rules_text": "At end of turn, promote another played card. If the focus condition is met for Ambition, gain 2 influence.",
+  "notes": "The end-of-turn promote uses the established `another played card` rule and does nothing if no other played card exists. The focus bonus is separate.",
+  "execution_model": {
+    "kind": "sequence",
+    "actions": [
+      {
+        "action_id": "action_1",
+        "op": "promote_card",
+        "target_scope": "self",
+        "timing": "end_of_turn",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "triggered_promote",
+        "metadata": {
+          "requires_another_played_card": true
+        }
+      },
+      {
+        "action_id": "action_2",
+        "op": "conditional_bonus",
+        "target_scope": "self",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "focus_influence_bonus",
+        "metadata": {
+          "condition": "focus_aspect_present",
+          "focus_aspect": "ambition",
+          "resource": "influence",
+          "amount": 2
+        }
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "action_1",
+      "op": "promote_card",
+      "target_scope": "self",
+      "timing": "end_of_turn",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "triggered_promote",
+      "metadata": {
+        "requires_another_played_card": true
+      }
+    },
+    {
+      "action_id": "action_2",
+      "op": "conditional_bonus",
+      "target_scope": "self",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "focus_influence_bonus",
+      "metadata": {
+        "condition": "focus_aspect_present",
+        "focus_aspect": "ambition",
+        "resource": "influence",
+        "amount": 2
+      }
+    }
+  ],
+  "global_conditions": [
+    {
+      "condition_type": "focus_check",
+      "description": "Requires matching-aspect support card in hand or played zone"
+    },
+    {
+      "condition_type": "conditional_gate",
+      "description": "Effect has conditional branch or threshold requirement"
+    },
+    {
+      "condition_type": "timing_trigger",
+      "description": "Effect includes deferred or triggered timing"
+    }
+  ],
+  "state_contract": {
+    "reads": [
+      "player.played_cards",
+      "player.hand",
+      "player.discard_pile",
+      "condition_context"
+    ],
+    "writes": [
+      "player.inner_circle",
+      "player.played_cards",
+      "player.hand",
+      "player.discard_pile",
+      "resource_pool_or_followup_actions"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

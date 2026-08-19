@@ -1,0 +1,105 @@
+{
+  "card_id": "derro",
+  "name": "Derro",
+  "cost": 3,
+  "aspect": "conquest",
+  "secondary_aspects": [
+    "gerro"
+  ],
+  "deck_vp": 1,
+  "inner_circle_vp": 4,
+  "rules_text": "Supplant a white troop anywhere. Recruit an Insane Outcast.",
+  "notes": "`Recruit an insane outcast` means take an Insane Outcast from the Insane Outcast deck and add it to your own discard pile using normal recruit destination rules.",
+  "execution_model": {
+    "kind": "sequence",
+    "actions": [
+      {
+        "action_id": "action_1",
+        "op": "supplant_troop",
+        "target_scope": "board_site",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [
+          "white_troop_only"
+        ],
+        "source_fragment": "supplant_white_troop_anywhere",
+        "metadata": {
+          "targeting": "anywhere",
+          "ignore_presence_requirement": true
+        }
+      },
+      {
+        "action_id": "action_2",
+        "op": "custom_effect",
+        "target_scope": "self",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "give_negative_card",
+        "metadata": {
+          "effect_kind": "give_insane_outcast_to_self"
+        }
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "action_1",
+      "op": "supplant_troop",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [
+        "white_troop_only"
+      ],
+      "source_fragment": "supplant_white_troop_anywhere",
+      "metadata": {
+        "targeting": "anywhere",
+        "ignore_presence_requirement": true
+      }
+    },
+    {
+      "action_id": "action_2",
+      "op": "custom_effect",
+      "target_scope": "self",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "give_negative_card",
+      "metadata": {
+        "effect_kind": "give_insane_outcast_to_self"
+      }
+    }
+  ],
+  "global_conditions": [],
+  "state_contract": {
+    "reads": [
+      "board.troop_slots",
+      "presence_or_target_rules",
+      "card_catalog"
+    ],
+    "writes": [
+      "board.troop_slots",
+      "player.trophy_hall",
+      "player.discard_pile"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

@@ -27,7 +27,7 @@ def _power(session: CSession) -> int:
 def test_soldier_gains_one_power():
     eng = CEngine()
     eng.initialize(
-        catalog_path=str(DATA_DIR / "cards" / "catalog.json"),
+        catalog_path=str(DATA_DIR / "cards"),
         board_path=str(DATA_DIR / "boards" / "tyrants_of_the_underdark.json"),
         setup_path=str(DATA_DIR / "decks" / "base_setup.json"),
     )

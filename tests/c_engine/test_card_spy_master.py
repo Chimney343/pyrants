@@ -7,10 +7,10 @@ so playing the card opens one spy-placement selection and then resolves.
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 from engine_c.bindings.engine_bindings import _lib
+from game_setup.loaders import assemble_catalog_payload
 from tests.c_engine.card_test_helpers import (
     _make_engine,
     _session_player_index,
@@ -94,8 +94,7 @@ def _resolve_spy_placement(session, node_id):
 
 def test_spy_master_catalog_structure():
     """The catalog encodes rules_text as a single place_spy action on a board site."""
-    with open(DATA_DIR / "cards" / "catalog.json", encoding="utf-8-sig") as f:
-        catalog = json.load(f)
+    catalog = assemble_catalog_payload(DATA_DIR / "cards")
 
     card = next(c for c in catalog["cards"] if c["card_id"] == _CARD)
     assert card["name"] == "Spy Master"

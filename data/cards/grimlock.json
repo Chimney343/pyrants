@@ -1,0 +1,99 @@
+{
+  "card_id": "grimlock",
+  "name": "Grimlock",
+  "cost": 1,
+  "aspect": "conquest",
+  "secondary_aspects": [
+    "grimlock"
+  ],
+  "deck_vp": 0,
+  "inner_circle_vp": 1,
+  "rules_text": "Deploy 1 troop. If your opponent causes you to discard this card from hand to discard pile, draw 2 cards.",
+  "notes": "This reuses the established opponent-caused-discard trigger pattern from Umber Hulk, but the payoff is drawing 2 cards instead of forcing a discard. The correct troop count is 1.",
+  "execution_model": {
+    "kind": "sequence",
+    "actions": [
+      {
+        "action_id": "action_1",
+        "op": "deploy_troops",
+        "target_scope": "board_site",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "fixed",
+          "value": 1
+        },
+        "filters": [],
+        "source_fragment": "deploy_troops",
+        "metadata": {}
+      },
+      {
+        "action_id": "action_2",
+        "op": "draw_cards",
+        "target_scope": "self",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "fixed",
+          "value": 2
+        },
+        "filters": [],
+        "source_fragment": "on_opponent_discard_draw",
+        "metadata": {}
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "action_1",
+      "op": "deploy_troops",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 1
+      },
+      "filters": [],
+      "source_fragment": "deploy_troops",
+      "metadata": {}
+    },
+    {
+      "action_id": "action_2",
+      "op": "draw_cards",
+      "target_scope": "self",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 2
+      },
+      "filters": [],
+      "source_fragment": "on_opponent_discard_draw",
+      "metadata": {}
+    }
+  ],
+  "global_conditions": [
+    {
+      "condition_type": "conditional_gate",
+      "description": "Effect has conditional branch or threshold requirement"
+    }
+  ],
+  "state_contract": {
+    "reads": [
+      "player.barracks",
+      "board.troop_slots",
+      "player.deck",
+      "player.discard_pile"
+    ],
+    "writes": [
+      "board.troop_slots",
+      "player.barracks",
+      "player.hand",
+      "player.deck",
+      "player.discard_pile"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

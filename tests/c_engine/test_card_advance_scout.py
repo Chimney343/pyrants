@@ -7,14 +7,13 @@ Advance Scout (3-cost, Conquest/Drow):
 
 from __future__ import annotations
 
-import json
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-
 from engine_c.bindings.engine_bindings import _lib
 from engine_c.bindings.session import CSession
+from game_setup.loaders import assemble_catalog_payload
 from tests.c_engine.card_test_helpers import (
     _make_engine,
     _session_player_index,
@@ -79,7 +78,7 @@ def _spies_at_node(session: CSession, node_id: str) -> list[str]:
 
 
 def test_advance_scout_execution_model() -> None:
-    catalog = json.loads((DATA_DIR / "cards" / "catalog.json").read_text(encoding="utf-8"))
+    catalog = assemble_catalog_payload(DATA_DIR / "cards")
     cards = catalog if isinstance(catalog, list) else catalog.get("cards", catalog)
     card = next(c for c in cards if c.get("card_id") == "advance_scout")
 

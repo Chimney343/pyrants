@@ -3,7 +3,7 @@
 Verifies:
 - Gain 1 power immediately on play
 - Place 1 spy on a chosen board site
-- Recruit a Guile card costing ≤4 for free (no influence deduction)
+- Recruit a Guile card costing ≤4 (paying its influence cost)
 - Recruit filtering: only Guile-cost≤4 market cards shown
 - Card leaves hand after play
 - Sequence resolves cleanly with no pending choices
@@ -16,7 +16,6 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-
 from engine_c.bindings.ce_api import CEngine
 from engine_c.bindings.engine_bindings import (
     MAX_ZONE_SIZE,
@@ -24,6 +23,7 @@ from engine_c.bindings.engine_bindings import (
     _lib,
 )
 from engine_c.bindings.session import CSession
+from game_setup.loaders import assemble_catalog_payload
 
 DATA_DIR = Path(__file__).resolve().parents[2] / "data"
 SCENARIO_PATH = DATA_DIR / "scenarios" / "batch_card_generation" / "081_seed_4_aerisi_kalinoth.json"
@@ -98,7 +98,7 @@ def _has_pending_generic(session: CSession) -> bool:
 def _init_engine() -> CEngine:
     eng = CEngine()
     eng.initialize(
-        catalog_path=str(DATA_DIR / "cards" / "catalog.json"),
+        catalog_path=str(DATA_DIR / "cards"),
         board_path=str(DATA_DIR / "boards" / "tyrants_of_the_underdark.json"),
         setup_path=str(DATA_DIR / "decks" / "base_setup.json"),
     )
@@ -196,25 +196,23 @@ def test_aerisi_kalinoth_full_sequence_scenario() -> None:
         f"spies_available should decrease by 1: {spies_before} → {_spies_available(session, 'p1')}"
     )
 
+    # The scenario starts with 0 influence, so the mandatory paid recruit has no
+    # affordable Guile card ≤4 and auto-skips.
     gen_moves = [m for m in session.legal_moves() if m.move_type == "resolve_generic"]
-    assert len(gen_moves) > 0, "Expected generic choices for recruit_card"
-
-    recruit_target = gen_moves[0].data.get("action_id")
-    _resolve_generic_by_action_id(session, recruit_target)
+    assert len(gen_moves) == 0, (
+        f"With 0 influence, no affordable Guile card ≤4 should be offered; got "
+        f"{[m.data for m in gen_moves]}"
+    )
 
     assert not _has_pending_generic(session), "No pending choices after full resolution"
 
     power_after = _resource_power(session)
     influence_after = _resource_influence(session)
-    discard_after = _discard_ids(session, "p1")
     hand_after = _hand_ids(session, "p1")
 
     assert power_after == power_before + 1
     assert influence_after == influence_before, (
-        f"Free recruit must not deduct influence: {influence_before} → {influence_after}"
-    )
-    assert recruit_target in discard_after, (
-        f"Recruited card {recruit_target} must be in discard"
+        f"Unaffordable recruit must not change influence: {influence_before} → {influence_after}"
     )
     assert "aerisi_kalinoth" not in hand_after, "Card must leave hand"
 
@@ -223,7 +221,6 @@ def test_aerisi_kalinoth_full_sequence_scenario() -> None:
 
 def test_aerisi_kalinoth_recruit_filtered_to_guile_max_cost_four_scenario() -> None:
     """All legal recruit targets must have aspect=guile and cost≤4."""
-    import json
 
     session = CSession.load(str(SCENARIO_PATH))
 
@@ -236,8 +233,7 @@ def test_aerisi_kalinoth_recruit_filtered_to_guile_max_cost_four_scenario() -> N
     gen_moves = [m for m in session.legal_moves() if m.move_type == "resolve_generic"]
     recruit_cards = [m.data.get("action_id") for m in gen_moves]
 
-    with open(DATA_DIR / "cards" / "catalog.json", encoding="utf-8-sig") as f:
-        cat = json.load(f)["cards"]
+    cat = assemble_catalog_payload(DATA_DIR / "cards")["cards"]
 
     for cid in recruit_cards:
         card = next((c for c in cat if c["card_id"] == cid), None)
@@ -304,6 +300,8 @@ def test_aerisi_kalinoth_recruit_filtered_to_guile_max_cost_four() -> None:
         "soldier",         # obedience, 0 → should NOT appear
         "noble",           # obedience, 0 → should NOT appear
     ])
+    sptr = _sptr(session).contents
+    sptr.resource_pool.influence = 10
 
     _play_card(session)
 
@@ -321,11 +319,15 @@ def test_aerisi_kalinoth_recruit_filtered_to_guile_max_cost_four() -> None:
     session.destroy()
 
 
-def test_aerisi_kalinoth_free_recruit_no_influence_deduction() -> None:
-    """Recruiting with aerisi_kalinoth does not consume influence."""
+def test_aerisi_kalinoth_recruit_deducts_influence() -> None:
+    """Recruiting with aerisi_kalinoth spends influence equal to the card's cost.
+
+    Aerisi says "recruit a Guile card that costs 4 or less" (not "without paying
+    its cost"), so the recruit is paid.
+    """
     session = _build_session()
 
-    _set_market_row(session, ["air_elemental"])
+    _set_market_row(session, ["air_elemental"])  # guile, cost 3
     sptr = _sptr(session).contents
 
     sptr.resource_pool.influence = 10
@@ -342,8 +344,8 @@ def test_aerisi_kalinoth_free_recruit_no_influence_deduction() -> None:
     session.submit_move(recruit_move)
 
     influence_after = _resource_influence(session)
-    assert influence_after == influence_before, (
-        f"Free recruit must not deduct influence: {influence_before} → {influence_after}"
+    assert influence_after == influence_before - 3, (
+        f"Recruit should cost 3 influence: {influence_before} → {influence_after}"
     )
 
     session.destroy()
@@ -369,6 +371,8 @@ def test_aerisi_kalinoth_resolves_cleanly_no_pending() -> None:
     session = _build_session()
 
     _set_market_row(session, ["air_elemental"])
+    sptr = _sptr(session).contents
+    sptr.resource_pool.influence = 10
 
     _play_card(session)
     assert _has_pending_generic(session), "Should be pending for spy placement"
@@ -394,6 +398,8 @@ def test_aerisi_kalinoth_recruit_card_goes_to_discard() -> None:
     session = _build_session()
 
     _set_market_row(session, ["air_elemental"])
+    sptr = _sptr(session).contents
+    sptr.resource_pool.influence = 10
     discard_before = _discard_ids(session, _P1)
 
     _play_card(session)

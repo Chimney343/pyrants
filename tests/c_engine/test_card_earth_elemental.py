@@ -39,7 +39,7 @@ def test_earth_elemental_focus_draw_from_hand():
     """With an Ambition card (black_earth_cultist) in hand, the draw should fire."""
     eng = CEngine()
     eng.initialize(
-        catalog_path=str(DATA_DIR / "cards" / "catalog.json"),
+        catalog_path=str(DATA_DIR / "cards"),
         board_path=str(DATA_DIR / "boards" / "tyrants_of_the_underdark.json"),
         setup_path=str(DATA_DIR / "decks" / "base_setup.json"),
     )
@@ -79,7 +79,7 @@ def test_earth_elemental_no_focus_draw_without_ambition():
     """Without an Ambition card in hand or played, draw should be skipped."""
     eng = CEngine()
     eng.initialize(
-        catalog_path=str(DATA_DIR / "cards" / "catalog.json"),
+        catalog_path=str(DATA_DIR / "cards"),
         board_path=str(DATA_DIR / "boards" / "tyrants_of_the_underdark.json"),
         setup_path=str(DATA_DIR / "decks" / "base_setup.json"),
     )

@@ -1,0 +1,135 @@
+{
+  "card_id": "revenant",
+  "name": "Revenant",
+  "cost": 4,
+  "aspect": "malice",
+  "secondary_aspects": [
+    "undead"
+  ],
+  "deck_vp": 1,
+  "inner_circle_vp": 4,
+  "rules_text": "Assassinate 2 troops. If you have 8 or more trophies, promote this card.",
+  "notes": "The assassinations follow standard free assassinate legality. The threshold uses generic `trophies` wording (not `player trophies`) and therefore counts trophies broadly.",
+  "execution_model": {
+    "kind": "sequence",
+    "actions": [
+      {
+        "action_id": "action_1",
+        "op": "assassinate_troop",
+        "target_scope": "board_site",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "fixed",
+          "value": 1
+        },
+        "filters": [],
+        "source_fragment": "assassinate_step_1",
+        "metadata": {}
+      },
+      {
+        "action_id": "action_2",
+        "op": "assassinate_troop",
+        "target_scope": "board_site",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "fixed",
+          "value": 1
+        },
+        "filters": [],
+        "source_fragment": "assassinate_step_2",
+        "metadata": {}
+      },
+      {
+        "action_id": "action_3",
+        "op": "promote_card",
+        "target_scope": "self",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "threshold_self_promote",
+        "metadata": {
+          "min_trophies": 8,
+          "count_from": "trophy_hall_all"
+        }
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "action_1",
+      "op": "assassinate_troop",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 1
+      },
+      "filters": [],
+      "source_fragment": "assassinate_step_1",
+      "metadata": {}
+    },
+    {
+      "action_id": "action_2",
+      "op": "assassinate_troop",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 1
+      },
+      "filters": [],
+      "source_fragment": "assassinate_step_2",
+      "metadata": {}
+    },
+    {
+      "action_id": "action_3",
+      "op": "promote_card",
+      "target_scope": "self",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "threshold_self_promote",
+      "metadata": {
+        "min_trophies": 8,
+        "count_from": "trophy_hall_all"
+      }
+    }
+  ],
+  "global_conditions": [
+    {
+      "condition_type": "conditional_gate",
+      "description": "Effect has conditional branch or threshold requirement"
+    }
+  ],
+  "state_contract": {
+    "reads": [
+      "board.troop_slots",
+      "presence_or_target_rules",
+      "player.played_cards",
+      "player.hand",
+      "player.discard_pile"
+    ],
+    "writes": [
+      "board.troop_slots",
+      "player.trophy_hall",
+      "player.inner_circle",
+      "player.played_cards",
+      "player.hand",
+      "player.discard_pile"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

@@ -1,0 +1,144 @@
+{
+  "card_id": "earth_elemental",
+  "name": "Earth Elemental",
+  "cost": 3,
+  "aspect": "guile",
+  "secondary_aspects": [
+    "elemental"
+  ],
+  "deck_vp": 1,
+  "inner_circle_vp": 3,
+  "rules_text": "Gain 1 influence. Return another player's troop or spy to their garrison. If the focus condition is met for Ambition, draw a card from your draw deck.",
+  "notes": "The workbook row was missing the influence clause in the earlier read path, and the user clarified that the focus aspect here is Ambition even though the sheet currently shows `Guile` in the aspect column.",
+  "execution_model": {
+    "kind": "sequence",
+    "actions": [
+      {
+        "action_id": "action_1",
+        "op": "gain_resource",
+        "target_scope": "self",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "fixed",
+          "value": 1
+        },
+        "filters": [],
+        "source_fragment": "gain_influence",
+        "metadata": {
+          "resource": "influence"
+        }
+      },
+      {
+        "action_id": "action_2",
+        "op": "return_unit",
+        "target_scope": "opponent_unit",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "return_enemy_unit",
+        "metadata": {}
+      },
+      {
+        "action_id": "action_3",
+        "op": "draw_cards",
+        "target_scope": "self",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "fixed",
+          "value": 1
+        },
+        "filters": [],
+        "source_fragment": "focus_draw",
+        "metadata": {
+          "requires_focus": true,
+          "focus_aspect": "ambition"
+        }
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "action_1",
+      "op": "gain_resource",
+      "target_scope": "self",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 1
+      },
+      "filters": [],
+      "source_fragment": "gain_influence",
+      "metadata": {
+        "resource": "influence"
+      }
+    },
+    {
+      "action_id": "action_2",
+      "op": "return_unit",
+      "target_scope": "opponent_unit",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "return_enemy_unit",
+      "metadata": {}
+    },
+    {
+      "action_id": "action_3",
+      "op": "draw_cards",
+      "target_scope": "self",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 1
+      },
+      "filters": [],
+      "source_fragment": "focus_draw",
+      "metadata": {
+        "requires_focus": true,
+        "focus_aspect": "ambition"
+      }
+    }
+  ],
+  "global_conditions": [
+    {
+      "condition_type": "focus_check",
+      "description": "Requires matching-aspect support card in hand or played zone"
+    },
+    {
+      "condition_type": "conditional_gate",
+      "description": "Effect has conditional branch or threshold requirement"
+    }
+  ],
+  "state_contract": {
+    "reads": [
+      "effect_payload",
+      "board.troop_slots",
+      "board.spies",
+      "player.deck",
+      "player.discard_pile"
+    ],
+    "writes": [
+      "resource_pool",
+      "board.troop_slots",
+      "board.spies",
+      "player.spies_available",
+      "player.hand",
+      "player.deck",
+      "player.discard_pile"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

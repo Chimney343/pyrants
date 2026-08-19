@@ -1,0 +1,133 @@
+{
+  "card_id": "night_hag",
+  "name": "Night Hag",
+  "cost": 3,
+  "aspect": "guile",
+  "secondary_aspects": [
+    "fiend"
+  ],
+  "deck_vp": 1,
+  "inner_circle_vp": 3,
+  "rules_text": "Choose exactly one mode. Either place a spy, or return one of your own spies from the board to your barracks and draw 2 cards from your draw deck.",
+  "notes": "`Remove spy for 2 cards` means return one of your own spies from the board to your barracks, then draw 2 cards. This reuses the established modal spy-or-return-spy-for-cards family.",
+  "execution_model": {
+    "kind": "modal_choice",
+    "selection": "exactly_one",
+    "options": [
+      {
+        "option_id": "option_1",
+        "actions": [
+          {
+            "action_id": "option_1_action_1",
+            "op": "place_spy",
+            "target_scope": "board_site",
+            "timing": "immediate",
+            "optional": false,
+            "quantity": {
+              "kind": "unspecified",
+              "value": null
+            },
+            "filters": [],
+            "source_fragment": "spy",
+            "metadata": {}
+          }
+        ]
+      },
+      {
+        "option_id": "option_2",
+        "actions": [
+          {
+            "action_id": "option_2_action_1",
+            "op": "return_spy",
+            "target_scope": "board_site",
+            "timing": "immediate",
+            "optional": false,
+            "quantity": {
+              "kind": "unspecified",
+              "value": null
+            },
+            "filters": [],
+            "source_fragment": "return_spy_for_cards",
+            "metadata": {
+              "spy_owner": "self"
+            }
+          },
+          {
+            "action_id": "option_2_action_2",
+            "op": "draw_cards",
+            "target_scope": "self",
+            "timing": "immediate",
+            "optional": false,
+            "quantity": {
+              "kind": "fixed",
+              "value": 2
+            },
+            "filters": [],
+            "source_fragment": "draw_cards",
+            "metadata": {}
+          }
+        ]
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "option_1_action_1",
+      "op": "place_spy",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "spy",
+      "metadata": {}
+    },
+    {
+      "action_id": "option_2_action_1",
+      "op": "return_spy",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "return_spy_for_cards",
+      "metadata": {
+        "spy_owner": "self"
+      }
+    },
+    {
+      "action_id": "option_2_action_2",
+      "op": "draw_cards",
+      "target_scope": "self",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 2
+      },
+      "filters": [],
+      "source_fragment": "draw_cards",
+      "metadata": {}
+    }
+  ],
+  "global_conditions": [],
+  "state_contract": {
+    "reads": [
+      "player.spies_available",
+      "board.nodes",
+      "board.spies"
+    ],
+    "writes": [
+      "board.spies",
+      "player.spies_available"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

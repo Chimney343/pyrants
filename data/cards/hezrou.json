@@ -1,0 +1,100 @@
+{
+  "card_id": "hezrou",
+  "name": "Hezrou",
+  "cost": 3,
+  "aspect": "ambition",
+  "secondary_aspects": [
+    "fiend"
+  ],
+  "deck_vp": 1,
+  "inner_circle_vp": 3,
+  "rules_text": "Move an enemy troop. Promote the top card of your draw deck directly into your promoted area. If your draw deck is empty, apply normal shuffle-to-refill rules first.",
+  "notes": "`Deck` here means draw deck. If the draw deck is empty, use normal shuffle-to-refill handling before promoting the top card.",
+  "execution_model": {
+    "kind": "sequence",
+    "actions": [
+      {
+        "action_id": "action_1",
+        "op": "move_troop",
+        "target_scope": "board_site",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "move_enemy_troop",
+        "metadata": {}
+      },
+      {
+        "action_id": "action_2",
+        "op": "promote_card",
+        "target_scope": "self",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "promote_top_of_deck",
+        "metadata": {}
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "action_1",
+      "op": "move_troop",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "move_enemy_troop",
+      "metadata": {}
+    },
+    {
+      "action_id": "action_2",
+      "op": "promote_card",
+      "target_scope": "self",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "promote_top_of_deck",
+      "metadata": {}
+    }
+  ],
+  "global_conditions": [
+    {
+      "condition_type": "conditional_gate",
+      "description": "Effect has conditional branch or threshold requirement"
+    }
+  ],
+  "state_contract": {
+    "reads": [
+      "board.troop_slots",
+      "board.adjacency",
+      "player.played_cards",
+      "player.hand",
+      "player.discard_pile"
+    ],
+    "writes": [
+      "board.troop_slots",
+      "player.inner_circle",
+      "player.played_cards",
+      "player.hand",
+      "player.discard_pile"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

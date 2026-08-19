@@ -1,0 +1,101 @@
+{
+  "card_id": "beholder",
+  "name": "Beholder",
+  "cost": 5,
+  "aspect": "malice",
+  "secondary_aspects": [
+    "aberration"
+  ],
+  "deck_vp": 3,
+  "inner_circle_vp": 6,
+  "rules_text": "Assassinate a troop. Then gain 1 power for every 3 troops in your trophy hall.",
+  "notes": "The assassinate is a free card effect that uses normal assassinate target legality. The power bonus counts current trophy-hall troops in groups of 3 and rounds down.",
+  "execution_model": {
+    "kind": "sequence",
+    "actions": [
+      {
+        "action_id": "action_1",
+        "op": "assassinate_troop",
+        "target_scope": "board_site",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "assassinate",
+        "metadata": {}
+      },
+      {
+        "action_id": "action_2",
+        "op": "custom_effect",
+        "target_scope": "self",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "scaled_power_from_trophy_hall",
+        "metadata": {
+          "effect_kind": "scaled_resource_from_player_zone",
+          "source_zone": "trophy_hall",
+          "per": 3,
+          "resource": "power"
+        }
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "action_1",
+      "op": "assassinate_troop",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "assassinate",
+      "metadata": {}
+    },
+    {
+      "action_id": "action_2",
+      "op": "custom_effect",
+      "target_scope": "self",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "scaled_power_from_trophy_hall",
+      "metadata": {
+        "effect_kind": "scaled_resource_from_player_zone",
+        "source_zone": "trophy_hall",
+        "per": 3,
+        "resource": "power"
+      }
+    }
+  ],
+  "global_conditions": [],
+  "state_contract": {
+    "reads": [
+      "board.troop_slots",
+      "presence_or_target_rules",
+      "custom_rules"
+    ],
+    "writes": [
+      "board.troop_slots",
+      "player.trophy_hall",
+      "custom_state"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

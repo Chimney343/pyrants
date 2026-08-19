@@ -1,0 +1,106 @@
+{
+  "card_id": "dragonclaw",
+  "name": "Dragonclaw",
+  "cost": 4,
+  "aspect": "malice",
+  "secondary_aspects": [
+    "human"
+  ],
+  "deck_vp": 1,
+  "inner_circle_vp": 3,
+  "rules_text": "Assassinate a troop. Then, if you have 5 or more player trophies in your trophy hall, gain 2 power.",
+  "notes": "Workbook rider text was malformed. Correct meaning is `if you have 5 or more player trophies in your trophy hall, gain 2 power`. White troops do not count toward this threshold.",
+  "execution_model": {
+    "kind": "sequence",
+    "actions": [
+      {
+        "action_id": "action_1",
+        "op": "assassinate_troop",
+        "target_scope": "board_site",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "assassinate",
+        "metadata": {}
+      },
+      {
+        "action_id": "action_2",
+        "op": "conditional_bonus",
+        "target_scope": "self",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "conditional_power_from_trophies",
+        "metadata": {
+          "condition": "player_trophy_hall_non_white_at_least",
+          "min_trophies": 5,
+          "resource": "power",
+          "amount": 2
+        }
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "action_1",
+      "op": "assassinate_troop",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "assassinate",
+      "metadata": {}
+    },
+    {
+      "action_id": "action_2",
+      "op": "conditional_bonus",
+      "target_scope": "self",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "conditional_power_from_trophies",
+      "metadata": {
+        "condition": "player_trophy_hall_non_white_at_least",
+        "min_trophies": 5,
+        "resource": "power",
+        "amount": 2
+      }
+    }
+  ],
+  "global_conditions": [
+    {
+      "condition_type": "conditional_gate",
+      "description": "Effect has conditional branch or threshold requirement"
+    }
+  ],
+  "state_contract": {
+    "reads": [
+      "board.troop_slots",
+      "presence_or_target_rules",
+      "condition_context"
+    ],
+    "writes": [
+      "board.troop_slots",
+      "player.trophy_hall",
+      "resource_pool_or_followup_actions"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

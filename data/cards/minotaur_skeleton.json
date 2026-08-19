@@ -1,0 +1,217 @@
+{
+  "card_id": "minotaur_skeleton",
+  "name": "Minotaur Skeleton",
+  "cost": 3,
+  "aspect": "conquest",
+  "secondary_aspects": [
+    "undead"
+  ],
+  "deck_vp": 1,
+  "inner_circle_vp": 3,
+  "rules_text": "Choose exactly one mode. Either deploy 3 troops, or devour this card to assassinate up to 3 white troops at a single site.",
+  "notes": "Uses established modal `or` semantics. The second mode mirrors existing single-site repeated white-troop assassination patterns.",
+  "execution_model": {
+    "kind": "modal_choice",
+    "selection": "exactly_one",
+    "options": [
+      {
+        "option_id": "option_1",
+        "actions": [
+          {
+            "action_id": "option_1_action_1",
+            "op": "deploy_troops",
+            "target_scope": "board_site",
+            "timing": "immediate",
+            "optional": false,
+            "quantity": {
+              "kind": "fixed",
+              "value": 3
+            },
+            "filters": [],
+            "source_fragment": "deploy_troops",
+            "metadata": {}
+          }
+        ]
+      },
+      {
+        "option_id": "option_2",
+        "actions": [
+          {
+            "action_id": "option_2_action_1",
+            "op": "devour_cost",
+            "target_scope": "played_self",
+            "timing": "immediate",
+            "optional": false,
+            "quantity": {
+              "kind": "unspecified",
+              "value": null
+            },
+            "filters": [],
+            "source_fragment": "self_devour",
+            "metadata": {
+              "source_zone": "played_self",
+              "self_replace": false
+            }
+          },
+          {
+            "action_id": "option_2_action_2",
+            "op": "assassinate_troop",
+            "target_scope": "board_site",
+            "timing": "immediate",
+            "optional": true,
+            "quantity": {
+              "kind": "fixed",
+              "value": 1
+            },
+            "filters": [
+              "white_troop_only"
+            ],
+            "source_fragment": "self_devour_multi_white_assassinate_single_site",
+            "metadata": {}
+          },
+          {
+            "action_id": "option_2_action_3",
+            "op": "assassinate_troop",
+            "target_scope": "board_site",
+            "timing": "immediate",
+            "optional": true,
+            "quantity": {
+              "kind": "fixed",
+              "value": 1
+            },
+            "filters": [
+              "white_troop_only"
+            ],
+            "source_fragment": "self_devour_multi_white_assassinate_single_site",
+            "metadata": {
+              "requires_last_selected_node": true
+            }
+          },
+          {
+            "action_id": "option_2_action_4",
+            "op": "assassinate_troop",
+            "target_scope": "board_site",
+            "timing": "immediate",
+            "optional": true,
+            "quantity": {
+              "kind": "fixed",
+              "value": 1
+            },
+            "filters": [
+              "white_troop_only"
+            ],
+            "source_fragment": "self_devour_multi_white_assassinate_single_site",
+            "metadata": {
+              "requires_last_selected_node": true
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "option_1_action_1",
+      "op": "deploy_troops",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 3
+      },
+      "filters": [],
+      "source_fragment": "deploy_troops",
+      "metadata": {}
+    },
+    {
+      "action_id": "option_2_action_1",
+      "op": "devour_cost",
+      "target_scope": "played_self",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "self_devour",
+      "metadata": {
+        "source_zone": "played_self",
+        "self_replace": false
+      }
+    },
+    {
+      "action_id": "option_2_action_2",
+      "op": "assassinate_troop",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": true,
+      "quantity": {
+        "kind": "fixed",
+        "value": 1
+      },
+      "filters": [
+        "white_troop_only"
+      ],
+      "source_fragment": "self_devour_multi_white_assassinate_single_site",
+      "metadata": {}
+    },
+    {
+      "action_id": "option_2_action_3",
+      "op": "assassinate_troop",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": true,
+      "quantity": {
+        "kind": "fixed",
+        "value": 1
+      },
+      "filters": [
+        "white_troop_only"
+      ],
+      "source_fragment": "self_devour_multi_white_assassinate_single_site",
+      "metadata": {
+        "requires_last_selected_node": true
+      }
+    },
+    {
+      "action_id": "option_2_action_4",
+      "op": "assassinate_troop",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": true,
+      "quantity": {
+        "kind": "fixed",
+        "value": 1
+      },
+      "filters": [
+        "white_troop_only"
+      ],
+      "source_fragment": "self_devour_multi_white_assassinate_single_site",
+      "metadata": {
+        "requires_last_selected_node": true
+      }
+    }
+  ],
+  "global_conditions": [],
+  "state_contract": {
+    "reads": [
+      "player.barracks",
+      "board.troop_slots",
+      "presence_or_target_rules",
+      "source_zone",
+      "player.played_cards",
+      "devour_rules"
+    ],
+    "writes": [
+      "board.troop_slots",
+      "player.barracks",
+      "player.trophy_hall",
+      "devour_zone_or_equivalent",
+      "player.played_cards"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

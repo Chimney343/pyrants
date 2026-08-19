@@ -3,6 +3,7 @@
 #include "loader.h"
 #include "intern.h"
 #include "arena.h"
+#include "catalog_dir.h"
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
@@ -12,22 +13,7 @@ static void test_serialize_basic(void) {
     Arena *arena = arena_create(2 * 1024 * 1024);
     assert(arena);
 
-    GameDefinition *def = engine_load_definition(
-        "../data/cards/catalog.json",
-        "../data/boards/tyrants_of_the_underdark.json",
-        "../data/decks/base_setup.json",
-        arena
-    );
-    if (!def || def->catalog.card_count == 0) {
-        arena_destroy(arena);
-        arena = arena_create(2 * 1024 * 1024);
-        def = engine_load_definition(
-            "data/cards/catalog.json",
-            "data/boards/tyrants_of_the_underdark.json",
-            "data/decks/base_setup.json",
-            arena
-        );
-    }
+    GameDefinition *def = test_load_definition(arena);
     assert(def);
 
     const char *player_ids[] = {"p1", "p2"};
@@ -35,7 +21,7 @@ static void test_serialize_basic(void) {
     assert(gs);
 
     char json[128 * 1024];
-    int needed = engine_serialize_state(gs, "data/cards/catalog.json",
+    int needed = engine_serialize_state(gs, "data/cards",
                                          "data/boards/tyrants_of_the_underdark.json",
                                          "data/decks/base_setup.json",
                                          0, 0, json, sizeof(json));
@@ -56,39 +42,28 @@ static void test_deserialize_round_trip(void) {
     Arena *arena = arena_create(2 * 1024 * 1024);
     assert(arena);
 
-    GameDefinition *def = engine_load_definition(
-        "../data/cards/catalog.json",
-        "../data/boards/tyrants_of_the_underdark.json",
-        "../data/decks/base_setup.json",
-        arena
-    );
-    if (!def || def->catalog.card_count == 0) {
-        arena_destroy(arena);
-        arena = arena_create(2 * 1024 * 1024);
-        def = engine_load_definition(
-            "data/cards/catalog.json",
-            "data/boards/tyrants_of_the_underdark.json",
-            "data/decks/base_setup.json",
-            arena
-        );
-    }
+    GameDefinition *def = test_load_definition(arena);
     assert(def);
 
     const char *player_ids[] = {"p1", "p2"};
     GameState *gs = engine_create_game_definition(def, player_ids, 2, 42);
     assert(gs);
 
+    const char *board_path, *setup_path;
+    test_board_setup_paths(&board_path, &setup_path);
+
     char json[128 * 1024];
-    int needed = engine_serialize_state(gs, "data/cards/catalog.json",
-                                         "data/boards/tyrants_of_the_underdark.json",
-                                         "data/decks/base_setup.json",
+    int needed = engine_serialize_state(gs, "data/cards", board_path, setup_path,
                                          0, 0, json, sizeof(json));
     assert(needed > 0);
 
     Arena *arena2 = arena_create(2 * 1024 * 1024);
     assert(arena2);
+    char *catalog_json = test_load_catalog_json_both();
+    assert(catalog_json);
     int restored_move_count = -1;
-    GameState *restored = engine_deserialize_state(json, NULL, arena2, &restored_move_count);
+    GameState *restored = engine_deserialize_state(json, catalog_json, arena2, &restored_move_count);
+    free(catalog_json);
     assert(restored);
     assert(restored_move_count == 0);
     assert(restored->player_count == gs->player_count);
@@ -100,6 +75,7 @@ static void test_deserialize_round_trip(void) {
            restored_move_count, restored->player_count);
 
     engine_destroy(restored);
+    arena_destroy(arena2);
     engine_destroy(gs);
     arena_destroy(arena);
     intern_destroy();
@@ -110,29 +86,14 @@ static void test_serialize_needed_size(void) {
     Arena *arena = arena_create(2 * 1024 * 1024);
     assert(arena);
 
-    GameDefinition *def = engine_load_definition(
-        "../data/cards/catalog.json",
-        "../data/boards/tyrants_of_the_underdark.json",
-        "../data/decks/base_setup.json",
-        arena
-    );
-    if (!def || def->catalog.card_count == 0) {
-        arena_destroy(arena);
-        arena = arena_create(2 * 1024 * 1024);
-        def = engine_load_definition(
-            "data/cards/catalog.json",
-            "data/boards/tyrants_of_the_underdark.json",
-            "data/decks/base_setup.json",
-            arena
-        );
-    }
+    GameDefinition *def = test_load_definition(arena);
     assert(def);
 
     const char *player_ids[] = {"p1", "p2"};
     GameState *gs = engine_create_game_definition(def, player_ids, 2, 42);
     assert(gs);
 
-    int needed = engine_serialize_state(gs, "data/cards/catalog.json",
+    int needed = engine_serialize_state(gs, "data/cards",
                                          "data/boards/tyrants_of_the_underdark.json",
                                          "data/decks/base_setup.json",
                                          0, 0, NULL, 0);

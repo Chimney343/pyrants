@@ -18,11 +18,11 @@ from dataclasses import dataclass
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-
 from engine_c.bindings.ce_api import CEngine
 from engine_c.bindings.engine_bindings import MAX_ZONE_SIZE, _lib
 from engine_c.bindings.session import CSession
 from engine_c.bindings.view import build_c_game_view
+from game_setup.loaders import assemble_catalog_payload
 from tests.c_engine.card_test_helpers import (
     _player_vp_tokens,
     _session_player_index,
@@ -94,7 +94,7 @@ def _submit_first_resolve_generic(session: CSession) -> None:
 def _build_session(inner_circle_size: int, *, seed: int = 42) -> CSession:
     eng = CEngine()
     eng.initialize(
-        catalog_path=str(DATA_DIR / "cards" / "catalog.json"),
+        catalog_path=str(DATA_DIR / "cards"),
         board_path=str(DATA_DIR / "boards" / "tyrants_of_the_underdark.json"),
         setup_path=str(DATA_DIR / "decks" / "base_setup.json"),
     )
@@ -121,7 +121,7 @@ def _play_and_resolve_option_2(session: CSession) -> None:
 def test_catalog_grant_vp_scores_by_inner_circle() -> None:
     """grant_vp in option_2 and flat actions must scale on inner_circle_cards / 3
     and land in score (no 'as': 'vp_tokens' metadata)."""
-    catalog = json.loads((DATA_DIR / "cards" / "catalog.json").read_text(encoding="utf-8"))
+    catalog = assemble_catalog_payload(DATA_DIR / "cards")
     cards = catalog if isinstance(catalog, list) else catalog.get("cards", catalog)
     vamp = next(c for c in cards if c.get("card_id") == CARD_ID)
 
@@ -261,7 +261,7 @@ def test_scenario_file_loads_and_plays_end_to_end() -> None:
 
     eng = CEngine()
     eng.initialize(
-        catalog_path=sc.get("catalog_path", str(DATA_DIR / "cards" / "catalog.json")),
+        catalog_path=sc.get("catalog_path", str(DATA_DIR / "cards")),
         board_path=sc.get("board_path", str(DATA_DIR / "boards" / "tyrants_of_the_underdark.json")),
         setup_path=sc.get("setup_path", str(DATA_DIR / "decks" / "base_setup.json")),
     )

@@ -1,0 +1,111 @@
+{
+  "card_id": "blue_dragon",
+  "name": "Blue Dragon",
+  "cost": 8,
+  "aspect": "ambition",
+  "secondary_aspects": [
+    "dragon"
+  ],
+  "deck_vp": 4,
+  "inner_circle_vp": 8,
+  "rules_text": "At end of turn, promote 2 other cards you played this turn. Gain 1 VP for every 3 promoted cards.",
+  "notes": "The end-of-turn promote works as an up-to effect when fewer than 2 other played cards are available. The VP bonus counts all currently promoted cards and rounds down by groups of 3.",
+  "execution_model": {
+    "kind": "sequence",
+    "actions": [
+      {
+        "action_id": "action_1",
+        "op": "promote_card",
+        "target_scope": "self",
+        "timing": "end_of_turn",
+        "optional": false,
+        "quantity": {
+          "kind": "fixed",
+          "value": 2
+        },
+        "filters": [],
+        "source_fragment": "triggered_multi_promote",
+        "metadata": {
+          "requires_another_played_card": true
+        }
+      },
+      {
+        "action_id": "action_2",
+        "op": "grant_vp",
+        "target_scope": "self",
+        "timing": "end_of_turn",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "scaled_vp_from_promoted_cards",
+        "metadata": {
+          "count_from": "inner_circle_cards",
+          "per": 3,
+          "as": "vp_tokens"
+        }
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "action_1",
+      "op": "promote_card",
+      "target_scope": "self",
+      "timing": "end_of_turn",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 2
+      },
+      "filters": [],
+      "source_fragment": "triggered_multi_promote",
+      "metadata": {
+        "requires_another_played_card": true
+      }
+    },
+    {
+      "action_id": "action_2",
+      "op": "grant_vp",
+      "target_scope": "self",
+      "timing": "end_of_turn",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "scaled_vp_from_promoted_cards",
+      "metadata": {
+        "count_from": "inner_circle_cards",
+        "per": 3,
+        "as": "vp_tokens"
+      }
+    }
+  ],
+  "global_conditions": [
+    {
+      "condition_type": "timing_trigger",
+      "description": "Effect includes deferred or triggered timing"
+    }
+  ],
+  "state_contract": {
+    "reads": [
+      "player.played_cards",
+      "player.hand",
+      "player.discard_pile",
+      "vp_scale_source"
+    ],
+    "writes": [
+      "player.inner_circle",
+      "player.played_cards",
+      "player.hand",
+      "player.discard_pile",
+      "player.vp_tokens_or_score"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

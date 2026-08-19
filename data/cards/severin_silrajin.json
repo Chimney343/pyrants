@@ -1,0 +1,63 @@
+{
+  "card_id": "severin_silrajin",
+  "name": "Severin Silrajin",
+  "cost": 7,
+  "aspect": "malice",
+  "secondary_aspects": [
+    "human"
+  ],
+  "deck_vp": 4,
+  "inner_circle_vp": 8,
+  "rules_text": "Gain 5 power.",
+  "notes": "Simple fixed resource card with no timing or targeting questions.",
+  "execution_model": {
+    "kind": "sequence",
+    "actions": [
+      {
+        "action_id": "action_1",
+        "op": "gain_resource",
+        "target_scope": "self",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "fixed",
+          "value": 5
+        },
+        "filters": [],
+        "source_fragment": "gain_power",
+        "metadata": {
+          "resource": "power"
+        }
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "action_1",
+      "op": "gain_resource",
+      "target_scope": "self",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 5
+      },
+      "filters": [],
+      "source_fragment": "gain_power",
+      "metadata": {
+        "resource": "power"
+      }
+    }
+  ],
+  "global_conditions": [],
+  "state_contract": {
+    "reads": [
+      "effect_payload"
+    ],
+    "writes": [
+      "resource_pool"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

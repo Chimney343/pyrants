@@ -2,14 +2,15 @@
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
-CATALOG_PATH = Path(__file__).resolve().parents[1] / "data" / "cards" / "catalog.json"
+from game_setup.loaders import assemble_catalog_payload
+
+CATALOG_PATH = Path(__file__).resolve().parents[1] / "data" / "cards"
 
 
 def test_conjurer_execution_model_modal_two_options() -> None:
-    catalog = json.loads(CATALOG_PATH.read_text(encoding="utf-8"))
+    catalog = assemble_catalog_payload(CATALOG_PATH)
     cards = catalog if isinstance(catalog, list) else catalog.get("cards", catalog)
     conjurer = next(c for c in cards if c.get("card_id") == "conjurer")
 
@@ -26,7 +27,7 @@ def test_conjurer_execution_model_modal_two_options() -> None:
 
 
 def test_conjurer_option_1_place_spy() -> None:
-    catalog = json.loads(CATALOG_PATH.read_text(encoding="utf-8"))
+    catalog = assemble_catalog_payload(CATALOG_PATH)
     cards = catalog if isinstance(catalog, list) else catalog.get("cards", catalog)
     conjurer = next(c for c in cards if c.get("card_id") == "conjurer")
 
@@ -43,7 +44,7 @@ def test_conjurer_option_1_place_spy() -> None:
 
 
 def test_conjurer_option_2_return_spy_then_recruit_up_to_2_cost_3_or_less() -> None:
-    catalog = json.loads(CATALOG_PATH.read_text(encoding="utf-8"))
+    catalog = assemble_catalog_payload(CATALOG_PATH)
     cards = catalog if isinstance(catalog, list) else catalog.get("cards", catalog)
     conjurer = next(c for c in cards if c.get("card_id") == "conjurer")
 
@@ -78,7 +79,7 @@ def test_conjurer_option_2_return_spy_then_recruit_up_to_2_cost_3_or_less() -> N
 
 
 def test_conjurer_actions_array_matches_options() -> None:
-    catalog = json.loads(CATALOG_PATH.read_text(encoding="utf-8"))
+    catalog = assemble_catalog_payload(CATALOG_PATH)
     cards = catalog if isinstance(catalog, list) else catalog.get("cards", catalog)
     conjurer = next(c for c in cards if c.get("card_id") == "conjurer")
 

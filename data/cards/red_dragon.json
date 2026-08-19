@@ -1,0 +1,139 @@
+{
+  "card_id": "red_dragon",
+  "name": "Red Dragon",
+  "cost": 8,
+  "aspect": "malice",
+  "secondary_aspects": [
+    "dragon"
+  ],
+  "deck_vp": 4,
+  "inner_circle_vp": 8,
+  "rules_text": "Supplant a troop. Return an enemy spy. Gain 1 VP for each total controlled site.",
+  "notes": "This is sequential, not modal. `Supplant a troop` targets any enemy troop or white (neutral) troop at a site where you have presence. `Return enemy spy` uses normal enemy-spy return legality as a free card effect, so the target spy must be within your presence and returns to its owner's barracks. The VP clause counts all sites currently under your control.",
+  "execution_model": {
+    "kind": "sequence",
+    "actions": [
+      {
+        "action_id": "action_1",
+        "op": "supplant_troop",
+        "target_scope": "board_site",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [
+          "allow_white_troop"
+        ],
+        "source_fragment": "supplant",
+        "metadata": {}
+      },
+      {
+        "action_id": "action_2",
+        "op": "return_spy",
+        "target_scope": "board_site",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "return_enemy_spy",
+        "metadata": {
+          "spy_owner": "opponent",
+          "free_enemy_return": true
+        }
+      },
+      {
+        "action_id": "action_3",
+        "op": "grant_vp",
+        "target_scope": "self",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "scaled_vp_from_total_controlled_sites",
+        "metadata": {
+          "count_from": "total_controlled_sites",
+          "per": 1,
+          "as": "vp_tokens"
+        }
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "action_1",
+      "op": "supplant_troop",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [
+        "allow_white_troop"
+      ],
+      "source_fragment": "supplant",
+      "metadata": {}
+    },
+    {
+      "action_id": "action_2",
+      "op": "return_spy",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "return_enemy_spy",
+      "metadata": {
+        "spy_owner": "opponent",
+        "free_enemy_return": true
+      }
+    },
+    {
+      "action_id": "action_3",
+      "op": "grant_vp",
+      "target_scope": "self",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "scaled_vp_from_total_controlled_sites",
+      "metadata": {
+        "count_from": "total_controlled_sites",
+        "per": 1,
+        "as": "vp_tokens"
+      }
+    }
+  ],
+  "global_conditions": [],
+  "state_contract": {
+    "reads": [
+      "board.troop_slots",
+      "presence_or_target_rules",
+      "custom_rules",
+      "vp_scale_source"
+    ],
+    "writes": [
+      "board.troop_slots",
+      "player.trophy_hall",
+      "custom_state",
+      "player.vp_tokens_or_score"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

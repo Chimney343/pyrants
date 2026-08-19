@@ -9,11 +9,11 @@ Doppelganger (5-cost, Malice/Drow):
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 from engine_c.bindings.engine_bindings import _lib
 from engine_c.bindings.session import CSession
+from game_setup.loaders import assemble_catalog_payload
 from tests.c_engine.card_test_helpers import (
     _make_engine,
     _session_player_index,
@@ -83,7 +83,7 @@ def _spies_at_node(session: CSession, node_id: str) -> list[str]:
 
 
 def test_doppelganger_execution_model() -> None:
-    catalog = json.loads((DATA_DIR / "cards" / "catalog.json").read_text(encoding="utf-8"))
+    catalog = assemble_catalog_payload(DATA_DIR / "cards")
     cards = catalog if isinstance(catalog, list) else catalog.get("cards", catalog)
     card = next(c for c in cards if c.get("card_id") == CARD_ID)
 

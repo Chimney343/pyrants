@@ -2,7 +2,7 @@
 
 Quaggoth — "Assassinate a white troop for each site you control."
 
-Execution model (``data/cards/catalog.json``): a ``sequence`` with one
+Execution model (``data/cards/quaggoth.json``): a ``sequence`` with one
 ``assassinate_troop`` action whose ``quantity`` is ``variable_repeat`` with
 ``count_from: controlled_sites`` and a ``white_troop_only`` filter.
 
@@ -25,10 +25,10 @@ These tests lock in that behaviour.
 from __future__ import annotations
 
 import ctypes
-import json
 from pathlib import Path
 
 from engine_c.bindings.engine_bindings import _lib
+from game_setup.loaders import assemble_catalog_payload
 from tests.c_engine.card_test_helpers import (
     _make_engine,
     _session_player_index,
@@ -44,7 +44,7 @@ _SITE_A = "site_gauntlgrym"    # troop_capacity 3
 _SITE_B = "site_jhachalkhyn"   # troop_capacity 4
 _SITE_C = "site_gracklstugh"   # troop_capacity 4 (starts with 2 white troops)
 
-_CATALOG = Path(__file__).resolve().parents[2] / "data" / "cards" / "catalog.json"
+_CATALOG = Path(__file__).resolve().parents[2] / "data" / "cards"
 
 
 # ---------------------------------------------------------------------------
@@ -155,7 +155,7 @@ def _make_session(hand=None, current_player=_P1):
 
 def test_quaggoth_execution_model_encoding():
     """The catalog must encode a single variable_repeat assassinate_troop."""
-    catalog = json.loads(_CATALOG.read_text(encoding="utf-8"))
+    catalog = assemble_catalog_payload(_CATALOG)
     cards = catalog if isinstance(catalog, list) else catalog.get("cards", catalog)
     q = next(c for c in cards if c.get("card_id") == _QUAGGOTH)
 

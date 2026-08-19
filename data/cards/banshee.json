@@ -1,0 +1,106 @@
+{
+  "card_id": "banshee",
+  "name": "Banshee",
+  "cost": 4,
+  "aspect": "guile",
+  "secondary_aspects": [
+    "undead"
+  ],
+  "deck_vp": 2,
+  "inner_circle_vp": 4,
+  "rules_text": "Place a spy. If there is another spy there, gain 3 power.",
+  "notes": "Uses established spy placement rules. The conditional checks whether another spy is present at that site after placement.",
+  "execution_model": {
+    "kind": "sequence",
+    "actions": [
+      {
+        "action_id": "action_1",
+        "op": "place_spy",
+        "target_scope": "board_site",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "spy",
+        "metadata": {}
+      },
+      {
+        "action_id": "action_2",
+        "op": "conditional_bonus",
+        "target_scope": "self",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "conditional_power_if_spy_present",
+        "metadata": {
+          "condition": "selected_node_total_spies_at_least",
+          "min_spies": 2,
+          "resource": "power",
+          "amount": 3
+        }
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "action_1",
+      "op": "place_spy",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "spy",
+      "metadata": {}
+    },
+    {
+      "action_id": "action_2",
+      "op": "conditional_bonus",
+      "target_scope": "self",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "conditional_power_if_spy_present",
+      "metadata": {
+        "condition": "selected_node_total_spies_at_least",
+        "min_spies": 2,
+        "resource": "power",
+        "amount": 3
+      }
+    }
+  ],
+  "global_conditions": [
+    {
+      "condition_type": "conditional_gate",
+      "description": "Effect has conditional branch or threshold requirement"
+    }
+  ],
+  "state_contract": {
+    "reads": [
+      "player.spies_available",
+      "board.nodes",
+      "condition_context"
+    ],
+    "writes": [
+      "board.spies",
+      "player.spies_available",
+      "resource_pool_or_followup_actions"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

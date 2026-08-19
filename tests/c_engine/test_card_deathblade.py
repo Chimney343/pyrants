@@ -6,9 +6,9 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-
 from engine_c.bindings.engine_bindings import _lib
 from engine_c.bindings.session import CSession
+from game_setup.loaders import assemble_catalog_payload
 
 SCENARIO_PATH = (
     Path(__file__).resolve().parents[2]
@@ -87,13 +87,8 @@ def test_deathblade_two_mandatory_assassinations() -> None:
 
 def test_deathblade_catalog_actions_are_mandatory() -> None:
     """Verify both execution_model actions have optional=false."""
-    import json
 
-    catalog_path = (
-        Path(__file__).resolve().parents[2] / "data" / "cards" / "catalog.json"
-    )
-    with open(catalog_path, encoding="utf-8") as f:
-        catalog = json.load(f)
+    catalog = assemble_catalog_payload(Path(__file__).resolve().parents[2] / "data" / "cards")
 
     deathblade = None
     for card in catalog["cards"]:

@@ -1,0 +1,89 @@
+{
+  "card_id": "deathblade",
+  "name": "Deathblade",
+  "cost": 6,
+  "aspect": "malice",
+  "secondary_aspects": [
+    "drow"
+  ],
+  "deck_vp": 3,
+  "inner_circle_vp": 6,
+  "rules_text": "Assassinate 2 troops.",
+  "notes": "Reuses fixed-count repeated assassinate behavior: two separate free standard assassinations, resolving as many as possible if legal targets run short.",
+  "execution_model": {
+    "kind": "sequence",
+    "actions": [
+      {
+        "action_id": "action_1",
+        "op": "assassinate_troop",
+        "target_scope": "board_site",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "fixed",
+          "value": 1
+        },
+        "filters": [],
+        "source_fragment": "assassinate_step_1",
+        "metadata": {}
+      },
+      {
+        "action_id": "action_2",
+        "op": "assassinate_troop",
+        "target_scope": "board_site",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "fixed",
+          "value": 1
+        },
+        "filters": [],
+        "source_fragment": "assassinate_step_2",
+        "metadata": {}
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "action_1",
+      "op": "assassinate_troop",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 1
+      },
+      "filters": [],
+      "source_fragment": "assassinate_step_1",
+      "metadata": {}
+    },
+    {
+      "action_id": "action_2",
+      "op": "assassinate_troop",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 1
+      },
+      "filters": [],
+      "source_fragment": "assassinate_step_2",
+      "metadata": {}
+    }
+  ],
+  "global_conditions": [],
+  "state_contract": {
+    "reads": [
+      "board.troop_slots",
+      "presence_or_target_rules"
+    ],
+    "writes": [
+      "board.troop_slots",
+      "player.trophy_hall"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

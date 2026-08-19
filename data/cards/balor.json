@@ -1,0 +1,139 @@
+{
+  "card_id": "balor",
+  "name": "Balor",
+  "cost": 6,
+  "aspect": "conquest",
+  "secondary_aspects": [
+    "fiend"
+  ],
+  "deck_vp": 3,
+  "inner_circle_vp": 6,
+  "rules_text": "Devour a card from your hand to supplant a white troop anywhere on the board, then deploy 1 troop.",
+  "notes": "This uses the established hand-devour cost rule and the card-specific `white troop anywhere on the board` supplant rule. After the supplant resolves, deploy 1 troop using normal deploy legality.",
+  "execution_model": {
+    "kind": "sequence",
+    "actions": [
+      {
+        "action_id": "action_1",
+        "op": "devour_cost",
+        "target_scope": "hand",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "hand_devour",
+        "metadata": {
+          "source_zone": "hand",
+          "self_replace": false
+        }
+      },
+      {
+        "action_id": "action_2",
+        "op": "supplant_troop",
+        "target_scope": "board_site",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [
+          "white_troop_only"
+        ],
+        "source_fragment": "supplant_white_troop_anywhere",
+        "metadata": {
+          "targeting": "anywhere",
+          "ignore_presence_requirement": true
+        }
+      },
+      {
+        "action_id": "action_3",
+        "op": "deploy_troops",
+        "target_scope": "board_site",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "fixed",
+          "value": 1
+        },
+        "filters": [],
+        "source_fragment": "deploy_troop",
+        "metadata": {}
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "action_1",
+      "op": "devour_cost",
+      "target_scope": "hand",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "hand_devour",
+      "metadata": {
+        "source_zone": "hand",
+        "self_replace": false
+      }
+    },
+    {
+      "action_id": "action_2",
+      "op": "supplant_troop",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [
+        "white_troop_only"
+      ],
+      "source_fragment": "supplant_white_troop_anywhere",
+      "metadata": {
+        "targeting": "anywhere",
+        "ignore_presence_requirement": true
+      }
+    },
+    {
+      "action_id": "action_3",
+      "op": "deploy_troops",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 1
+      },
+      "filters": [],
+      "source_fragment": "deploy_troop",
+      "metadata": {}
+    }
+  ],
+  "global_conditions": [],
+  "state_contract": {
+    "reads": [
+      "source_zone",
+      "devour_rules",
+      "board.troop_slots",
+      "presence_or_target_rules",
+      "player.barracks"
+    ],
+    "writes": [
+      "devour_zone_or_equivalent",
+      "source_zone",
+      "board.troop_slots",
+      "player.trophy_hall",
+      "player.barracks"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

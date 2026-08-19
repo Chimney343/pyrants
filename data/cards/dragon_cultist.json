@@ -1,0 +1,108 @@
+{
+  "card_id": "dragon_cultist",
+  "name": "Dragon Cultist",
+  "cost": 3,
+  "aspect": "malice",
+  "secondary_aspects": [
+    "human"
+  ],
+  "deck_vp": 1,
+  "inner_circle_vp": 4,
+  "rules_text": "Choose exactly one mode. Either gain 2 power, or gain 2 influence.",
+  "notes": "Simple modal resource card.",
+  "execution_model": {
+    "kind": "modal_choice",
+    "selection": "exactly_one",
+    "options": [
+      {
+        "option_id": "option_1",
+        "actions": [
+          {
+            "action_id": "option_1_action_1",
+            "op": "gain_resource",
+            "target_scope": "self",
+            "timing": "immediate",
+            "optional": false,
+            "quantity": {
+              "kind": "fixed",
+              "value": 2
+            },
+            "filters": [],
+            "source_fragment": "gain_power",
+            "metadata": {
+              "resource": "power"
+            }
+          }
+        ]
+      },
+      {
+        "option_id": "option_2",
+        "actions": [
+          {
+            "action_id": "option_2_action_1",
+            "op": "gain_resource",
+            "target_scope": "self",
+            "timing": "immediate",
+            "optional": false,
+            "quantity": {
+              "kind": "fixed",
+              "value": 2
+            },
+            "filters": [],
+            "source_fragment": "gain_influence",
+            "metadata": {
+              "resource": "influence"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "option_1_action_1",
+      "op": "gain_resource",
+      "target_scope": "self",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 2
+      },
+      "filters": [],
+      "source_fragment": "gain_power",
+      "metadata": {
+        "resource": "power"
+      }
+    },
+    {
+      "action_id": "option_2_action_1",
+      "op": "gain_resource",
+      "target_scope": "self",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 2
+      },
+      "filters": [],
+      "source_fragment": "gain_influence",
+      "metadata": {
+        "resource": "influence"
+      }
+    }
+  ],
+  "global_conditions": [],
+  "state_contract": {
+    "reads": [
+      "effect_payload",
+      "custom_rules"
+    ],
+    "writes": [
+      "resource_pool",
+      "custom_state"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

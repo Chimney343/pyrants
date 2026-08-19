@@ -1,0 +1,107 @@
+{
+  "card_id": "black_dragon",
+  "name": "Black Dragon",
+  "cost": 8,
+  "aspect": "conquest",
+  "secondary_aspects": [
+    "dragon"
+  ],
+  "deck_vp": 3,
+  "inner_circle_vp": 7,
+  "rules_text": "Supplant a white troop anywhere. Gain 1 VP for every 3 white trophies.",
+  "notes": "This card-specific wording ignores normal presence restrictions and can supplant a white troop anywhere on the board. `White trophies` means white troops currently in your trophy hall, counted in groups of 3 and rounded down.",
+  "execution_model": {
+    "kind": "sequence",
+    "actions": [
+      {
+        "action_id": "action_1",
+        "op": "supplant_troop",
+        "target_scope": "board_site",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [
+          "white_troop_only"
+        ],
+        "source_fragment": "supplant_white_troop_anywhere",
+        "metadata": {
+          "targeting": "anywhere",
+          "ignore_presence_requirement": true
+        }
+      },
+      {
+        "action_id": "action_2",
+        "op": "grant_vp",
+        "target_scope": "self",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "scaled_vp_from_white_trophies",
+        "metadata": {
+          "count_from": "trophy_hall_white",
+          "per": 3
+        }
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "action_1",
+      "op": "supplant_troop",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [
+        "white_troop_only"
+      ],
+      "source_fragment": "supplant_white_troop_anywhere",
+      "metadata": {
+        "targeting": "anywhere",
+        "ignore_presence_requirement": true
+      }
+    },
+    {
+      "action_id": "action_2",
+      "op": "grant_vp",
+      "target_scope": "self",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "scaled_vp_from_white_trophies",
+      "metadata": {
+        "count_from": "trophy_hall_white",
+        "per": 3
+      }
+    }
+  ],
+  "global_conditions": [],
+  "state_contract": {
+    "reads": [
+      "board.troop_slots",
+      "presence_or_target_rules",
+      "vp_scale_source"
+    ],
+    "writes": [
+      "board.troop_slots",
+      "player.trophy_hall",
+      "player.vp_tokens_or_score"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

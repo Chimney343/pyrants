@@ -77,7 +77,7 @@ def _played_cards_ids(session: CSession, player_index: int = 0) -> list[str]:
 def _init_engine() -> CEngine:
     eng = CEngine()
     eng.initialize(
-        catalog_path=str(DATA_DIR / "cards" / "catalog.json"),
+        catalog_path=str(DATA_DIR / "cards"),
         board_path=str(DATA_DIR / "boards" / "tyrants_of_the_underdark.json"),
         setup_path=str(DATA_DIR / "decks" / "base_setup.json"),
     )

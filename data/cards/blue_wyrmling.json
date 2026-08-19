@@ -1,0 +1,96 @@
+{
+  "card_id": "blue_wyrmling",
+  "name": "Blue Wyrmling",
+  "cost": 5,
+  "aspect": "ambition",
+  "secondary_aspects": [
+    "dragon"
+  ],
+  "deck_vp": 2,
+  "inner_circle_vp": 4,
+  "rules_text": "Gain 3 influence. Return another players troop or spy where you have Presence.",
+  "notes": "Uses targeted at another player's unit`return` rule: unless card says otherwise, return targets your own pieces and sends them back to your barracks. This card targets other players troop or spy.",
+  "execution_model": {
+    "kind": "sequence",
+    "actions": [
+      {
+        "action_id": "action_1",
+        "op": "gain_resource",
+        "target_scope": "self",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "fixed",
+          "value": 3
+        },
+        "filters": [],
+        "source_fragment": "gain_influence",
+        "metadata": {
+          "resource": "influence"
+        }
+      },
+      {
+        "action_id": "action_2",
+        "op": "return_unit",
+        "target_scope": "opponent_unit",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "return_other_player_unit",
+        "metadata": {}
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "action_1",
+      "op": "gain_resource",
+      "target_scope": "self",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 3
+      },
+      "filters": [],
+      "source_fragment": "gain_influence",
+      "metadata": {
+        "resource": "influence"
+      }
+    },
+    {
+      "action_id": "action_2",
+      "op": "return_unit",
+      "target_scope": "opponent_unit",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "return_other_player_unit",
+      "metadata": {}
+    }
+  ],
+  "global_conditions": [],
+  "state_contract": {
+    "reads": [
+      "effect_payload",
+      "board.troop_slots",
+      "board.spies"
+    ],
+    "writes": [
+      "resource_pool",
+      "board.troop_slots",
+      "board.spies",
+      "player.spies_available"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

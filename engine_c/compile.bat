@@ -44,7 +44,7 @@ lib /nologo /out:libengine.lib *.obj
 if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 
 echo Building test_engine.exe...
-cl %CFLAGS% /Fe:test_engine.exe test_engine.c test_intern_c.c libengine.lib
+cl %CFLAGS% /I. /Fe:test_engine.exe test_engine.c test_intern_c.c libengine.lib
 if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 
 echo Running tests...
@@ -83,9 +83,17 @@ echo Running saveload tests...
 .\test_saveload.exe
 if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 
+echo Building test_catalog_assembly.exe...
+cl %CFLAGS% /I. /Fe:test_catalog_assembly.exe tests\test_catalog_assembly.c libengine.lib
+if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
+
+echo Running catalog assembly tests...
+.\test_catalog_assembly.exe
+if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
+
 echo Building engine_c.dll...
 REM Remove test object files so DLL only links library objects
-del /Q test_engine.obj test_intern_c.obj test_view.obj test_describe.obj test_generic_actions.obj test_saveload.obj 2>nul
+del /Q test_engine.obj test_intern_c.obj test_view.obj test_describe.obj test_generic_actions.obj test_saveload.obj test_catalog_assembly.obj 2>nul
 REM Delete old DLL first — link fails with LNK1104 if the file is in use
 del /Q engine_c.dll 2>nul
 link /DLL /DEF:engine_c.def /OUT:engine_c.dll *.obj

@@ -13,7 +13,7 @@ from interface.game_viewer import GameViewerApp
 BASE_DIR = Path(__file__).resolve().parents[1]
 BOARD_PATH = BASE_DIR / "data" / "boards" / "tyrants_of_the_underdark.json"
 LAYOUT_PATH = BASE_DIR / "data" / "layouts" / "tyrants_of_the_underdark_layout.json"
-CARD_PATH = BASE_DIR / "data" / "cards" / "catalog.json"
+CARD_PATH = BASE_DIR / "data" / "cards"
 SETUP_PATH = BASE_DIR / "data" / "decks" / "base_setup.json"
 DECKS_DIR = BASE_DIR / "data" / "decks"
 

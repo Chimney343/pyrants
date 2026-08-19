@@ -4,6 +4,7 @@
 #include "intern.h"
 #include "arena.h"
 #include "moves.h"
+#include "catalog_dir.h"
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
@@ -13,22 +14,7 @@ static void test_describe_play_card(void) {
     Arena *arena = arena_create(2 * 1024 * 1024);
     assert(arena);
 
-    GameDefinition *def = engine_load_definition(
-        "../data/cards/catalog.json",
-        "../data/boards/tyrants_of_the_underdark.json",
-        "../data/decks/base_setup.json",
-        arena
-    );
-    if (!def || def->catalog.card_count == 0) {
-        arena_destroy(arena);
-        arena = arena_create(2 * 1024 * 1024);
-        def = engine_load_definition(
-            "data/cards/catalog.json",
-            "data/boards/tyrants_of_the_underdark.json",
-            "data/decks/base_setup.json",
-            arena
-        );
-    }
+    GameDefinition *def = test_load_definition(arena);
     assert(def);
 
     const char *player_ids[] = {"p1", "p2"};
@@ -95,22 +81,7 @@ static void test_describe_assassinate(void) {
     Arena *arena = arena_create(2 * 1024 * 1024);
     assert(arena);
 
-    GameDefinition *def = engine_load_definition(
-        "../data/cards/catalog.json",
-        "../data/boards/tyrants_of_the_underdark.json",
-        "../data/decks/base_setup.json",
-        arena
-    );
-    if (!def || def->catalog.card_count == 0) {
-        arena_destroy(arena);
-        arena = arena_create(2 * 1024 * 1024);
-        def = engine_load_definition(
-            "data/cards/catalog.json",
-            "data/boards/tyrants_of_the_underdark.json",
-            "data/decks/base_setup.json",
-            arena
-        );
-    }
+    GameDefinition *def = test_load_definition(arena);
     assert(def);
 
     const char *player_ids[] = {"p1", "p2"};
@@ -139,22 +110,7 @@ static void test_describe_assassinate_no_slot_index(void) {
     Arena *arena = arena_create(2 * 1024 * 1024);
     assert(arena);
 
-    GameDefinition *def = engine_load_definition(
-        "../data/cards/catalog.json",
-        "../data/boards/tyrants_of_the_underdark.json",
-        "../data/decks/base_setup.json",
-        arena
-    );
-    if (!def || def->catalog.card_count == 0) {
-        arena_destroy(arena);
-        arena = arena_create(2 * 1024 * 1024);
-        def = engine_load_definition(
-            "data/cards/catalog.json",
-            "data/boards/tyrants_of_the_underdark.json",
-            "data/decks/base_setup.json",
-            arena
-        );
-    }
+    GameDefinition *def = test_load_definition(arena);
     assert(def);
 
     const char *player_ids[] = {"p1", "p2"};
@@ -183,22 +139,7 @@ static void test_describe_recruit(void) {
     Arena *arena = arena_create(2 * 1024 * 1024);
     assert(arena);
 
-    GameDefinition *def = engine_load_definition(
-        "../data/cards/catalog.json",
-        "../data/boards/tyrants_of_the_underdark.json",
-        "../data/decks/base_setup.json",
-        arena
-    );
-    if (!def || def->catalog.card_count == 0) {
-        arena_destroy(arena);
-        arena = arena_create(2 * 1024 * 1024);
-        def = engine_load_definition(
-            "data/cards/catalog.json",
-            "data/boards/tyrants_of_the_underdark.json",
-            "data/decks/base_setup.json",
-            arena
-        );
-    }
+    GameDefinition *def = test_load_definition(arena);
     assert(def);
 
     const char *player_ids[] = {"p1", "p2"};
@@ -224,22 +165,7 @@ static void test_describe_needed_size(void) {
     Arena *arena = arena_create(2 * 1024 * 1024);
     assert(arena);
 
-    GameDefinition *def = engine_load_definition(
-        "../data/cards/catalog.json",
-        "../data/boards/tyrants_of_the_underdark.json",
-        "../data/decks/base_setup.json",
-        arena
-    );
-    if (!def || def->catalog.card_count == 0) {
-        arena_destroy(arena);
-        arena = arena_create(2 * 1024 * 1024);
-        def = engine_load_definition(
-            "data/cards/catalog.json",
-            "data/boards/tyrants_of_the_underdark.json",
-            "data/decks/base_setup.json",
-            arena
-        );
-    }
+    GameDefinition *def = test_load_definition(arena);
     assert(def);
 
     const char *player_ids[] = {"p1", "p2"};

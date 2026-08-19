@@ -1,0 +1,138 @@
+{
+  "card_id": "ettin",
+  "name": "Ettin",
+  "cost": 4,
+  "aspect": "conquest",
+  "secondary_aspects": [
+    "giant"
+  ],
+  "deck_vp": 1,
+  "inner_circle_vp": 2,
+  "rules_text": "Choose exactly one mode. Either deploy 3 troops, or assassinate 2 white troops.",
+  "notes": "This combines the established modal `or` rule with free multi-deploy and repeated white-troop assassination behavior.",
+  "execution_model": {
+    "kind": "modal_choice",
+    "selection": "exactly_one",
+    "options": [
+      {
+        "option_id": "option_1",
+        "actions": [
+          {
+            "action_id": "option_1_action_1",
+            "op": "deploy_troops",
+            "target_scope": "board_site",
+            "timing": "immediate",
+            "optional": false,
+            "quantity": {
+              "kind": "fixed",
+              "value": 3
+            },
+            "filters": [],
+            "source_fragment": "deploy_troops",
+            "metadata": {}
+          }
+        ]
+      },
+      {
+        "option_id": "option_2",
+        "actions": [
+          {
+            "action_id": "option_2_action_1",
+            "op": "assassinate_troop",
+            "target_scope": "board_site",
+            "timing": "immediate",
+            "optional": false,
+            "quantity": {
+              "kind": "fixed",
+              "value": 1
+            },
+            "filters": [
+              "white_troop_only"
+            ],
+            "source_fragment": "repeated_white_troop_assassinate",
+            "metadata": {}
+          },
+          {
+            "action_id": "option_2_action_2",
+            "op": "assassinate_troop",
+            "target_scope": "board_site",
+            "timing": "immediate",
+            "optional": false,
+            "quantity": {
+              "kind": "fixed",
+              "value": 1
+            },
+            "filters": [
+              "white_troop_only"
+            ],
+            "source_fragment": "repeated_white_troop_assassinate",
+            "metadata": {}
+          }
+        ]
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "option_1_action_1",
+      "op": "deploy_troops",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 3
+      },
+      "filters": [],
+      "source_fragment": "deploy_troops",
+      "metadata": {}
+    },
+    {
+      "action_id": "option_2_action_1",
+      "op": "assassinate_troop",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 1
+      },
+      "filters": [
+        "white_troop_only"
+      ],
+      "source_fragment": "repeated_white_troop_assassinate",
+      "metadata": {}
+    },
+    {
+      "action_id": "option_2_action_2",
+      "op": "assassinate_troop",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 1
+      },
+      "filters": [
+        "white_troop_only"
+      ],
+      "source_fragment": "repeated_white_troop_assassinate",
+      "metadata": {}
+    }
+  ],
+  "global_conditions": [],
+  "state_contract": {
+    "reads": [
+      "player.barracks",
+      "board.troop_slots",
+      "presence_or_target_rules"
+    ],
+    "writes": [
+      "board.troop_slots",
+      "player.barracks",
+      "player.trophy_hall"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

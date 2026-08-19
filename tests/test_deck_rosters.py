@@ -2,18 +2,13 @@
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
-from game_setup.loaders import load_deck_rosters
+from game_setup.loaders import assemble_catalog_payload, load_deck_rosters
 
 BASE_DIR = Path(__file__).resolve().parents[1]
-CARD_PATH = BASE_DIR / "data" / "cards" / "catalog.json"
+CARD_PATH = BASE_DIR / "data" / "cards"
 DECKS_DIR = BASE_DIR / "data" / "decks"
-
-
-def _load_json(path: Path) -> dict[str, object]:
-    return json.loads(path.read_text(encoding="utf-8"))
 
 
 def _load_decks() -> list[dict[str, object]]:
@@ -21,7 +16,7 @@ def _load_decks() -> list[dict[str, object]]:
 
 
 def test_deck_rosters_reference_catalog_cards_and_match_expected_totals() -> None:
-    catalog_payload = _load_json(CARD_PATH)
+    catalog_payload = assemble_catalog_payload(CARD_PATH)
     decks = _load_decks()
 
     cards = catalog_payload["cards"]

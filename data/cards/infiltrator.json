@@ -1,0 +1,104 @@
+{
+  "card_id": "infiltrator",
+  "name": "Infiltrator",
+  "cost": 3,
+  "aspect": "guile",
+  "secondary_aspects": [
+    "drow"
+  ],
+  "deck_vp": 1,
+  "inner_circle_vp": 2,
+  "rules_text": "Place a spy with normal legality. If there is another player's troop at that site, gain 1 power.",
+  "notes": "Workbook text was compressed. `There` means site where the spy was placed, and the power gain checks for another player's troop at that site.",
+  "execution_model": {
+    "kind": "sequence",
+    "actions": [
+      {
+        "action_id": "action_1",
+        "op": "place_spy",
+        "target_scope": "board_site",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "spy",
+        "metadata": {}
+      },
+      {
+        "action_id": "action_2",
+        "op": "conditional_bonus",
+        "target_scope": "self",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "conditional_power_if_enemy_troop_present",
+        "metadata": {
+          "condition": "selected_node_has_other_player_troop",
+          "resource": "power",
+          "amount": 1
+        }
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "action_1",
+      "op": "place_spy",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "spy",
+      "metadata": {}
+    },
+    {
+      "action_id": "action_2",
+      "op": "conditional_bonus",
+      "target_scope": "self",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "conditional_power_if_enemy_troop_present",
+      "metadata": {
+        "condition": "selected_node_has_other_player_troop",
+        "resource": "power",
+        "amount": 1
+      }
+    }
+  ],
+  "global_conditions": [
+    {
+      "condition_type": "conditional_gate",
+      "description": "Effect has conditional branch or threshold requirement"
+    }
+  ],
+  "state_contract": {
+    "reads": [
+      "player.spies_available",
+      "board.nodes",
+      "custom_rules"
+    ],
+    "writes": [
+      "board.spies",
+      "player.spies_available",
+      "custom_state"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

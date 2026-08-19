@@ -1,0 +1,99 @@
+{
+  "card_id": "elder_brain",
+  "name": "Elder Brain",
+  "cost": 7,
+  "aspect": "ambition",
+  "secondary_aspects": [
+    "aberration"
+  ],
+  "deck_vp": 4,
+  "inner_circle_vp": 9,
+  "rules_text": "Promote the top card of your draw deck. Then play a card from your inner circle as if it were in your hand; it remains in your inner circle after being played.",
+  "notes": "`Top card` is interpreted as the top of your draw deck. The inner-circle play is a temporary permission and does not move that card out of inner circle.",
+  "execution_model": {
+    "kind": "sequence",
+    "actions": [
+      {
+        "action_id": "action_1",
+        "op": "promote_card",
+        "target_scope": "self",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "promote_top_of_deck",
+        "metadata": {}
+      },
+      {
+        "action_id": "action_2",
+        "op": "play_card",
+        "target_scope": "inner_circle_or_market",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "play_from_inner_circle_without_removal",
+        "metadata": {}
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "action_1",
+      "op": "promote_card",
+      "target_scope": "self",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "promote_top_of_deck",
+      "metadata": {}
+    },
+    {
+      "action_id": "action_2",
+      "op": "play_card",
+      "target_scope": "inner_circle_or_market",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "play_from_inner_circle_without_removal",
+      "metadata": {}
+    }
+  ],
+  "global_conditions": [
+    {
+      "condition_type": "conditional_gate",
+      "description": "Effect has conditional branch or threshold requirement"
+    }
+  ],
+  "state_contract": {
+    "reads": [
+      "player.played_cards",
+      "player.hand",
+      "player.discard_pile",
+      "player.inner_circle",
+      "card_catalog"
+    ],
+    "writes": [
+      "player.inner_circle",
+      "player.played_cards",
+      "player.hand",
+      "player.discard_pile"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

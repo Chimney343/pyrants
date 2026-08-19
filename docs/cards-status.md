@@ -5,9 +5,8 @@ Use this file for the current state of card modeling, catalog generation, and fi
 ## Source Of Truth
 
 Runtime behavior:
-- `data/cards/catalog.json`
-- `engine/state.py`
-- `engine/rules.py`
+- `data/cards/*.json`
+- `engine_c/` (C engine runtime)
 - `game_setup/loaders.py`
 
 Pipeline inputs and reports:
@@ -17,23 +16,17 @@ Pipeline inputs and reports:
 - `scripts/generate_first_deck_artifacts.py`
 - `scripts/generate_catalog_execution_audit.py`
 - `scripts/catalog_audit.py`
-- `scripts/check_roster_card_stuck_states.py`
 
 Checks:
-- `tests/test_card_model.py`
-- `tests/test_deck_rosters.py`
-- `tests/test_first_ten_cards.py`
-- `tests/test_generic_interpreter.py`
-- `tests/test_check_roster_card_stuck_states.py`
+- `tests/c_engine/` (per-card C-binding tests)
 
 ## Done
 
 - The first-deck review pass is complete for 125 cards.
 - The review log is now treated as a source artifact, not a status note.
-- Runtime card behavior lives in `data/cards/catalog.json` through structured per-card definitions.
-- The generic interpreter in `engine/rules.py` covers the core action set used by the current catalog.
+- Runtime card behavior lives in `data/cards/*.json` through structured per-card definitions.
+- The generic interpreter in the C engine covers the core action set used by the current catalog.
 - The current generated audit is clean: 125 audited cards, 125 clean cards, 0 rules-text mismatches, 0 runtime gaps, and 0 heuristic-only findings.
-- The current stuck-state probe is clean: no blocked, stuck, error, or max-step results.
 - First-ten special cases now live in card metadata and generic execution models rather than card-id conditionals.
 
 ## Awaiting

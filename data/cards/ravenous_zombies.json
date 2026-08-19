@@ -1,0 +1,99 @@
+{
+  "card_id": "ravenous_zombies",
+  "name": "Ravenous Zombies",
+  "cost": 3,
+  "aspect": "conquest",
+  "secondary_aspects": [
+    "undead"
+  ],
+  "deck_vp": 1,
+  "inner_circle_vp": 2,
+  "rules_text": "Gain 1 power. Assassinate a white troop.",
+  "notes": "Uses standard free white-troop assassination legality.",
+  "execution_model": {
+    "kind": "sequence",
+    "actions": [
+      {
+        "action_id": "action_1",
+        "op": "gain_resource",
+        "target_scope": "self",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "fixed",
+          "value": 1
+        },
+        "filters": [],
+        "source_fragment": "gain_power",
+        "metadata": {
+          "resource": "power"
+        }
+      },
+      {
+        "action_id": "action_2",
+        "op": "assassinate_troop",
+        "target_scope": "board_site",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [
+          "white_troop_only"
+        ],
+        "source_fragment": "assassinate_white_troop",
+        "metadata": {}
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "action_1",
+      "op": "gain_resource",
+      "target_scope": "self",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 1
+      },
+      "filters": [],
+      "source_fragment": "gain_power",
+      "metadata": {
+        "resource": "power"
+      }
+    },
+    {
+      "action_id": "action_2",
+      "op": "assassinate_troop",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [
+        "white_troop_only"
+      ],
+      "source_fragment": "assassinate_white_troop",
+      "metadata": {}
+    }
+  ],
+  "global_conditions": [],
+  "state_contract": {
+    "reads": [
+      "effect_payload",
+      "board.troop_slots",
+      "presence_or_target_rules"
+    ],
+    "writes": [
+      "resource_pool",
+      "board.troop_slots",
+      "player.trophy_hall"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

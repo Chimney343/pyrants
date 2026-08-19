@@ -45,7 +45,7 @@ def _make_engine(catalog_path: str | None = None,
                  setup_path: str | None = None) -> CEngine:
     eng = CEngine()
     eng.initialize(
-        catalog_path=catalog_path or str(DATA_DIR / "cards" / "catalog.json"),
+        catalog_path=catalog_path or str(DATA_DIR / "cards"),
         board_path=board_path or str(DATA_DIR / "boards" / "tyrants_of_the_underdark.json"),
         setup_path=setup_path or str(DATA_DIR / "decks" / "base_setup.json"),
     )

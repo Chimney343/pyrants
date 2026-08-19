@@ -44,7 +44,7 @@ def test_gar_shatterkeel_deploys_three_troops():
     """Playing Gar Shatterkeel produces 3 deploy moves; resolving them deploys 3 troops."""
     eng = CEngine()
     eng.initialize(
-        catalog_path=str(DATA_DIR / "cards" / "catalog.json"),
+        catalog_path=str(DATA_DIR / "cards"),
         board_path=str(DATA_DIR / "boards" / "tyrants_of_the_underdark.json"),
         setup_path=str(DATA_DIR / "decks" / "base_setup.json"),
     )
@@ -78,7 +78,7 @@ def test_gar_shatterkeel_recruit_filters_by_aspect_and_cost():
     """After deploying 3 troops, recruit moves only show Conquest cards costing ≤4."""
     eng = CEngine()
     eng.initialize(
-        catalog_path=str(DATA_DIR / "cards" / "catalog.json"),
+        catalog_path=str(DATA_DIR / "cards"),
         board_path=str(DATA_DIR / "boards" / "tyrants_of_the_underdark.json"),
         setup_path=str(DATA_DIR / "decks" / "base_setup.json"),
     )
@@ -120,7 +120,7 @@ def test_gar_shatterkeel_resolves_completely():
     """After deploying 3 troops and recruiting a card, there are no remaining choices."""
     eng = CEngine()
     eng.initialize(
-        catalog_path=str(DATA_DIR / "cards" / "catalog.json"),
+        catalog_path=str(DATA_DIR / "cards"),
         board_path=str(DATA_DIR / "boards" / "tyrants_of_the_underdark.json"),
         setup_path=str(DATA_DIR / "decks" / "base_setup.json"),
     )

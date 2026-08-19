@@ -1,0 +1,138 @@
+{
+  "card_id": "yan_c_bin",
+  "name": "Yan-C-Bin",
+  "cost": 6,
+  "aspect": "guile",
+  "secondary_aspects": [
+    "elemental prince"
+  ],
+  "deck_vp": 3,
+  "inner_circle_vp": 6,
+  "rules_text": "Place a spy, then assassinate a troop at that site. If the focus condition is met, place another spy.",
+  "notes": "Workbook shorthand was misleading here. Focus on Guile follows the current repo rule: another Guile card in hand or already played. When that condition is met, Yan-C-Bin grants one additional separate spy placement after the base spy-plus-assassinate effect.",
+  "execution_model": {
+    "kind": "sequence",
+    "actions": [
+      {
+        "action_id": "action_1",
+        "op": "place_spy",
+        "target_scope": "board_site",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "spy",
+        "metadata": {}
+      },
+      {
+        "action_id": "action_2",
+        "op": "assassinate_troop",
+        "target_scope": "board_site",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "assassinate",
+        "metadata": {}
+      },
+      {
+        "action_id": "action_3",
+        "op": "place_spy",
+        "target_scope": "board_site",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "focus_spy",
+        "metadata": {
+          "requires_focus": true,
+          "focus_aspect": "guile"
+        }
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "action_1",
+      "op": "place_spy",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "spy",
+      "metadata": {}
+    },
+    {
+      "action_id": "action_2",
+      "op": "assassinate_troop",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "assassinate",
+      "metadata": {}
+    },
+    {
+      "action_id": "action_3",
+      "op": "place_spy",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "focus_spy",
+      "metadata": {
+        "requires_focus": true,
+        "focus_aspect": "guile"
+      }
+    }
+  ],
+  "global_conditions": [
+    {
+      "condition_type": "focus_check",
+      "description": "Requires matching-aspect support card in hand or played zone"
+    },
+    {
+      "condition_type": "conditional_gate",
+      "description": "Effect has conditional branch or threshold requirement"
+    }
+  ],
+  "state_contract": {
+    "reads": [
+      "player.spies_available",
+      "board.nodes",
+      "board.troop_slots",
+      "presence_or_target_rules",
+      "condition_context"
+    ],
+    "writes": [
+      "board.spies",
+      "player.spies_available",
+      "board.troop_slots",
+      "player.trophy_hall",
+      "resource_pool_or_followup_actions"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

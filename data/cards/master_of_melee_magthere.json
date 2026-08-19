@@ -1,0 +1,112 @@
+{
+  "card_id": "master_of_melee_magthere",
+  "name": "Master of Melee-Magthere",
+  "cost": 5,
+  "aspect": "conquest",
+  "secondary_aspects": [
+    "drow"
+  ],
+  "deck_vp": 2,
+  "inner_circle_vp": 5,
+  "rules_text": "Choose exactly one mode. Either deploy 4 troops, or supplant a white troop anywhere.",
+  "notes": "Uses established modal `or` rule. Supplant-white-troop-anywhere branch follows same card-specific anywhere rule as Black Dragon.",
+  "execution_model": {
+    "kind": "modal_choice",
+    "selection": "exactly_one",
+    "options": [
+      {
+        "option_id": "option_1",
+        "actions": [
+          {
+            "action_id": "option_1_action_1",
+            "op": "deploy_troops",
+            "target_scope": "board_site",
+            "timing": "immediate",
+            "optional": false,
+            "quantity": {
+              "kind": "fixed",
+              "value": 4
+            },
+            "filters": [],
+            "source_fragment": "deploy",
+            "metadata": {}
+          }
+        ]
+      },
+      {
+        "option_id": "option_2",
+        "actions": [
+          {
+            "action_id": "option_2_action_1",
+            "op": "supplant_troop",
+            "target_scope": "board_site",
+            "timing": "immediate",
+            "optional": false,
+            "quantity": {
+              "kind": "unspecified",
+              "value": null
+            },
+            "filters": [
+              "white_troop_only"
+            ],
+            "source_fragment": "supplant_white_troop_anywhere",
+            "metadata": {
+              "targeting": "anywhere",
+              "ignore_presence_requirement": true
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "option_1_action_1",
+      "op": "deploy_troops",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 4
+      },
+      "filters": [],
+      "source_fragment": "deploy",
+      "metadata": {}
+    },
+    {
+      "action_id": "option_2_action_1",
+      "op": "supplant_troop",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [
+        "white_troop_only"
+      ],
+      "source_fragment": "supplant_white_troop_anywhere",
+      "metadata": {
+        "targeting": "anywhere",
+        "ignore_presence_requirement": true
+      }
+    }
+  ],
+  "global_conditions": [],
+  "state_contract": {
+    "reads": [
+      "player.barracks",
+      "board.troop_slots",
+      "presence_or_target_rules"
+    ],
+    "writes": [
+      "board.troop_slots",
+      "player.barracks",
+      "player.trophy_hall"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

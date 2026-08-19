@@ -111,7 +111,7 @@ def test_ghoul_programmatic_session() -> None:
     """Ghoul should work with a programmatically constructed session, giving IO to opponent only."""
     eng = CEngine()
     eng.initialize(
-        catalog_path=str(DATA_DIR / "cards" / "catalog.json"),
+        catalog_path=str(DATA_DIR / "cards"),
         board_path=str(DATA_DIR / "boards" / "tyrants_of_the_underdark.json"),
         setup_path=str(DATA_DIR / "decks" / "base_setup.json"),
     )

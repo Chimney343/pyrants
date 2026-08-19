@@ -2,16 +2,15 @@
 
 from __future__ import annotations
 
-import json
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-
 from engine_c.bindings.ce_api import CEngine
 from engine_c.bindings.engine_bindings import _lib
 from engine_c.bindings.session import CSession
 from engine_c.bindings.view import build_c_game_view
+from game_setup.loaders import assemble_catalog_payload
 from tests.c_engine.card_test_helpers import make_card_test_session
 
 SCENARIO_PATH = (
@@ -119,7 +118,7 @@ def test_derro_programmatic_session() -> None:
     """Test Derro with a programmatically constructed session using make_card_test_session."""
     eng = CEngine()
     eng.initialize(
-        catalog_path=str(DATA_DIR / "cards" / "catalog.json"),
+        catalog_path=str(DATA_DIR / "cards"),
         board_path=str(DATA_DIR / "boards" / "tyrants_of_the_underdark.json"),
         setup_path=str(DATA_DIR / "decks" / "base_setup.json"),
     )
@@ -242,7 +241,7 @@ def test_derro_catalog_encoding_auto_recruits_insane_outcast() -> None:
     can never deliver the Insane Outcast (it lives in a special stack, not the
     market row).
     """
-    catalog = json.loads((DATA_DIR / "cards" / "catalog.json").read_text(encoding="utf-8"))
+    catalog = assemble_catalog_payload(DATA_DIR / "cards")
     derro = next(c for c in catalog["cards"] if c["card_id"] == "derro")
 
     for action in (derro["execution_model"]["actions"][1], derro["actions"][1]):

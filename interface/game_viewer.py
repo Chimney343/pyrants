@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import tkinter as tk
 from collections import Counter
 from collections.abc import Mapping, Sequence
@@ -12,39 +11,35 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from tkinter import filedialog, messagebox, ttk
+from typing import Any
 
-from engine.moves import (
+from engine_c.bindings.session import CSession
+from engine_c.bindings.view import (
+    CardView,
+    CGameViewData,
+    CLegalMoveView,
+    build_c_game_view,
+)
+from game_setup.board_package import BoardLayoutDefinition, BoardPackageDefinition, make_default_layout
+from game_setup.loaders import build_board_package_from_files
+from game_setup.market_setup import (
+    ABERRATIONS_DECK_ID,
     HOUSE_GUARD_RECRUIT_SLOT,
     INSANE_OUTCAST_RECRUIT_SLOT,
     PRIESTESS_RECRUIT_SLOT,
-    PlayCardMove,
-    ResolveGenericChoiceMove,
-)
-from engine.scoring import _cards_vp, _is_total_control, _site_control_owner
-from engine.state import GameState, NodeKind, board_index, build_initial_game_state
-from engine.state import card_index as state_card_index
-from game_session import GameSession
-from game_setup.board_package import BoardLayoutDefinition, BoardPackageDefinition, make_default_layout
-from game_setup.loaders import build_board_package_from_files, build_game_definition_from_dicts
-from game_setup.market_setup import (
-    ABERRATIONS_DECK_ID,
     DeckProfile,
     combine_two_deck_market_setup,
     discover_full_deck_profiles,
 )
-from game_setup.scenarios import save_game_state
-from game_view import CardView, GameView, LegalMoveView, build_game_view, filter_legal_moves
 from interface._canvas_scroll import bind_canvas_scrolling
 from interface.game_renderer import GameBoardRenderer
 from interface.view_fit import compute_fit_zoom
-
-_ENGINE = os.environ.get("PYRANTS_ENGINE", "python")
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
 DATA_DIR = ROOT_DIR / "data"
 DEFAULT_BOARD_PATH = ROOT_DIR / "data" / "boards" / "tyrants_of_the_underdark.json"
 DEFAULT_LAYOUT_PATH = ROOT_DIR / "data" / "layouts" / "tyrants_of_the_underdark_layout.json"
-DEFAULT_CARD_PATH = ROOT_DIR / "data" / "cards" / "catalog.json"
+DEFAULT_CARD_PATH = ROOT_DIR / "data" / "cards"
 DEFAULT_SETUP_PATH = ROOT_DIR / "data" / "decks" / "base_setup.json"
 DECKS_DIR = ROOT_DIR / "data" / "decks"
 
@@ -202,53 +197,6 @@ def _determine_site_owner_raw(node_state, player_sym):
     if len(max_owners) != 1:
         return 0
     return max_owners[0]
-
-
-def _compute_vp_breakdowns_py(session) -> list[dict]:
-    from engine.scoring import _cards_vp, _site_control_owner
-
-    state = session.state
-    breakdowns = []
-
-    for pid, ps in state.players.items():
-        running_score = ps.score
-
-        site_control_vp = 0
-        for node_id, node in state.nodes.items():
-            if node.kind != "site":
-                continue
-            owner = _site_control_owner(state, node_id)
-            if owner == pid:
-                from engine.state import board_index
-                nd = board_index(state.definition.board, node_id)
-                if nd:
-                    site_control_vp += nd.control_vp
-
-        trophy_vp = len(ps.trophy_hall)
-        token_vp = ps.vp_tokens
-
-        all_cards = ps.deck + ps.hand + ps.discard_pile + ps.played_cards
-        deck_vp = _cards_vp(state.definition.catalog, all_cards)
-        inner_circle_vp = sum(
-            card.inner_circle_vp
-            for card in state.definition.catalog.cards
-            if card.card_id in ps.inner_circle
-        )
-
-        total = running_score + site_control_vp + trophy_vp + token_vp + deck_vp + inner_circle_vp
-
-        breakdowns.append({
-            "player_id": pid,
-            "running_score": running_score,
-            "site_control_vp": site_control_vp,
-            "trophy_vp": trophy_vp,
-            "vp_tokens": token_vp,
-            "deck_vp": deck_vp,
-            "inner_circle_vp": inner_circle_vp,
-            "total": total,
-        })
-
-    return breakdowns
 
 
 def _ellipsize(text: str, max_chars: int) -> str:
@@ -446,35 +394,21 @@ def create_hotseat_session(
     deck_b: DeckProfile,
     player_count: int,
     seed: int,
-    engine: str = "python",
-) -> GameSession:
-    """Create a game session using selected map, players, and two market decks."""
+) -> CSession:
+    """Create a C-engine game session using selected map, players, and two market decks."""
 
-    board_data = _read_json_object(board_path)
-    card_data = _read_json_object(card_path)
     setup_data = build_setup_from_market_selection(setup_path, deck_a=deck_a, deck_b=deck_b)
 
-    if engine == "c":
-        from engine_c.bindings.ce_api import CEngine
-        from engine_c.bindings.session import CSession
+    from engine_c.bindings.ce_api import CEngine
 
-        eng = CEngine()
-        eng.initialize(
-            catalog_path=str(card_path),
-            board_path=str(board_path),
-            setup_data_json=json.dumps(setup_data),
-        )
-        player_ids = [f"p{index}" for index in range(1, player_count + 1)]
-        return CSession(eng, player_ids, seed=seed or 0)
-
-    definition = build_game_definition_from_dicts(board_data, card_data, setup_data)
-    player_ids = [f"p{index}" for index in range(1, player_count + 1)]
-    state = build_initial_game_state(
-        definition,
-        player_ids=player_ids,
-        shuffle_seed=seed,
+    eng = CEngine()
+    eng.initialize(
+        catalog_path=str(card_path),
+        board_path=str(board_path),
+        setup_data_json=json.dumps(setup_data),
     )
-    return GameSession(state)
+    player_ids = [f"p{index}" for index in range(1, player_count + 1)]
+    return CSession(eng, player_ids, seed=seed or 0)
 
 
 def _read_json_object(path: Path) -> dict[str, object]:
@@ -597,7 +531,6 @@ class GameViewerApp:
         decks_dir: Path,
         initial_player_count: int,
         seed: int | None,
-        engine: str = "python",
     ) -> None:
         self.root = root
         self.root.title("Tyrants Game Viewer")
@@ -606,7 +539,6 @@ class GameViewerApp:
 
         self.card_path = card_path
         self.base_setup_path = setup_path
-        self._engine = engine
 
         self.map_profiles = discover_map_profiles(
             DATA_DIR,
@@ -619,7 +551,7 @@ class GameViewerApp:
 
         self.package = build_board_package_from_files(board_path=board_path, layout_path=layout_path)
         self._node_names = {n.node_id: n.label for n in self.package.layout.nodes}
-        self.session: GameSession | None = None
+        self.session: CSession | None = None
         self.renderer = GameBoardRenderer()
 
         self.zoom_level = 1.0
@@ -690,7 +622,7 @@ class GameViewerApp:
         self._selected_hand_card_id: str | None = None
         self._selected_played_card_id: str | None = None
         self._selected_market_slot: int | None = None
-        self._visible_legal_moves: tuple[LegalMoveView, ...] = ()
+        self._visible_legal_moves: tuple[CLegalMoveView, ...] = ()
         self._hand_card_ids: list[str] = []
         self._played_card_ids: list[str] = []
         self._market_slot_indices: list[int] = []
@@ -1059,7 +991,6 @@ class GameViewerApp:
                 deck_b=deck_b,
                 player_count=player_count,
                 seed=seed,
-                engine=self._engine,
             )
             self._game_over_shown = False
             self._clear_filters()
@@ -1084,20 +1015,7 @@ class GameViewerApp:
             return
 
         try:
-            move_count = self.session.move_count
-            if self._engine == "c":
-                self.session.save(path)
-            else:
-                is_terminal = self.session.is_terminal()
-                save_game_state(
-                    self.session.state,
-                    Path(path),
-                    scenario_id=Path(path).stem,
-                    description=f"Saved at round {self.session.state.round_number}, {move_count} moves",
-                    tags=["saved", "manual"],
-                    move_count=move_count,
-                    is_terminal=is_terminal,
-                )
+            self.session.save(path)
             messagebox.showinfo("Saved", f"Game saved to:\n{path}")
         except Exception as error:
             messagebox.showerror("Save Failed", str(error))
@@ -1112,55 +1030,18 @@ class GameViewerApp:
             return
 
         try:
-            if self._engine == "c":
-                from engine_c.bindings.session import CSession
-                from engine_c.bindings.view import build_c_game_view
-                self.session = CSession.load(path)
-                self._game_over_shown = False
-                view = build_c_game_view(self.session)
-                self._rebuild_package_for_loaded_state_c(view)
-            else:
-                self.session = GameSession.from_scenario_file(Path(path))
-                self._game_over_shown = False
-                self._derive_market_deck_metadata(self.session.state)
-                self._rebuild_package_for_loaded_state(self.session.state)
+            from engine_c.bindings.session import CSession
+            from engine_c.bindings.view import build_c_game_view
+            self.session = CSession.load(path)
+            self._game_over_shown = False
+            view = build_c_game_view(self.session)
+            self._rebuild_package_for_loaded_state_c(view)
             self._clear_filters()
             self._apply_responsive_layout()
             self._refresh_view()
             self._auto_fit_zoom()
         except Exception as error:
             messagebox.showerror("Load Failed", str(error))
-
-    def _rebuild_package_for_loaded_state(self, state: GameState) -> None:
-        """Rebuild self.package and self._node_names to match the loaded state's board."""
-        board_def = state.definition.board
-        board_node_ids = {n.node_id for n in board_def.nodes}
-        layout_def = None
-
-        for profile in self.map_profiles:
-            try:
-                layout_data = _read_json_object(profile.layout_path)
-                if layout_data.get("board_id") != board_def.board_id:
-                    continue
-                layout_node_ids = {n["node_id"] for n in layout_data.get("nodes", ())}
-                if layout_node_ids != board_node_ids:
-                    continue
-                layout_def = BoardLayoutDefinition.model_validate(layout_data)
-                self.map_var.set(profile.label)
-                break
-            except Exception:
-                continue
-
-        if layout_def is None:
-            layout_def = make_default_layout(board_def)
-
-        self.package = BoardPackageDefinition(board=board_def, layout=layout_def)
-        self._node_names = {n.node_id: n.label for n in self.package.layout.nodes}
-        self.canvas.configure(
-            width=min(self.package.layout.canvas.width, MAP_VIEWPORT_MAX_WIDTH),
-            height=min(self.package.layout.canvas.height, MAP_VIEWPORT_MAX_HEIGHT),
-        )
-        self.player_count_var.set(str(len(state.players)))
 
     def _rebuild_package_for_loaded_state_c(self, view) -> None:
         """Rebuild self.package and self._node_names from a CGameViewData."""
@@ -1181,16 +1062,16 @@ class GameViewerApp:
 
         if layout_def is None:
             board_def = build_board_package_from_files(
-                board_path=self.card_path.parent / ".." / "boards" / "tyrants_of_the_underdark.json",
-                layout_path=self.card_path.parent / ".." / "layouts" / "tyrants_of_the_underdark_layout.json",
+                board_path=DATA_DIR / "boards" / "tyrants_of_the_underdark.json",
+                layout_path=DATA_DIR / "layouts" / "tyrants_of_the_underdark_layout.json",
             ).board
             layout_def = make_default_layout(board_def)
 
         board_def = layout_def  # Use layout nodes for node count
         self.package = BoardPackageDefinition(
             board=build_board_package_from_files(
-                board_path=self.card_path.parent / ".." / "boards" / "tyrants_of_the_underdark.json",
-                layout_path=self.card_path.parent / ".." / "layouts" / "tyrants_of_the_underdark_layout.json",
+                board_path=DATA_DIR / "boards" / "tyrants_of_the_underdark.json",
+                layout_path=DATA_DIR / "layouts" / "tyrants_of_the_underdark_layout.json",
             ).board,
             layout=layout_def,
         )
@@ -1201,48 +1082,6 @@ class GameViewerApp:
         )
         self.player_count_var.set(str(len(view.player_summaries)))
 
-    def _derive_market_deck_metadata(self, state: GameState) -> None:
-        """Derive market deck labels and aberrations flag from loaded state."""
-        market_deck_id = state.definition.setup.market_deck.deck_id
-
-        if market_deck_id.startswith("market_"):
-            remaining = market_deck_id[len("market_"):]
-        else:
-            remaining = market_deck_id
-
-        profile_ids = {p.deck_id: p.label for p in self.deck_profiles}
-        sorted_ids = sorted(profile_ids.keys(), key=len, reverse=True)
-
-        deck_a_id = ""
-        deck_b_id = ""
-        deck_a_label = ""
-        deck_b_label = ""
-
-        for did in sorted_ids:
-            if remaining.startswith(did):
-                deck_a_id = did
-                deck_a_label = profile_ids[did]
-                remaining = remaining[len(did):]
-                if remaining.startswith("_"):
-                    remaining = remaining[1:]
-                break
-
-        for did in sorted_ids:
-            if remaining.startswith(did):
-                deck_b_id = did
-                deck_b_label = profile_ids[did]
-                break
-
-        if deck_a_label or deck_a_id:
-            self._deck_a_label = deck_a_label or deck_a_id
-            self.deck_a_var.set(self._deck_a_label)
-        if deck_b_label or deck_b_id:
-            self._deck_b_label = deck_b_label or deck_b_id
-            self.deck_b_var.set(self._deck_b_label)
-        self._aberrations_in_market = (
-            deck_a_id == ABERRATIONS_DECK_ID or deck_b_id == ABERRATIONS_DECK_ID
-        )
-
     def _refresh_view(self) -> None:
         if self.session is None:
             return
@@ -1250,18 +1089,11 @@ class GameViewerApp:
         self._is_refreshing = True
         try:
             self._apply_responsive_layout()
-            if self._engine == "c":
-                from engine_c.bindings.view import build_c_game_view
-                view = build_c_game_view(self.session, node_names=self._node_names)
-            else:
-                view = build_game_view(self.session, node_names=self._node_names)
+            view = build_c_game_view(self.session, node_names=self._node_names)
 
             if view.is_terminal and not self._game_over_shown:
                 self._game_over_shown = True
-                if self._engine == "c":
-                    breakdowns = _compute_vp_breakdowns(self.session)
-                else:
-                    breakdowns = _compute_vp_breakdowns_py(self.session)
+                breakdowns = _compute_vp_breakdowns(self.session)
                 winner_id = view.winner_id
                 ScoreDialog(self.root, breakdowns, winner_id)
 
@@ -1310,181 +1142,57 @@ class GameViewerApp:
             self._sync_played_row(view)
             self._sync_option_box(view)
 
-            if self._engine != "c":
-                state = self.session.state
-                current_player = state.players[state.current_player_id]
-                cards_by_id = {card.card_id: card for card in state.definition.catalog.cards}
-                self._set_vp_breakdown(state, current_player)
-                self.house_guard_var.set(
-                    self._starter_pile_summary(
-                        current_player,
-                        HOUSE_GUARD_CARD_ID,
-                    )
-                )
-                self.priestess_var.set(
-                    self._starter_pile_summary(
-                        current_player,
-                        PRIESTESS_CARD_ID,
-                    )
-                )
-                self.insane_outcast_var.set(
-                    self._starter_pile_summary(
-                        current_player,
-                        INSANE_OUTCAST_CARD_ID,
-                    )
-                )
-            else:
-                self._set_vp_breakdown_c(view)
-                self._set_special_stack_vars(view)
-            scaled_w = self.package.layout.canvas.width * self.zoom_level
-            scaled_h = self.package.layout.canvas.height * self.zoom_level
-            self.canvas.configure(scrollregion=(0, 0, scaled_w, scaled_h))
+            self._set_vp_breakdown_c(view)
+            self._set_special_stack_vars(view)
 
-            self.status_var.set(
-                f"Round {view.round_number} | Phase {view.phase} | Current {view.current_player_id}"
-            )
-            self.resource_var.set(
-                f"Power: {view.resource_power:>3}    Influence: {view.resource_influence:>3}"
-                f"  |  Sites: {view.current_player_controlled_sites} controlled, {view.current_player_total_control_sites} total"
-                f"  |  Hand: {_format_aspect_breakdown(_compute_aspect_focus(view.hand))}"
-                f"  |  Played: {_format_aspect_breakdown(_compute_aspect_focus(view.current_player_played))}"
-            )
-            self.prompt_var.set("\n".join(view.prompts) if view.prompts else (
-                f"{view.current_player_id} is acting in {view.phase.replace('_', ' ')}."
-            ))
-            deck_a_label = getattr(self, "_deck_a_label", "?")
-            deck_b_label = getattr(self, "_deck_b_label", "?")
-            self.market_meta_var.set(
-                f"Deck A: {deck_a_label}    Deck B: {deck_b_label}    |    "
-                f"Market deck: {len(view.market_row):>1} visible    Deck remaining: {view.market_deck_count:>3}    "
-                f"Discard: {view.market_discard_count:>3}"
-            )
+            from engine_c.bindings.view import _make_card_view
 
-            player_lines = [
-                (
-                    f"{summary.player_id}{' *' if summary.is_current else ''}: "
-                    f"hand {summary.hand_count}, deck {summary.deck_count}, discard {summary.discard_count}, "
-                    f"played {summary.played_count}, trophies {summary.trophy_hall_count}, "
-                    f"barracks {summary.barracks}, spies {summary.spies_available}, vp {summary.vp_tokens}"
-                )
-                for summary in view.player_summaries
-            ]
-            self.players_var.set("\n".join(player_lines))
+            cstate = self.session.state
 
-            self._sync_market_row(view)
-            self._sync_hand_row(view)
-            self._sync_played_row(view)
-            self._sync_option_box(view)
+            cards_by_id: dict[str, Any] = {}
+            for cv in (
+                view.hand
+                + view.current_player_played
+                + view.current_player_discard
+                + view.current_player_inner_circle
+                + view.market_row
+            ):
+                cards_by_id[cv.card_id] = cv
 
-            if self._engine != "c":
-                state = self.session.state
-                current_player = state.players[state.current_player_id]
-                cards_by_id = {card.card_id: card for card in state.definition.catalog.cards}
-                self._set_vp_breakdown(state, current_player)
-                self.house_guard_var.set(
-                    self._starter_pile_summary(
-                        current_player,
-                        HOUSE_GUARD_CARD_ID,
-                        cards_by_id.get(HOUSE_GUARD_CARD_ID),
-                    )
-                )
-                self.priestess_var.set(
-                    self._starter_pile_summary(
-                        current_player,
-                        PRIESTESS_CARD_ID,
-                        cards_by_id.get(PRIESTESS_CARD_ID),
-                    )
-                )
+            def _ensure_card(card_id: str) -> None:
+                if card_id and card_id not in cards_by_id:
+                    cards_by_id[card_id] = _make_card_view(card_id)
 
-                discard_options = format_ordered_card_options(current_player.discard_pile, cards_by_id)
-                self.discard_box["values"] = discard_options
-                if self.discard_selection_var.get() not in discard_options:
-                    self.discard_selection_var.set(discard_options[0])
+            current_index = cstate.player_index(cstate.current_player_id)
 
-                devoured_options = format_ordered_card_options(state.devour_pile, cards_by_id, reverse=True, top_label="(top)")
-                self.devoured_box["values"] = devoured_options
-                if self.devoured_selection_var.get() not in devoured_options:
-                    self.devoured_selection_var.set(devoured_options[0])
+            # Own discard pile
+            current_discard = cstate.player_discard(current_index)
+            for cid in current_discard:
+                _ensure_card(cid)
+            discard_options = format_discard_pile_options(current_discard, cards_by_id)
+            self.discard_box["values"] = discard_options
+            if discard_options:
+                self.discard_selection_var.set(discard_options[0])
 
-                self._sync_other_player_discard_boxes(state, cards_by_id)
+            # Devour pile
+            devoured = cstate.devour_pile
+            for cid in devoured:
+                _ensure_card(cid)
+            devoured_options = format_ordered_card_options(devoured, cards_by_id, reverse=True, top_label="(top)")
+            self.devoured_box["values"] = devoured_options
+            if devoured_options:
+                self.devoured_selection_var.set(devoured_options[0])
 
-                inner_circle_options = format_ordered_card_options(
-                    [card.card_id for card in view.current_player_inner_circle],
-                    cards_by_id,
-                )
-                self.inner_circle_box["values"] = inner_circle_options
-                if self.inner_circle_selection_var.get() not in inner_circle_options:
-                    self.inner_circle_selection_var.set(inner_circle_options[0])
+            # Other players' discard piles
+            self._sync_other_player_discard_boxes_c(cstate, cards_by_id)
 
-                inner_circle_vp_total = sum(card.inner_circle_vp for card in view.current_player_inner_circle)
-                self.inner_circle_meta_var.set(
-                    f"End-game Inner Circle VP: {inner_circle_vp_total:>2}    "
-                    f"Cards: {len(view.current_player_inner_circle):>2}"
-                )
-
-                trophy_hall_options = format_trophy_hall_options(view.current_player_trophy_hall)
-                self.trophy_hall_box["values"] = trophy_hall_options
-                if self.trophy_hall_selection_var.get() not in trophy_hall_options:
-                    self.trophy_hall_selection_var.set(trophy_hall_options[0])
-                self.trophy_hall_meta_var.set(f"Captured Trophies: {len(view.current_player_trophy_hall):>2}")
-            else:
-                from engine_c.bindings.view import _make_card_view
-
-                cstate = self.session.state
-
-                # Build cards_by_id from view CardViews for the current player's visible cards.
-                cards_by_id: dict[str, Any] = {}
-                for cv in (
-                    view.hand
-                    + view.current_player_played
-                    + view.current_player_discard
-                    + view.current_player_inner_circle
-                    + view.market_row
-                ):
-                    cards_by_id[cv.card_id] = cv
-
-                def _ensure_card(card_id: str) -> None:
-                    if card_id and card_id not in cards_by_id:
-                        cards_by_id[card_id] = _make_card_view(card_id)
-
-                current_index = cstate.player_index(cstate.current_player_id)
-
-                self._set_special_stack_vars(view)
-
-                # Own discard pile
-                current_discard = cstate.player_discard(current_index)
-                for cid in current_discard:
-                    _ensure_card(cid)
-                discard_options = format_discard_pile_options(current_discard, cards_by_id)
-                self.discard_box["values"] = discard_options
-                if discard_options:
-                    self.discard_selection_var.set(discard_options[0])
-
-                # Devour pile
-                devoured = cstate.devour_pile
-                for cid in devoured:
-                    _ensure_card(cid)
-                devoured_options = format_ordered_card_options(devoured, cards_by_id, reverse=True, top_label="(top)")
-                self.devoured_box["values"] = devoured_options
-                if devoured_options:
-                    self.devoured_selection_var.set(devoured_options[0])
-
-                # Other players' discard piles
-                self._sync_other_player_discard_boxes_c(cstate, cards_by_id)
-
-                # Own inner circle
-                current_inner = cstate.player_inner_circle(current_index)
-                for cid in current_inner:
-                    _ensure_card(cid)
-                inner_circle_options = format_ordered_card_options(current_inner, cards_by_id)
-                self.inner_circle_box["values"] = inner_circle_options
-                if self.inner_circle_selection_var.get() not in inner_circle_options:
-                    self.inner_circle_selection_var.set(inner_circle_options[0])
-
-                # Trophy hall (already covered at lines 1164–1168 outside the if/else)
-
-            if self._engine == "c":
-                self.inner_circle_selection_var.set(inner_circle_options[0])
+            # Own inner circle
+            current_inner = cstate.player_inner_circle(current_index)
+            for cid in current_inner:
+                _ensure_card(cid)
+            inner_circle_options = format_ordered_card_options(current_inner, cards_by_id)
+            self.inner_circle_box["values"] = inner_circle_options
+            self.inner_circle_selection_var.set(inner_circle_options[0])
 
             inner_circle_vp_total = sum(card.inner_circle_vp for card in view.current_player_inner_circle)
             self.inner_circle_meta_var.set(
@@ -1498,19 +1206,7 @@ class GameViewerApp:
                 self.trophy_hall_selection_var.set(trophy_hall_options[0])
             self.trophy_hall_meta_var.set(f"Captured Trophies: {len(view.current_player_trophy_hall):>2}")
 
-            if self._engine == "c":
-                self._visible_legal_moves = view.legal_moves
-            else:
-                self._visible_legal_moves = filter_legal_moves(
-                    view.legal_moves,
-                    hand_card_id=self._selected_hand_card_id,
-                    played_card_id=self._selected_played_card_id,
-                    market_slot=self._selected_market_slot,
-                    node_id=self._selected_node_id,
-                    option_id=self.option_var.get() or None,
-                )
-            if not self._visible_legal_moves:
-                self._visible_legal_moves = view.legal_moves
+            self._visible_legal_moves = view.legal_moves
 
             self.legal_moves_listbox.delete(0, tk.END)
             for index, legal_move in enumerate(self._visible_legal_moves):
@@ -1523,17 +1219,9 @@ class GameViewerApp:
             if self._selected_node_id is not None:
                 selections.append(f"node={self._selected_node_id}")
             if self._selected_hand_card_id is not None:
-                if self._engine == "c":
-                    selections.append(f"hand={self._selected_hand_card_id}")
-                else:
-                    hand_name = cards_by_id.get(self._selected_hand_card_id)
-                    selections.append(f"hand={hand_name.name if hand_name is not None else 'Unknown Card'}")
+                selections.append(f"hand={self._selected_hand_card_id}")
             if self._selected_played_card_id is not None:
-                if self._engine == "c":
-                    selections.append(f"played={self._selected_played_card_id}")
-                else:
-                    played_name = cards_by_id.get(self._selected_played_card_id)
-                    selections.append(f"played={played_name.name if played_name is not None else 'Unknown Card'}")
+                selections.append(f"played={self._selected_played_card_id}")
             if self._selected_market_slot is not None:
                 selections.append(f"market_slot={self._describe_market_slot(self._selected_market_slot)}")
             if self.option_var.get():
@@ -1542,56 +1230,6 @@ class GameViewerApp:
             self._update_card_row_focus_styles()
         finally:
             self._is_refreshing = False
-
-    def _sync_other_player_discard_boxes(self, state: Any, cards_by_id: dict[str, Any]) -> None:
-        if self.other_discards_frame is None:
-            return
-
-        other_player_ids = [player_id for player_id in state.turn_order if player_id != state.current_player_id]
-        previous_player_ids = set(self.other_discard_boxes)
-
-        for player_id in other_player_ids:
-            if player_id not in self.other_discard_boxes:
-                row = ttk.Frame(self.other_discards_frame)
-                row.pack(fill=tk.X, pady=(0, 4))
-
-                label = ttk.Label(row, text=f"{player_id}:", width=6)
-                label.pack(side=tk.LEFT)
-
-                selection_var = tk.StringVar(value="(empty)")
-                box = ttk.Combobox(row, state="readonly", textvariable=selection_var, width=42, height=256)
-                box.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(6, 0))
-
-                self.other_discard_labels[player_id] = label
-                self.other_discard_selection_vars[player_id] = selection_var
-                self.other_discard_boxes[player_id] = box
-
-            label = self.other_discard_labels[player_id]
-            box = self.other_discard_boxes[player_id]
-            selection_var = self.other_discard_selection_vars[player_id]
-
-            # Keep row order aligned with turn order as the active player rotates.
-            row = box.master
-            row.pack_forget()
-            row.pack(fill=tk.X, pady=(0, 4))
-
-            label.configure(text=f"{player_id}:")
-            options = format_discard_pile_options(state.players[player_id].discard_pile, cards_by_id)
-            box["values"] = options
-            if selection_var.get() not in options:
-                selection_var.set(options[0])
-
-        for player_id in previous_player_ids - set(other_player_ids):
-            box = self.other_discard_boxes.pop(player_id)
-            self.other_discard_selection_vars.pop(player_id, None)
-            self.other_discard_labels.pop(player_id, None)
-            box.master.destroy()
-
-        if self._other_discards_placeholder is not None:
-            if other_player_ids:
-                self._other_discards_placeholder.pack_forget()
-            else:
-                self._other_discards_placeholder.pack(anchor=tk.W)
 
     def _sync_other_player_discard_boxes_c(self, state: Any, cards_by_id: dict[str, Any]) -> None:
         """C-engine variant of _sync_other_player_discard_boxes."""
@@ -1652,22 +1290,13 @@ class GameViewerApp:
 
     def _sync_market_row(
         self,
-        view: GameView,
+        view: CGameViewData,
     ) -> None:
-        state = self.session.state if self.session is not None else None
+        from engine_c.bindings.view import _make_card_view
 
-        if self._engine == "c":
-            from engine_c.bindings.view import _make_card_view
-            house_guard_card = _make_card_view(HOUSE_GUARD_CARD_ID)
-            priestess_card = _make_card_view(PRIESTESS_CARD_ID)
-            outcast_card = _make_card_view(INSANE_OUTCAST_CARD_ID)
-        else:
-            cards_by_id: dict[str, Any] = {}
-            if state is not None:
-                cards_by_id = {card.card_id: card for card in state.definition.catalog.cards}
-            house_guard_card = self._card_view_from_definition(cards_by_id.get(HOUSE_GUARD_CARD_ID), HOUSE_GUARD_CARD_ID)
-            priestess_card = self._card_view_from_definition(cards_by_id.get(PRIESTESS_CARD_ID), PRIESTESS_CARD_ID)
-            outcast_card = self._card_view_from_definition(cards_by_id.get(INSANE_OUTCAST_CARD_ID), INSANE_OUTCAST_CARD_ID)
+        house_guard_card = _make_card_view(HOUSE_GUARD_CARD_ID)
+        priestess_card = _make_card_view(PRIESTESS_CARD_ID)
+        outcast_card = _make_card_view(INSANE_OUTCAST_CARD_ID)
 
         market_cards = list(view.market_row[:6])
         while len(market_cards) < 6:
@@ -1743,7 +1372,7 @@ class GameViewerApp:
 
     def _sync_played_row(
         self,
-        view: GameView,
+        view: CGameViewData,
     ) -> None:
         self._hover_played_cards = list(view.current_player_played)
         self._played_card_ids = [card.card_id for card in view.current_player_played]
@@ -1765,7 +1394,7 @@ class GameViewerApp:
 
     def _sync_hand_row(
         self,
-        view: GameView,
+        view: CGameViewData,
     ) -> None:
         self._hover_hand_cards = list(view.hand)
         self._hand_card_ids = [card.card_id for card in view.hand]
@@ -1908,25 +1537,15 @@ class GameViewerApp:
         canvas.configure(scrollregion=(0, 0, max(content_width, canvas.winfo_width()), content_height))
         return hitboxes
 
-    def _sync_option_box(self, view: GameView) -> None:
-        if self._engine == "c":
-            option_ids = sorted(
-                {
-                    legal_move.move.data.get("option_id", "")
-                    for legal_move in view.legal_moves
-                    if getattr(legal_move, "move_type", "") == "resolve_generic"
-                    and legal_move.move.data.get("option_id")
-                }
-            )
-        else:
-            option_ids = sorted(
-                {
-                    legal_move.move.option_id
-                    for legal_move in view.legal_moves
-                    if isinstance(legal_move.move, ResolveGenericChoiceMove)
-                    and legal_move.move.option_id is not None
-                }
-            )
+    def _sync_option_box(self, view: CGameViewData) -> None:
+        option_ids = sorted(
+            {
+                legal_move.move.data.get("option_id", "")
+                for legal_move in view.legal_moves
+                if getattr(legal_move, "move_type", "") == "resolve_generic"
+                and legal_move.move.data.get("option_id")
+            }
+        )
         self.option_box["values"] = [""] + option_ids
         if self.option_var.get() not in {"", *option_ids}:
             self.option_var.set("")
@@ -1934,17 +1553,10 @@ class GameViewerApp:
     def _apply_first_legal_move(self) -> None:
         if self.session is None:
             return
-        if self._engine == "c":
-            from engine_c.bindings.view import build_c_game_view
-            view = build_c_game_view(self.session, node_names=self._node_names)
-            if not view.legal_moves:
-                return
-            self.session.submit_move(view.legal_moves[0].move)
-        else:
-            view = build_game_view(self.session, node_names=self._node_names)
-            if not view.legal_moves:
-                return
-            self.session.submit_move(view.legal_moves[0].move)
+        view = build_c_game_view(self.session, node_names=self._node_names)
+        if not view.legal_moves:
+            return
+        self.session.submit_move(view.legal_moves[0].move)
         self._clear_filters()
         self._refresh_view()
 
@@ -2140,23 +1752,13 @@ class GameViewerApp:
             return
 
         selected_card_id = self._hand_card_ids[selected_index]
-        if self._engine == "c":
-            from engine_c.bindings.view import build_c_game_view
-            view = build_c_game_view(self.session, node_names=self._node_names)
-            for legal_move in view.legal_moves:
-                if legal_move.move_type == "play_card" and legal_move.move.data.get("card_id") == selected_card_id:
-                    self.session.submit_move(legal_move.move)
-                    self._clear_filters()
-                    self._refresh_view()
-                    return
-        else:
-            view = build_game_view(self.session, node_names=self._node_names)
-            for legal_move in view.legal_moves:
-                if isinstance(legal_move.move, PlayCardMove) and legal_move.move.card_id == selected_card_id:
-                    self.session.submit_move(legal_move.move)
-                    self._clear_filters()
-                    self._refresh_view()
-                    return
+        view = build_c_game_view(self.session, node_names=self._node_names)
+        for legal_move in view.legal_moves:
+            if legal_move.move_type == "play_card" and legal_move.move.data.get("card_id") == selected_card_id:
+                self.session.submit_move(legal_move.move)
+                self._clear_filters()
+                self._refresh_view()
+                return
 
     def _on_played_canvas_click(self, event: tk.Event[tk.Canvas]) -> None:
         if self._is_refreshing:
@@ -2365,61 +1967,6 @@ class GameViewerApp:
             self.hand_canvas.configure(highlightthickness=1, highlightbackground="#9eb4d0")
             self.played_canvas.configure(highlightthickness=1, highlightbackground="#9eb4d0")
 
-    def _card_view_from_definition(self, card_definition: Any | None, fallback_card_id: str) -> CardView:
-        if card_definition is None:
-            return CardView(
-                card_id=fallback_card_id,
-                name="Unknown Card",
-                cost=0,
-                aspect="unknown",
-                deck_vp=0,
-                inner_circle_vp=0,
-                rules_text="",
-                notes="",
-            )
-        return CardView(
-            card_id=card_definition.card_id,
-            name=card_definition.name,
-            cost=card_definition.cost,
-            aspect=card_definition.aspect,
-            deck_vp=card_definition.deck_vp,
-            inner_circle_vp=card_definition.inner_circle_vp,
-            rules_text=card_definition.rules_text,
-            notes=card_definition.notes,
-            secondary_aspects=tuple(getattr(card_definition, "secondary_aspects", ())),
-        )
-
-    def _set_vp_breakdown(self, state: Any, current_player: Any) -> None:
-        node_index = board_index(state.definition.board)
-        card_index_lookup = state_card_index(state.definition.catalog)
-        player_id = state.current_player_id
-
-        control_vp = 0
-        total_control_vp_per_turn = 0
-        for node_id, node_def in node_index.items():
-            if node_def.kind != NodeKind.SITE:
-                continue
-            if _site_control_owner(state, node_id) == player_id:
-                control_vp += node_def.control_vp
-            if _is_total_control(state, node_id, player_id):
-                total_control_vp_per_turn += node_def.total_control_vp_per_turn
-
-        trophy_vp = len(current_player.trophy_hall)
-        token_vp = current_player.vp_tokens
-        deck_zone_cards = current_player.deck + current_player.hand + current_player.discard_pile + current_player.played_cards
-        deck_vp = _cards_vp(deck_zone_cards, card_index_lookup, "deck_vp")
-        inner_circle_vp = _cards_vp(current_player.inner_circle, card_index_lookup, "inner_circle_vp")
-
-        running_score = current_player.score
-        total_vp = running_score + control_vp + total_control_vp_per_turn + trophy_vp + token_vp + deck_vp + inner_circle_vp
-
-        self.vp_breakdown_var.set(
-            f"Controlled sites VP: {control_vp:>2} | "
-            f"Total Control VP/turn: {total_control_vp_per_turn:>2} | "
-            f"Trophy: {trophy_vp:>2} | VP tokens: {token_vp:>2} | Deck VP: {deck_vp:>2} | "
-            f"Inner Circle VP: {inner_circle_vp:>2} | Total: {total_vp:>2}"
-        )
-
     def _set_special_stack_vars(self, view: Any) -> None:
         self.house_guard_var.set(
             f"House Guard remaining: {view.house_guard_remaining}"
@@ -2468,18 +2015,6 @@ class GameViewerApp:
             f"Total Control VP/turn: {total_control_vp_per_turn:>2} | "
             f"Trophy: {trophy_vp:>2} | VP tokens: {token_vp:>2} | Deck VP: {deck_vp:>2} | "
             f"Inner Circle VP: {inner_circle_vp:>2} | Total: {total_vp:>2}"
-        )
-
-    def _starter_pile_summary(self, player: Any, card_id: str, card_definition: Any | None = None) -> str:
-        deck_count = player.deck.count(card_id)
-        hand_count = player.hand.count(card_id)
-        played_count = player.played_cards.count(card_id)
-        discard_count = player.discard_pile.count(card_id)
-        inner_circle_count = player.inner_circle.count(card_id)
-        owned_total = deck_count + hand_count + played_count + discard_count + inner_circle_count
-        return (
-            f"deck {deck_count:>2} | hand {hand_count:>2} | played {played_count:>2}\n"
-            f"discard {discard_count:>2} | inner {inner_circle_count:>2} | total {owned_total:>2}"
         )
 
     def _on_option_selected(self, _event: tk.Event[ttk.Combobox]) -> None:
@@ -2540,14 +2075,28 @@ def main() -> None:
     parser.add_argument("--card-path", type=Path, default=DEFAULT_CARD_PATH)
     parser.add_argument("--setup-path", type=Path, default=DEFAULT_SETUP_PATH)
     parser.add_argument("--decks-dir", type=Path, default=DECKS_DIR)
-    parser.add_argument("--engine", type=str, default=_ENGINE,
-                        choices=["python", "c"],
-                        help="Engine backend (default: %(default)s, env PYRANTS_ENGINE)")
     args = parser.parse_args()
 
     root = tk.Tk()
     root.withdraw()
-    root.state("zoomed")
+
+    tmp = tk.Toplevel(root)
+    tmp.geometry("1x1+0+0")
+    tmp.update_idletasks()
+    primary_w = tmp.winfo_screenwidth()
+    tmp.destroy()
+
+    tmp2 = tk.Toplevel(root)
+    tmp2.geometry(f"1x1+{primary_w + 100}+0")
+    tmp2.update_idletasks()
+    second_w = tmp2.winfo_screenwidth()
+    second_h = tmp2.winfo_screenheight()
+    tmp2.destroy()
+
+    if second_w != primary_w and second_w < primary_w:
+        root.geometry(f"{second_w}x{second_h}+{primary_w}+0")
+    else:
+        root.state("zoomed")
     try:
         GameViewerApp(
             root,
@@ -2558,7 +2107,6 @@ def main() -> None:
             decks_dir=args.decks_dir,
             initial_player_count=len(_parse_player_ids(args.players)),
             seed=args.seed,
-            engine=args.engine,
         )
     except Exception as exc:
         messagebox.showerror(

@@ -10,14 +10,14 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from engine_c.bindings.scenario_search import (
-    FORCED_INJECTIONS_FILENAME,
     ensure_card_scenario_c,
     generate_card_scenarios_c,
 )
 from engine_c.bindings.session import CSession
+from game_setup.scenario_generation.rosters import FORCED_INJECTIONS_FILENAME
 
 ROSTERS_PATH = Path(__file__).resolve().parents[2] / "data" / "decks"
-CARD_PATH = Path(__file__).resolve().parents[2] / "data" / "cards" / "catalog.json"
+CARD_PATH = Path(__file__).resolve().parents[2] / "data" / "cards"
 BOARD_PATH = Path(__file__).resolve().parents[2] / "data" / "boards" / "tyrants_of_the_underdark.json"
 SETUP_PATH = Path(__file__).resolve().parents[2] / "data" / "decks" / "base_setup.json"
 

@@ -1,0 +1,135 @@
+{
+  "card_id": "flesh_golem",
+  "name": "Flesh Golem",
+  "cost": 3,
+  "aspect": "malice",
+  "secondary_aspects": [
+    "construct"
+  ],
+  "deck_vp": 1,
+  "inner_circle_vp": 3,
+  "rules_text": "Gain 2 power. You may devour this card to assassinate a troop.",
+  "notes": "Devouring this card is the cost to gain the assassination rider. Because no location qualifier is given, assassination follows standard global legality.",
+  "execution_model": {
+    "kind": "sequence",
+    "actions": [
+      {
+        "action_id": "action_1",
+        "op": "gain_resource",
+        "target_scope": "self",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "fixed",
+          "value": 2
+        },
+        "filters": [],
+        "source_fragment": "gain_power",
+        "metadata": {
+          "resource": "power"
+        }
+      },
+      {
+        "action_id": "action_2",
+        "op": "devour_cost",
+        "target_scope": "played_self",
+        "timing": "immediate",
+        "optional": true,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "optional_self_devour",
+        "metadata": {
+          "source_zone": "played_self",
+          "self_replace": false,
+          "skip_advance_to_index": "3"
+        }
+      },
+      {
+        "action_id": "action_3",
+        "op": "assassinate_troop",
+        "target_scope": "board_site",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "assassinate",
+        "metadata": {}
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "action_1",
+      "op": "gain_resource",
+      "target_scope": "self",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 2
+      },
+      "filters": [],
+      "source_fragment": "gain_power",
+      "metadata": {
+        "resource": "power"
+      }
+    },
+    {
+      "action_id": "action_2",
+      "op": "devour_cost",
+      "target_scope": "played_self",
+      "timing": "immediate",
+      "optional": true,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "optional_self_devour",
+      "metadata": {
+        "source_zone": "played_self",
+        "self_replace": false,
+        "skip_advance_to_index": "3"
+      }
+    },
+    {
+      "action_id": "action_3",
+      "op": "assassinate_troop",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "assassinate",
+      "metadata": {}
+    }
+  ],
+  "global_conditions": [],
+  "state_contract": {
+    "reads": [
+      "effect_payload",
+      "source_zone",
+      "devour_rules",
+      "board.troop_slots",
+      "presence_or_target_rules"
+    ],
+    "writes": [
+      "resource_pool",
+      "devour_zone_or_equivalent",
+      "source_zone",
+      "board.troop_slots",
+      "player.trophy_hall"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

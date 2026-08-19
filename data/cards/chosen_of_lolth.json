@@ -1,0 +1,102 @@
+{
+  "card_id": "chosen_of_lolth",
+  "name": "Chosen of Lolth",
+  "cost": 4,
+  "aspect": "conquest",
+  "secondary_aspects": [
+    "drow"
+  ],
+  "deck_vp": 2,
+  "inner_circle_vp": 4,
+  "rules_text": "Return another player's troop or spy where you have presence. At end of turn, promote another played card.",
+  "notes": "`Return troop or spy` uses same rule as Blue Wyrmling: another player's troop or spy at a site where you have presence. The end-of-turn promote uses same target rule as Drow Negotiator and does nothing if no other played card exists.",
+  "execution_model": {
+    "kind": "sequence",
+    "actions": [
+      {
+        "action_id": "action_1",
+        "op": "return_unit",
+        "target_scope": "self_or_opponent_unit",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "return_unit",
+        "metadata": {}
+      },
+      {
+        "action_id": "action_2",
+        "op": "promote_card",
+        "target_scope": "self",
+        "timing": "end_of_turn",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "triggered_promote",
+        "metadata": {}
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "action_1",
+      "op": "return_unit",
+      "target_scope": "self_or_opponent_unit",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "return_unit",
+      "metadata": {}
+    },
+    {
+      "action_id": "action_2",
+      "op": "promote_card",
+      "target_scope": "self",
+      "timing": "end_of_turn",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "triggered_promote",
+      "metadata": {}
+    }
+  ],
+  "global_conditions": [
+    {
+      "condition_type": "timing_trigger",
+      "description": "Effect includes deferred or triggered timing"
+    }
+  ],
+  "state_contract": {
+    "reads": [
+      "board.troop_slots",
+      "board.spies",
+      "player.played_cards",
+      "player.hand",
+      "player.discard_pile"
+    ],
+    "writes": [
+      "board.troop_slots",
+      "board.spies",
+      "player.spies_available",
+      "player.inner_circle",
+      "player.played_cards",
+      "player.hand",
+      "player.discard_pile"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

@@ -1,0 +1,111 @@
+{
+  "card_id": "mummy_lord",
+  "name": "Mummy Lord",
+  "cost": 6,
+  "aspect": "conquest",
+  "secondary_aspects": [
+    "undead"
+  ],
+  "deck_vp": 3,
+  "inner_circle_vp": 6,
+  "rules_text": "Choose two times from this menu: (a) assassinate a white troop, (b) take a white trophy from another player and place it anywhere.",
+  "notes": "The same option may be chosen both times. The white-trophy option takes a white troop from another player's trophy hall and deploys it anywhere regardless of presence.",
+  "execution_model": {
+    "kind": "repeat_choice",
+    "repeat_count": 2,
+    "allow_repeat": true,
+    "options": [
+      {
+        "option_id": "option_1",
+        "actions": [
+          {
+            "action_id": "option_1_action_1",
+            "op": "assassinate_troop",
+            "target_scope": "board_site",
+            "timing": "immediate",
+            "optional": false,
+            "quantity": {
+              "kind": "unspecified",
+              "value": null
+            },
+            "filters": [
+              "white_troop_only"
+            ],
+            "source_fragment": "white_troop_assassinate",
+            "metadata": {}
+          }
+        ]
+      },
+      {
+        "option_id": "option_2",
+        "actions": [
+          {
+            "action_id": "option_2_action_1",
+            "op": "custom_effect",
+            "target_scope": "self",
+            "timing": "immediate",
+            "optional": false,
+            "quantity": {
+              "kind": "unspecified",
+              "value": null
+            },
+            "filters": [],
+            "source_fragment": "white_trophy_relocate",
+            "metadata": {
+              "effect_kind": "steal_white_trophy_to_board"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "option_1_action_1",
+      "op": "assassinate_troop",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [
+        "white_troop_only"
+      ],
+      "source_fragment": "white_troop_assassinate",
+      "metadata": {}
+    },
+    {
+      "action_id": "option_2_action_1",
+      "op": "custom_effect",
+      "target_scope": "self",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "white_trophy_relocate",
+      "metadata": {
+        "effect_kind": "steal_white_trophy_to_board"
+      }
+    }
+  ],
+  "global_conditions": [],
+  "state_contract": {
+    "reads": [
+      "board.troop_slots",
+      "presence_or_target_rules",
+      "custom_rules"
+    ],
+    "writes": [
+      "board.troop_slots",
+      "player.trophy_hall",
+      "custom_state"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

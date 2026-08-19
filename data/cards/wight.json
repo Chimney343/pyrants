@@ -1,0 +1,144 @@
+{
+  "card_id": "wight",
+  "name": "Wight",
+  "cost": 3,
+  "aspect": "malice",
+  "secondary_aspects": [
+    "undead"
+  ],
+  "deck_vp": 1,
+  "inner_circle_vp": 3,
+  "rules_text": "Choose exactly one mode. Either gain 2 power, or devour a card from your hand to supplant a troop.",
+  "notes": "Uses the established modal `or` convention. The second mode requires devouring one card from hand as part of the effect, then performing a standard supplant.",
+  "execution_model": {
+    "kind": "modal_choice",
+    "selection": "exactly_one",
+    "options": [
+      {
+        "option_id": "option_1",
+        "actions": [
+          {
+            "action_id": "option_1_action_1",
+            "op": "gain_resource",
+            "target_scope": "self",
+            "timing": "immediate",
+            "optional": false,
+            "quantity": {
+              "kind": "fixed",
+              "value": 2
+            },
+            "filters": [],
+            "source_fragment": "gain_power",
+            "metadata": {
+              "resource": "power"
+            }
+          }
+        ]
+      },
+      {
+        "option_id": "option_2",
+        "actions": [
+          {
+            "action_id": "option_2_action_1",
+            "op": "devour_cost",
+            "target_scope": "hand",
+            "timing": "immediate",
+            "optional": false,
+            "quantity": {
+              "kind": "unspecified",
+              "value": null
+            },
+            "filters": [],
+            "source_fragment": "devour_from_hand",
+            "metadata": {
+              "source_zone": "hand",
+              "self_replace": false
+            }
+          },
+          {
+            "action_id": "option_2_action_2",
+            "op": "supplant_troop",
+            "target_scope": "board_site",
+            "timing": "immediate",
+            "optional": false,
+            "quantity": {
+              "kind": "unspecified",
+              "value": null
+            },
+            "filters": [],
+            "source_fragment": "supplant",
+            "metadata": {}
+          }
+        ]
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "option_1_action_1",
+      "op": "gain_resource",
+      "target_scope": "self",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 2
+      },
+      "filters": [],
+      "source_fragment": "gain_power",
+      "metadata": {
+        "resource": "power"
+      }
+    },
+    {
+      "action_id": "option_2_action_1",
+      "op": "devour_cost",
+      "target_scope": "hand",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "devour_from_hand",
+      "metadata": {
+        "source_zone": "hand",
+        "self_replace": false
+      }
+    },
+    {
+      "action_id": "option_2_action_2",
+      "op": "supplant_troop",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "supplant",
+      "metadata": {}
+    }
+  ],
+  "global_conditions": [],
+  "state_contract": {
+    "reads": [
+      "effect_payload",
+      "source_zone",
+      "devour_rules",
+      "board.troop_slots",
+      "presence_or_target_rules"
+    ],
+    "writes": [
+      "resource_pool",
+      "devour_zone_or_equivalent",
+      "source_zone",
+      "board.troop_slots",
+      "player.trophy_hall"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

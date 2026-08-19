@@ -1,0 +1,116 @@
+{
+  "card_id": "olhydra",
+  "name": "Olhydra",
+  "cost": 6,
+  "aspect": "conquest",
+  "secondary_aspects": [
+    "elemental prince"
+  ],
+  "deck_vp": 3,
+  "inner_circle_vp": 6,
+  "rules_text": "Supplant a white troop anywhere on the board. If the focus condition is met for Conquest, deploy 2 troops.",
+  "notes": "`Anywhere on the board` overrides the normal presence-limited supplant restriction. The focus clause is a separate Conquest focus bonus.",
+  "execution_model": {
+    "kind": "sequence",
+    "actions": [
+      {
+        "action_id": "action_1",
+        "op": "supplant_troop",
+        "target_scope": "board_site",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [
+          "white_troop_only"
+        ],
+        "source_fragment": "supplant_white_troop_anywhere",
+        "metadata": {
+          "targeting": "anywhere",
+          "ignore_presence_requirement": true
+        }
+      },
+      {
+        "action_id": "action_2",
+        "op": "deploy_troops",
+        "target_scope": "board_site",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "fixed",
+          "value": 2
+        },
+        "filters": [],
+        "source_fragment": "focus_deploy_troops",
+        "metadata": {
+          "requires_focus": true,
+          "focus_aspect": "conquest"
+        }
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "action_1",
+      "op": "supplant_troop",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [
+        "white_troop_only"
+      ],
+      "source_fragment": "supplant_white_troop_anywhere",
+      "metadata": {
+        "targeting": "anywhere",
+        "ignore_presence_requirement": true
+      }
+    },
+    {
+      "action_id": "action_2",
+      "op": "deploy_troops",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 2
+      },
+      "filters": [],
+      "source_fragment": "focus_deploy_troops",
+      "metadata": {
+        "requires_focus": true,
+        "focus_aspect": "conquest"
+      }
+    }
+  ],
+  "global_conditions": [
+    {
+      "condition_type": "focus_check",
+      "description": "Requires matching-aspect support card in hand or played zone"
+    },
+    {
+      "condition_type": "conditional_gate",
+      "description": "Effect has conditional branch or threshold requirement"
+    }
+  ],
+  "state_contract": {
+    "reads": [
+      "board.troop_slots",
+      "presence_or_target_rules",
+      "player.barracks"
+    ],
+    "writes": [
+      "board.troop_slots",
+      "player.trophy_hall",
+      "player.barracks"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

@@ -1,0 +1,96 @@
+{
+  "card_id": "vampire_spawn",
+  "name": "Vampie Spawn",
+  "cost": 2,
+  "aspect": "ambition",
+  "secondary_aspects": [
+    "undead"
+  ],
+  "deck_vp": 1,
+  "inner_circle_vp": 3,
+  "rules_text": "Gain 1 influence. Return another player's troop or spy.",
+  "notes": "Workbook name appears misspelled (`Vampie Spawn`). Return clause reuses established enemy-unit return semantics.",
+  "execution_model": {
+    "kind": "sequence",
+    "actions": [
+      {
+        "action_id": "action_1",
+        "op": "gain_resource",
+        "target_scope": "self",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "fixed",
+          "value": 1
+        },
+        "filters": [],
+        "source_fragment": "gain_influence",
+        "metadata": {
+          "resource": "influence"
+        }
+      },
+      {
+        "action_id": "action_2",
+        "op": "return_unit",
+        "target_scope": "opponent_unit",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "return_enemy_unit",
+        "metadata": {}
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "action_1",
+      "op": "gain_resource",
+      "target_scope": "self",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 1
+      },
+      "filters": [],
+      "source_fragment": "gain_influence",
+      "metadata": {
+        "resource": "influence"
+      }
+    },
+    {
+      "action_id": "action_2",
+      "op": "return_unit",
+      "target_scope": "opponent_unit",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "return_enemy_unit",
+      "metadata": {}
+    }
+  ],
+  "global_conditions": [],
+  "state_contract": {
+    "reads": [
+      "effect_payload",
+      "board.troop_slots",
+      "board.spies"
+    ],
+    "writes": [
+      "resource_pool",
+      "board.troop_slots",
+      "board.spies",
+      "player.spies_available"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

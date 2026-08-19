@@ -1,0 +1,99 @@
+{
+  "card_id": "white_wyrmling",
+  "name": "White Wyrmling",
+  "cost": 2,
+  "aspect": "conquest",
+  "secondary_aspects": [
+    "dragon"
+  ],
+  "deck_vp": 1,
+  "inner_circle_vp": 3,
+  "rules_text": "Deploy 2 troops. You may devour a card in the market.",
+  "notes": "Workbook benefit text was wrong here. This uses usual `devour` keyword and mechanic: choose market-row card, move it to devour pile, and it never returns to game.",
+  "execution_model": {
+    "kind": "sequence",
+    "actions": [
+      {
+        "action_id": "action_1",
+        "op": "deploy_troops",
+        "target_scope": "board_site",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "fixed",
+          "value": 2
+        },
+        "filters": [],
+        "source_fragment": "deploy_troops",
+        "metadata": {}
+      },
+      {
+        "action_id": "action_2",
+        "op": "devour_cost",
+        "target_scope": "market",
+        "timing": "immediate",
+        "optional": true,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "optional_market_devour",
+        "metadata": {
+          "source_zone": "market",
+          "self_replace": false
+        }
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "action_1",
+      "op": "deploy_troops",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 2
+      },
+      "filters": [],
+      "source_fragment": "deploy_troops",
+      "metadata": {}
+    },
+    {
+      "action_id": "action_2",
+      "op": "devour_cost",
+      "target_scope": "market",
+      "timing": "immediate",
+      "optional": true,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "optional_market_devour",
+      "metadata": {
+        "source_zone": "market",
+        "self_replace": false
+      }
+    }
+  ],
+  "global_conditions": [],
+  "state_contract": {
+    "reads": [
+      "player.barracks",
+      "board.troop_slots",
+      "source_zone",
+      "devour_rules"
+    ],
+    "writes": [
+      "board.troop_slots",
+      "player.barracks",
+      "devour_zone_or_equivalent",
+      "source_zone"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

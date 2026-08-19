@@ -4,6 +4,7 @@
 #include "phases.h"
 #include "scoring.h"
 #include "rules.h"
+#include "tests/catalog_dir.h"
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
@@ -16,20 +17,7 @@ static Arena *g_def_arena = NULL;
 static void setup_def(void) {
     if (g_def) return;
     g_def_arena = arena_create(2 * 1024 * 1024);
-    g_def = engine_load_definition(
-        "../data/cards/catalog.json",
-        "../data/boards/tyrants_of_the_underdark.json",
-        "../data/decks/base_setup.json",
-        g_def_arena
-    );
-    if (!g_def || g_def->catalog.card_count == 0) {
-        g_def = engine_load_definition(
-            "data/cards/catalog.json",
-            "data/boards/tyrants_of_the_underdark.json",
-            "data/decks/base_setup.json",
-            g_def_arena
-        );
-    }
+    g_def = test_load_definition(g_def_arena);
     assert(g_def);
     register_default_effects();
 }

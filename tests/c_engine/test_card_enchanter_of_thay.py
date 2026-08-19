@@ -79,7 +79,7 @@ def _has_pending_generic(session: CSession) -> bool:
 def test_enchanter_of_thay_modal_has_two_options():
     eng = CEngine()
     eng.initialize(
-        catalog_path=str(DATA_DIR / "cards" / "catalog.json"),
+        catalog_path=str(DATA_DIR / "cards"),
         board_path=str(DATA_DIR / "boards" / "tyrants_of_the_underdark.json"),
         setup_path=str(DATA_DIR / "decks" / "base_setup.json"),
     )
@@ -102,7 +102,7 @@ def test_enchanter_of_thay_modal_has_two_options():
 def test_enchanter_of_thay_option_1_places_spy():
     eng = CEngine()
     eng.initialize(
-        catalog_path=str(DATA_DIR / "cards" / "catalog.json"),
+        catalog_path=str(DATA_DIR / "cards"),
         board_path=str(DATA_DIR / "boards" / "tyrants_of_the_underdark.json"),
         setup_path=str(DATA_DIR / "decks" / "base_setup.json"),
     )
@@ -125,7 +125,7 @@ def test_enchanter_of_thay_option_1_places_spy():
 def test_enchanter_of_thay_option_2_available_with_spy_on_board():
     eng = CEngine()
     eng.initialize(
-        catalog_path=str(DATA_DIR / "cards" / "catalog.json"),
+        catalog_path=str(DATA_DIR / "cards"),
         board_path=str(DATA_DIR / "boards" / "tyrants_of_the_underdark.json"),
         setup_path=str(DATA_DIR / "decks" / "base_setup.json"),
     )
@@ -148,7 +148,7 @@ def test_enchanter_of_thay_option_2_available_with_spy_on_board():
 def test_enchanter_of_thay_option_2_unavailable_without_spy_on_board():
     eng = CEngine()
     eng.initialize(
-        catalog_path=str(DATA_DIR / "cards" / "catalog.json"),
+        catalog_path=str(DATA_DIR / "cards"),
         board_path=str(DATA_DIR / "boards" / "tyrants_of_the_underdark.json"),
         setup_path=str(DATA_DIR / "decks" / "base_setup.json"),
     )
@@ -172,7 +172,7 @@ def test_enchanter_of_thay_option_2_unavailable_without_spy_on_board():
 def test_enchanter_of_thay_option_2_returns_spy_and_grants_4_power():
     eng = CEngine()
     eng.initialize(
-        catalog_path=str(DATA_DIR / "cards" / "catalog.json"),
+        catalog_path=str(DATA_DIR / "cards"),
         board_path=str(DATA_DIR / "boards" / "tyrants_of_the_underdark.json"),
         setup_path=str(DATA_DIR / "decks" / "base_setup.json"),
     )

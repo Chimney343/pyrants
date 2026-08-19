@@ -1,0 +1,135 @@
+{
+  "card_id": "intellect_devourer",
+  "name": "intellect Devourer",
+  "cost": 4,
+  "aspect": "ambition",
+  "secondary_aspects": [
+    "aberration"
+  ],
+  "deck_vp": 1,
+  "inner_circle_vp": 3,
+  "rules_text": "Choose one mode. Either gain 3 influence, or return up to 2 of your own units to your barracks in any mix of troops and spies.",
+  "notes": "By default, \"return\" targets your own units and sends them to your own barracks. This card allows any mix of up to 2 returned troops and spies.",
+  "execution_model": {
+    "kind": "modal_choice",
+    "selection": "exactly_one",
+    "options": [
+      {
+        "option_id": "option_1",
+        "actions": [
+          {
+            "action_id": "option_1_action_1",
+            "op": "gain_resource",
+            "target_scope": "self",
+            "timing": "immediate",
+            "optional": false,
+            "quantity": {
+              "kind": "fixed",
+              "value": 3
+            },
+            "filters": [],
+            "source_fragment": "gain_influence",
+            "metadata": {
+              "resource": "influence"
+            }
+          }
+        ]
+      },
+      {
+        "option_id": "option_2",
+        "actions": [
+          {
+            "action_id": "option_2_action_1",
+            "op": "return_unit",
+            "target_scope": "self_unit",
+            "timing": "immediate",
+            "optional": true,
+            "quantity": {
+              "kind": "unspecified",
+              "value": null
+            },
+            "filters": [],
+            "source_fragment": "return_units",
+            "metadata": {}
+          },
+          {
+            "action_id": "option_2_action_2",
+            "op": "return_unit",
+            "target_scope": "self_unit",
+            "timing": "immediate",
+            "optional": true,
+            "quantity": {
+              "kind": "unspecified",
+              "value": null
+            },
+            "filters": [],
+            "source_fragment": "return_units",
+            "metadata": {}
+          }
+        ]
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "option_1_action_1",
+      "op": "gain_resource",
+      "target_scope": "self",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 3
+      },
+      "filters": [],
+      "source_fragment": "gain_influence",
+      "metadata": {
+        "resource": "influence"
+      }
+    },
+    {
+      "action_id": "option_2_action_1",
+      "op": "return_unit",
+      "target_scope": "self_unit",
+      "timing": "immediate",
+      "optional": true,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "return_units",
+      "metadata": {}
+    },
+    {
+      "action_id": "option_2_action_2",
+      "op": "return_unit",
+      "target_scope": "self_unit",
+      "timing": "immediate",
+      "optional": true,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "return_units",
+      "metadata": {}
+    }
+  ],
+  "global_conditions": [],
+  "state_contract": {
+    "reads": [
+      "effect_payload",
+      "board.troop_slots",
+      "board.spies"
+    ],
+    "writes": [
+      "resource_pool",
+      "board.troop_slots",
+      "board.spies",
+      "player.spies_available"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

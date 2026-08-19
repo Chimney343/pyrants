@@ -1,0 +1,131 @@
+{
+  "card_id": "succubus",
+  "name": "Succubus",
+  "cost": 5,
+  "aspect": "guile",
+  "secondary_aspects": [
+    "fiend"
+  ],
+  "deck_vp": 2,
+  "inner_circle_vp": 5,
+  "rules_text": "Devour a card from your hand to place a spy and assassinate a troop there.",
+  "notes": "Devouring a card from hand is a required cost. The devoured card goes to the normal devour pile permanently.",
+  "execution_model": {
+    "kind": "sequence",
+    "actions": [
+      {
+        "action_id": "action_1",
+        "op": "devour_cost",
+        "target_scope": "hand",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "hand_devour",
+        "metadata": {
+          "source_zone": "hand",
+          "self_replace": false
+        }
+      },
+      {
+        "action_id": "action_2",
+        "op": "place_spy",
+        "target_scope": "board_site",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "spy",
+        "metadata": {}
+      },
+      {
+        "action_id": "action_3",
+        "op": "assassinate_troop",
+        "target_scope": "board_site",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "assassinate",
+        "metadata": {}
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "action_1",
+      "op": "devour_cost",
+      "target_scope": "hand",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "hand_devour",
+      "metadata": {
+        "source_zone": "hand",
+        "self_replace": false
+      }
+    },
+    {
+      "action_id": "action_2",
+      "op": "place_spy",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "spy",
+      "metadata": {}
+    },
+    {
+      "action_id": "action_3",
+      "op": "assassinate_troop",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "assassinate",
+      "metadata": {}
+    }
+  ],
+  "global_conditions": [],
+  "state_contract": {
+    "reads": [
+      "source_zone",
+      "devour_rules",
+      "player.spies_available",
+      "board.nodes",
+      "board.troop_slots",
+      "presence_or_target_rules"
+    ],
+    "writes": [
+      "devour_zone_or_equivalent",
+      "source_zone",
+      "board.spies",
+      "player.spies_available",
+      "board.troop_slots",
+      "player.trophy_hall"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

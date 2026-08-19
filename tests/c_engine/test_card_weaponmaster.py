@@ -15,6 +15,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from engine_c.bindings.engine_bindings import PHASE_MAIN, _lib
+from game_setup.loaders import assemble_catalog_payload
 from tests.c_engine.card_test_helpers import (
     _make_engine,
     _session_player_index,
@@ -214,11 +215,8 @@ def test_weaponmaster_assassinate_white_only():
 
 def test_weaponmaster_catalog_actions():
     """The execution model encodes exactly-one modal deploy | white assassinate."""
-    import json
 
-    catalog_path = Path(__file__).resolve().parents[2] / "data" / "cards" / "catalog.json"
-    with open(catalog_path, encoding="utf-8") as f:
-        catalog = json.load(f)
+    catalog = assemble_catalog_payload(Path(__file__).resolve().parents[2] / "data" / "cards")
 
     card = None
     for c in catalog["cards"]:

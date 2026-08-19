@@ -1,0 +1,101 @@
+{
+  "card_id": "marilith",
+  "name": "Marilith",
+  "cost": 6,
+  "aspect": "malice",
+  "secondary_aspects": [
+    "fiend"
+  ],
+  "deck_vp": 2,
+  "inner_circle_vp": 5,
+  "rules_text": "Devour a card from your hand to gain 5 power.",
+  "notes": "This uses the established hand-devour cost rule from Succubus and Mind Flayer: the devoured hand card goes to the normal devour pile permanently.",
+  "execution_model": {
+    "kind": "sequence",
+    "actions": [
+      {
+        "action_id": "action_1",
+        "op": "devour_cost",
+        "target_scope": "hand",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "hand_devour",
+        "metadata": {
+          "source_zone": "hand",
+          "self_replace": false
+        }
+      },
+      {
+        "action_id": "action_2",
+        "op": "gain_resource",
+        "target_scope": "self",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "fixed",
+          "value": 5
+        },
+        "filters": [],
+        "source_fragment": "gain_power",
+        "metadata": {
+          "resource": "power"
+        }
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "action_1",
+      "op": "devour_cost",
+      "target_scope": "hand",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "hand_devour",
+      "metadata": {
+        "source_zone": "hand",
+        "self_replace": false
+      }
+    },
+    {
+      "action_id": "action_2",
+      "op": "gain_resource",
+      "target_scope": "self",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 5
+      },
+      "filters": [],
+      "source_fragment": "gain_power",
+      "metadata": {
+        "resource": "power"
+      }
+    }
+  ],
+  "global_conditions": [],
+  "state_contract": {
+    "reads": [
+      "source_zone",
+      "devour_rules",
+      "custom_rules"
+    ],
+    "writes": [
+      "devour_zone_or_equivalent",
+      "source_zone",
+      "custom_state"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

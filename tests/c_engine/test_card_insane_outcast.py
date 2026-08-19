@@ -93,7 +93,7 @@ def _resolve_generic(session: CSession, action_id: str) -> bool:
 def test_insane_outcast_discard_another_card_and_return_to_supply():
     eng = CEngine()
     eng.initialize(
-        catalog_path=str(DATA_DIR / "cards" / "catalog.json"),
+        catalog_path=str(DATA_DIR / "cards"),
         board_path=str(DATA_DIR / "boards" / "tyrants_of_the_underdark.json"),
         setup_path=str(DATA_DIR / "decks" / "base_setup.json"),
     )
@@ -141,32 +141,40 @@ def test_insane_outcast_discard_another_card_and_return_to_supply():
 def test_insane_outcast_promote_returns_to_supply():
     eng = CEngine()
     eng.initialize(
-        catalog_path=str(DATA_DIR / "cards" / "catalog.json"),
+        catalog_path=str(DATA_DIR / "cards"),
         board_path=str(DATA_DIR / "boards" / "tyrants_of_the_underdark.json"),
         setup_path=str(DATA_DIR / "decks" / "base_setup.json"),
     )
     session = make_card_test_session(
         eng,
         ["p1", "p2"],
-        hand={"p1": ["necromancer"]},
+        hand={"p1": ["necromancer", "insane_outcast"]},
         current_player="p1",
     )
-    _set_played_cards(session, "p1", ["insane_outcast"])
 
     _play_card(session, "necromancer")
     _resolve_generic(session, "option_2")
 
-    promoted = _resolve_generic(session, "insane_outcast")
+    hand_before = _player_hand(session, "p1")
+    io_idx = hand_before.index("insane_outcast")
 
-    played_after = _player_played(session, "p1")
+    promoted = False
+    for m in session.legal_moves():
+        if m.move_type == "resolve_generic" and m.data.get("target_id") == "hand":
+            if m.data.get("action_id") == str(io_idx):
+                session.submit_move(m)
+                promoted = True
+                break
+
+    hand_after = _player_hand(session, "p1")
     inner_after = _player_inner_circle(session, "p1")
 
-    assert promoted, "Should have been able to select insane_outcast for promotion"
+    assert promoted, "Should have been able to select insane_outcast for promotion from hand"
     assert "insane_outcast" not in inner_after, (
         f"insane_outcast should NOT be in inner circle (returned to supply), got {inner_after}"
     )
-    assert "insane_outcast" not in played_after, (
-        f"insane_outcast should be removed from played cards, got {played_after}"
+    assert "insane_outcast" not in hand_after, (
+        f"insane_outcast should be removed from hand, got {hand_after}"
     )
 
     session.destroy()
@@ -175,7 +183,7 @@ def test_insane_outcast_promote_returns_to_supply():
 def test_insane_outcast_devour_returns_to_supply():
     eng = CEngine()
     eng.initialize(
-        catalog_path=str(DATA_DIR / "cards" / "catalog.json"),
+        catalog_path=str(DATA_DIR / "cards"),
         board_path=str(DATA_DIR / "boards" / "tyrants_of_the_underdark.json"),
         setup_path=str(DATA_DIR / "decks" / "base_setup.json"),
     )

@@ -1,0 +1,97 @@
+{
+  "card_id": "white_dragon",
+  "name": "White Dragon",
+  "cost": 8,
+  "aspect": "conquest",
+  "secondary_aspects": [
+    "dragon"
+  ],
+  "deck_vp": 2,
+  "inner_circle_vp": 5,
+  "rules_text": "Deploy 3 troops. Gain 1 VP for every 2 sites controlled.",
+  "notes": "The VP scaling counts all sites currently under the player's control and rounds down by groups of 2. The troop deployment uses the established free multi-deploy rule.",
+  "execution_model": {
+    "kind": "sequence",
+    "actions": [
+      {
+        "action_id": "action_1",
+        "op": "deploy_troops",
+        "target_scope": "board_site",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "fixed",
+          "value": 3
+        },
+        "filters": [],
+        "source_fragment": "deploy_troops",
+        "metadata": {}
+      },
+      {
+        "action_id": "action_2",
+        "op": "grant_vp",
+        "target_scope": "self",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "scaled_vp_from_controlled_sites",
+        "metadata": {
+          "count_from": "controlled_sites",
+          "per": 2
+        }
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "action_1",
+      "op": "deploy_troops",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 3
+      },
+      "filters": [],
+      "source_fragment": "deploy_troops",
+      "metadata": {}
+    },
+    {
+      "action_id": "action_2",
+      "op": "grant_vp",
+      "target_scope": "self",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "scaled_vp_from_controlled_sites",
+      "metadata": {
+        "count_from": "controlled_sites",
+        "per": 2
+      }
+    }
+  ],
+  "global_conditions": [],
+  "state_contract": {
+    "reads": [
+      "player.barracks",
+      "board.troop_slots",
+      "vp_scale_source"
+    ],
+    "writes": [
+      "board.troop_slots",
+      "player.barracks",
+      "player.vp_tokens_or_score"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

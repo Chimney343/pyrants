@@ -1,0 +1,97 @@
+{
+  "card_id": "death_knight",
+  "name": "Death Knight",
+  "cost": 6,
+  "aspect": "malice",
+  "secondary_aspects": [
+    "undead"
+  ],
+  "deck_vp": 3,
+  "inner_circle_vp": 7,
+  "rules_text": "Supplant a troop. Then gain 1 VP for every 5 player trophies you have.",
+  "notes": "`Player trophies` means player-color trophies only; white troops in your trophy hall do not count. VP scales by groups of 5, rounded down.",
+  "execution_model": {
+    "kind": "sequence",
+    "actions": [
+      {
+        "action_id": "action_1",
+        "op": "supplant_troop",
+        "target_scope": "board_site",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "supplant",
+        "metadata": {}
+      },
+      {
+        "action_id": "action_2",
+        "op": "grant_vp",
+        "target_scope": "self",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "scaled_vp_from_trophies",
+        "metadata": {
+          "count_from": "trophy_hall_non_white",
+          "per": 5
+        }
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "action_1",
+      "op": "supplant_troop",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "supplant",
+      "metadata": {}
+    },
+    {
+      "action_id": "action_2",
+      "op": "grant_vp",
+      "target_scope": "self",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "scaled_vp_from_trophies",
+      "metadata": {
+        "count_from": "trophy_hall_non_white",
+        "per": 5
+      }
+    }
+  ],
+  "global_conditions": [],
+  "state_contract": {
+    "reads": [
+      "board.troop_slots",
+      "presence_or_target_rules",
+      "vp_scale_source"
+    ],
+    "writes": [
+      "board.troop_slots",
+      "player.trophy_hall",
+      "player.vp_tokens_or_score"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

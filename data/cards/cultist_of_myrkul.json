@@ -1,0 +1,156 @@
+{
+  "card_id": "cultist_of_myrkul",
+  "name": "Cultist of Myrkul",
+  "cost": 2,
+  "aspect": "ambition",
+  "secondary_aspects": [
+    "human"
+  ],
+  "deck_vp": 1,
+  "inner_circle_vp": 2,
+  "rules_text": "Choose exactly one mode. Either gain 2 influence, or devour this card so that at end of turn you promote up to 2 other cards you played this turn.",
+  "notes": "The workbook clause appears typo-truncated (`to end of turn`). Interpreted as an end-of-turn triggered promote effect, reusing the established promote timing convention.",
+  "execution_model": {
+    "kind": "modal_choice",
+    "selection": "exactly_one",
+    "options": [
+      {
+        "option_id": "option_1",
+        "actions": [
+          {
+            "action_id": "option_1_action_1",
+            "op": "gain_resource",
+            "target_scope": "self",
+            "timing": "immediate",
+            "optional": false,
+            "quantity": {
+              "kind": "fixed",
+              "value": 2
+            },
+            "filters": [],
+            "source_fragment": "gain_influence",
+            "metadata": {
+              "resource": "influence"
+            }
+          }
+        ]
+      },
+      {
+        "option_id": "option_2",
+        "actions": [
+          {
+            "action_id": "option_2_action_1",
+            "op": "devour_cost",
+            "target_scope": "played_self",
+            "timing": "immediate",
+            "optional": false,
+            "quantity": {
+              "kind": "unspecified",
+              "value": null
+            },
+            "filters": [],
+            "source_fragment": "self_devour",
+            "metadata": {
+              "source_zone": "played_self",
+              "self_replace": false
+            }
+          },
+          {
+            "action_id": "option_2_action_2",
+            "op": "promote_card",
+            "target_scope": "self",
+            "timing": "end_of_turn",
+            "optional": true,
+            "quantity": {
+              "kind": "fixed",
+              "value": 2
+            },
+            "filters": [],
+            "source_fragment": "triggered_multi_promote",
+            "metadata": {
+              "requires_another_played_card": true
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "option_1_action_1",
+      "op": "gain_resource",
+      "target_scope": "self",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 2
+      },
+      "filters": [],
+      "source_fragment": "gain_influence",
+      "metadata": {
+        "resource": "influence"
+      }
+    },
+    {
+      "action_id": "option_2_action_1",
+      "op": "devour_cost",
+      "target_scope": "played_self",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "self_devour",
+      "metadata": {
+        "source_zone": "played_self",
+        "self_replace": false
+      }
+    },
+    {
+      "action_id": "option_2_action_2",
+      "op": "promote_card",
+      "target_scope": "self",
+      "timing": "end_of_turn",
+      "optional": true,
+      "quantity": {
+        "kind": "fixed",
+        "value": 2
+      },
+      "filters": [],
+      "source_fragment": "triggered_multi_promote",
+      "metadata": {
+        "requires_another_played_card": true
+      }
+    }
+  ],
+  "global_conditions": [
+    {
+      "condition_type": "timing_trigger",
+      "description": "Effect includes deferred or triggered timing"
+    }
+  ],
+  "state_contract": {
+    "reads": [
+      "effect_payload",
+      "source_zone",
+      "devour_rules",
+      "player.played_cards",
+      "player.hand",
+      "player.discard_pile"
+    ],
+    "writes": [
+      "resource_pool",
+      "devour_zone_or_equivalent",
+      "source_zone",
+      "player.inner_circle",
+      "player.played_cards",
+      "player.hand",
+      "player.discard_pile"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

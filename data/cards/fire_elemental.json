@@ -1,0 +1,188 @@
+{
+  "card_id": "fire_elemental",
+  "name": "Fire Elemental",
+  "cost": 3,
+  "aspect": "malice",
+  "secondary_aspects": [
+    "elemental"
+  ],
+  "deck_vp": 1,
+  "inner_circle_vp": 3,
+  "rules_text": "Choose exactly one mode. Either gain 2 power, or gain 2 influence. If the focus condition is met for Malice, draw a card.",
+  "notes": "The workbook row was incomplete unless all three benefit columns were read together. The draw is a separate focus bonus using the normal Malice focus mechanic, not a mode choice.",
+  "execution_model": {
+    "kind": "modal_choice",
+    "selection": "exactly_one",
+    "options": [
+      {
+        "option_id": "option_1",
+        "actions": [
+          {
+            "action_id": "option_1_action_1",
+            "op": "gain_resource",
+            "target_scope": "self",
+            "timing": "immediate",
+            "optional": false,
+            "quantity": {
+              "kind": "fixed",
+              "value": 2
+            },
+            "filters": [],
+            "source_fragment": "gain_power",
+            "metadata": {
+              "resource": "power"
+            }
+          },
+          {
+            "action_id": "option_1_action_2",
+            "op": "draw_cards",
+            "target_scope": "self",
+            "timing": "immediate",
+            "optional": false,
+            "quantity": {
+              "kind": "fixed",
+              "value": 1
+            },
+            "filters": [],
+            "source_fragment": "focus_draw",
+            "metadata": {
+              "requires_focus": true,
+              "focus_aspect": "malice"
+            }
+          }
+        ]
+      },
+      {
+        "option_id": "option_2",
+        "actions": [
+          {
+            "action_id": "option_2_action_1",
+            "op": "gain_resource",
+            "target_scope": "self",
+            "timing": "immediate",
+            "optional": false,
+            "quantity": {
+              "kind": "fixed",
+              "value": 2
+            },
+            "filters": [],
+            "source_fragment": "gain_influence",
+            "metadata": {
+              "resource": "influence"
+            }
+          },
+          {
+            "action_id": "option_2_action_2",
+            "op": "draw_cards",
+            "target_scope": "self",
+            "timing": "immediate",
+            "optional": false,
+            "quantity": {
+              "kind": "fixed",
+              "value": 1
+            },
+            "filters": [],
+            "source_fragment": "focus_draw",
+            "metadata": {
+              "requires_focus": true,
+              "focus_aspect": "malice"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "option_1_action_1",
+      "op": "gain_resource",
+      "target_scope": "self",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 2
+      },
+      "filters": [],
+      "source_fragment": "gain_power",
+      "metadata": {
+        "resource": "power"
+      }
+    },
+    {
+      "action_id": "option_1_action_2",
+      "op": "draw_cards",
+      "target_scope": "self",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 1
+      },
+      "filters": [],
+      "source_fragment": "focus_draw",
+      "metadata": {
+        "requires_focus": true,
+        "focus_aspect": "malice"
+      }
+    },
+    {
+      "action_id": "option_2_action_1",
+      "op": "gain_resource",
+      "target_scope": "self",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 2
+      },
+      "filters": [],
+      "source_fragment": "gain_influence",
+      "metadata": {
+        "resource": "influence"
+      }
+    },
+    {
+      "action_id": "option_2_action_2",
+      "op": "draw_cards",
+      "target_scope": "self",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 1
+      },
+      "filters": [],
+      "source_fragment": "focus_draw",
+      "metadata": {
+        "requires_focus": true,
+        "focus_aspect": "malice"
+      }
+    }
+  ],
+  "global_conditions": [
+    {
+      "condition_type": "focus_check",
+      "description": "Requires matching-aspect support card in hand or played zone"
+    },
+    {
+      "condition_type": "conditional_gate",
+      "description": "Effect has conditional branch or threshold requirement"
+    }
+  ],
+  "state_contract": {
+    "reads": [
+      "effect_payload",
+      "player.deck",
+      "player.discard_pile"
+    ],
+    "writes": [
+      "resource_pool",
+      "player.hand",
+      "player.deck",
+      "player.discard_pile"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

@@ -139,19 +139,16 @@ int engine_serialize_state(const GameState *state,
 }
 
 GameState *engine_deserialize_state(const char *json,
-                                    const char *catalog_path_override,
+                                    const char *catalog_json,
                                     Arena *arena,
                                     int *out_move_count) {
     cJSON *root = cJSON_Parse(json);
     if (!root) return NULL;
 
     cJSON *def_obj = cJSON_GetObjectItem(root, "definition");
-    const char *cat_path = catalog_path_override;
     const char *brd_path = NULL;
     const char *stp_path = NULL;
     if (def_obj) {
-        if (!cat_path) cat_path = cJSON_GetObjectItem(def_obj, "catalog_path") ?
-            cJSON_GetObjectItem(def_obj, "catalog_path")->valuestring : NULL;
         brd_path = cJSON_GetObjectItem(def_obj, "board_path") ?
             cJSON_GetObjectItem(def_obj, "board_path")->valuestring : NULL;
         stp_path = cJSON_GetObjectItem(def_obj, "setup_path") ?
@@ -183,19 +180,12 @@ GameState *engine_deserialize_state(const char *json,
     }
 
     GameDefinition *def = NULL;
-    if (cat_path && brd_path && stp_path) {
-        def = engine_load_definition(cat_path, brd_path, stp_path, arena);
-        if (!def || def->catalog.card_count == 0) {
-            char alt_cat[512], alt_brd[512], alt_stp[512];
-            snprintf(alt_cat, sizeof(alt_cat), "../%s", cat_path);
-            snprintf(alt_brd, sizeof(alt_brd), "../%s", brd_path);
-            snprintf(alt_stp, sizeof(alt_stp), "../%s", stp_path);
-            def = engine_load_definition(alt_cat, alt_brd, alt_stp, arena);
-        }
+    if (catalog_json && brd_path && stp_path) {
+        def = engine_load_definition_json(catalog_json, brd_path, stp_path, arena);
     }
 
     GameState *gs;
-    if (def) {
+    if (def && def->catalog.card_count > 0) {
         gs = engine_create_game_definition(def, player_ids_buf, player_count, 42);
     } else {
         gs = engine_create_game(NULL, player_ids_buf, player_count, 42);

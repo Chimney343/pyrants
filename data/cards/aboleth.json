@@ -1,0 +1,142 @@
+{
+  "card_id": "aboleth",
+  "name": "Aboleth",
+  "cost": 7,
+  "aspect": "guile",
+  "secondary_aspects": [
+    "aberration"
+  ],
+  "deck_vp": 4,
+  "inner_circle_vp": 7,
+  "rules_text": "Choose exactly one mode. Either place 2 spies on any nodes, with at most 1 of your spies per node, or draw 1 card for each of your spies on the board. If you have fewer than 2 spies available to place, you may move one of your spies that is already on the board instead.",
+  "notes": "Spy placement ignores normal presence limits, allows any nodes, caps placement at one of your spies per node, and can reposition an existing spy when supply is short.",
+  "execution_model": {
+    "kind": "modal_choice",
+    "selection": "exactly_one",
+    "options": [
+      {
+        "option_id": "option_1",
+        "actions": [
+          {
+            "action_id": "option_1_action_1",
+            "op": "place_spy",
+            "target_scope": "board_site",
+            "timing": "immediate",
+            "optional": false,
+            "quantity": {
+              "kind": "fixed",
+              "value": 1
+            },
+            "filters": [],
+            "source_fragment": "spy_place",
+            "metadata": {}
+          },
+          {
+            "action_id": "option_1_action_2",
+            "op": "place_spy",
+            "target_scope": "board_site",
+            "timing": "immediate",
+            "optional": false,
+            "quantity": {
+              "kind": "fixed",
+              "value": 1
+            },
+            "filters": [],
+            "source_fragment": "spy_place",
+            "metadata": {}
+          }
+        ]
+      },
+      {
+        "option_id": "option_2",
+        "actions": [
+          {
+            "action_id": "option_2_action_1",
+            "op": "draw_cards",
+            "target_scope": "self",
+            "timing": "immediate",
+            "optional": false,
+            "quantity": {
+              "kind": "unspecified",
+              "value": null
+            },
+            "filters": [],
+            "source_fragment": "draw",
+            "metadata": {
+              "count_from": "spies_on_board"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "option_1_action_1",
+      "op": "place_spy",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 1
+      },
+      "filters": [],
+      "source_fragment": "spy_place",
+      "metadata": {}
+    },
+    {
+      "action_id": "option_1_action_2",
+      "op": "place_spy",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 1
+      },
+      "filters": [],
+      "source_fragment": "spy_place",
+      "metadata": {}
+    },
+    {
+      "action_id": "option_2_action_1",
+      "op": "draw_cards",
+      "target_scope": "self",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "draw",
+      "metadata": {
+        "count_from": "spies_on_board"
+      }
+    }
+  ],
+  "global_conditions": [
+    {
+      "condition_type": "conditional_gate",
+      "description": "Effect has conditional branch or threshold requirement"
+    }
+  ],
+  "state_contract": {
+    "reads": [
+      "player.spies_available",
+      "board.nodes",
+      "player.deck",
+      "player.discard_pile"
+    ],
+    "writes": [
+      "board.spies",
+      "player.spies_available",
+      "player.hand",
+      "player.deck",
+      "player.discard_pile"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

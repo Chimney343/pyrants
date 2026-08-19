@@ -1,0 +1,104 @@
+{
+  "card_id": "green_wyrmling",
+  "name": "Green Wyrmling",
+  "cost": 4,
+  "aspect": "guile",
+  "secondary_aspects": [
+    "dragon"
+  ],
+  "deck_vp": 2,
+  "inner_circle_vp": 4,
+  "rules_text": "Place a spy. If there is another player's troop on the site where you placed that spy, gain 2 influence.",
+  "notes": "The workbook row had a typo in the second clause. The resolved effect checks the site where the spy was placed for another player's troop.",
+  "execution_model": {
+    "kind": "sequence",
+    "actions": [
+      {
+        "action_id": "action_1",
+        "op": "place_spy",
+        "target_scope": "board_site",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "spy",
+        "metadata": {}
+      },
+      {
+        "action_id": "action_2",
+        "op": "conditional_bonus",
+        "target_scope": "self",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "conditional_influence_if_enemy_troop_present",
+        "metadata": {
+          "condition": "selected_node_has_other_player_troop",
+          "resource": "influence",
+          "amount": 2
+        }
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "action_1",
+      "op": "place_spy",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "spy",
+      "metadata": {}
+    },
+    {
+      "action_id": "action_2",
+      "op": "conditional_bonus",
+      "target_scope": "self",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "conditional_influence_if_enemy_troop_present",
+      "metadata": {
+        "condition": "selected_node_has_other_player_troop",
+        "resource": "influence",
+        "amount": 2
+      }
+    }
+  ],
+  "global_conditions": [
+    {
+      "condition_type": "conditional_gate",
+      "description": "Effect has conditional branch or threshold requirement"
+    }
+  ],
+  "state_contract": {
+    "reads": [
+      "player.spies_available",
+      "board.nodes",
+      "condition_context"
+    ],
+    "writes": [
+      "board.spies",
+      "player.spies_available",
+      "resource_pool_or_followup_actions"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

@@ -5,6 +5,7 @@
 #include "loader.h"
 #include "moves.h"
 #include "helpers.h"
+#include "tests/catalog_dir.h"
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
@@ -45,20 +46,7 @@ static void test_rng(void) {
 static void test_loader_catalog(void) {
     Arena *arena = arena_create(2 * 1024 * 1024);
     assert(arena);
-    GameDefinition *def = engine_load_definition(
-        "../data/cards/catalog.json",
-        "../data/boards/tyrants_of_the_underdark.json",
-        "../data/decks/base_setup.json",
-        arena
-    );
-    if (!def || def->catalog.card_count == 0) {
-        def = engine_load_definition(
-            "data/cards/catalog.json",
-            "data/boards/tyrants_of_the_underdark.json",
-            "data/decks/base_setup.json",
-            arena
-        );
-    }
+    GameDefinition *def = test_load_definition(arena);
     assert(def);
     printf("definition loaded\n");
 
@@ -92,20 +80,7 @@ static void test_state_creation(void) {
     uint64_t seed = 12345;
 
     Arena *arena = arena_create(2 * 1024 * 1024);
-    GameDefinition *def = engine_load_definition(
-        "../data/cards/catalog.json",
-        "../data/boards/tyrants_of_the_underdark.json",
-        "../data/decks/base_setup.json",
-        arena
-    );
-    if (!def || def->catalog.card_count == 0) {
-        def = engine_load_definition(
-            "data/cards/catalog.json",
-            "data/boards/tyrants_of_the_underdark.json",
-            "data/decks/base_setup.json",
-            arena
-        );
-    }
+    GameDefinition *def = test_load_definition(arena);
     assert(def);
 
     GameState *gs = engine_create_game_definition(def, player_ids, 2, seed);
@@ -121,20 +96,8 @@ static void test_state_creation(void) {
 static void test_clone(void) {
     const char *player_ids[] = {"player_1", "player_2"};
     Arena *arena = arena_create(2 * 1024 * 1024);
-    GameDefinition *def = engine_load_definition(
-        "../data/cards/catalog.json",
-        "../data/boards/tyrants_of_the_underdark.json",
-        "../data/decks/base_setup.json",
-        arena
-    );
-    if (!def || def->catalog.card_count == 0) {
-        def = engine_load_definition(
-            "data/cards/catalog.json",
-            "data/boards/tyrants_of_the_underdark.json",
-            "data/decks/base_setup.json",
-            arena
-        );
-    }
+    GameDefinition *def = test_load_definition(arena);
+    assert(def);
     GameState *gs = engine_create_game_definition(def, player_ids, 2, 42);
     gs->round_number = 5;
     gs->shuffle_counter = 99;
@@ -182,20 +145,8 @@ extern void test_intern_destroy_clears(void);
 static void test_cow(void) {
     const char *player_ids[] = {"p1", "p2"};
     Arena *arena = arena_create(2 * 1024 * 1024);
-    GameDefinition *def = engine_load_definition(
-        "../data/cards/catalog.json",
-        "../data/boards/tyrants_of_the_underdark.json",
-        "../data/decks/base_setup.json",
-        arena
-    );
-    if (!def || def->catalog.card_count == 0) {
-        def = engine_load_definition(
-            "data/cards/catalog.json",
-            "data/boards/tyrants_of_the_underdark.json",
-            "data/decks/base_setup.json",
-            arena
-        );
-    }
+    GameDefinition *def = test_load_definition(arena);
+    assert(def);
     GameState *gs = engine_create_game_definition(def, player_ids, 2, 42);
 
     NodeState *node = cow_node(gs, gs->nodes[0].node_id);
@@ -215,20 +166,7 @@ static void test_focus_requirement_met(void) {
     /* Set up a minimal game with the catalog loaded so card_by_id works. */
     const char *player_ids[] = {"p1", "p2"};
     Arena *arena = arena_create(2 * 1024 * 1024);
-    GameDefinition *def = engine_load_definition(
-        "../data/cards/catalog.json",
-        "../data/boards/tyrants_of_the_underdark.json",
-        "../data/decks/base_setup.json",
-        arena
-    );
-    if (!def || def->catalog.card_count == 0) {
-        def = engine_load_definition(
-            "data/cards/catalog.json",
-            "data/boards/tyrants_of_the_underdark.json",
-            "data/decks/base_setup.json",
-            arena
-        );
-    }
+    GameDefinition *def = test_load_definition(arena);
     assert(def);
     GameState *gs = engine_create_game_definition(def, player_ids, 2, 42);
     assert(gs);

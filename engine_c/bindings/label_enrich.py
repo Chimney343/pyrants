@@ -1,8 +1,8 @@
 """Python-side enrichment for C-engine move labels.
 
 The C engine cannot easily map ``ability_key`` -> card name or resolve
-``MOVE_RESOLVE_GENERIC`` labels because the card-name mapping lives in
-``data/cards/catalog.json``. This module enriches labels after the C
+``MOVE_RESOLVE_GENERIC`` labels because the card-name mapping lives in the
+per-card files under ``data/cards/``. This module enriches labels after the C
 engine produces a raw label.
 
 Usage:
@@ -13,9 +13,10 @@ Usage:
 
 from __future__ import annotations
 
-import json
 from functools import lru_cache
 from pathlib import Path
+
+from game_setup.loaders import assemble_catalog_payload
 
 _ENRICH_MOVES = frozenset({"activate_ability", "decline_ability", "resolve_generic", "promote_card", "skip_promote"})
 
@@ -51,12 +52,10 @@ _FILTER_DESCRIPTIONS = {
 
 
 def _load_catalog() -> dict[str, dict]:
-    catalog_path = Path(__file__).resolve().parent.parent.parent / "data" / "cards" / "catalog.json"
-    with open(catalog_path, encoding="utf-8") as f:
-        raw = json.load(f)
-    cards = raw.get("cards", raw) if isinstance(raw, dict) else raw
+    cards_dir = Path(__file__).resolve().parent.parent.parent / "data" / "cards"
+    payload = assemble_catalog_payload(cards_dir)
     result: dict[str, dict] = {}
-    for entry in cards:
+    for entry in payload.get("cards", []):
         cid = entry.get("card_id", "")
         if cid:
             result[cid] = entry

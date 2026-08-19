@@ -1,0 +1,97 @@
+{
+  "card_id": "underdark_ranger",
+  "name": "Underdark Ranger",
+  "cost": 4,
+  "aspect": "conquest",
+  "secondary_aspects": [
+    "drow"
+  ],
+  "deck_vp": 2,
+  "inner_circle_vp": 4,
+  "rules_text": "Assassinate 2 white troops.",
+  "notes": "This means two separate free assassinations of neutral white troops using normal legality. If fewer than 2 legal white targets exist, resolve as many as possible, including zero.",
+  "execution_model": {
+    "kind": "sequence",
+    "actions": [
+      {
+        "action_id": "action_1",
+        "op": "assassinate_troop",
+        "target_scope": "board_site",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "fixed",
+          "value": 1
+        },
+        "filters": [
+          "white_troop_only"
+        ],
+        "source_fragment": "assassinate_white_troop_step_1",
+        "metadata": {}
+      },
+      {
+        "action_id": "action_2",
+        "op": "assassinate_troop",
+        "target_scope": "board_site",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "fixed",
+          "value": 1
+        },
+        "filters": [
+          "white_troop_only"
+        ],
+        "source_fragment": "assassinate_white_troop_step_2",
+        "metadata": {}
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "action_1",
+      "op": "assassinate_troop",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 1
+      },
+      "filters": [
+        "white_troop_only"
+      ],
+      "source_fragment": "assassinate_white_troop_step_1",
+      "metadata": {}
+    },
+    {
+      "action_id": "action_2",
+      "op": "assassinate_troop",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 1
+      },
+      "filters": [
+        "white_troop_only"
+      ],
+      "source_fragment": "assassinate_white_troop_step_2",
+      "metadata": {}
+    }
+  ],
+  "global_conditions": [],
+  "state_contract": {
+    "reads": [
+      "board.troop_slots",
+      "presence_or_target_rules"
+    ],
+    "writes": [
+      "board.troop_slots",
+      "player.trophy_hall"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

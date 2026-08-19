@@ -1,9 +1,9 @@
 # Catalog execution_model & C engine op-handler map
 
 This is the lookup table the validator skill points to when diagnosing a card.
-Keep it in sync with `data/cards/catalog.json` and `engine_c/generic_runtime.c`.
+Keep it in sync with `data/cards/*.json` and `engine_c/generic_runtime.c`.
 
-## Catalog entry shape (`data/cards/catalog.json`)
+## Catalog entry shape (`data/cards/*.json`)
 
 Each card object has, among display fields (`card_id`, `name`, `cost`, `aspect`,
 `deck_vp`, `inner_circle_vp`, `rules_text`, `notes`), an `execution_model`:
@@ -81,7 +81,7 @@ moves.
 For a given `op` or `target_scope`, grep the catalog for other cards using the
 same op, then check `generic_runtime.c` for their applier. Example workflow:
 
-1. `rg '"op": "place_spy"' data/cards/catalog.json` → list of cards using it.
+1. `rg '"op": "place_spy"' data/cards/*.json` → list of cards using it.
 2. `rg 'place_spy' engine_c/generic_runtime.c` → the applier + any
    scope-specific branching.
 3. Pick the closest sibling (same scope, same quantity kind, similar filters)

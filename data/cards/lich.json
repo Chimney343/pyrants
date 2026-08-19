@@ -1,0 +1,180 @@
+{
+  "card_id": "lich",
+  "name": "Lich",
+  "cost": 7,
+  "aspect": "guile",
+  "secondary_aspects": [
+    "undead"
+  ],
+  "deck_vp": 4,
+  "inner_circle_vp": 7,
+  "rules_text": "Place a spy. If another player has a troop there, take 2 troops from that same player's trophy hall and deploy them anywhere on the board, regardless of presence.",
+  "notes": "`Their trophy hall` refers to the same player who has a troop at the spy site. The taken troops can be deployed anywhere on the board and ignore normal presence restrictions.",
+  "execution_model": {
+    "kind": "sequence",
+    "actions": [
+      {
+        "action_id": "action_1",
+        "op": "place_spy",
+        "target_scope": "board_site",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "spy",
+        "metadata": {}
+      },
+      {
+        "action_id": "action_2",
+        "op": "custom_effect",
+        "target_scope": "self",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "fixed",
+          "value": 1
+        },
+        "filters": [],
+        "source_fragment": "lich_select_target_player",
+        "metadata": {
+          "effect_kind": "lich_select_target_player",
+          "gate": "selected_node_has_other_player_troop",
+          "skip_advance_to_index": "4"
+        }
+      },
+      {
+        "action_id": "action_3",
+        "op": "custom_effect",
+        "target_scope": "self",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "fixed",
+          "value": 1
+        },
+        "filters": [],
+        "source_fragment": "lich_take_trophy",
+        "metadata": {
+          "effect_kind": "deploy_from_trophy_hall",
+          "trophy_source_player": "lich_target_player",
+          "trophy_color_filter": "any"
+        }
+      },
+      {
+        "action_id": "action_4",
+        "op": "custom_effect",
+        "target_scope": "self",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "fixed",
+          "value": 1
+        },
+        "filters": [],
+        "source_fragment": "lich_take_trophy",
+        "metadata": {
+          "effect_kind": "deploy_from_trophy_hall",
+          "trophy_source_player": "lich_target_player",
+          "trophy_color_filter": "any"
+        }
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "action_1",
+      "op": "place_spy",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "spy",
+      "metadata": {}
+    },
+    {
+      "action_id": "action_2",
+      "op": "custom_effect",
+      "target_scope": "self",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 1
+      },
+      "filters": [],
+      "source_fragment": "lich_select_target_player",
+      "metadata": {
+        "effect_kind": "lich_select_target_player",
+        "gate": "selected_node_has_other_player_troop",
+        "skip_advance_to_index": "4"
+      }
+    },
+    {
+      "action_id": "action_3",
+      "op": "custom_effect",
+      "target_scope": "self",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 1
+      },
+      "filters": [],
+      "source_fragment": "lich_take_trophy",
+      "metadata": {
+        "effect_kind": "deploy_from_trophy_hall",
+        "trophy_source_player": "lich_target_player",
+        "trophy_color_filter": "any"
+      }
+    },
+    {
+      "action_id": "action_4",
+      "op": "custom_effect",
+      "target_scope": "self",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 1
+      },
+      "filters": [],
+      "source_fragment": "lich_take_trophy",
+      "metadata": {
+        "effect_kind": "deploy_from_trophy_hall",
+        "trophy_source_player": "lich_target_player",
+        "trophy_color_filter": "any"
+      }
+    }
+  ],
+  "global_conditions": [
+    {
+      "condition_type": "conditional_gate",
+      "description": "Effect has conditional branch or threshold requirement"
+    }
+  ],
+  "state_contract": {
+    "reads": [
+      "player.spies_available",
+      "board.nodes",
+      "player.barracks",
+      "board.troop_slots",
+      "player.trophy_hall"
+    ],
+    "writes": [
+      "board.spies",
+      "player.spies_available",
+      "board.troop_slots",
+      "player.barracks",
+      "player.trophy_hall"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

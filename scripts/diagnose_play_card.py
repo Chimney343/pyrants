@@ -4,6 +4,10 @@ import os
 import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "engine_c", "bindings"))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from game_setup.loaders import assemble_catalog_text
+from pathlib import Path
 
 from engine_bindings import (
     _lib, Move as CMove, MOVE_PLAY_CARD, MOVE_END_MAIN_PHASE,
@@ -17,12 +21,12 @@ _lib.register_default_effects()
 
 arena = _lib.arena_create(16 * 1024 * 1024)
 
-catalog_path = os.path.join("data", "cards", "catalog.json")
+catalog_json = assemble_catalog_text(Path("data/cards"))
 board_path = os.path.join("data", "boards", "tyrants_of_the_underdark.json")
 setup_path = os.path.join("data", "decks", "base_setup.json")
 
-def_ptr = _lib.engine_load_definition(
-    catalog_path.encode(), board_path.encode(), setup_path.encode(), arena
+def_ptr = _lib.engine_load_definition_json(
+    catalog_json.encode(), board_path.encode(), setup_path.encode(), arena
 )
 assert def_ptr, "Failed to load definition"
 

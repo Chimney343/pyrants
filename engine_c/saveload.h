@@ -16,7 +16,7 @@ int engine_serialize_state(const GameState *state,
                            char *out_json, int out_cap);
 
 GameState *engine_deserialize_state(const char *json,
-                                    const char *catalog_path_override,
+                                    const char *catalog_json,
                                     Arena *arena,
                                     int *out_move_count);
 

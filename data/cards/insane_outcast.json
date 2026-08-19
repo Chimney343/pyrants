@@ -1,0 +1,68 @@
+{
+  "card_id": "insane_outcast",
+  "name": "Insane Outcast",
+  "cost": 0,
+  "aspect": "-",
+  "secondary_aspects": [
+    "drow"
+  ],
+  "deck_vp": -1,
+  "inner_circle_vp": 0,
+  "rules_text": "You may discard a card from your hand to return this card to supply. If this card would be devoured or promoted, return it to supply instead.",
+  "notes": "This hand ability works only while Insane Outcast is in your hand. You must discard another card from hand to return Insane Outcast to supply; it cannot discard itself as the cost. This is anti-deck-clog text for a negative-VP card opponents can force into your deck.",
+  "execution_model": {
+    "kind": "sequence",
+    "actions": [
+      {
+        "action_id": "action_1",
+        "op": "custom_effect",
+        "target_scope": "self",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "self_purge_to_supply",
+        "metadata": {
+          "effect_kind": "self_purge_to_supply"
+        }
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "action_1",
+      "op": "custom_effect",
+      "target_scope": "self",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "self_purge_to_supply",
+      "metadata": {
+        "effect_kind": "self_purge_to_supply"
+      }
+    }
+  ],
+  "global_conditions": [
+    {
+      "condition_type": "conditional_gate",
+      "description": "Effect has conditional branch or threshold requirement"
+    }
+  ],
+  "state_contract": {
+    "reads": [
+      "custom_rules"
+    ],
+    "writes": [
+      "custom_state"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

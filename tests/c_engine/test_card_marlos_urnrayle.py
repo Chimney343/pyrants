@@ -7,6 +7,7 @@ from pathlib import Path
 from engine_c.bindings.ce_api import CEngine
 from engine_c.bindings.engine_bindings import MAX_ZONE_SIZE, _lib
 from engine_c.bindings.session import CSession
+from game_setup.loaders import assemble_catalog_payload
 from tests.c_engine.card_test_helpers import make_card_test_session
 
 DATA_DIR = Path(__file__).resolve().parents[2] / "data"
@@ -34,7 +35,7 @@ def test_marlos_urnrayle_gains_one_influence() -> None:
     """Playing Marlos Urnrayle immediately grants 1 influence."""
     eng = CEngine()
     eng.initialize(
-        catalog_path=str(DATA_DIR / "cards" / "catalog.json"),
+        catalog_path=str(DATA_DIR / "cards"),
         board_path=str(DATA_DIR / "boards" / "tyrants_of_the_underdark.json"),
         setup_path=str(DATA_DIR / "decks" / "base_setup.json"),
     )
@@ -64,7 +65,7 @@ def test_marlos_urnrayle_recruit_filters_ambition_up_to_cost_4() -> None:
     """After playing Marlos, recruit moves only show ambition cards costing ≤4."""
     eng = CEngine()
     eng.initialize(
-        catalog_path=str(DATA_DIR / "cards" / "catalog.json"),
+        catalog_path=str(DATA_DIR / "cards"),
         board_path=str(DATA_DIR / "boards" / "tyrants_of_the_underdark.json"),
         setup_path=str(DATA_DIR / "decks" / "base_setup.json"),
     )
@@ -101,7 +102,7 @@ def test_marlos_urnrayle_promote_cannot_target_self() -> None:
     """End-of-turn promote should NOT let Marlos Urnrayle promote itself."""
     eng = CEngine()
     eng.initialize(
-        catalog_path=str(DATA_DIR / "cards" / "catalog.json"),
+        catalog_path=str(DATA_DIR / "cards"),
         board_path=str(DATA_DIR / "boards" / "tyrants_of_the_underdark.json"),
         setup_path=str(DATA_DIR / "decks" / "base_setup.json"),
     )
@@ -152,7 +153,7 @@ def test_marlos_urnrayle_promote_skippable_if_no_other_played_card() -> None:
     """When no other card is played, Marlos promote should be skippable or no target."""
     eng = CEngine()
     eng.initialize(
-        catalog_path=str(DATA_DIR / "cards" / "catalog.json"),
+        catalog_path=str(DATA_DIR / "cards"),
         board_path=str(DATA_DIR / "boards" / "tyrants_of_the_underdark.json"),
         setup_path=str(DATA_DIR / "decks" / "base_setup.json"),
     )
@@ -180,6 +181,120 @@ def test_marlos_urnrayle_promote_skippable_if_no_other_played_card() -> None:
     promote_moves = [m for m in session.legal_moves() if m.move_type == "promote_card"]
     assert len(promote_moves) == 0, (
         f"Marlos played alone should have no promote targets, got {[m.data for m in promote_moves]}"
+    )
+
+    session.destroy()
+
+
+def test_marlos_urnrayle_catalog_encoding_requires_another_played_card() -> None:
+    """The promote action must carry ``requires_another_played_card`` in its metadata.
+
+    Regression guard: the deferred end-of-turn promotion targets "another played
+    card" and must exclude Marlos Urnrayle itself. If the metadata flag is lost,
+    the engine offers self as a promote target and never falls back to an empty
+    target set when no other card was played this turn.
+    """
+    catalog = assemble_catalog_payload(DATA_DIR / "cards")
+    card = next(c for c in catalog["cards"] if c["card_id"] == "marlos_urnrayle")
+
+    for action in (card["execution_model"]["actions"][1], card["actions"][1]):
+        assert action["op"] == "promote_card", f"expected promote_card, got {action['op']}"
+        assert action["timing"] == "end_of_turn", f"expected end_of_turn, got {action['timing']}"
+        assert action["metadata"].get("requires_another_played_card") is True, (
+            f"requires_another_played_card must be true, got {action['metadata']}"
+        )
+
+
+def test_marlos_urnrayle_recruit_pays_influence_cost() -> None:
+    """Recruiting via Marlos spends influence equal to the card's cost.
+
+    Marlos says "recruit an Ambition card that costs 4 or less" — not "without
+    paying its cost" — so the recruit is paid, unlike Vanifer's free recruit.
+    Regression guard against ``max_cost`` being (mis)treated as a free-recruit
+    signal.
+    """
+    eng = CEngine()
+    eng.initialize(
+        catalog_path=str(DATA_DIR / "cards"),
+        board_path=str(DATA_DIR / "boards" / "tyrants_of_the_underdark.json"),
+        setup_path=str(DATA_DIR / "decks" / "base_setup.json"),
+    )
+    session = make_card_test_session(
+        eng,
+        ["p1", "p2"],
+        hand={"p1": ["marlos_urnrayle"]},
+        current_player="p1",
+    )
+    s = session._state._ptr.contents
+
+    ms = s.market
+    ms.row_count = 1
+    ms.row[0] = _lib.intern(b"cult_fanatic")  # ambition, cost 3
+    s.resource_pool.influence = 5
+
+    _play_card(session, "marlos_urnrayle")
+
+    s = session._state._ptr.contents
+    assert s.resource_pool.influence == 6, (
+        f"Expected gain 1 influence first (5 -> 6), got {s.resource_pool.influence}"
+    )
+
+    recruit_moves = [m for m in session.legal_moves() if m.move_type == "resolve_generic"]
+    assert recruit_moves, "Expected recruit move after playing Marlos"
+    cult = [m for m in recruit_moves if m.data.get("action_id") == "cult_fanatic"]
+    assert cult, "cult_fanatic (ambition, cost 3) should be a recruit target"
+    session.submit_move(cult[0])
+
+    s = session._state._ptr.contents
+    assert s.resource_pool.influence == 3, (
+        f"Recruit should cost 3 influence, got {s.resource_pool.influence}"
+    )
+
+    p1_discard = [
+        _lib.intern_str(s.players[0].discard_pile[j]).decode()
+        for j in range(s.players[0].discard_pile_count)
+    ]
+    assert "cult_fanatic" in p1_discard, "cult_fanatic should land in the discard pile"
+
+    session.destroy()
+
+
+def test_marlos_urnrayle_recruit_requires_affordability() -> None:
+    """With insufficient influence for any qualifying card, the recruit auto-skips.
+
+    The recruit is mandatory, but if no Ambition card costing <= 4 is affordable,
+    the engine offers no target and advances past the clause instead of stalling.
+    """
+    eng = CEngine()
+    eng.initialize(
+        catalog_path=str(DATA_DIR / "cards"),
+        board_path=str(DATA_DIR / "boards" / "tyrants_of_the_underdark.json"),
+        setup_path=str(DATA_DIR / "decks" / "base_setup.json"),
+    )
+    session = make_card_test_session(
+        eng,
+        ["p1", "p2"],
+        hand={"p1": ["marlos_urnrayle"]},
+        current_player="p1",
+    )
+    s = session._state._ptr.contents
+
+    ms = s.market
+    ms.row_count = 1
+    ms.row[0] = _lib.intern(b"cult_fanatic")  # ambition, cost 3
+    s.resource_pool.influence = 0
+
+    _play_card(session, "marlos_urnrayle")
+
+    s = session._state._ptr.contents
+    assert s.resource_pool.influence == 1, (
+        f"Expected gain 1 influence first (0 -> 1), got {s.resource_pool.influence}"
+    )
+
+    recruit_moves = [m for m in session.legal_moves() if m.move_type == "resolve_generic"]
+    assert len(recruit_moves) == 0, (
+        f"With only 1 influence, cult_fanatic (cost 3) is unaffordable; "
+        f"expected no recruit target, got {[m.data for m in recruit_moves]}"
     )
 
     session.destroy()

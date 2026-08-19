@@ -1,0 +1,133 @@
+{
+  "card_id": "nothic",
+  "name": "Nothic",
+  "cost": 3,
+  "aspect": "guile",
+  "secondary_aspects": [
+    "aberration"
+  ],
+  "deck_vp": 1,
+  "inner_circle_vp": 3,
+  "rules_text": "Choose one mode. Either place a spy from your units onto the board, or return one of your own spies from the board to your barracks, draw a card, and then each opponent with 3 or more cards in hand discards 1 card from hand.",
+  "notes": "The global modal convention applies here. The return-spy branch uses the default self-return-to-barracks rule, then applies draw plus mass discard against opponents with 3 or more cards in hand.",
+  "execution_model": {
+    "kind": "modal_choice",
+    "selection": "exactly_one",
+    "options": [
+      {
+        "option_id": "option_1",
+        "actions": [
+          {
+            "action_id": "option_1_action_1",
+            "op": "place_spy",
+            "target_scope": "board_site",
+            "timing": "immediate",
+            "optional": false,
+            "quantity": {
+              "kind": "unspecified",
+              "value": null
+            },
+            "filters": [],
+            "source_fragment": "spy",
+            "metadata": {}
+          }
+        ]
+      },
+      {
+        "option_id": "option_2",
+        "actions": [
+          {
+            "action_id": "option_2_action_1",
+            "op": "return_spy",
+            "target_scope": "board_site",
+            "timing": "immediate",
+            "optional": false,
+            "quantity": {
+              "kind": "unspecified",
+              "value": null
+            },
+            "filters": [],
+            "source_fragment": "return_spy_draw",
+            "metadata": {}
+          },
+          {
+            "action_id": "option_2_action_2",
+            "op": "force_discard",
+            "target_scope": "opponent",
+            "timing": "immediate",
+            "optional": false,
+            "quantity": {
+              "kind": "variable_repeat",
+              "value": null
+            },
+            "filters": [],
+            "source_fragment": "mass_discard",
+            "metadata": {}
+          }
+        ]
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "option_1_action_1",
+      "op": "place_spy",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "spy",
+      "metadata": {}
+    },
+    {
+      "action_id": "option_2_action_1",
+      "op": "return_spy",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "return_spy_draw",
+      "metadata": {}
+    },
+    {
+      "action_id": "option_2_action_2",
+      "op": "force_discard",
+      "target_scope": "opponent",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "variable_repeat",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "mass_discard",
+      "metadata": {}
+    }
+  ],
+  "global_conditions": [],
+  "state_contract": {
+    "reads": [
+      "player.spies_available",
+      "board.nodes",
+      "board.spies",
+      "player.hand",
+      "threshold_or_target_rules"
+    ],
+    "writes": [
+      "board.spies",
+      "player.spies_available",
+      "player.hand",
+      "player.discard_pile"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

@@ -8,14 +8,13 @@ Verifies:
 
 from __future__ import annotations
 
-import json
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-
 from engine_c.bindings.engine_bindings import MAX_ZONE_SIZE, _lib
 from engine_c.bindings.session import CSession
+from game_setup.loaders import assemble_catalog_payload
 from tests.c_engine.card_test_helpers import (
     _make_engine,
     _session_player_index,
@@ -331,8 +330,7 @@ def test_ghost_option_2_offers_all_own_spy_sites() -> None:
 
 def test_ghost_catalog_execution_model_encodes_return_spy_and_devour_take() -> None:
     """Lock the catalog encoding: option_2 is return_spy + take_from_devour_pile_to_discard."""
-    catalog_path = Path(__file__).resolve().parents[2] / "data" / "cards" / "catalog.json"
-    catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
+    catalog = assemble_catalog_payload(Path(__file__).resolve().parents[2] / "data" / "cards")
     ghost = next(c for c in catalog["cards"] if c["card_id"] == CARD_ID)
 
     em = ghost["execution_model"]

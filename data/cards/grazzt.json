@@ -1,0 +1,170 @@
+{
+  "card_id": "grazzt",
+  "name": "Graz'zt",
+  "cost": 6,
+  "aspect": "guile",
+  "secondary_aspects": [
+    "fiend"
+  ],
+  "deck_vp": 2,
+  "inner_circle_vp": 5,
+  "rules_text": "Choose exactly one mode. Either place 2 spies, or return any spies to supplant a troop at each of those sites.",
+  "notes": "`Return any spies` means return any number of your own spies from the board to your barracks, then supplant one troop at each former site of the returned spies. This mode cannot be executed if you have no spies on the board.",
+  "execution_model": {
+    "kind": "modal_choice",
+    "selection": "exactly_one",
+    "options": [
+      {
+        "option_id": "option_1",
+        "actions": [
+          {
+            "action_id": "option_1_action_1",
+            "op": "place_spy",
+            "target_scope": "board_site",
+            "timing": "immediate",
+            "optional": false,
+            "quantity": {
+              "kind": "fixed",
+              "value": 1
+            },
+            "filters": [],
+            "source_fragment": "place_spy_step_1",
+            "metadata": {}
+          },
+          {
+            "action_id": "option_1_action_2",
+            "op": "place_spy",
+            "target_scope": "board_site",
+            "timing": "immediate",
+            "optional": false,
+            "quantity": {
+              "kind": "fixed",
+              "value": 1
+            },
+            "filters": [],
+            "source_fragment": "place_spy_step_2",
+            "metadata": {}
+          }
+        ]
+      },
+      {
+        "option_id": "option_2",
+        "actions": [
+          {
+            "action_id": "option_2_action_1",
+            "op": "return_spy",
+            "target_scope": "board_site",
+            "timing": "immediate",
+            "optional": false,
+            "quantity": {
+              "kind": "unspecified",
+              "value": null
+            },
+            "filters": [],
+            "source_fragment": "return_spy_for_site_supplant",
+            "metadata": {
+              "spy_owner": "self"
+            }
+          },
+          {
+            "action_id": "option_2_action_2",
+            "op": "supplant_troop",
+            "target_scope": "board_site",
+            "timing": "immediate",
+            "optional": false,
+            "quantity": {
+              "kind": "unspecified",
+              "value": null
+            },
+            "filters": [
+              "allow_white_troop"
+            ],
+            "source_fragment": "multi_supplant",
+            "metadata": {
+              "requires_returned_spy_site": true
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "option_1_action_1",
+      "op": "place_spy",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 1
+      },
+      "filters": [],
+      "source_fragment": "place_spy_step_1",
+      "metadata": {}
+    },
+    {
+      "action_id": "option_1_action_2",
+      "op": "place_spy",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 1
+      },
+      "filters": [],
+      "source_fragment": "place_spy_step_2",
+      "metadata": {}
+    },
+    {
+      "action_id": "option_2_action_1",
+      "op": "return_spy",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "return_spy_for_site_supplant",
+      "metadata": {
+        "spy_owner": "self"
+      }
+    },
+    {
+      "action_id": "option_2_action_2",
+      "op": "supplant_troop",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [
+        "allow_white_troop"
+      ],
+      "source_fragment": "multi_supplant",
+      "metadata": {
+        "requires_returned_spy_site": true
+      }
+    }
+  ],
+  "global_conditions": [],
+  "state_contract": {
+    "reads": [
+      "custom_rules",
+      "board.troop_slots",
+      "presence_or_target_rules"
+    ],
+    "writes": [
+      "custom_state",
+      "board.troop_slots",
+      "player.trophy_hall"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

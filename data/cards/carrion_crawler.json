@@ -1,0 +1,101 @@
+{
+  "card_id": "carrion_crawler",
+  "name": "Carrion Crawler",
+  "cost": 2,
+  "aspect": "malice",
+  "secondary_aspects": [
+    "monstrosity"
+  ],
+  "deck_vp": 0,
+  "inner_circle_vp": 2,
+  "rules_text": "Gain 3 power. Devour a card in the market and replace it with this one.",
+  "notes": "After devouring a chosen market card, Carrion Crawler itself is moved from your played area into that emptied market slot.",
+  "execution_model": {
+    "kind": "sequence",
+    "actions": [
+      {
+        "action_id": "action_1",
+        "op": "gain_resource",
+        "target_scope": "self",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "fixed",
+          "value": 3
+        },
+        "filters": [],
+        "source_fragment": "gain_power",
+        "metadata": {
+          "resource": "power"
+        }
+      },
+      {
+        "action_id": "action_2",
+        "op": "devour_cost",
+        "target_scope": "market",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "devour_market_card_and_self_replace",
+        "metadata": {
+          "source_zone": "market",
+          "self_replace": true
+        }
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "action_1",
+      "op": "gain_resource",
+      "target_scope": "self",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 3
+      },
+      "filters": [],
+      "source_fragment": "gain_power",
+      "metadata": {
+        "resource": "power"
+      }
+    },
+    {
+      "action_id": "action_2",
+      "op": "devour_cost",
+      "target_scope": "market",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "devour_market_card_and_self_replace",
+      "metadata": {
+        "source_zone": "market",
+        "self_replace": true
+      }
+    }
+  ],
+  "global_conditions": [],
+  "state_contract": {
+    "reads": [
+      "effect_payload",
+      "source_zone",
+      "devour_rules"
+    ],
+    "writes": [
+      "resource_pool",
+      "devour_zone_or_equivalent",
+      "source_zone"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

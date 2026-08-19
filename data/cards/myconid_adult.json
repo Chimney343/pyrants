@@ -1,0 +1,97 @@
+{
+  "card_id": "myconid_adult",
+  "name": "Myconid Adult",
+  "cost": 3,
+  "aspect": "ambition",
+  "secondary_aspects": [
+    "myconid"
+  ],
+  "deck_vp": 1,
+  "inner_circle_vp": 3,
+  "rules_text": "Gain 2 influence. Choose another player. That player adds an Insane Outcast from the Insane Outcast deck to their discard pile.",
+  "notes": "`Give insane outcast` uses the same resolved rule as Myconid Sovereign.",
+  "execution_model": {
+    "kind": "sequence",
+    "actions": [
+      {
+        "action_id": "action_1",
+        "op": "gain_resource",
+        "target_scope": "self",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "fixed",
+          "value": 2
+        },
+        "filters": [],
+        "source_fragment": "gain_influence",
+        "metadata": {
+          "resource": "influence"
+        }
+      },
+      {
+        "action_id": "action_2",
+        "op": "custom_effect",
+        "target_scope": "opponent_player",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "give_negative_card",
+        "metadata": {
+          "effect_kind": "give_insane_outcast_to_selected_player"
+        }
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "action_1",
+      "op": "gain_resource",
+      "target_scope": "self",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 2
+      },
+      "filters": [],
+      "source_fragment": "gain_influence",
+      "metadata": {
+        "resource": "influence"
+      }
+    },
+    {
+      "action_id": "action_2",
+      "op": "custom_effect",
+      "target_scope": "opponent_player",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "give_negative_card",
+      "metadata": {
+        "effect_kind": "give_insane_outcast_to_selected_player"
+      }
+    }
+  ],
+  "global_conditions": [],
+  "state_contract": {
+    "reads": [
+      "effect_payload",
+      "custom_rules"
+    ],
+    "writes": [
+      "resource_pool",
+      "custom_state"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

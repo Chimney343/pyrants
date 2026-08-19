@@ -1,0 +1,93 @@
+{
+  "card_id": "chuul",
+  "name": "Chuul",
+  "cost": 3,
+  "aspect": "guile",
+  "secondary_aspects": [
+    "aberration"
+  ],
+  "deck_vp": 1,
+  "inner_circle_vp": 4,
+  "rules_text": "Place a spy from your units onto the board. Then each opponent there who has 3 or more cards in hand discards 1 card from hand.",
+  "notes": "A normal \"spy\" may be placed on any site that does not already contain your spy, or moved from another site if none remain in assets. In this card, \"there\" refers to the site where that spy was placed.",
+  "execution_model": {
+    "kind": "sequence",
+    "actions": [
+      {
+        "action_id": "action_1",
+        "op": "place_spy",
+        "target_scope": "board_site",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "spy",
+        "metadata": {}
+      },
+      {
+        "action_id": "action_2",
+        "op": "force_discard",
+        "target_scope": "opponent",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "local_discard",
+        "metadata": {}
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "action_1",
+      "op": "place_spy",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "spy",
+      "metadata": {}
+    },
+    {
+      "action_id": "action_2",
+      "op": "force_discard",
+      "target_scope": "opponent",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "local_discard",
+      "metadata": {}
+    }
+  ],
+  "global_conditions": [],
+  "state_contract": {
+    "reads": [
+      "player.spies_available",
+      "board.nodes",
+      "player.hand",
+      "threshold_or_target_rules"
+    ],
+    "writes": [
+      "board.spies",
+      "player.spies_available",
+      "player.hand",
+      "player.discard_pile"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

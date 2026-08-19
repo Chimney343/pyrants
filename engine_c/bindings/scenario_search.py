@@ -1,7 +1,7 @@
 """C-engine card scenario search and force-injection workflow.
 
-Mirrors ``game_setup.scenario_generation.card_scenarios`` but uses
-the C engine DLL instead of the Python engine.
+Uses the C engine DLL and the engine-agnostic roster helpers in
+``game_setup.scenario_generation.rosters``.
 """
 
 from __future__ import annotations
@@ -16,18 +16,17 @@ from game_setup.market_setup import (
     combine_two_deck_market_setup,
     discover_full_deck_profiles,
 )
-from game_setup.scenario_generation.card_scenarios import (
+from game_setup.scenario_generation.rosters import (
     StopConditions,
     _resolve_two_deck_pairing,
     iter_roster_card_ids,
+    write_forced_injection_notes,
 )
 
 from .ce_api import CEngine, CMoveWrapper, CState
 from .engine_bindings import _lib
 from .session import CSession
 from .view import _catalog_cache
-
-FORCED_INJECTIONS_FILENAME = "forced_injections.json"
 
 CARD_SCENARIO_PICK_WEIGHTS = {"recruit": 8.0, "play_card": 4.0, "other": 1.0}
 
@@ -258,7 +257,7 @@ def ensure_card_scenario_c(
     rp = rosters_path or Path("data/decks")
 
     bp = str(board_path) if board_path else "data/boards/tyrants_of_the_underdark.json"
-    cp = str(card_path) if card_path else "data/cards/catalog.json"
+    cp = str(card_path) if card_path else "data/cards"
     sp = str(setup_path) if setup_path else "data/decks/base_setup.json"
 
     roster_a_id, roster_b_id, special_stacks_present = _resolve_two_deck_pairing(
@@ -343,12 +342,6 @@ def save_c_scenario(
         path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
     else:
         path.write_text(json.dumps(payload, separators=(",", ":")) + "\n", encoding="utf-8")
-
-
-def write_forced_injection_notes(output_dir: Path, notes: list[dict[str, object]]) -> Path:
-    path = output_dir / FORCED_INJECTIONS_FILENAME
-    path.write_text(json.dumps(notes, indent=2) + "\n", encoding="utf-8")
-    return path
 
 
 def generate_card_scenarios_c(

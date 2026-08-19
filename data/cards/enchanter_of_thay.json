@@ -1,0 +1,138 @@
+{
+  "card_id": "enchanter_of_thay",
+  "name": "Enchanter of Thay",
+  "cost": 4,
+  "aspect": "guile",
+  "secondary_aspects": [
+    "human"
+  ],
+  "deck_vp": 1,
+  "inner_circle_vp": 3,
+  "rules_text": "Choose exactly one mode. Either place a spy, or return one of your spies and gain 4 power.",
+  "notes": "This is a modal card, not a sequential one. The player chooses either the spy placement clause or the return-spy-for-4-power clause.",
+  "execution_model": {
+    "kind": "modal_choice",
+    "options": [
+      {
+        "option_id": "option_1",
+        "label": "place_spy",
+        "actions": [
+          {
+            "action_id": "action_1",
+            "op": "place_spy",
+            "target_scope": "board_site",
+            "timing": "immediate",
+            "optional": false,
+            "quantity": {
+              "kind": "unspecified",
+              "value": null
+            },
+            "filters": [],
+            "source_fragment": "spy",
+            "metadata": {}
+          }
+        ]
+      },
+      {
+        "option_id": "option_2",
+        "label": "return_spy_gain_power",
+        "actions": [
+          {
+            "action_id": "action_1",
+            "op": "return_spy",
+            "target_scope": "board_site",
+            "timing": "immediate",
+            "optional": false,
+            "quantity": {
+              "kind": "unspecified",
+              "value": null
+            },
+            "filters": [],
+            "source_fragment": "return_spy_for_power",
+            "metadata": {
+              "spy_owner": "self"
+            }
+          },
+          {
+            "action_id": "action_2",
+            "op": "gain_resource",
+            "target_scope": "self",
+            "timing": "immediate",
+            "optional": false,
+            "quantity": {
+              "kind": "fixed",
+              "value": 4
+            },
+            "filters": [],
+            "source_fragment": "gain_4_power",
+            "metadata": {
+              "resource": "power"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "action_1",
+      "op": "place_spy",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "spy",
+      "metadata": {}
+    },
+    {
+      "action_id": "action_1",
+      "op": "return_spy",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "return_spy_for_power",
+      "metadata": {
+        "spy_owner": "self"
+      }
+    },
+    {
+      "action_id": "action_2",
+      "op": "gain_resource",
+      "target_scope": "self",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 4
+      },
+      "filters": [],
+      "source_fragment": "gain_4_power",
+      "metadata": {
+        "resource": "power"
+      }
+    }
+  ],
+  "global_conditions": [],
+  "state_contract": {
+    "reads": [
+      "player.spies_available",
+      "board.nodes",
+      "board.spies"
+    ],
+    "writes": [
+      "board.spies",
+      "player.spies_available"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

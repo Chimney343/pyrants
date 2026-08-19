@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from engine_c.bindings.engine_bindings import _lib
 from engine_c.bindings.session import CSession
+from game_setup.loaders import assemble_catalog_payload
 from tests.c_engine.card_test_helpers import (
     _make_engine,
     _sptr,
@@ -204,11 +205,9 @@ def test_matron_mother_promote_from_empty_discard_is_no_op() -> None:
 
 def test_matron_mother_catalog_consistency() -> None:
     """Catalog execution_model and actions match rules_text."""
-    import json
     from pathlib import Path
 
-    catalog_path = Path(__file__).resolve().parents[2] / "data" / "cards" / "catalog.json"
-    catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
+    catalog = assemble_catalog_payload(Path(__file__).resolve().parents[2] / "data" / "cards")
     cards = catalog if isinstance(catalog, list) else catalog.get("cards", catalog)
     mm = next(c for c in cards if c.get("card_id") == "matron_mother")
 

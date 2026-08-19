@@ -1,0 +1,127 @@
+{
+  "card_id": "skeletal_horde",
+  "name": "Skeletal Horde",
+  "cost": 2,
+  "aspect": "conquest",
+  "secondary_aspects": [
+    "undead"
+  ],
+  "deck_vp": 1,
+  "inner_circle_vp": 2,
+  "rules_text": "Deploy 2 troops. You can devour this card to deploy 3 more troops.",
+  "notes": "Interpreted as additive (not modal), because no `or` delimiter is present. The self-devour clause is an optional rider.",
+  "execution_model": {
+    "kind": "sequence",
+    "actions": [
+      {
+        "action_id": "action_1",
+        "op": "deploy_troops",
+        "target_scope": "board_site",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "fixed",
+          "value": 2
+        },
+        "filters": [],
+        "source_fragment": "deploy_troops",
+        "metadata": {}
+      },
+      {
+        "action_id": "action_2",
+        "op": "devour_cost",
+        "target_scope": "played_self",
+        "timing": "immediate",
+        "optional": true,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "optional_self_devour",
+        "metadata": {
+          "source_zone": "played_self",
+          "self_replace": false
+        }
+      },
+      {
+        "action_id": "action_3",
+        "op": "deploy_troops",
+        "target_scope": "board_site",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "extra_deploy",
+        "metadata": {}
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "action_1",
+      "op": "deploy_troops",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 2
+      },
+      "filters": [],
+      "source_fragment": "deploy_troops",
+      "metadata": {}
+    },
+    {
+      "action_id": "action_2",
+      "op": "devour_cost",
+      "target_scope": "played_self",
+      "timing": "immediate",
+      "optional": true,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "optional_self_devour",
+      "metadata": {
+        "source_zone": "played_self",
+        "self_replace": false
+      }
+    },
+    {
+      "action_id": "action_3",
+      "op": "deploy_troops",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "extra_deploy",
+      "metadata": {}
+    }
+  ],
+  "global_conditions": [],
+  "state_contract": {
+    "reads": [
+      "player.barracks",
+      "board.troop_slots",
+      "source_zone",
+      "devour_rules"
+    ],
+    "writes": [
+      "board.troop_slots",
+      "player.barracks",
+      "devour_zone_or_equivalent",
+      "source_zone"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

@@ -229,8 +229,9 @@ def test_green_dragon_option1_place_spy_and_supplant():
                        if m.move_type == "resolve_generic"
                        and "Place spy" in m.label]
     assert place_spy_moves, f"No place_spy moves, labels: {[m.label for m in view.legal_moves]}"
-    chosen = place_spy_moves[0]
-    session.submit_move(chosen.move)
+    menzo_place = [m for m in place_spy_moves if "menzoberranzan" in m.label.lower()]
+    assert menzo_place, f"No menzoberranzan place spy move, labels: {[m.label for m in place_spy_moves]}"
+    session.submit_move(menzo_place[0].move)
 
     assert _has_pending_generic(session)
 
@@ -353,6 +354,49 @@ def test_green_dragon_option2_site_linking():
         assert "gauntlgrym" not in m.label.lower(), (
             f"Supplant must NOT target gauntlgrym (wrong site), got: {m.label}"
         )
+
+    session.destroy()
+
+
+def test_green_dragon_option2_return_spy_only_own():
+    """Option 2's return_spy must only offer the player's own spies, never enemy spies."""
+    eng = _make_engine()
+    troops = {
+        _P1: {
+            "site_menzoberranzan": [_P1, _P2, None, None, None, None],
+            "site_gauntlgrym": [_P1, _P2, None, None, None, None],
+        },
+    }
+    session = make_card_test_session(
+        eng,
+        [_P1, _P2],
+        hand={_P1: ["green_dragon"]},
+        troops=troops,
+        spies={
+            "site_menzoberranzan": [_P1],
+            "site_gauntlgrym": [_P2],
+        },
+        current_player=_P1,
+    )
+
+    playable = [m for m in session.legal_moves()
+                if getattr(m, "move_type", "") == "play_card"
+                and m.data.get("card_id") == "green_dragon"]
+    session.submit_move(playable[0])
+
+    opt2 = [m for m in session.legal_moves()
+            if getattr(m, "move_type", "") == "resolve_generic"
+            and m.data.get("action_id") == "option_2"]
+    assert opt2, "option_2 not available"
+    session.submit_move(opt2[0])
+
+    view = build_c_game_view(session)
+    rg_moves = [m for m in view.legal_moves if m.move_type == "resolve_generic"]
+    assert rg_moves, f"No resolve_generic moves, labels: {[m.label for m in view.legal_moves]}"
+
+    target_ids = {m.move.data.get("action_id") for m in rg_moves}
+    assert "site_menzoberranzan" in target_ids, f"Own spy site not offered, targets: {target_ids}"
+    assert "site_gauntlgrym" not in target_ids, f"Enemy spy site offered, targets: {target_ids}"
 
     session.destroy()
 

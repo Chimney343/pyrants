@@ -11,6 +11,7 @@ Verifies:
 from __future__ import annotations
 
 from engine_c.bindings.engine_bindings import _lib
+from game_setup.loaders import assemble_catalog_payload
 from tests.c_engine.card_test_helpers import (
     _make_engine,
     _session_player_index,
@@ -236,12 +237,9 @@ def test_glabrezu_skips_when_no_targets():
 
 def test_glabrezu_execution_model_is_sequence_of_three_actions():
     """Catalog: execution model must be a sequence with devour + 2x assassinate."""
-    import json
     from pathlib import Path
 
-    catalog = json.loads(
-        (Path(__file__).resolve().parents[2] / "data" / "cards" / "catalog.json").read_text(encoding="utf-8")
-    )
+    catalog = assemble_catalog_payload(Path(__file__).resolve().parents[2] / "data" / "cards")
     cards = catalog if isinstance(catalog, list) else catalog.get("cards", catalog)
     glab = next(c for c in cards if c.get("card_id") == _GLABREZU)
 

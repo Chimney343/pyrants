@@ -30,8 +30,10 @@ clean:
 	rm -f $(OBJS) $(LIB) test_engine test_engine.exe *.obj *.lib
 
 test: test_engine.c $(LIB)
-	$(CC) $(CFLAGS) -o test_engine test_engine.c -L. -lengine -lm
+	$(CC) $(CFLAGS) -I. -o test_engine test_engine.c -L. -lengine -lm
 	./test_engine
+	$(CC) $(CFLAGS) -I. -o test_catalog_assembly tests/test_catalog_assembly.c -L. -lengine -lm
+	./test_catalog_assembly
 
 # Header dependencies
 $(OBJS): state.h intern.h

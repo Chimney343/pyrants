@@ -1,0 +1,106 @@
+{
+  "card_id": "vanifer",
+  "name": "Vanifer",
+  "cost": 5,
+  "aspect": "malice",
+  "secondary_aspects": [
+    "tiefling"
+  ],
+  "deck_vp": 2,
+  "inner_circle_vp": 5,
+  "rules_text": "Assassinate a troop. You may recruit a Malice card that costs 4 or less without paying its cost.",
+  "notes": "Straight additive effect card. Bare `assassinate a troop` uses the established free standard assassinate rule. The recruit is optional and free (max_cost 4 implies no influence paid).",
+  "execution_model": {
+    "kind": "sequence",
+    "actions": [
+      {
+        "action_id": "action_1",
+        "op": "assassinate_troop",
+        "target_scope": "board_site",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "assassinate_troop",
+        "metadata": {}
+      },
+      {
+        "action_id": "action_2",
+        "op": "recruit_card",
+        "target_scope": "market",
+        "timing": "immediate",
+        "optional": true,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [
+          "aspect_malice_only",
+          "max_cost_4"
+        ],
+        "source_fragment": "recruit_aspect_filtered_card_by_cost",
+        "metadata": {
+          "required_aspect": "malice",
+          "max_cost": 4
+        }
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "action_1",
+      "op": "assassinate_troop",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "assassinate_troop",
+      "metadata": {}
+    },
+    {
+      "action_id": "action_2",
+      "op": "recruit_card",
+      "target_scope": "market",
+      "timing": "immediate",
+      "optional": true,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [
+        "aspect_malice_only",
+        "max_cost_4"
+      ],
+      "source_fragment": "recruit_aspect_filtered_card_by_cost",
+      "metadata": {
+        "required_aspect": "malice",
+        "max_cost": 4
+      }
+    }
+  ],
+  "global_conditions": [],
+  "state_contract": {
+    "reads": [
+      "board.troop_slots",
+      "presence_or_target_rules",
+      "market.row",
+      "card_catalog"
+    ],
+    "writes": [
+      "board.troop_slots",
+      "player.trophy_hall",
+      "player.discard_pile",
+      "market.row",
+      "market.deck"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

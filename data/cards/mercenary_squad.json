@@ -1,0 +1,61 @@
+{
+  "card_id": "mercenary_squad",
+  "name": "Mercenary Squad",
+  "cost": 3,
+  "aspect": "conquest",
+  "secondary_aspects": [
+    "drow"
+  ],
+  "deck_vp": 1,
+  "inner_circle_vp": 4,
+  "rules_text": "Deploy 3 troops.",
+  "notes": "Bare `3 troops` means deploy 3 troops.",
+  "execution_model": {
+    "kind": "sequence",
+    "actions": [
+      {
+        "action_id": "action_1",
+        "op": "deploy_troops",
+        "target_scope": "board_site",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "fixed",
+          "value": 3
+        },
+        "filters": [],
+        "source_fragment": "deploy_troops",
+        "metadata": {}
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "action_1",
+      "op": "deploy_troops",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 3
+      },
+      "filters": [],
+      "source_fragment": "deploy_troops",
+      "metadata": {}
+    }
+  ],
+  "global_conditions": [],
+  "state_contract": {
+    "reads": [
+      "player.barracks",
+      "board.troop_slots"
+    ],
+    "writes": [
+      "board.troop_slots",
+      "player.barracks"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

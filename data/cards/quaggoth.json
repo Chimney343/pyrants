@@ -1,0 +1,69 @@
+{
+  "card_id": "quaggoth",
+  "name": "Quaggoth",
+  "cost": 5,
+  "aspect": "conquest",
+  "secondary_aspects": [
+    "quaggoth"
+  ],
+  "deck_vp": 2,
+  "inner_circle_vp": 4,
+  "rules_text": "Assassinate a white troop for each site you control.",
+  "notes": "The effect counts all sites currently under your control, not only sites with a control marker present. It grants that many free white-troop assassinations and resolves as many as possible if legal white targets run short.",
+  "execution_model": {
+    "kind": "sequence",
+    "actions": [
+      {
+        "action_id": "action_1",
+        "op": "assassinate_troop",
+        "target_scope": "board_site",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "variable_repeat",
+          "value": null
+        },
+        "filters": [
+          "white_troop_only"
+        ],
+        "source_fragment": "repeated_white_troop_assassinate_by_controlled_sites",
+        "metadata": {
+          "count_from": "controlled_sites"
+        }
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "action_1",
+      "op": "assassinate_troop",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "variable_repeat",
+        "value": null
+      },
+      "filters": [
+        "white_troop_only"
+      ],
+      "source_fragment": "repeated_white_troop_assassinate_by_controlled_sites",
+      "metadata": {
+        "count_from": "controlled_sites"
+      }
+    }
+  ],
+  "global_conditions": [],
+  "state_contract": {
+    "reads": [
+      "board.troop_slots",
+      "presence_or_target_rules"
+    ],
+    "writes": [
+      "board.troop_slots",
+      "player.trophy_hall"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

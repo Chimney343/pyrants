@@ -1,0 +1,235 @@
+{
+  "card_id": "air_elemental",
+  "name": "Air Elemental",
+  "cost": 3,
+  "aspect": "guile",
+  "secondary_aspects": [
+    "elemental"
+  ],
+  "deck_vp": 1,
+  "inner_circle_vp": 2,
+  "rules_text": "Choose exactly one mode. Either place a spy, or return one of your spies to deploy 3 troops. If the focus condition is met for Guile, draw a card.",
+  "notes": "The Guile focus draw applies regardless of which base mode you choose.",
+  "execution_model": {
+    "kind": "modal_choice",
+    "selection": "exactly_one",
+    "options": [
+      {
+        "option_id": "option_1",
+        "actions": [
+          {
+            "action_id": "option_1_action_1",
+            "op": "place_spy",
+            "target_scope": "board_site",
+            "timing": "immediate",
+            "optional": false,
+            "quantity": {
+              "kind": "unspecified",
+              "value": null
+            },
+            "filters": [],
+            "source_fragment": "spy",
+            "metadata": {}
+          }
+        ]
+      },
+      {
+        "option_id": "option_2",
+        "actions": [
+          {
+            "action_id": "option_2_action_1",
+            "op": "return_spy",
+            "target_scope": "board_site",
+            "timing": "immediate",
+            "optional": false,
+            "quantity": {
+              "kind": "unspecified",
+              "value": null
+            },
+            "filters": [],
+            "source_fragment": "return_own_spy",
+            "metadata": {
+              "spy_owner": "self"
+            }
+          },
+          {
+            "action_id": "option_2_action_2",
+            "op": "assassinate_troop",
+            "target_scope": "board_site",
+            "timing": "immediate",
+            "optional": true,
+            "quantity": {
+              "kind": "fixed",
+              "value": 1
+            },
+            "filters": [],
+            "source_fragment": "deploy_troops_step_1",
+            "metadata": {}
+          },
+          {
+            "action_id": "option_2_action_3",
+            "op": "deploy_troops",
+            "target_scope": "board_site",
+            "timing": "immediate",
+            "optional": false,
+            "quantity": {
+              "kind": "fixed",
+              "value": 1
+            },
+            "filters": [],
+            "source_fragment": "deploy_troops_step_2",
+            "metadata": {}
+          },
+          {
+            "action_id": "option_2_action_4",
+            "op": "deploy_troops",
+            "target_scope": "board_site",
+            "timing": "immediate",
+            "optional": false,
+            "quantity": {
+              "kind": "fixed",
+              "value": 1
+            },
+            "filters": [],
+            "source_fragment": "deploy_troops_step_3",
+            "metadata": {}
+          },
+          {
+            "action_id": "option_2_action_5",
+            "op": "draw_cards",
+            "target_scope": "self",
+            "timing": "immediate",
+            "optional": false,
+            "quantity": {
+              "kind": "fixed",
+              "value": 1
+            },
+            "filters": [],
+            "source_fragment": "focus_draw",
+            "metadata": {
+              "requires_focus": true,
+              "focus_aspect": "guile"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "option_1_action_1",
+      "op": "place_spy",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "spy",
+      "metadata": {}
+    },
+    {
+      "action_id": "option_2_action_1",
+      "op": "return_spy",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "return_own_spy",
+      "metadata": {
+        "spy_owner": "self"
+      }
+    },
+    {
+      "action_id": "option_2_action_2",
+      "op": "assassinate_troop",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": true,
+      "quantity": {
+        "kind": "fixed",
+        "value": 1
+      },
+      "filters": [],
+      "source_fragment": "deploy_troops_step_1",
+      "metadata": {}
+    },
+    {
+      "action_id": "option_2_action_3",
+      "op": "deploy_troops",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 1
+      },
+      "filters": [],
+      "source_fragment": "deploy_troops_step_2",
+      "metadata": {}
+    },
+    {
+      "action_id": "option_2_action_4",
+      "op": "deploy_troops",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 1
+      },
+      "filters": [],
+      "source_fragment": "deploy_troops_step_3",
+      "metadata": {}
+    },
+    {
+      "action_id": "option_2_action_5",
+      "op": "draw_cards",
+      "target_scope": "self",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 1
+      },
+      "filters": [],
+      "source_fragment": "focus_draw",
+      "metadata": {
+        "requires_focus": true,
+        "focus_aspect": "guile"
+      }
+    }
+  ],
+  "global_conditions": [
+    {
+      "condition_type": "focus_check",
+      "description": "Requires matching-aspect support card in hand or played zone"
+    },
+    {
+      "condition_type": "conditional_gate",
+      "description": "Effect has conditional branch or threshold requirement"
+    }
+  ],
+  "state_contract": {
+    "reads": [
+      "player.spies_available",
+      "board.nodes",
+      "player.barracks",
+      "board.troop_slots"
+    ],
+    "writes": [
+      "board.spies",
+      "player.spies_available",
+      "board.troop_slots",
+      "player.barracks"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

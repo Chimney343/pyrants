@@ -1,0 +1,108 @@
+{
+  "card_id": "crushing_wave_cultist",
+  "name": "Crushing Wave Cultist",
+  "cost": 3,
+  "aspect": "conquest",
+  "secondary_aspects": [
+    "human"
+  ],
+  "deck_vp": 1,
+  "inner_circle_vp": 4,
+  "rules_text": "Assassinate a white troop. If the focus condition is met for Conquest, deploy 2 troops.",
+  "notes": "Uses the established white-troop assassination rule plus a separate Conquest focus deploy bonus.",
+  "execution_model": {
+    "kind": "sequence",
+    "actions": [
+      {
+        "action_id": "action_1",
+        "op": "assassinate_troop",
+        "target_scope": "board_site",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "fixed",
+          "value": 1
+        },
+        "filters": [
+          "white_troop_only"
+        ],
+        "source_fragment": "assassinate_white_troop",
+        "metadata": {}
+      },
+      {
+        "action_id": "action_2",
+        "op": "deploy_troops",
+        "target_scope": "board_site",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "fixed",
+          "value": 2
+        },
+        "filters": [],
+        "source_fragment": "focus_deploy_troops",
+        "metadata": {
+          "requires_focus": true,
+          "focus_aspect": "conquest"
+        }
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "action_1",
+      "op": "assassinate_troop",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 1
+      },
+      "filters": [
+        "white_troop_only"
+      ],
+      "source_fragment": "assassinate_white_troop",
+      "metadata": {}
+    },
+    {
+      "action_id": "action_2",
+      "op": "deploy_troops",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 2
+      },
+      "filters": [],
+      "source_fragment": "focus_deploy_troops",
+      "metadata": {
+        "requires_focus": true,
+        "focus_aspect": "conquest"
+      }
+    }
+  ],
+  "global_conditions": [
+    {
+      "condition_type": "focus_check",
+      "description": "Requires matching-aspect support card in hand or played zone"
+    },
+    {
+      "condition_type": "conditional_gate",
+      "description": "Effect has conditional branch or threshold requirement"
+    }
+  ],
+  "state_contract": {
+    "reads": [
+      "player.barracks",
+      "board.troop_slots"
+    ],
+    "writes": [
+      "board.troop_slots",
+      "player.barracks"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

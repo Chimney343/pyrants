@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 from engine_c.bindings.engine_bindings import _lib
 from engine_c.bindings.session import CSession
+from game_setup.loaders import assemble_catalog_payload
 from tests.c_engine.card_test_helpers import (
     _make_engine,
     _player_vp_tokens,
@@ -61,9 +61,7 @@ def _add_trophies(session: CSession, pid: str, count: int, label: str) -> None:
 
 def test_death_knight_execution_model_structure():
     """Verify the catalog execution model: sequence with supplant + grant_vp."""
-    catalog_path = DATA_DIR / "cards" / "catalog.json"
-    with open(catalog_path, encoding="utf-8") as f:
-        catalog = json.load(f)
+    catalog = assemble_catalog_payload(DATA_DIR / "cards")
 
     dk = None
     for card in catalog["cards"]:

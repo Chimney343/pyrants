@@ -285,6 +285,7 @@ class MoveData(ctypes.Union):
         ("activate_ability", type("_aa", (Structure,), {"_fields_": [("card_id", Sym), ("ability_key", Sym), ("discard_hand_indices", c_int * MAX_ABILITY_DISCARD), ("discard_hand_count", c_int)]})),
         ("decline_ability", type("_da", (Structure,), {"_fields_": [("card_id", Sym), ("ability_key", Sym)]})),
         ("promote_card", type("_pc2", (Structure,), {"_fields_": [("card_id", Sym)]})),
+        ("skip_promote", type("_sp", (Structure,), {"_fields_": [("source_card_id", Sym)]})),
         ("resolve_generic", type("_rg", (Structure,), {"_fields_": [("action_id", Sym), ("target_id", Sym), ("selection_index", c_int)]})),
         ("initial_placement", type("_ip", (Structure,), {"_fields_": [("node_id", Sym)]})),
     ]
@@ -385,8 +386,8 @@ def _setup():
     _lib.intern_str.argtypes = [Sym]
     _lib.intern_str.restype = c_char_p
 
-    _lib.engine_load_definition.argtypes = [c_char_p, c_char_p, c_char_p, c_void_p]
-    _lib.engine_load_definition.restype = POINTER(GameDefinition)
+    _lib.engine_load_definition_json.argtypes = [c_char_p, c_char_p, c_char_p, c_void_p]
+    _lib.engine_load_definition_json.restype = POINTER(GameDefinition)
     _lib.engine_apply_setup_json.argtypes = [POINTER(GameDefinition), c_char_p, c_void_p]
     _lib.engine_apply_setup_json.restype = c_int
     _lib.engine_create_game_definition.argtypes = [

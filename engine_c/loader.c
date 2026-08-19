@@ -427,18 +427,16 @@ static SetupDefinition parse_setup(const char *json_str, Arena *arena) {
     return sd;
 }
 
-GameDefinition *engine_load_definition(const char *catalog_path, const char *board_path,
-                                        const char *setup_path, Arena *arena) {
+GameDefinition *engine_load_definition_json(const char *catalog_json, const char *board_path,
+                                            const char *setup_path, Arena *arena) {
     GameDefinition *def = arena_calloc(arena, 1, sizeof(GameDefinition));
     if (!def) return NULL;
 
     size_t len;
     char *json;
 
-    json = read_file(catalog_path, &len);
-    if (json) {
-        def->catalog = parse_catalog(json, arena);
-        free(json);
+    if (catalog_json) {
+        def->catalog = parse_catalog(catalog_json, arena);
     }
 
     json = read_file(board_path, &len);

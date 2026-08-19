@@ -7,11 +7,11 @@ Olhydra (6-cost, Conquest/Elemental Prince):
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 from engine_c.bindings.engine_bindings import _lib
 from engine_c.bindings.session import CSession
+from game_setup.loaders import assemble_catalog_payload
 from tests.c_engine.card_test_helpers import (
     _make_engine,
     _session_player_index,
@@ -85,7 +85,7 @@ def _play_card(session: CSession, card_id: str) -> None:
 # ---------------------------------------------------------------------------
 
 def test_olhydra_execution_model_supplant_then_conditional_deploy() -> None:
-    catalog = json.loads((DATA_DIR / "cards" / "catalog.json").read_text(encoding="utf-8"))
+    catalog = assemble_catalog_payload(DATA_DIR / "cards")
     cards = catalog if isinstance(catalog, list) else catalog.get("cards", catalog)
     card = next(c for c in cards if c.get("card_id") == "olhydra")
 

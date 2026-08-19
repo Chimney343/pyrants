@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from engine.state import NodeKind
-from game_session import GameSession
+from engine_c.bindings.session import CSession
+from engine_c.bindings.view import NodeOccupancyView, build_c_game_view
 from game_setup.loaders import build_board_package_from_files
-from game_view import NodeOccupancyView, build_game_view
+from game_setup.types import NodeKind
 from interface.board_view import BoardNodeView
 from interface.game_renderer import (
     DEFAULT_SITE_OUTLINE,
@@ -22,7 +22,7 @@ from interface.game_renderer import (
 BASE_DIR = Path(__file__).resolve().parents[1]
 BOARD_PATH = BASE_DIR / "data" / "boards" / "tyrants_of_the_underdark.json"
 LAYOUT_PATH = BASE_DIR / "data" / "layouts" / "tyrants_of_the_underdark_layout.json"
-CARD_PATH = BASE_DIR / "data" / "cards" / "catalog.json"
+CARD_PATH = BASE_DIR / "data" / "cards"
 SETUP_PATH = BASE_DIR / "data" / "decks" / "base_setup.json"
 
 
@@ -52,14 +52,14 @@ class _CanvasStub:
 
 def test_game_board_renderer_draws_geometry_and_occupancy() -> None:
     package = build_board_package_from_files(BOARD_PATH, LAYOUT_PATH)
-    session = GameSession.from_files(
+    session = CSession.from_files(
         board_path=BOARD_PATH,
         card_path=CARD_PATH,
         setup_path=SETUP_PATH,
         player_ids=["p1", "p2"],
         seed=7,
     )
-    view = build_game_view(session)
+    view = build_c_game_view(session)
     canvas = _CanvasStub()
 
     GameBoardRenderer().redraw(canvas, package, view)
@@ -74,14 +74,14 @@ def test_game_board_renderer_draws_geometry_and_occupancy() -> None:
 
 def test_renderer_uses_scale_for_all_coordinates() -> None:
     package = build_board_package_from_files(BOARD_PATH, LAYOUT_PATH)
-    session = GameSession.from_files(
+    session = CSession.from_files(
         board_path=BOARD_PATH,
         card_path=CARD_PATH,
         setup_path=SETUP_PATH,
         player_ids=["p1", "p2"],
         seed=7,
     )
-    view = build_game_view(session)
+    view = build_c_game_view(session)
 
     canvas_1x = _CanvasStub()
     canvas_2x = _CanvasStub()
@@ -98,14 +98,14 @@ def test_renderer_uses_scale_for_all_coordinates() -> None:
 
 def test_site_rectangle_uses_bounds_and_site_label_above() -> None:
     package = build_board_package_from_files(BOARD_PATH, LAYOUT_PATH)
-    session = GameSession.from_files(
+    session = CSession.from_files(
         board_path=BOARD_PATH,
         card_path=CARD_PATH,
         setup_path=SETUP_PATH,
         player_ids=["p1", "p2"],
         seed=7,
     )
-    view = build_game_view(session)
+    view = build_c_game_view(session)
     canvas = _CanvasStub()
 
     GameBoardRenderer().redraw(canvas, package, view)
@@ -133,14 +133,14 @@ def test_site_rectangle_uses_bounds_and_site_label_above() -> None:
 
 def test_route_drawn_as_circle_with_fill_based_on_owner() -> None:
     package = build_board_package_from_files(BOARD_PATH, LAYOUT_PATH)
-    session = GameSession.from_files(
+    session = CSession.from_files(
         board_path=BOARD_PATH,
         card_path=CARD_PATH,
         setup_path=SETUP_PATH,
         player_ids=["p1", "p2"],
         seed=7,
     )
-    view = build_game_view(session)
+    view = build_c_game_view(session)
     canvas = _CanvasStub()
 
     GameBoardRenderer().redraw(canvas, package, view)
@@ -162,14 +162,14 @@ def test_route_drawn_as_circle_with_fill_based_on_owner() -> None:
 
 def test_total_control_site_gets_player_colored_border() -> None:
     package = build_board_package_from_files(BOARD_PATH, LAYOUT_PATH)
-    session = GameSession.from_files(
+    session = CSession.from_files(
         board_path=BOARD_PATH,
         card_path=CARD_PATH,
         setup_path=SETUP_PATH,
         player_ids=["p1", "p2"],
         seed=7,
     )
-    view = build_game_view(session)
+    view = build_c_game_view(session)
     canvas = _CanvasStub()
 
     GameBoardRenderer().redraw(canvas, package, view)

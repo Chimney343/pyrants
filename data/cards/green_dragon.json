@@ -1,0 +1,169 @@
+{
+  "card_id": "green_dragon",
+  "name": "Green Dragon",
+  "cost": 8,
+  "aspect": "guile",
+  "secondary_aspects": [
+    "dragon"
+  ],
+  "deck_vp": 3,
+  "inner_circle_vp": 7,
+  "rules_text": "Choose exactly one mode. Either place a spy and supplant a troop there, or return one of your spies, supplant a troop there, and gain 1 VP for each site control marker you have.",
+  "notes": "`Supplant` means remove another player's troop, move it to your trophy hall, and place your own troop into that exact slot. If no site is named, supplant can happen anywhere you have presence. On this card, `there` restricts supplant to the site where the spy was placed or returned from. The VP clause counts literal site control markers you own, not all sites you currently control.",
+  "execution_model": {
+    "kind": "modal_choice",
+    "selection": "exactly_one",
+    "options": [
+      {
+        "option_id": "option_1",
+        "actions": [
+          {
+            "action_id": "option_1_action_1",
+            "op": "place_spy",
+            "target_scope": "board_site",
+            "timing": "immediate",
+            "optional": false,
+            "quantity": {
+              "kind": "unspecified",
+              "value": null
+            },
+            "filters": [],
+            "source_fragment": "spy",
+            "metadata": {}
+          }
+        ]
+      },
+      {
+        "option_id": "option_2",
+        "actions": [
+          {
+            "action_id": "option_2_action_1",
+            "op": "return_spy",
+            "target_scope": "board_site",
+            "timing": "immediate",
+            "optional": false,
+            "quantity": {
+              "kind": "unspecified",
+              "value": null
+            },
+            "filters": [],
+            "source_fragment": "return_spy",
+            "metadata": {}
+          },
+          {
+            "action_id": "option_2_action_2",
+            "op": "supplant_troop",
+            "target_scope": "board_site",
+            "timing": "immediate",
+            "optional": false,
+            "quantity": {
+              "kind": "unspecified",
+              "value": null
+            },
+            "filters": [],
+            "source_fragment": "supplant",
+            "metadata": {}
+          },
+          {
+            "action_id": "option_2_action_3",
+            "op": "grant_vp",
+            "target_scope": "self",
+            "timing": "immediate",
+            "optional": false,
+            "quantity": {
+              "kind": "unspecified",
+              "value": null
+            },
+            "filters": [],
+            "source_fragment": "scaled_vp",
+            "metadata": {
+              "count_from": "owned_control_markers",
+              "per": 1
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "option_1_action_1",
+      "op": "place_spy",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "spy",
+      "metadata": {}
+    },
+    {
+      "action_id": "option_2_action_1",
+      "op": "return_spy",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "return_spy",
+      "metadata": {}
+    },
+    {
+      "action_id": "option_2_action_2",
+      "op": "supplant_troop",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "supplant",
+      "metadata": {}
+    },
+    {
+      "action_id": "option_2_action_3",
+      "op": "grant_vp",
+      "target_scope": "self",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "scaled_vp",
+      "metadata": {
+        "count_from": "owned_control_markers",
+        "per": 1
+      }
+    }
+  ],
+  "global_conditions": [],
+  "state_contract": {
+    "reads": [
+      "player.spies_available",
+      "board.nodes",
+      "board.spies",
+      "board.troop_slots",
+      "presence_or_target_rules",
+      "vp_scale_source"
+    ],
+    "writes": [
+      "board.spies",
+      "player.spies_available",
+      "board.troop_slots",
+      "player.trophy_hall",
+      "player.vp_tokens_or_score"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

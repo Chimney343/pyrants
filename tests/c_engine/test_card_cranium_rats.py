@@ -10,11 +10,11 @@ Verifies:
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 from engine_c.bindings.engine_bindings import PHASE_MAIN, _lib
 from engine_c.bindings.session import CSession
+from game_setup.loaders import assemble_catalog_payload
 from tests.c_engine.card_test_helpers import (
     _make_engine,
     _session_player_index,
@@ -113,8 +113,8 @@ def _set_opponent_hand(session: CSession, pid: str, card: str, count: int) -> No
 
 
 def test_cranium_rats_execution_model() -> None:
-    """Validate the execution model structure from catalog.json."""
-    catalog = json.loads((DATA_DIR / "cards" / "catalog.json").read_text(encoding="utf-8"))
+    """Validate the execution model structure from data/cards/."""
+    catalog = assemble_catalog_payload(DATA_DIR / "cards")
     cards = catalog if isinstance(catalog, list) else catalog.get("cards", catalog)
     card = next(c for c in cards if c.get("card_id") == CARD_ID)
 

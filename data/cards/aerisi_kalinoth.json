@@ -1,0 +1,134 @@
+{
+  "card_id": "aerisi_kalinoth",
+  "name": "Aerisi Kalinoth",
+  "cost": 5,
+  "aspect": "guile",
+  "secondary_aspects": [
+    "elf"
+  ],
+  "deck_vp": 2,
+  "inner_circle_vp": 5,
+  "rules_text": "Gain 1 power, place 1 spy, then recruit a Guile card that costs 4 or less.",
+  "notes": "Workbook text was incomplete and misspelled. The full effect is sequential: gain power, place a spy, then recruit a Guile card costing 4 or less.",
+  "execution_model": {
+    "kind": "sequence",
+    "actions": [
+      {
+        "action_id": "action_1",
+        "op": "gain_resource",
+        "target_scope": "self",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "fixed",
+          "value": 1
+        },
+        "filters": [],
+        "source_fragment": "gain_power",
+        "metadata": {
+          "resource": "power"
+        }
+      },
+      {
+        "action_id": "action_2",
+        "op": "place_spy",
+        "target_scope": "board_site",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "fixed",
+          "value": 1
+        },
+        "filters": [],
+        "source_fragment": "spy",
+        "metadata": {}
+      },
+      {
+        "action_id": "action_3",
+        "op": "recruit_card",
+        "target_scope": "market",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "recruit_aspect_filtered_card_by_cost",
+        "metadata": {
+          "required_aspect": "guile",
+          "max_cost": 4
+        }
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "action_1",
+      "op": "gain_resource",
+      "target_scope": "self",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 1
+      },
+      "filters": [],
+      "source_fragment": "gain_power",
+      "metadata": {
+        "resource": "power"
+      }
+    },
+    {
+      "action_id": "action_2",
+      "op": "place_spy",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 1
+      },
+      "filters": [],
+      "source_fragment": "spy",
+      "metadata": {}
+    },
+    {
+      "action_id": "action_3",
+      "op": "recruit_card",
+      "target_scope": "market",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "recruit_aspect_filtered_card_by_cost",
+      "metadata": {
+        "required_aspect": "guile",
+        "max_cost": 4
+      }
+    }
+  ],
+  "global_conditions": [],
+  "state_contract": {
+    "reads": [
+      "effect_payload",
+      "player.spies_available",
+      "board.nodes",
+      "market.row",
+      "card_catalog"
+    ],
+    "writes": [
+      "resource_pool",
+      "board.spies",
+      "player.spies_available",
+      "player.discard_pile",
+      "market.row",
+      "market.deck"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

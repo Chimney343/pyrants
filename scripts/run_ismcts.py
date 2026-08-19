@@ -38,13 +38,11 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 import openspiel_pyrants  # noqa: E402, F401 — registers python_pyrants
-from engine.scoring import compute_final_scores  # noqa: E402
 from game_setup.market_setup import (  # noqa: E402
     combine_two_deck_market_setup,
     discover_full_deck_profiles,
     pick_random_pair,
 )
-from openspiel_pyrants.action_encoding import action_to_move  # noqa: E402
 from scripts._obs import (  # noqa: E402
     RunMetrics,
     bind_worker_context,
@@ -52,7 +50,6 @@ from scripts._obs import (  # noqa: E402
     configure_logging,
     new_run_id,
 )
-from scripts._replay_payload import build_replay_payload  # noqa: E402
 
 DEFAULT_OUTPUT_DIR = ROOT / "artifacts" / "ismcts"
 _BASE_SETUP_PATH = ROOT / "data" / "decks" / "base_setup.json"
@@ -109,6 +106,11 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--final-policy", choices=list(POLICY_CHOICES), default="visited")
     parser.add_argument("--num-games", type=int, default=4)
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--num-players", type=int, default=2,
+                        help="Number of players (2–4, default: 2)")
+    parser.add_argument("--game", type=str, default="python_pyrants_c",
+                        choices=["python_pyrants_c"],
+                        help="OpenSpiel game name (default: python_pyrants_c)")
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
     parser.add_argument("--shuffle-seed", type=int, default=0)
     parser.add_argument("--workers", type=int, default=0,
@@ -130,7 +132,24 @@ def _parse_args() -> argparse.Namespace:
                         help="Cap engine round_number; 0 = unlimited. "
                              "When the cap is hit the game is recorded with "
                              "stopped_reason='round_cap'.")
-    return parser.parse_args()
+    args = parser.parse_args()
+    if args.num_players < 2 or args.num_players > 4:
+        parser.error(f"--num-players must be 2–4, got {args.num_players}")
+    return args
+
+
+def _load_game_or_die(name: str, params: dict) -> pyspiel.Game:
+    """Load a pyspiel game, with a clear error if the C DLL is missing."""
+    try:
+        return pyspiel.load_game(name, params)
+    except (pyspiel.GameNotFoundError, ValueError) as e:
+        if name == "python_pyrants_c":
+            dll = ROOT / "engine_c" / "engine_c.dll"
+            if not dll.exists():
+                raise RuntimeError(
+                    f"C engine DLL not found at {dll} — run `just build-c` to build it"
+                ) from e
+        raise
 
 
 def _resolve_policy(name: str):
@@ -151,20 +170,16 @@ def _game_dir(out_dir: Path, game_index: int) -> Path:
     return out_dir / f"game_{game_index:04d}"
 
 
-def _move_to_payload(move) -> dict[str, object]:
-    return move.model_dump(mode="json")
-
-
 def _sha256(text: str) -> str:
     return hashlib.sha256(text.encode()).hexdigest()[:16]
 
 
-def _legal_moves_strings(engine_state, action_ids: list[int]) -> list[str]:
+def _legal_moves_strings(state, action_ids: list[int]) -> list[str]:
     result: list[str] = []
     for aid in action_ids:
         try:
-            move = action_to_move(engine_state, aid)
-            result.append(str(move))
+            move = state.decode_action(aid)
+            result.append(state.move_to_str(move))
         except (IndexError, Exception):
             result.append(f"<action_{aid}>")
     return result
@@ -191,6 +206,7 @@ def run_one_game(
     rollout_max_length: int | None = None,
     max_rounds: int = 0,
     setup_data_json: str = "",
+    num_players: int = 2,
 ) -> dict:
     logger = structlog.get_logger().bind(
         game_index=game_index,
@@ -199,32 +215,23 @@ def run_one_game(
     game_out = _game_dir(out_dir, game_index)
     game_out.mkdir(parents=True, exist_ok=True)
 
-    rng0 = np.random.RandomState(seed + game_index * 2)
-    rng1 = np.random.RandomState(seed + game_index * 2 + 1)
-
     from open_spiel.python.algorithms.ismcts import ISMCTSBot
     from open_spiel.python.algorithms.mcts import RandomRolloutEvaluator
 
-    bots = [
-        ISMCTSBot(
-            game=game,
-            evaluator=RandomRolloutEvaluator(n_rollouts=rollout_count, max_length=rollout_max_length, random_state=rng0),
-            uct_c=uct_c,
-            max_simulations=num_sims,
-            max_world_samples=max_world_samples,
-            random_state=rng0,
-            final_policy_type=final_policy_type,
-        ),
-        ISMCTSBot(
-            game=game,
-            evaluator=RandomRolloutEvaluator(n_rollouts=rollout_count, max_length=rollout_max_length, random_state=rng1),
-            uct_c=uct_c,
-            max_simulations=num_sims,
-            max_world_samples=max_world_samples,
-            random_state=rng1,
-            final_policy_type=final_policy_type,
-        ),
-    ]
+    bots = []
+    for i in range(num_players):
+        rng_i = np.random.RandomState(seed + game_index * num_players + i)
+        bots.append(
+            ISMCTSBot(
+                game=game,
+                evaluator=RandomRolloutEvaluator(n_rollouts=rollout_count, max_length=rollout_max_length, random_state=rng_i),
+                uct_c=uct_c,
+                max_simulations=num_sims,
+                max_world_samples=max_world_samples,
+                random_state=rng_i,
+                final_policy_type=final_policy_type,
+            )
+        )
 
     state = game.new_initial_state()
     state.apply_action(shuffle_seed)
@@ -253,12 +260,12 @@ def run_one_game(
         if max_rounds > 0 and state._engine.round_number > max_rounds:
             break
         cp = state.current_player()
-        if cp < 0 or cp >= 2:
+        if cp < 0 or cp >= num_players:
             break
 
         bot = bots[cp]
         legal_ids = state.legal_actions()
-        legal_moves = _legal_moves_strings(state._engine, legal_ids)
+        legal_moves = _legal_moves_strings(state, legal_ids)
 
         if inner_bar is not None:
             inner_bar.set_postfix_str("simulating...")
@@ -268,8 +275,8 @@ def run_one_game(
         policy, chosen = bot.step_with_policy(state)
         wall_ms = (time.perf_counter() - t0) * 1000.0
 
-        chosen_move_obj = action_to_move(state._engine, int(chosen))
-        chosen_move_str = str(chosen_move_obj)
+        chosen_move_obj = state.decode_action(int(chosen))
+        chosen_move_str = state.move_to_str(chosen_move_obj)
         phase = state._engine.phase.value
         player_id = state._game.get_player_ids()[cp]
 
@@ -316,7 +323,7 @@ def run_one_game(
             "prompts": [],
             "move_type": chosen_move_obj.move_type,
             "label": chosen_move_str,
-            "payload": _move_to_payload(chosen_move_obj),
+            "payload": state.move_to_payload(chosen_move_obj),
         })
 
         state.apply_action(int(chosen))
@@ -342,8 +349,14 @@ def run_one_game(
 
     ret = state.returns()
     winner = None
-    if abs(ret[0] - ret[1]) > 1e-6:
-        winner = 0 if ret[0] > ret[1] else 1
+    if num_players == 2:
+        if abs(ret[0] - ret[1]) > 1e-6:
+            winner = 0 if ret[0] > ret[1] else 1
+    else:
+        max_ret = max(ret)
+        best_indices = [i for i, v in enumerate(ret) if abs(v - max_ret) <= 1e-6]
+        if len(best_indices) == 1:
+            winner = best_indices[0]
 
     sims_per_sec = (num_sims * decision_count) / wall_sec if wall_sec > 0 else 0.0
 
@@ -405,19 +418,14 @@ def run_one_game(
 
     final_phase = state._engine.phase.value
     final_round_num = state._engine.round_number
-    if state.is_terminal():
-        final_scores = compute_final_scores(state._engine)
-    else:
-        final_scores = {pid: pstate.score for pid, pstate in state._engine.players.items()}
+    final_scores = state.final_scores()
 
     if stopped_reason == "round_cap":
         outcome = "truncated"
     elif winner is None:
         outcome = "tie"
-    elif winner == 0:
-        outcome = "p0_win"
     else:
-        outcome = "p1_win"
+        outcome = f"p{winner}_win"
 
     logger.info(
         "game_end",
@@ -425,7 +433,7 @@ def run_one_game(
         wall_time_sec=round(wall_sec, 3),
         sims_per_sec_avg=round(sims_per_sec, 1),
         winner=winner,
-        score_diff=round(abs(float(ret[0])), 3),
+        num_players=num_players,
         stopped_reason=stopped_reason,
     )
 
@@ -435,6 +443,7 @@ def run_one_game(
         "shuffle_seed": shuffle_seed,
         "deck_a_id": deck_a_id,
         "deck_b_id": deck_b_id,
+        "num_players": num_players,
         "num_sims_per_move": num_sims,
         "uct_c": uct_c,
         "rollout_count": rollout_count,
@@ -444,9 +453,8 @@ def run_one_game(
         "wall_time_sec": round(wall_sec, 3),
         "sims_per_sec_avg": round(sims_per_sec, 1),
         "moves_per_sec_avg": round(moves_per_sec, 2),
-        "returns": [round(float(ret[0]), 3), round(float(ret[1]), 3)],
+        "returns": [round(float(ret[i]), 3) for i in range(num_players)],
         "winner": winner,
-        "score_diff": round(abs(float(ret[0])), 3),
         "outcome": outcome,
         "stopped_reason": stopped_reason,
         "max_rounds": max_rounds,
@@ -469,25 +477,41 @@ def run_one_game(
         "_move_latencies": move_latencies,
     }
 
-    replay_payload = build_replay_payload(
-        run_id=run_id,
-        stopped_reason=stopped_reason,
-        max_rounds=max_rounds,
-        step_count=decision_count,
-        is_terminal=state.is_terminal(),
-        winner_id=state._game.get_player_ids()[winner] if winner is not None else None,
-        final_scores=final_scores,
-        replay_log=replay_log,
-        shuffle_seed=shuffle_seed,
-        deck_a_id=deck_a_id,
-        deck_b_id=deck_b_id,
-        board_path=str(ROOT / "data" / "boards" / "tyrants_of_the_underdark.json"),
-        card_path=str(ROOT / "data" / "cards" / "catalog.json"),
-        setup_path=str(ROOT / "data" / "decks" / "base_setup.json"),
-        player_ids=list(state._game.get_player_ids()),
-        final_round_num=final_round_num,
-        final_phase=final_phase,
-    )
+    player_ids = list(state._game.get_player_ids())
+    winner_id = player_ids[winner] if winner is not None else None
+
+    replay_payload = {
+        "run_id": run_id,
+        "stopped_reason": stopped_reason,
+        "max_rounds": max_rounds,
+        "step_count": decision_count,
+        "is_terminal": state.is_terminal(),
+        "winner_id": winner_id,
+        "final_scores": final_scores,
+        "replay_log": replay_log,
+        "replay_context": {
+            "board_path": str(ROOT / "data" / "boards" / "tyrants_of_the_underdark.json"),
+            "card_path": str(ROOT / "data" / "cards"),
+            "setup_path": str(ROOT / "data" / "decks" / "base_setup.json"),
+            "player_ids": player_ids,
+            "seed": shuffle_seed,
+            "deck_a_id": deck_a_id,
+            "deck_b_id": deck_b_id,
+        },
+    }
+    if stopped_reason == "terminal" and state.is_terminal():
+        replay_payload["replay_log"].append({
+            "run_id": run_id,
+            "step_index": decision_count,
+            "player_id": None,
+            "round_number": final_round_num,
+            "phase": final_phase,
+            "prompts": [],
+            "move_type": "__terminal__",
+            "label": "game_over",
+            "payload": {"move_type": "__terminal__"},
+        })
+
     with (game_out / "replay.json").open("w", encoding="utf-8") as f:
         json.dump(replay_payload, f, indent=2)
         f.write("\n")
@@ -507,12 +531,15 @@ def run_one_game(
 def write_summaries(out_dir: Path, summaries: list[dict], run_id: str) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
 
+    if not summaries:
+        return
+
     csv_path = _summary_csv_path(out_dir)
     fieldnames = [
         "run_id", "game_index", "shuffle_seed", "deck_a_id", "deck_b_id",
         "num_sims_per_move", "uct_c", "rollout_count", "rollout_max_length",
         "decision_count", "wall_time_sec", "sims_per_sec_avg", "moves_per_sec_avg",
-        "winner", "score_diff", "outcome", "stopped_reason", "max_rounds",
+        "winner", "outcome", "stopped_reason", "max_rounds",
         "policy_entropy_mean", "chosen_action_prob_mean",
         "unique_info_states", "info_state_repeat_rate",
         "final_round", "final_phase",
@@ -529,7 +556,12 @@ def write_summaries(out_dir: Path, summaries: list[dict], run_id: str) -> None:
     total_decisions = sum(s["decision_count"] for s in summaries)
     total_sims = sum(s["num_sims_per_move"] * s["decision_count"] for s in summaries)
     total_sims_per_sec = total_sims / total_wall if total_wall > 0 else 0.0
-    wins = [s["winner"] for s in summaries if s["winner"] is not None]
+    wins_by_player = {}
+    for s in summaries:
+        w = s.get("winner")
+        if w is not None:
+            wins_by_player[w] = wins_by_player.get(w, 0) + 1
+    win_split_parts = "/".join(str(wins_by_player.get(i, 0)) for i in range(max(wins_by_player.keys() or [1]) + 1))
 
     with md_path.open("w", encoding="utf-8") as f:
         f.write("# IS-MCTS Run Summary\n\n")
@@ -538,13 +570,14 @@ def write_summaries(out_dir: Path, summaries: list[dict], run_id: str) -> None:
         f.write(f"- **Total wall time:** {total_wall:.1f}s\n")
         f.write(f"- **Total decisions:** {total_decisions}\n")
         f.write(f"- **Overall sims/sec:** {total_sims_per_sec:.1f}\n")
-        f.write(f"- **Win split (p0/p1):** {wins.count(0)}/{wins.count(1)}\n")
+        f.write(f"- **Win split:** {win_split_parts}\n")
         f.write(f"- **Mean decisions/game:** {total_decisions / len(summaries):.0f}\n")
         cols = "| game | seed | deck_a | deck_b | sims | uct_c | decisions | wall_s | moves/s | outcome | entropy | info_states | repeat_rate |"
         f.write(f"\n{cols}\n")
         f.write("|------|------|--------|--------|------|-------|-----------|--------|--------|---------|--------|-------------|-------------|\n")
         for s in summaries:
-            outcome_str = s.get("outcome", {0: "p0", 1: "p1", None: "tie"}.get(s["winner"], "?"))
+            w = s.get("winner")
+            outcome_str = s.get("outcome", f"p{w}_win" if w is not None else "tie")
             entropy_str = f"{s.get('policy_entropy_mean', 0):.2f}" if s.get("policy_entropy_mean") is not None else "-"
             info_states_str = str(s.get("unique_info_states", "-"))
             repeat_str = f"{s.get('info_state_repeat_rate', 0):.3f}" if s.get("info_state_repeat_rate") is not None else "-"
@@ -592,6 +625,8 @@ def _run_one_game_standalone(
     run_id: str = "",
     log_level: str = "WARNING",
     json_logs: bool = False,
+    game_name: str = "python_pyrants_c",
+    num_players: int = 2,
     rollout_count: int = 1,
     rollout_max_length: int | None = None,
     max_rounds: int = 0,
@@ -605,10 +640,10 @@ def _run_one_game_standalone(
     bind_worker_context(game_index=game_index, worker_pid=os.getpid())
 
     try:
-        load_params: dict[str, str] = {}
+        load_params: dict[str, str] = {"num_players": str(num_players)}
         if setup_data_json:
             load_params["setup_data_json"] = setup_data_json
-        game = pyspiel.load_game("python_pyrants", load_params)
+        game = _load_game_or_die(game_name, load_params)
         final_policy_type = _resolve_policy(final_policy_name)
         out_path = Path(output_dir)
 
@@ -630,6 +665,7 @@ def _run_one_game_standalone(
             rollout_max_length=rollout_max_length,
             max_rounds=max_rounds,
             setup_data_json=setup_data_json,
+            num_players=num_players,
         )
     except Exception:
         logger = structlog.get_logger()
@@ -659,6 +695,8 @@ def main() -> None:
 
     logger.info(
         "run_start",
+        game=args.game,
+        num_players=args.num_players,
         num_sims=args.num_sims,
         uct_c=args.uct_c,
         policy=args.final_policy,
@@ -685,10 +723,10 @@ def main() -> None:
             )
             shuffle_seed = args.shuffle_seed if args.shuffle_seed != 0 else args.seed + gi
 
-            load_params: dict[str, str] = {}
+            load_params: dict[str, str] = {"num_players": str(args.num_players)}
             if setup_json:
                 load_params["setup_data_json"] = setup_json
-            game = pyspiel.load_game("python_pyrants", load_params)
+            game = _load_game_or_die(args.game, load_params)
 
             t0 = time.perf_counter()
             summary = run_one_game(
@@ -711,6 +749,7 @@ def main() -> None:
                 rollout_max_length=rollout_max_len,
                 max_rounds=args.max_rounds,
                 setup_data_json=setup_json,
+                num_players=args.num_players,
             )
             summaries.append(summary)
             metrics.games_completed += 1
@@ -743,6 +782,8 @@ def main() -> None:
                         run_id=run_id,
                         log_level=args.worker_log_level,
                         json_logs=args.json_logs,
+                        game_name=args.game,
+                        num_players=args.num_players,
                         rollout_count=args.rollout_count,
                         rollout_max_length=rollout_max_len,
                         max_rounds=args.max_rounds,

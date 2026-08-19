@@ -5,15 +5,14 @@ Assassinate a white troop. If the focus condition is met for Conquest, deploy 2 
 
 from __future__ import annotations
 
-import json
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-
 from engine_c.bindings.ce_api import CEngine
 from engine_c.bindings.engine_bindings import _lib
 from engine_c.bindings.session import CSession
+from game_setup.loaders import assemble_catalog_payload
 from tests.c_engine.card_test_helpers import make_card_test_session
 
 DATA_DIR = Path(__file__).resolve().parents[2] / "data"
@@ -63,7 +62,7 @@ def test_crushing_wave_cultist_assassinates_white_troop_without_focus_bonus() ->
     """Without a conquest focus card in hand, only assassinate happens. No deploy."""
     eng = CEngine()
     eng.initialize(
-        catalog_path=str(DATA_DIR / "cards" / "catalog.json"),
+        catalog_path=str(DATA_DIR / "cards"),
         board_path=str(DATA_DIR / "boards" / "tyrants_of_the_underdark.json"),
         setup_path=str(DATA_DIR / "decks" / "base_setup.json"),
     )
@@ -118,7 +117,7 @@ def test_crushing_wave_cultist_focus_bonus_deploys_two_troops() -> None:
     """With a conquest focus card in hand, assassinate + 2 deploys happen."""
     eng = CEngine()
     eng.initialize(
-        catalog_path=str(DATA_DIR / "cards" / "catalog.json"),
+        catalog_path=str(DATA_DIR / "cards"),
         board_path=str(DATA_DIR / "boards" / "tyrants_of_the_underdark.json"),
         setup_path=str(DATA_DIR / "decks" / "base_setup.json"),
     )
@@ -196,7 +195,7 @@ def test_crushing_wave_cultist_no_valid_target_auto_resolves() -> None:
     """When no white troop exists on board, card resolves with no effect and no pending state."""
     eng = CEngine()
     eng.initialize(
-        catalog_path=str(DATA_DIR / "cards" / "catalog.json"),
+        catalog_path=str(DATA_DIR / "cards"),
         board_path=str(DATA_DIR / "boards" / "tyrants_of_the_underdark.json"),
         setup_path=str(DATA_DIR / "decks" / "base_setup.json"),
     )
@@ -238,9 +237,7 @@ def test_crushing_wave_cultist_no_valid_target_auto_resolves() -> None:
 
 def test_crushing_wave_cultist_catalog_structure() -> None:
     """Verify execution_model: sequence with assassinate_troop + focused deploy_troops."""
-    catalog_path = DATA_DIR / "cards" / "catalog.json"
-    with open(catalog_path, encoding="utf-8") as f:
-        catalog = json.load(f)
+    catalog = assemble_catalog_payload(DATA_DIR / "cards")
 
     card = None
     for c in catalog["cards"]:

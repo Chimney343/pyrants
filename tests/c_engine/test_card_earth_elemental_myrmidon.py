@@ -7,10 +7,10 @@ excludes self via requires_another_played_card.
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 from engine_c.bindings.engine_bindings import PHASE_END_OF_TURN, _lib
+from game_setup.loaders import assemble_catalog_payload
 from tests.c_engine.card_test_helpers import (
     _make_engine,
     _sptr,
@@ -275,7 +275,7 @@ def test_earth_elemental_myrmidon_catalog_encoding_requires_another_played_card(
     the engine offers self as a promote target and never falls back to
     ``skip_promote`` when no other card was played this turn.
     """
-    catalog = json.loads((DATA_DIR / "cards" / "catalog.json").read_text(encoding="utf-8"))
+    catalog = assemble_catalog_payload(DATA_DIR / "cards")
     card = next(c for c in catalog["cards"] if c["card_id"] == "earth_elemental_myrmidon")
 
     for action in (card["execution_model"]["actions"][1], card["actions"][1]):

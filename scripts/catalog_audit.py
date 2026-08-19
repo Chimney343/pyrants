@@ -4,12 +4,18 @@ from __future__ import annotations
 
 import json
 import re
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
-DEFAULT_CARD_PATH = ROOT_DIR / "data" / "cards" / "catalog.json"
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
+
+from game_setup.loaders import assemble_catalog_payload  # noqa: E402
+
+DEFAULT_CARD_PATH = ROOT_DIR / "data" / "cards"
 DEFAULT_STUCK_REPORT_PATH = ROOT_DIR / "artifacts" / "card_stuck_report.json"
 
 SUPPORTED_CONDITIONAL_BONUS_CONDITIONS = {
@@ -24,14 +30,9 @@ SUPPORTED_CUSTOM_EFFECT_KINDS = {
     "give_insane_outcast_to_player_with_presence_on_last_selected_node",
     "give_insane_outcast_to_selected_player",
     "give_insane_outcast_to_each_opponent",
-    "give_insane_outcast_to_self",
     "mill_deck_to_discard",
     "self_purge_to_supply",
     "steal_white_trophy_to_board",
-    "discard_selected_hand_card_from_self",
-    "return_source_card_to_recruit_deck",
-    "take_from_devour_pile_to_discard",
-    "select_site",
 }
 SUPPORTED_IMMEDIATE_PROMOTE_FRAGMENTS = {
     "promote_top_of_deck",
@@ -54,12 +55,7 @@ SCALED_VP_SOURCE_FRAGMENTS = {
 }
 ANYWHERE_SENSITIVE_OPS = {"supplant_troop", "assassinate_troop", "deploy_troops"}
 ANYWHERE_SOURCE_TOKENS = ("anywhere", "unrestricted")
-EXPECTED_UNSUPPORTED_GENERIC_ACTIONS: set[tuple[str, str, str]] = {
-    ("orcus", "action_5", "custom_effect_unsupported:select_trophy_hall"),
-    ("orcus", "action_6", "custom_effect_unsupported:steal_from_selected_trophy"),
-    ("orcus", "action_7", "custom_effect_unsupported:select_trophy_hall"),
-    ("orcus", "action_8", "custom_effect_unsupported:steal_from_selected_trophy"),
-}
+EXPECTED_UNSUPPORTED_GENERIC_ACTIONS: set[tuple[str, str, str]] = set()
 
 _RESOURCE_PATTERNS = {
     "power": re.compile(r"\bgain\s+(\d+)\s+power\b", re.IGNORECASE),
@@ -110,7 +106,7 @@ class CardAuditEntry:
 
 
 def load_catalog_payload(card_path: Path = DEFAULT_CARD_PATH) -> dict[str, Any]:
-    return json.loads(card_path.read_text(encoding="utf-8"))
+    return assemble_catalog_payload(card_path)
 
 
 def load_probe_results(stuck_report_path: Path = DEFAULT_STUCK_REPORT_PATH) -> dict[str, dict[str, Any]]:

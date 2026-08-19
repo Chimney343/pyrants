@@ -1,0 +1,115 @@
+{
+  "card_id": "drow_negotiator",
+  "name": "Drow Negotiator",
+  "cost": 3,
+  "aspect": "ambition",
+  "secondary_aspects": [
+    "drow"
+  ],
+  "deck_vp": 1,
+  "inner_circle_vp": 2,
+  "rules_text": "If there are 4 or more promoted cards, gain 3 influence. At end of turn, promote a card played this turn.",
+  "notes": "The first clause counts promoted cards in current player's inner circle, not globally. The end-of-turn promote follows same rule as Council Member and Wyrmspeaker: it must target another played card, and if no other played card exists, the effect does nothing.",
+  "execution_model": {
+    "kind": "sequence",
+    "actions": [
+      {
+        "action_id": "action_1",
+        "op": "conditional_bonus",
+        "target_scope": "self",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "conditional_influence_from_promoted_cards",
+        "metadata": {
+          "condition": "player_inner_circle_at_least",
+          "min_cards": 4,
+          "resource": "influence",
+          "amount": 3
+        }
+      },
+      {
+        "action_id": "action_2",
+        "op": "promote_card",
+        "target_scope": "self",
+        "timing": "end_of_turn",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "triggered_promote",
+        "metadata": {
+          "requires_another_played_card": true
+        }
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "action_1",
+      "op": "conditional_bonus",
+      "target_scope": "self",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "conditional_influence_from_promoted_cards",
+      "metadata": {
+        "condition": "player_inner_circle_at_least",
+        "min_cards": 4,
+        "resource": "influence",
+        "amount": 3
+      }
+    },
+    {
+      "action_id": "action_2",
+      "op": "promote_card",
+      "target_scope": "self",
+      "timing": "end_of_turn",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "triggered_promote",
+      "metadata": {
+        "requires_another_played_card": true
+      }
+    }
+  ],
+  "global_conditions": [
+    {
+      "condition_type": "conditional_gate",
+      "description": "Effect has conditional branch or threshold requirement"
+    },
+    {
+      "condition_type": "timing_trigger",
+      "description": "Effect includes deferred or triggered timing"
+    }
+  ],
+  "state_contract": {
+    "reads": [
+      "player.played_cards",
+      "player.hand",
+      "player.discard_pile"
+    ],
+    "writes": [
+      "player.inner_circle",
+      "player.played_cards",
+      "player.hand",
+      "player.discard_pile"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

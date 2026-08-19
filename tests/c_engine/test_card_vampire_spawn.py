@@ -81,7 +81,7 @@ def test_vampire_spawn_gains_influence() -> None:
     """Playing Vampire Spawn grants 1 influence."""
     eng = CEngine()
     eng.initialize(
-        catalog_path=str(DATA_DIR / "cards" / "catalog.json"),
+        catalog_path=str(DATA_DIR / "cards"),
         board_path=str(DATA_DIR / "boards" / "tyrants_of_the_underdark.json"),
         setup_path=str(DATA_DIR / "decks" / "base_setup.json"),
     )
@@ -107,7 +107,7 @@ def test_vampire_spawn_return_opponent_troop_increments_barracks() -> None:
     """Returning an opponent troop increments that opponent's barracks by 1."""
     eng = CEngine()
     eng.initialize(
-        catalog_path=str(DATA_DIR / "cards" / "catalog.json"),
+        catalog_path=str(DATA_DIR / "cards"),
         board_path=str(DATA_DIR / "boards" / "tyrants_of_the_underdark.json"),
         setup_path=str(DATA_DIR / "decks" / "base_setup.json"),
     )
@@ -140,7 +140,7 @@ def test_vampire_spawn_return_opponent_spy_increments_spies_available() -> None:
     """Returning an opponent spy increments that opponent's spies_available by 1."""
     eng = CEngine()
     eng.initialize(
-        catalog_path=str(DATA_DIR / "cards" / "catalog.json"),
+        catalog_path=str(DATA_DIR / "cards"),
         board_path=str(DATA_DIR / "boards" / "tyrants_of_the_underdark.json"),
         setup_path=str(DATA_DIR / "decks" / "base_setup.json"),
     )
@@ -173,7 +173,7 @@ def test_vampire_spawn_only_targets_opponent_units() -> None:
     """return_unit with opponent_unit scope must only target opponent units, never own."""
     eng = CEngine()
     eng.initialize(
-        catalog_path=str(DATA_DIR / "cards" / "catalog.json"),
+        catalog_path=str(DATA_DIR / "cards"),
         board_path=str(DATA_DIR / "boards" / "tyrants_of_the_underdark.json"),
         setup_path=str(DATA_DIR / "decks" / "base_setup.json"),
     )
@@ -210,7 +210,7 @@ def test_vampire_spawn_no_opponent_units_resolves() -> None:
     """With no opponent units on the board, the card should still resolve cleanly and grant influence."""
     eng = CEngine()
     eng.initialize(
-        catalog_path=str(DATA_DIR / "cards" / "catalog.json"),
+        catalog_path=str(DATA_DIR / "cards"),
         board_path=str(DATA_DIR / "boards" / "tyrants_of_the_underdark.json"),
         setup_path=str(DATA_DIR / "decks" / "base_setup.json"),
     )

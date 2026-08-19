@@ -1,0 +1,110 @@
+{
+  "card_id": "eternal_flame_cultist",
+  "name": "Eternal Flame Cultist",
+  "cost": 4,
+  "aspect": "malice",
+  "secondary_aspects": [
+    "human"
+  ],
+  "deck_vp": 2,
+  "inner_circle_vp": 4,
+  "rules_text": "Assassinate a troop. If the focus condition is met for Malice, gain 2 power.",
+  "notes": "Bare `assassinate a troop` uses the established free standard assassinate rule. The Malice focus clause is a separate resource bonus.",
+  "execution_model": {
+    "kind": "sequence",
+    "actions": [
+      {
+        "action_id": "action_1",
+        "op": "assassinate_troop",
+        "target_scope": "board_site",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "assassinate_troop",
+        "metadata": {}
+      },
+      {
+        "action_id": "action_2",
+        "op": "conditional_bonus",
+        "target_scope": "self",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "unspecified",
+          "value": null
+        },
+        "filters": [],
+        "source_fragment": "focus_power_bonus",
+        "metadata": {
+          "condition": "focus_aspect_present",
+          "focus_aspect": "malice",
+          "resource": "power",
+          "amount": 2
+        }
+      }
+    ]
+  },
+  "actions": [
+    {
+      "action_id": "action_1",
+      "op": "assassinate_troop",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "assassinate_troop",
+      "metadata": {}
+    },
+    {
+      "action_id": "action_2",
+      "op": "conditional_bonus",
+      "target_scope": "self",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "focus_power_bonus",
+      "metadata": {
+        "condition": "focus_aspect_present",
+        "focus_aspect": "malice",
+        "resource": "power",
+        "amount": 2
+      }
+    }
+  ],
+  "global_conditions": [
+    {
+      "condition_type": "focus_check",
+      "description": "Requires matching-aspect support card in hand or played zone"
+    },
+    {
+      "condition_type": "conditional_gate",
+      "description": "Effect has conditional branch or threshold requirement"
+    }
+  ],
+  "state_contract": {
+    "reads": [
+      "board.troop_slots",
+      "presence_or_target_rules",
+      "condition_context"
+    ],
+    "writes": [
+      "board.troop_slots",
+      "player.trophy_hall",
+      "resource_pool_or_followup_actions"
+    ]
+  },
+  "effect_key": "generic_card",
+  "effect_payload": {}
+}

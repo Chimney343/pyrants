@@ -194,36 +194,35 @@ The player with the highest total wins. Ties are possible — the game reports a
 
 ---
 
-## 5. Playing the Game (Python Engine)
+## 5. Playing the Game (C Engine)
 
 ### Starting a Session
 
 ```python
-from game_session import GameSession
-from pathlib import Path
+from engine_c.bindings.ce_api import CEngine
+from engine_c.bindings.session import CSession
 
-session = GameSession.from_files(
-    board_path=Path("data/boards/tyrants_of_the_underdark.json"),
-    card_path=Path("data/cards/catalog.json"),
-    setup_path=Path("data/decks/base_setup.json"),
-    player_ids=["player_1", "player_2"],
-    seed=42,
+engine = CEngine()
+engine.initialize(
+    catalog_path="data/cards",
+    board_path="data/boards/tyrants_of_the_underdark.json",
+    setup_path="data/decks/base_setup.json",
 )
+session = CSession(engine, ["player_1", "player_2"], seed=42)
 ```
 
 ### Checking Legal Moves
 
 ```python
-snapshot = session.snapshot()
-for move_view in snapshot.legal_moves:
-    print(f"{move_view.label}  ({move_view.move_type})")
+for move in session.legal_moves():
+    print(move.move_type, move.data)
 ```
 
 ### Making a Move
 
 ```python
 # Find the move you want from legal_moves
-move = snapshot.legal_moves[0].move
+move = session.legal_moves()[0]
 new_state = session.submit_move(move)
 ```
 

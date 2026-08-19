@@ -1,6 +1,11 @@
 """Find where 'Lich' (capital L) enters the game."""
 import json
 import glob
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from game_setup.loaders import assemble_catalog_payload
 
 print("=== Searching deck files for Lich (any case) ===")
 for f in glob.glob('data/decks/*.json'):
@@ -12,7 +17,7 @@ for f in glob.glob('data/decks/*.json'):
             print(f'{f}: card_id={cid!r}')
 
 print("\n=== Searching catalog for lich cards ===")
-c = json.load(open('data/cards/catalog.json'))
+c = assemble_catalog_payload(Path("data/cards"))
 for card in c['cards']:
     cid = card.get('card_id', '')
     if 'ich' in cid.lower():
