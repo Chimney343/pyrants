@@ -71,6 +71,7 @@ static int legal_optional_promotion_moves(const PendingPromotionState *pending,
     out[0].data.promote_card.card_id = pending->card_id;
     out[0].player_index = 0;
     out[1].type = MOVE_SKIP_PROMOTE;
+    out[1].data.skip_promote.source_card_id = pending->source_card_id;
     out[1].player_index = 0;
     return 2;
 }
@@ -89,10 +90,12 @@ static int legal_deferred_eot_promotion_moves(const GameState *state, Sym player
     }
     if (pending->optional && written < max_out) {
         out[written].type = MOVE_SKIP_PROMOTE;
+        out[written].data.skip_promote.source_card_id = pending->source_card_id;
         out[written].player_index = 0;
         written++;
     } else if (tc == 0 && written < max_out) {
         out[written].type = MOVE_SKIP_PROMOTE;
+        out[written].data.skip_promote.source_card_id = pending->source_card_id;
         out[written].player_index = 0;
         written++;
     }
@@ -514,11 +517,7 @@ static void apply_end_of_turn_effects(GameState *state, int include_force_discar
                     for (int c = 0; c < state->shuffle_counter; c++)
                         rng_next(&rng);
                     int idx = rng_randint(&rng, 0, tps->hand_count - 1);
-                    if (tps->discard_pile_count < MAX_ZONE_SIZE)
-                        tps->discard_pile[tps->discard_pile_count++] = tps->hand[idx];
-                    for (int h = idx; h < tps->hand_count - 1; h++)
-                        tps->hand[h] = tps->hand[h + 1];
-                    tps->hand_count--;
+                    discard_hand_card(state, tpid, idx);
                     state->shuffle_counter++;
                 }
             }
@@ -592,9 +591,16 @@ static GameState *apply_cleanup(GameState *state) {
     PlayerState *ps = cow_player(state, pid);
     if (!ps) return NULL;
 
-    for (int i = 0; i < ps->hand_count; i++)
-        if (ps->discard_pile_count < MAX_ZONE_SIZE)
-            ps->discard_pile[ps->discard_pile_count++] = ps->hand[i];
+    Sym ambassador_sym = intern("ambassador");
+    for (int i = 0; i < ps->hand_count; i++) {
+        if (ps->hand[i] == ambassador_sym) {
+            if (ps->inner_circle_count < MAX_ZONE_SIZE)
+                ps->inner_circle[ps->inner_circle_count++] = ps->hand[i];
+        } else {
+            if (ps->discard_pile_count < MAX_ZONE_SIZE)
+                ps->discard_pile[ps->discard_pile_count++] = ps->hand[i];
+        }
+    }
     ps->hand_count = 0;
 
     for (int i = 0; i < ps->played_cards_count; i++)

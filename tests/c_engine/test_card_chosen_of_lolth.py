@@ -24,6 +24,61 @@ def _inner_circle_ids(session: CSession, pid: str) -> list[str]:
     return []
 
 
+def test_chosen_of_lolth_return_requires_presence_and_opponent():
+    """return_unit must target only opponent units at sites where the current
+    player has presence, never own units or units at non-presence sites."""
+    eng = _make_engine()
+    session = make_card_test_session(
+        eng,
+        ["p1", "p2"],
+        hand={"p1": ["chosen_of_lolth"]},
+        troops={
+            "p2": {
+                "site_gauntlgrym": ["p1", "p2", None],
+                "site_the_wormwrithings": ["p2", None, None],
+            },
+        },
+        spies={
+            "site_gauntlgrym": ["p1", "p2"],
+        },
+        current_player="p1",
+    )
+
+    for m in session.legal_moves():
+        if m._move_type == "play_card" and m.data.get("card_id") == "chosen_of_lolth":
+            session.submit_move(m)
+            break
+    else:
+        session.destroy()
+        raise AssertionError("Chosen of Lolth not playable")
+
+    targets = {
+        (m.data.get("action_id"), m.data.get("target_id"))
+        for m in session.legal_moves()
+        if m._move_type == "resolve_generic"
+    }
+
+    assert ("site_gauntlgrym", "troop:1") in targets, (
+        f"Opponent troop at presence site should be targetable: {targets}"
+    )
+    assert ("site_gauntlgrym", "spy:p2") in targets, (
+        f"Opponent spy at presence site should be targetable: {targets}"
+    )
+
+    assert ("site_gauntlgrym", "troop:0") not in targets, (
+        f"Own troop should not be targetable: {targets}"
+    )
+    assert ("site_gauntlgrym", "spy:p1") not in targets, (
+        f"Own spy should not be targetable: {targets}"
+    )
+
+    assert not any(a == "site_the_wormwrithings" for a, _ in targets), (
+        f"No target at a non-presence site should be offered: {targets}"
+    )
+
+    session.destroy()
+
+
 def test_chosen_of_lolth_eot_promote_cannot_self_target():
     """Chosen of Lolth's end-of-turn promote must exclude itself from targets."""
     eng = _make_engine()

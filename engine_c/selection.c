@@ -459,6 +459,7 @@ static int sel_return_unit(const GameState *state, Sym player_id,
     int w = 0;
     int include_self = 1;
     int include_opponent = 0;
+    int requires_presence = 0;
     const char *scope = intern_str(action->target_scope);
     if (scope) {
         if (strcmp(scope, "opponent_unit") == 0) {
@@ -468,8 +469,16 @@ static int sel_return_unit(const GameState *state, Sym player_id,
             include_opponent = 1;
         }
     }
+    for (int i = 0; i < action->metadata_count; i++) {
+        const char *k = intern_str(action->metadata[i].key);
+        const char *v = intern_str(action->metadata[i].value);
+        if (k && strcmp(k, "requires_presence") == 0 && v && strcmp(v, "true") == 0) {
+            requires_presence = 1;
+        }
+    }
     for (int i = 0; i < state->node_count && w < max_out; i++) {
         Sym nid = state->nodes[i].node_id;
+        if (requires_presence && !has_presence(state, player_id, nid)) continue;
         for (int s = 0; s < state->nodes[i].troop_slot_count && w < max_out; s++) {
             Sym occ = state->nodes[i].troop_slots[s];
             if (occ == SYM_NULL) continue;
@@ -656,13 +665,14 @@ static int sel_recruit(const GameState *state, Sym player_id,
     int w = 0;
     Sym required_aspect = SYM_NULL;
     int max_cost = -1;
+    int free_recruit = 0;
     for (int mi = 0; mi < action->metadata_count; mi++) {
         const char *mk = intern_str(action->metadata[mi].key);
         const char *mv = intern_str(action->metadata[mi].value);
         if (mk && strcmp(mk, "required_aspect") == 0 && mv) required_aspect = intern(mv);
         if (mk && strcmp(mk, "max_cost") == 0 && mv) max_cost = atoi(mv);
+        if (mk && strcmp(mk, "free_recruit") == 0) free_recruit = 1;
     }
-    int free_recruit = (max_cost >= 0);
     for (int s = 0; s < state->market.row_count && w < max_out; s++) {
         Sym cid = state->market.row[s];
         const CardDefinition *cd = NULL;

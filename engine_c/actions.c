@@ -537,7 +537,7 @@ static GameState *apply_recruit_card_gen(GameState *state, Sym player_id, const 
     int free_recruit = 0;
     for (int mi = 0; mi < action->metadata_count; mi++) {
         const char *mk = intern_str(action->metadata[mi].key);
-        if (mk && strcmp(mk, "max_cost") == 0) { free_recruit = 1; break; }
+        if (mk && strcmp(mk, "free_recruit") == 0) { free_recruit = 1; break; }
     }
     if (free_recruit) apply_recruit_free(state, player_id, slot);
     else apply_recruit(state, player_id, slot);

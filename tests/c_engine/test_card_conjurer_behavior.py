@@ -1,4 +1,4 @@
-"""Behavioral test for Conjurer mode 2: return spy + free recruit up to 2 cards costing ≤3."""
+"""Behavioral test for Conjurer mode 2: return spy + recruit up to 2 cards costing ≤3."""
 
 from __future__ import annotations
 
@@ -60,6 +60,10 @@ def test_conjurer_mode_2_return_spy_then_optional_recruit_age() -> None:
     p1_idx = _session_player_index(session, _P1)
     s = _sptr(session).contents
     spies_before = s.players[p1_idx].spies_available
+    s.resource_pool.influence = 10
+    s.market.row_count = 2
+    s.market.row[0] = _lib.intern(b"soldier")
+    s.market.row[1] = _lib.intern(b"noble")
 
     play_conjurer = next(
         m for m in session.legal_moves()
@@ -145,8 +149,8 @@ def test_conjurer_mode_2_recruit_filtered_by_cost_3_or_less() -> None:
     session.destroy()
 
 
-def test_conjurer_mode_2_free_recruit_no_influence_deduction() -> None:
-    """Free recruit must not deduct influence, recruited card goes to discard."""
+def test_conjurer_mode_2_recruit_deducts_influence() -> None:
+    """Paid recruit deducts influence, recruited card goes to discard."""
     eng = _make_engine()
     session = make_card_test_session(
         eng,
@@ -158,7 +162,7 @@ def test_conjurer_mode_2_free_recruit_no_influence_deduction() -> None:
 
     s = _sptr(session).contents
     s.market.row_count = 1
-    s.market.row[0] = _lib.intern(b"noble")
+    s.market.row[0] = _lib.intern(b"house_guard")  # cost 3, ≤3
 
     p1_idx = _session_player_index(session, _P1)
     s.players[p1_idx].discard_pile_count = 0
@@ -179,14 +183,14 @@ def test_conjurer_mode_2_free_recruit_no_influence_deduction() -> None:
     session.submit_move(return_move)
 
     gen = [m for m in session.legal_moves() if m.move_type == "resolve_generic"]
-    noble_move = next(m for m in gen if m.data.get("action_id") == "noble")
-    session.submit_move(noble_move)
+    house_guard_move = next(m for m in gen if m.data.get("action_id") == "house_guard")
+    session.submit_move(house_guard_move)
 
     s = _sptr(session).contents
-    assert s.resource_pool.influence == 10, \
-        f"Free recruit must not deduct influence: still {s.resource_pool.influence}"
+    assert s.resource_pool.influence == 7, \
+        f"Recruit should cost 3 influence: 10 -> {s.resource_pool.influence}"
     assert s.players[p1_idx].discard_pile_count == 1, \
-        "Recruited noble should be in discard"
+        "Recruited house_guard should be in discard"
 
     session.destroy()
 

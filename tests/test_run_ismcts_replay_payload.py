@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -20,7 +20,6 @@ from scripts._replay_payload import (
     compute_final_scores,
     resolve_winner_id,
 )
-
 
 # ── compute_final_scores ────────────────────────────────────────────────────
 
@@ -36,23 +35,13 @@ class TestComputeFinalScores:
         assert result == {"p1": 42, "p2": 37}
         adapter.final_scores.assert_called_once()
 
-    def test_python_engine_no_adapter(self):
-        """When _adapter is missing/None, fall back to engine.scoring.compute_final_scores.
-
-        The original code had a recursion bug where the non-C path called itself.
-        This test confirms the fix: a state with no adapter reaches the Python
-        engine path without infinite recursion.
-        """
+    def test_no_adapter_returns_empty(self):
+        """When _adapter is missing/None, return an empty dict (no Python fallback)."""
         state = MagicMock()
         state._adapter = None
-        state._engine = MagicMock()
 
-        with patch(
-            "engine.scoring.compute_final_scores",
-            return_value={"p1": 99, "p2": 50},
-        ):
-            result = compute_final_scores(state)
-            assert result == {"p1": 99, "p2": 50}
+        result = compute_final_scores(state)
+        assert result == {}
 
 
 # ── resolve_winner_id ───────────────────────────────────────────────────────
@@ -169,7 +158,7 @@ class TestBuildReplayPayload:
         """When is_terminal and stopped_reason is terminal, a marker is appended."""
         scores = {"p1": 42}
         log: list[dict] = [{"step_index": 0, "move_type": "play_card"}]
-        payload = build_replay_payload(
+        build_replay_payload(
             run_id="test",
             stopped_reason="terminal",
             max_rounds=0,
@@ -194,7 +183,7 @@ class TestBuildReplayPayload:
     def test_non_terminal_no_marker(self):
         """When not terminal, no marker is appended."""
         log: list[dict] = [{"step_index": 0, "move_type": "play_card"}]
-        payload = build_replay_payload(
+        build_replay_payload(
             run_id="test",
             stopped_reason="round_cap",
             max_rounds=100,

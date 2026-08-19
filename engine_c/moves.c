@@ -84,9 +84,10 @@ Move make_promote_card_move(Sym card_id, int player_index) {
     return m;
 }
 
-Move make_skip_promote_move(int player_index) {
+Move make_skip_promote_move(Sym card_id, int player_index) {
     Move m; memset(&m, 0, sizeof(m));
     m.type = MOVE_SKIP_PROMOTE;
+    m.data.skip_promote.source_card_id = card_id;
     m.player_index = player_index;
     return m;
 }

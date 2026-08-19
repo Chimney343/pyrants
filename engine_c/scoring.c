@@ -99,6 +99,13 @@ void compute_final_scores(const GameState *state, int *scores_out) {
             int owner = site_control_owner(state, nd->node_id);
             if (owner >= 0 && (Sym)owner == pid) {
                 total += nd->control_vp;
+                /* End-game total-control bonus: +2 VP per site under total
+                 * control (all troop slots are this player's, no enemy spies).
+                 * Distinct from award_end_of_turn_site_vp, which uses the
+                 * per-turn total_control_vp_per_turn field. */
+                if (is_total_control(state, nd->node_id, pid)) {
+                    total += 2;
+                }
             }
         }
 

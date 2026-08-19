@@ -351,7 +351,7 @@ typedef struct {
         struct { Sym card_id; Sym ability_key; int discard_hand_indices[MAX_ABILITY_DISCARD]; int discard_hand_count; } activate_ability;
         struct { Sym card_id; Sym ability_key; } decline_ability;
         struct { Sym card_id; } promote_card;
-        struct { int _pad; } skip_promote;
+        struct { Sym source_card_id; } skip_promote;
         struct { Sym action_id; Sym target_id; int selection_index; } resolve_generic;
         struct { Sym node_id; } initial_placement;
     } data;

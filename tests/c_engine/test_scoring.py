@@ -246,7 +246,7 @@ class TestVPTokenScoring:
         session.destroy()
 
     def test_grant_vp_without_as_tokens_updates_score(self):
-        """Death Knight grant_vp (no as:vp_tokens) → score up, vp_tokens unchanged."""
+        """Death Knight grant_vp: 1 VP per 5 non-white trophies, rounded down."""
         eng = _make_engine()
         session = make_card_test_session(
             eng, [P1, P2],
@@ -263,11 +263,90 @@ class TestVPTokenScoring:
         _play_card(session, "death_knight")
         _resolve_all_generics(session)
 
-        assert _player_score(session, P1) > score_before, (
-            "Score should increase from non-token grant_vp"
+        expected_score = score_before + 2
+        assert _player_score(session, P1) == expected_score, (
+            f"Death Knight should grant floor(11/5)=2 VP. "
+            f"10 initial trophies + 1 from supplant = 11, /5 = 2. "
+            f"Got score {_player_score(session, P1)}, expected {expected_score}"
         )
         assert _player_vp_tokens_raw(session, P1) == vp_before, (
             "vp_tokens must NOT change from non-token grant_vp"
+        )
+        session.destroy()
+
+    def test_death_knight_white_trophies_excluded(self):
+        """Death Knight ignores white trophies; only player trophies count."""
+        eng = _make_engine()
+        session = make_card_test_session(
+            eng, [P1, P2],
+            hand={P1: ["death_knight"]},
+            troops={P1: {"site_gauntlgrym": [P1, P2, None, None]}},
+            spies={},
+            current_player=P1,
+        )
+        _add_trophies(session, P1, 4, b"p2")
+        _add_trophies(session, P1, 5, b"white")
+
+        score_before = _player_score(session, P1)
+
+        _play_card(session, "death_knight")
+        _resolve_all_generics(session)
+
+        expected_score = score_before + 1
+        assert _player_score(session, P1) == expected_score, (
+            f"Death Knight must ignore white trophies. "
+            f"4 player + 1 from supplant = 5 player trophies, /5 = 1 VP. "
+            f"Got score {_player_score(session, P1)}, expected {expected_score}"
+        )
+        session.destroy()
+
+    def test_death_knight_rounds_down(self):
+        """Death Knight rounds down: 14 player trophies → floor(14/5)=2 VP,
+        and the supplant adds one more, so 15/5=3 VP from trophy scaling."""
+        eng = _make_engine()
+        session = make_card_test_session(
+            eng, [P1, P2],
+            hand={P1: ["death_knight"]},
+            troops={P1: {"site_gauntlgrym": [P1, P2, None, None]}},
+            spies={},
+            current_player=P1,
+        )
+        _add_trophies(session, P1, 14, b"p2")
+
+        score_before = _player_score(session, P1)
+
+        _play_card(session, "death_knight")
+        _resolve_all_generics(session)
+
+        expected_score = score_before + 3
+        assert _player_score(session, P1) == expected_score, (
+            f"Death Knight must round down. "
+            f"14 initial + 1 from supplant = 15 player trophies, /5 = 3 VP. "
+            f"Got score {_player_score(session, P1)}, expected {expected_score}"
+        )
+        session.destroy()
+
+    def test_death_knight_zero_player_trophies(self):
+        """Death Knight with no player trophies: supplant adds 1 trophy,
+        floor(1/5)=0 VP from scaling, no score change."""
+        eng = _make_engine()
+        session = make_card_test_session(
+            eng, [P1, P2],
+            hand={P1: ["death_knight"]},
+            troops={P1: {"site_gauntlgrym": [P1, P2, None, None]}},
+            spies={},
+            current_player=P1,
+        )
+
+        score_before = _player_score(session, P1)
+
+        _play_card(session, "death_knight")
+        _resolve_all_generics(session)
+
+        assert _player_score(session, P1) == score_before, (
+            f"Death Knight with 0 initial trophies should grant 0 VP. "
+            f"1 from supplant, /5 = 0. "
+            f"Got score {_player_score(session, P1)}, expected {score_before}"
         )
         session.destroy()
 
@@ -423,3 +502,127 @@ class TestFinalScores:
             f"{score_before} → {score_after}"
         )
         session.destroy()
+
+
+# ---------------------------------------------------------------------------
+# Total control end-game bonus (+2 VP per total-control site at final tally)
+#   `award_end_of_turn_site_vp` (per-turn, uses total_control_vp_per_turn)
+#   is an unrelated in-game scoring feature and stays unchanged.
+# ---------------------------------------------------------------------------
+
+# Site used for these tests:
+#   site_jhachalkhyn: troop_capacity=4, control_vp=4, total_control_vp_per_turn=0
+#   site_gracklstugh: troop_capacity=4, control_vp=3, total_control_vp_per_turn=0
+# Both have total_control_vp_per_turn=0 so the per-turn mechanism contributes
+# nothing; the only levers are control_vp (majority) and the new +2 bonus.
+_TOTAL_CONTROL_SITE_1 = "site_jhachalkhyn"
+_TOTAL_CONTROL_SITE_2 = "site_gracklstugh"
+
+
+class TestTotalControlFinalBonus:
+    """compute_final_scores awards +2 VP per site under total control at end of
+    game, on top of normal control_vp. Distinct from the per-turn award."""
+
+    def test_total_control_grants_plus_2_over_majority_baseline(self):
+        """Same site, same control_vp, only difference is total control.
+
+        Setup A: [P1,P1,P1,None]  -> majority, NOT total control.
+        Setup B: [P1,P1,P1,P1]    -> total control (all slots P1, no enemy spies).
+
+        The only thing that should change between A and B is the +2 bonus.
+        """
+        eng = _make_engine()
+        session_a = make_card_test_session(
+            eng, [P1, P2], hand={},
+            troops={P1: {_TOTAL_CONTROL_SITE_1: [P1, P1, P1, None]}},
+            spies={}, current_player=P1,
+        )
+        score_a = _compute_final_score(session_a, P1)
+        session_a.destroy()
+
+        session_b = make_card_test_session(
+            eng, [P1, P2], hand={},
+            troops={P1: {_TOTAL_CONTROL_SITE_1: [P1, P1, P1, P1]}},
+            spies={}, current_player=P1,
+        )
+        score_b = _compute_final_score(session_b, P1)
+        session_b.destroy()
+
+        assert score_b - score_a == 2, (
+            f"Total control should grant +2 VP on top of control_vp. "
+            f"Score A (majority, no total control) = {score_a}, "
+            f"Score B (total control) = {score_b}, "
+            f"delta = {score_b - score_a}, expected 2."
+        )
+
+    def test_multiple_total_control_sites_scale(self):
+        """Two total-control sites -> +4 over the same majority-only baseline."""
+        eng = _make_engine()
+        session_majority = make_card_test_session(
+            eng, [P1, P2], hand={},
+            troops={P1: {
+                _TOTAL_CONTROL_SITE_1: [P1, P1, P1, None],
+                _TOTAL_CONTROL_SITE_2: [P1, P1, P1, None],
+            }},
+            spies={}, current_player=P1,
+        )
+        score_majority = _compute_final_score(session_majority, P1)
+        session_majority.destroy()
+
+        session_total = make_card_test_session(
+            eng, [P1, P2], hand={},
+            troops={P1: {
+                _TOTAL_CONTROL_SITE_1: [P1, P1, P1, P1],
+                _TOTAL_CONTROL_SITE_2: [P1, P1, P1, P1],
+            }},
+            spies={}, current_player=P1,
+        )
+        score_total = _compute_final_score(session_total, P1)
+        session_total.destroy()
+
+        assert score_total - score_majority == 4, (
+            f"Two total-control sites should grant +4 VP (2 each). "
+            f"Majority baseline = {score_majority}, total = {score_total}, "
+            f"delta = {score_total - score_majority}, expected 4."
+        )
+
+    def test_enemy_spy_on_total_control_site_cancels_bonus(self):
+        """An enemy spy at the site breaks total control -> no +2 bonus,
+        even if every troop slot is the player's."""
+        eng = _make_engine()
+        session_spy = make_card_test_session(
+            eng, [P1, P2], hand={},
+            troops={P1: {_TOTAL_CONTROL_SITE_1: [P1, P1, P1, P1]}},
+            spies={_TOTAL_CONTROL_SITE_1: [P2]},
+            current_player=P1,
+        )
+        score_spy = _compute_final_score(session_spy, P1)
+        session_spy.destroy()
+
+        session_total = make_card_test_session(
+            eng, [P1, P2], hand={},
+            troops={P1: {_TOTAL_CONTROL_SITE_1: [P1, P1, P1, P1]}},
+            spies={}, current_player=P1,
+        )
+        score_total = _compute_final_score(session_total, P1)
+        session_total.destroy()
+
+        session_majority = make_card_test_session(
+            eng, [P1, P2], hand={},
+            troops={P1: {_TOTAL_CONTROL_SITE_1: [P1, P1, P1, None]}},
+            spies={}, current_player=P1,
+        )
+        score_majority = _compute_final_score(session_majority, P1)
+        session_majority.destroy()
+
+        # Spy cancels the +2 bonus: spy setup scores the same as majority.
+        assert score_spy == score_majority, (
+            f"Enemy spy should cancel total-control bonus. "
+            f"Spy score = {score_spy}, majority score = {score_majority}"
+        )
+        # And the bonus would otherwise apply:
+        assert score_total - score_spy == 2, (
+            f"Without the spy the bonus should reappear. "
+            f"Total = {score_total}, spy = {score_spy}, "
+            f"delta = {score_total - score_spy}, expected 2."
+        )
