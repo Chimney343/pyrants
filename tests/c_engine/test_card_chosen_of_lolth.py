@@ -3,9 +3,14 @@ At end of turn, promote another played card (cannot self-promote)."""
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from engine_c.bindings.engine_bindings import PHASE_END_OF_TURN, _lib
 from engine_c.bindings.session import CSession
+from game_setup.loaders import assemble_catalog_payload
 from tests.c_engine.card_test_helpers import _make_engine, make_card_test_session
+
+DATA_DIR = Path(__file__).resolve().parents[2] / "data"
 
 
 def _played_ids(session: CSession, pid: str) -> list[str]:
@@ -175,3 +180,33 @@ def test_chosen_of_lolth_eot_no_other_played_card_skip_allowed():
     assert "resolve_end_of_turn" in move_types2, f"After skip, should have resolve_end_of_turn, got: {move_types2}"
 
     session.destroy()
+
+
+def test_chosen_of_lolth_catalog_encoding() -> None:
+    """The catalog must encode opponent-only return with presence, and
+    end-of-turn promote of *another* played card.
+
+    Regression guard: ``return_unit`` must not use ``self_or_opponent_unit``
+    (which lets the player return their own pieces) and must require presence;
+    ``promote_card`` must carry ``requires_another_played_card`` so Chosen of
+    Lolth cannot promote itself and the effect does nothing with no other
+    played card.
+    """
+    catalog = assemble_catalog_payload(DATA_DIR / "cards")
+    card = next(c for c in catalog["cards"] if c["card_id"] == "chosen_of_lolth")
+
+    for action in (card["execution_model"]["actions"][0], card["actions"][0]):
+        assert action["op"] == "return_unit", f"expected return_unit, got {action['op']}"
+        assert action["target_scope"] == "opponent_unit", (
+            f"return must target opponent_unit only, got {action['target_scope']}"
+        )
+        assert action["metadata"].get("requires_presence") is True, (
+            f"return must require presence, got {action['metadata']}"
+        )
+
+    for action in (card["execution_model"]["actions"][1], card["actions"][1]):
+        assert action["op"] == "promote_card", f"expected promote_card, got {action['op']}"
+        assert action["timing"] == "end_of_turn", f"expected end_of_turn, got {action['timing']}"
+        assert action["metadata"].get("requires_another_played_card") is True, (
+            f"requires_another_played_card must be true, got {action['metadata']}"
+        )
