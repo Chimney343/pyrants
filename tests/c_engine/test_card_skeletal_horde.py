@@ -5,12 +5,16 @@ Verifies:
 - Optional devour of self (played_self)
 - If devour skipped → no extra deploy (skip_advance_to_index)
 - If devour taken → deploy 3 more troops (5 total), card to devour pile
+- Catalog encoding: fixed quantities (2 + 3), gated devour rider
 """
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from engine_c.bindings.engine_bindings import _lib
 from engine_c.bindings.session import CSession
+from game_setup.loaders import assemble_catalog_payload
 from tests.c_engine.card_test_helpers import (
     _make_engine,
     _session_player_index,
@@ -23,6 +27,8 @@ _P1 = "p1"
 _P2 = "p2"
 
 CARD_ID = "skeletal_horde"
+
+CATALOG_PATH = Path(__file__).resolve().parents[2] / "data" / "cards"
 
 
 def _build_session(*, empty_slots: int = 6) -> CSession:
@@ -51,6 +57,14 @@ def _barracks(session: CSession, pid: str) -> int:
 def _devour_pile(session: CSession) -> list[str]:
     s = _sptr(session).contents
     return [_lib.intern_str(s.devour_pile[i]).decode() for i in range(s.devour_pile_count)]
+
+
+def _played_cards(session: CSession, pid: str = _P1) -> list[str]:
+    pi = _session_player_index(session, pid)
+    if pi < 0:
+        return []
+    ps = _sptr(session).contents.players[pi]
+    return [_lib.intern_str(ps.played_cards[i]).decode() for i in range(ps.played_cards_count)]
 
 
 def _resolve_moves(session: CSession):
@@ -133,6 +147,9 @@ def test_skeletal_horde_skip_devour_deploys_only_2() -> None:
     assert _devour_pile(session) == [], (
         f"Devour pile should be empty after skip, got {_devour_pile(session)}"
     )
+    assert CARD_ID in _played_cards(session), (
+        "Card should remain in played_cards when the devour is skipped"
+    )
 
     session.destroy()
 
@@ -160,3 +177,41 @@ def test_skeletal_horde_devour_deploys_5_total() -> None:
     )
 
     session.destroy()
+
+
+def test_skeletal_horde_catalog_encoding() -> None:
+    """Catalog encodes deploy 2, then an optional self-devour gated deploy of 3."""
+    catalog = assemble_catalog_payload(CATALOG_PATH)
+    cards = catalog.get("cards", catalog)
+    skeletal = next(c for c in cards if c.get("card_id") == "skeletal_horde")
+
+    assert "Deploy 2 troops" in skeletal["rules_text"]
+    assert "devour this card to deploy 3 more troops" in skeletal["rules_text"]
+
+    model_actions = skeletal["execution_model"]["actions"]
+    top_actions = skeletal["actions"]
+    assert top_actions == model_actions, "Top-level actions must mirror execution_model"
+
+    for actions in (model_actions, top_actions):
+        assert len(actions) == 3
+
+        deploy_2 = actions[0]
+        assert deploy_2["op"] == "deploy_troops"
+        assert deploy_2["target_scope"] == "board_site"
+        assert deploy_2["optional"] is False
+        assert deploy_2["quantity"] == {"kind": "fixed", "value": 2}
+
+        devour = actions[1]
+        assert devour["op"] == "devour_cost"
+        assert devour["target_scope"] == "played_self"
+        assert devour["optional"] is True
+        assert devour["metadata"]["source_zone"] == "played_self"
+        assert devour["metadata"]["skip_advance_to_index"] == "3", (
+            "Skipping the devour must skip the gated extra deploy"
+        )
+
+        extra_deploy = actions[2]
+        assert extra_deploy["op"] == "deploy_troops"
+        assert extra_deploy["target_scope"] == "board_site"
+        assert extra_deploy["source_fragment"] == "extra_deploy"
+        assert extra_deploy["quantity"] == {"kind": "fixed", "value": 3}
