@@ -194,10 +194,12 @@ static int sel_custom_effect(const GameState *state, Sym player_id,
             }
         } else if (strcmp(v, "select_trophy_hall") == 0) {
             int white_only = 0;
+            int allow_white = 0;
             int exclude_self = 0;
             for (int fi = 0; fi < action->filter_count; fi++) {
                 const char *f = intern_str(action->filters[fi]);
                 if (f && strcmp(f, "white_troop_only") == 0) white_only = 1;
+                if (f && strcmp(f, "allow_white_troop") == 0) allow_white = 1;
                 if (f && strcmp(f, "exclude_self") == 0) exclude_self = 1;
             }
             for (int sp = 0; sp < state->player_count && w < max_out; sp++) {
@@ -208,7 +210,7 @@ static int sel_custom_effect(const GameState *state, Sym player_id,
                     const char *oc = intern_str(occ);
                     int is_white = oc && strcmp(oc, "white") == 0;
                     if (white_only && !is_white) continue;
-                    if (!white_only && is_white) continue;
+                    if (!white_only && !allow_white && is_white) continue;
                     char idx_buf[16];
                     snprintf(idx_buf, sizeof(idx_buf), "%d", ti);
                     out[w].type = MOVE_RESOLVE_GENERIC;
@@ -232,11 +234,6 @@ static int sel_custom_effect(const GameState *state, Sym player_id,
             if (trophy_idx < 0 || trophy_idx >= state->players[spi].trophy_hall_count) continue;
             for (int ni = 0; ni < state->node_count && w < max_out; ni++) {
                 Sym nid = state->nodes[ni].node_id;
-                const NodeDefinition *nd = NULL;
-                for (int j = 0; j < state->definition->board.node_count; j++)
-                    if (state->definition->board.nodes[j].node_id == nid)
-                        { nd = &state->definition->board.nodes[j]; break; }
-                if (!nd || strcmp(intern_str(nd->kind), "site") != 0) continue;
                 for (int s = 0; s < state->nodes[ni].troop_slot_count && w < max_out; s++) {
                     if (state->nodes[ni].troop_slots[s] != SYM_NULL) continue;
                     char buf[128];

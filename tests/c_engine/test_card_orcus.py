@@ -164,6 +164,43 @@ def test_orcus_full_sequence() -> None:
     session.destroy()
 
 
+def test_orcus_steal_deploys_anywhere_including_routes() -> None:
+    """The stolen trophy may be placed anywhere on the board, routes included."""
+    session = CSession.load(str(SCENARIO_PATH))
+
+    for m in session.legal_moves():
+        if m.move_type == "play_card" and m.data["card_id"] == "orcus":
+            session.submit_move(m)
+            break
+    else:
+        session.destroy()
+        pytest.fail("Orcus not playable")
+
+    devour_moves = [m for m in session.legal_moves() if m.move_type == "resolve_generic"]
+    session.submit_move(devour_moves[0])
+    session.submit_move(session.legal_moves()[0])  # assassinate 1
+    session.submit_move(session.legal_moves()[0])  # assassinate 2
+
+    steal_select = session.legal_moves()
+    non_skip = [m for m in steal_select if m.move_type == "resolve_generic" and m.data["action_id"] is not None]
+    assert non_skip, "Should have a trophy to steal"
+    session.submit_move(non_skip[0])
+
+    dst_moves = session.legal_moves()
+    assert dst_moves, "Should have destination placement moves"
+    route_dsts = [
+        m for m in dst_moves
+        if m.move_type == "resolve_generic"
+        and m.data["action_id"] is not None
+        and str(m.data["action_id"]).startswith("route_")
+    ]
+    assert route_dsts, (
+        f"Should be able to deploy to a route (anywhere on board), "
+        f"got dst action_ids: {[m.data['action_id'] for m in dst_moves]}"
+    )
+    session.destroy()
+
+
 def test_orcus_skip_both_steals() -> None:
     """Orcus: skip both steal opportunities when there are available targets.
     The card should still resolve successfully."""
