@@ -52,6 +52,20 @@
           },
           {
             "action_id": "option_2_action_2",
+            "op": "draw_cards",
+            "target_scope": "self",
+            "timing": "immediate",
+            "optional": false,
+            "quantity": {
+              "kind": "fixed",
+              "value": 1
+            },
+            "filters": [],
+            "source_fragment": "draw_cards",
+            "metadata": {}
+          },
+          {
+            "action_id": "option_2_action_3",
             "op": "force_discard",
             "target_scope": "opponent",
             "timing": "immediate",
@@ -99,6 +113,20 @@
     },
     {
       "action_id": "option_2_action_2",
+      "op": "draw_cards",
+      "target_scope": "self",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 1
+      },
+      "filters": [],
+      "source_fragment": "draw_cards",
+      "metadata": {}
+    },
+    {
+      "action_id": "option_2_action_3",
       "op": "force_discard",
       "target_scope": "opponent",
       "timing": "immediate",
