@@ -2,9 +2,14 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from engine_c.bindings.engine_bindings import PHASE_END_OF_TURN, _lib
 from engine_c.bindings.session import CSession
+from game_setup.loaders import assemble_catalog_payload
 from tests.c_engine.card_test_helpers import _make_engine, _sptr, make_card_test_session
+
+DATA_DIR = Path(__file__).resolve().parents[2] / "data"
 
 
 def _play_card(session: CSession, card_id: str) -> None:
@@ -139,3 +144,22 @@ def test_puppeteer_eot_with_no_other_card_skips():
     move_types2 = {m._move_type for m in moves2}
     assert "resolve_end_of_turn" in move_types2, f"After skip, should have resolve_end_of_turn, got: {move_types2}"
     session.destroy()
+
+
+def test_puppeteer_catalog_encoding_requires_another_played_card() -> None:
+    """The promote action must carry ``requires_another_played_card`` in its metadata.
+
+    Regression guard: the deferred end-of-turn promotion targets "another card you
+    played this turn" and must exclude Puppeteer itself. If the metadata flag is
+    lost, the engine offers Puppeteer as a promote target (self-promote) and never
+    falls back to an empty target set when no other card was played this turn.
+    """
+    catalog = assemble_catalog_payload(DATA_DIR / "cards")
+    card = next(c for c in catalog["cards"] if c["card_id"] == "puppeteer")
+
+    for action in (card["execution_model"]["actions"][1], card["actions"][1]):
+        assert action["op"] == "promote_card", f"expected promote_card, got {action['op']}"
+        assert action["timing"] == "end_of_turn", f"expected end_of_turn, got {action['timing']}"
+        assert action["metadata"].get("requires_another_played_card") is True, (
+            f"requires_another_played_card must be true, got {action['metadata']}"
+        )
