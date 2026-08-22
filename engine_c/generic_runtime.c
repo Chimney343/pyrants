@@ -391,7 +391,23 @@ GameState *auto_resolve_pending_generic(GameState *state, Sym player_id) {
         if (action_requires_selection(action)) {
             Move sel[64];
             int nc = legal_generic_target_selection_moves(state, player_id, p, card, action, sel, 64);
-            if (nc == 0) { p->next_action_index++; continue; }
+            if (nc == 0) {
+                /* An optional action with no legal targets is normally skipped
+                 * (e.g. Death Tyrant's "up to 3" assassinates). Cards that want
+                 * the decline choice to stay visible even with zero targets opt
+                 * in via metadata offer_decline_when_no_targets (e.g. Vanifer's
+                 * "you may recruit" when the market has no qualifying card). */
+                for (int mi = 0; mi < action->metadata_count; mi++) {
+                    const char *mk = intern_str(action->metadata[mi].key);
+                    const char *mv = intern_str(action->metadata[mi].value);
+                    if (mk && strcmp(mk, "offer_decline_when_no_targets") == 0
+                        && mv && strcmp(mv, "true") == 0) {
+                        return state;
+                    }
+                }
+                p->next_action_index++;
+                continue;
+            }
             get_or_store_pending_action_limit(p, action, state, player_id);
             return state;
         }

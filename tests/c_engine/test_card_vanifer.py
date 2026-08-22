@@ -251,3 +251,53 @@ def test_vanifer_recruit_is_optional():
 
     assert not _discard_contains(session, _P2, "fire_elemental_myrmidon"), \
         "fire_elemental_myrmidon should not be recruited when the recruit is skipped"
+
+
+def test_vanifer_recruit_visible_decline_when_no_valid_cards():
+    """When no Malice card costing <=4 is in the market, the optional recruit
+    must still surface a visible decline move instead of silently auto-skipping."""
+    eng = _make_engine()
+    session = make_card_test_session(
+        eng,
+        [_P1, _P2],
+        hand={_P2: ["vanifer"]},
+        troops={
+            _P2: {_SITE_GAUNTLGRYM: [_P2, _P1]},
+        },
+        current_player=_P2,
+    )
+
+    s = _sptr(session).contents
+    # Market holds only a conquest card — no qualifying Malice card.
+    s.market.row_count = 1
+    s.market.row[0] = _lib.intern(b"neogi")
+
+    for m in session.legal_moves():
+        if m.move_type == "play_card" and m.data.get("card_id") == "vanifer":
+            session.submit_move(m)
+            break
+
+    assert _has_pending_generic(session)
+
+    # Resolve assassinate
+    moves = session.legal_moves()
+    session.submit_move([m for m in moves if m.move_type == "resolve_generic"][0])
+
+    # On the recruit action with no valid targets, a decline move must still be offered.
+    moves2 = session.legal_moves()
+    recruit_moves = [m for m in moves2 if m.move_type == "resolve_generic"]
+    skip_count = sum(1 for m in recruit_moves if m.data.get("action_id") is None)
+    target_count = sum(1 for m in recruit_moves if m.data.get("action_id") is not None)
+    assert skip_count == 1, f"Expected a visible decline move, got {skip_count}"
+    assert target_count == 0, (
+        f"Expected no recruit targets (no Malice card <=4), got {[m.data for m in recruit_moves]}"
+    )
+
+    # Declining the recruit must not recruit anything.
+    skip = next(m for m in recruit_moves if m.data.get("action_id") is None)
+    session.submit_move(skip)
+
+    assert not _discard_contains(session, _P2, "neogi"), \
+        "neogi should not be recruited when there is no qualifying Malice card"
+
+    session.destroy()

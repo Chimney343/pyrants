@@ -44,7 +44,9 @@
         "source_fragment": "recruit_aspect_filtered_card_by_cost",
         "metadata": {
           "required_aspect": "malice",
-          "max_cost": 4
+          "max_cost": 4,
+          "free_recruit": true,
+          "offer_decline_when_no_targets": true
         }
       }
     ]
@@ -81,7 +83,9 @@
       "source_fragment": "recruit_aspect_filtered_card_by_cost",
       "metadata": {
         "required_aspect": "malice",
-        "max_cost": 4
+        "max_cost": 4,
+        "free_recruit": true,
+        "offer_decline_when_no_targets": true
       }
     }
   ],
