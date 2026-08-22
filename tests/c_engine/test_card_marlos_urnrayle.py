@@ -205,13 +205,12 @@ def test_marlos_urnrayle_catalog_encoding_requires_another_played_card() -> None
         )
 
 
-def test_marlos_urnrayle_recruit_pays_influence_cost() -> None:
-    """Recruiting via Marlos spends influence equal to the card's cost.
+def test_marlos_urnrayle_recruit_is_free() -> None:
+    """Recruiting via Marlos is free: no influence is spent.
 
-    Marlos says "recruit an Ambition card that costs 4 or less" — not "without
-    paying its cost" — so the recruit is paid, unlike Vanifer's free recruit.
-    Regression guard against ``max_cost`` being (mis)treated as a free-recruit
-    signal.
+    Marlos says "recruit an Ambition card that costs 4 or less without paying
+    its cost", so the recruit must not charge influence. Regression guard
+    against ``max_cost`` being treated as a paid-recruit signal.
     """
     eng = CEngine()
     eng.initialize(
@@ -246,8 +245,8 @@ def test_marlos_urnrayle_recruit_pays_influence_cost() -> None:
     session.submit_move(cult[0])
 
     s = session._state._ptr.contents
-    assert s.resource_pool.influence == 3, (
-        f"Recruit should cost 3 influence, got {s.resource_pool.influence}"
+    assert s.resource_pool.influence == 6, (
+        f"Recruit should be free (no influence spent), got {s.resource_pool.influence}"
     )
 
     p1_discard = [
@@ -259,11 +258,11 @@ def test_marlos_urnrayle_recruit_pays_influence_cost() -> None:
     session.destroy()
 
 
-def test_marlos_urnrayle_recruit_requires_affordability() -> None:
-    """With insufficient influence for any qualifying card, the recruit auto-skips.
+def test_marlos_urnrayle_recruit_free_ignores_affordability() -> None:
+    """The free recruit offers ambition cards costing <= 4 regardless of influence.
 
-    The recruit is mandatory, but if no Ambition card costing <= 4 is affordable,
-    the engine offers no target and advances past the clause instead of stalling.
+    Because the recruit is "without paying its cost", a qualifying card must be
+    a legal target even when the player cannot afford it.
     """
     eng = CEngine()
     eng.initialize(
@@ -292,9 +291,16 @@ def test_marlos_urnrayle_recruit_requires_affordability() -> None:
     )
 
     recruit_moves = [m for m in session.legal_moves() if m.move_type == "resolve_generic"]
-    assert len(recruit_moves) == 0, (
-        f"With only 1 influence, cult_fanatic (cost 3) is unaffordable; "
-        f"expected no recruit target, got {[m.data for m in recruit_moves]}"
+    cult = [m for m in recruit_moves if m.data.get("action_id") == "cult_fanatic"]
+    assert cult, (
+        f"Free recruit must offer cult_fanatic (ambition, cost 3) despite low influence, "
+        f"got {[m.data for m in recruit_moves]}"
+    )
+    session.submit_move(cult[0])
+
+    s = session._state._ptr.contents
+    assert s.resource_pool.influence == 1, (
+        f"Free recruit should not spend influence, got {s.resource_pool.influence}"
     )
 
     session.destroy()
