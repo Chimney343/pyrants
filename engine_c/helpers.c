@@ -448,7 +448,7 @@ int apply_free_deploy(GameState *state, Sym player_id, Sym target_node_id) {
     if (!can_deploy_to_node(state, player_id, target_node_id, ht)) return -1;
     PlayerState *ps = cow_player(state, player_id);
     if (!ps) return -1;
-    if (ps->barracks == 0) { ps->score += 1; return 0; }
+    if (ps->barracks == 0) return -1;
     NodeState *ns = cow_node(state, target_node_id);
     if (!ns) return -1;
     for (int i = 0; i < ns->troop_slot_count; i++) {

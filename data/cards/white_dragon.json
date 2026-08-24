@@ -41,7 +41,8 @@
         "source_fragment": "scaled_vp_from_controlled_sites",
         "metadata": {
           "count_from": "controlled_sites",
-          "per": 2
+          "per": 2,
+          "as": "vp_tokens"
         }
       }
     ]
@@ -75,7 +76,8 @@
       "source_fragment": "scaled_vp_from_controlled_sites",
       "metadata": {
         "count_from": "controlled_sites",
-        "per": 2
+        "per": 2,
+        "as": "vp_tokens"
       }
     }
   ],

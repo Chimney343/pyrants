@@ -32,6 +32,8 @@ static int sel_deploy(const GameState *state, Sym player_id,
                       const CardDefinition *card, const CardAction *action,
                       Move *out, int max_out) {
     int w = 0;
+    int pi = player_index_for_id(state, player_id);
+    if (pi < 0 || state->players[pi].barracks <= 0) return 0;
     int ht = player_has_any_troops_on_board(state, player_id);
     for (int i = 0; i < state->node_count && w < max_out; i++) {
         Sym nid = state->nodes[i].node_id;
