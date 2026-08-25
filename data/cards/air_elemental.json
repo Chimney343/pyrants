@@ -54,10 +54,10 @@
           },
           {
             "action_id": "option_2_action_2",
-            "op": "assassinate_troop",
+            "op": "deploy_troops",
             "target_scope": "board_site",
             "timing": "immediate",
-            "optional": true,
+            "optional": false,
             "quantity": {
               "kind": "fixed",
               "value": 1
@@ -148,10 +148,10 @@
     },
     {
       "action_id": "option_2_action_2",
-      "op": "assassinate_troop",
+      "op": "deploy_troops",
       "target_scope": "board_site",
       "timing": "immediate",
-      "optional": true,
+      "optional": false,
       "quantity": {
         "kind": "fixed",
         "value": 1
