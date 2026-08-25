@@ -37,7 +37,7 @@
         "optional": false,
         "quantity": {
           "kind": "fixed",
-          "value": 2
+          "value": 1
         },
         "filters": [],
         "source_fragment": "gain_power_and_influence",
@@ -72,7 +72,7 @@
       "optional": false,
       "quantity": {
         "kind": "fixed",
-        "value": 2
+        "value": 1
       },
       "filters": [],
       "source_fragment": "gain_power_and_influence",
