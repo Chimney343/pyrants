@@ -8,8 +8,8 @@
   ],
   "deck_vp": 2,
   "inner_circle_vp": 3,
-  "rules_text": "Choose exactly one mode. Either place a spy, or return one of your spies to recruit up to 2 cards that cost 3 or less.",
-  "notes": "Recruit up to 2 market cards costing 3 or less. Each recruited card follows normal recruit destination rules and goes to your discard pile.",
+  "rules_text": "Choose exactly one mode. Either place a spy, or return one of your spies to recruit up to 2 cards that cost 3 or less without paying their cost.",
+  "notes": "Recruit up to 2 market cards costing 3 or less for free. Each recruited card follows normal recruit destination rules and goes to your discard pile.",
   "execution_model": {
     "kind": "modal_choice",
     "selection": "exactly_one",
@@ -67,7 +67,8 @@
             ],
             "source_fragment": "recruit_low_cost_card",
             "metadata": {
-              "max_cost": 3
+              "max_cost": 3,
+              "free_recruit": true
             }
           },
           {
@@ -85,7 +86,8 @@
             ],
             "source_fragment": "recruit_low_cost_card",
             "metadata": {
-              "max_cost": 3
+              "max_cost": 3,
+              "free_recruit": true
             }
           }
         ]
@@ -138,7 +140,8 @@
       ],
       "source_fragment": "recruit_low_cost_card",
       "metadata": {
-        "max_cost": 3
+        "max_cost": 3,
+        "free_recruit": true
       }
     },
     {
@@ -156,7 +159,8 @@
       ],
       "source_fragment": "recruit_low_cost_card",
       "metadata": {
-        "max_cost": 3
+        "max_cost": 3,
+        "free_recruit": true
       }
     }
   ],

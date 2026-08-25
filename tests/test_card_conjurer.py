@@ -24,6 +24,7 @@ def test_conjurer_execution_model_modal_two_options() -> None:
     assert "return one of your spies" in conjurer["rules_text"]
     assert "recruit up to 2 cards" in conjurer["rules_text"]
     assert "cost 3 or less" in conjurer["rules_text"]
+    assert "without paying" in conjurer["rules_text"]
 
 
 def test_conjurer_option_1_place_spy() -> None:
@@ -68,6 +69,7 @@ def test_conjurer_option_2_return_spy_then_recruit_up_to_2_cost_3_or_less() -> N
     assert rec1["optional"] is True
     assert "max_cost_3" in rec1.get("filters", [])
     assert rec1.get("metadata", {}).get("max_cost") == 3
+    assert rec1.get("metadata", {}).get("free_recruit") is True
 
     rec2 = actions[2]
     assert rec2["op"] == "recruit_card"
@@ -76,6 +78,7 @@ def test_conjurer_option_2_return_spy_then_recruit_up_to_2_cost_3_or_less() -> N
     assert rec2["optional"] is True
     assert "max_cost_3" in rec2.get("filters", [])
     assert rec2.get("metadata", {}).get("max_cost") == 3
+    assert rec2.get("metadata", {}).get("free_recruit") is True
 
 
 def test_conjurer_actions_array_matches_options() -> None:

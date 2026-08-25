@@ -149,8 +149,8 @@ def test_conjurer_mode_2_recruit_filtered_by_cost_3_or_less() -> None:
     session.destroy()
 
 
-def test_conjurer_mode_2_recruit_deducts_influence() -> None:
-    """Paid recruit deducts influence, recruited card goes to discard."""
+def test_conjurer_mode_2_recruit_is_free() -> None:
+    """Recruit is free (does not deduct influence), recruited card goes to discard."""
     eng = _make_engine()
     session = make_card_test_session(
         eng,
@@ -166,7 +166,7 @@ def test_conjurer_mode_2_recruit_deducts_influence() -> None:
 
     p1_idx = _session_player_index(session, _P1)
     s.players[p1_idx].discard_pile_count = 0
-    s.resource_pool.influence = 10
+    s.resource_pool.influence = 0
 
     play_conjurer = next(
         m for m in session.legal_moves()
@@ -187,10 +187,103 @@ def test_conjurer_mode_2_recruit_deducts_influence() -> None:
     session.submit_move(house_guard_move)
 
     s = _sptr(session).contents
-    assert s.resource_pool.influence == 7, \
-        f"Recruit should cost 3 influence: 10 -> {s.resource_pool.influence}"
+    assert s.resource_pool.influence == 0, \
+        f"Recruit should be free, influence unchanged: {s.resource_pool.influence}"
     assert s.players[p1_idx].discard_pile_count == 1, \
         "Recruited house_guard should be in discard"
+
+    session.destroy()
+
+
+def test_conjurer_mode_2_recruit_targets_offered_with_zero_influence() -> None:
+    """With no influence, recruit targets costing ≤3 must still be offered (free recruit)."""
+    eng = _make_engine()
+    session = make_card_test_session(
+        eng,
+        [_P1, _P2],
+        hand={_P1: ["conjurer"]},
+        spies={_SITE_GAUNTLGRYM: [_P1]},
+        current_player=_P1,
+    )
+
+    s = _sptr(session).contents
+    s.market.row_count = 2
+    s.market.row[0] = _lib.intern(b"white_wyrmling")  # cost 2, ≤3
+    s.market.row[1] = _lib.intern(b"house_guard")  # cost 3, ≤3
+    s.resource_pool.influence = 0
+
+    play_conjurer = next(
+        m for m in session.legal_moves()
+        if m.move_type == "play_card" and m.data.get("card_id") == "conjurer"
+    )
+    session.submit_move(play_conjurer)
+
+    gen = [m for m in session.legal_moves() if m.move_type == "resolve_generic"]
+    opt2 = next(m for m in gen if m.data.get("action_id") == "option_2")
+    session.submit_move(opt2)
+
+    gen = [m for m in session.legal_moves() if m.move_type == "resolve_generic"]
+    return_move = next(m for m in gen if m.data.get("action_id") is not None)
+    session.submit_move(return_move)
+
+    gen = [m for m in session.legal_moves() if m.move_type == "resolve_generic"]
+    rec_targets = {m.data.get("action_id") for m in gen if m.data.get("action_id") is not None}
+    assert "white_wyrmling" in rec_targets, "White Wyrmling (cost 2) should be a free recruit target"
+    assert "house_guard" in rec_targets, "House Guard (cost 3) should be a free recruit target"
+
+    session.destroy()
+
+
+def test_conjurer_mode_2_recruits_two_cards_for_free() -> None:
+    """Mode 2 recruits up to 2 cards, each free and sent to the discard pile."""
+    eng = _make_engine()
+    session = make_card_test_session(
+        eng,
+        [_P1, _P2],
+        hand={_P1: ["conjurer"]},
+        spies={_SITE_GAUNTLGRYM: [_P1]},
+        current_player=_P1,
+    )
+
+    s = _sptr(session).contents
+    s.market.row_count = 2
+    s.market.row[0] = _lib.intern(b"white_wyrmling")  # cost 2, ≤3
+    s.market.row[1] = _lib.intern(b"house_guard")  # cost 3, ≤3
+
+    p1_idx = _session_player_index(session, _P1)
+    s.players[p1_idx].discard_pile_count = 0
+    s.resource_pool.influence = 0
+
+    play_conjurer = next(
+        m for m in session.legal_moves()
+        if m.move_type == "play_card" and m.data.get("card_id") == "conjurer"
+    )
+    session.submit_move(play_conjurer)
+
+    gen = [m for m in session.legal_moves() if m.move_type == "resolve_generic"]
+    opt2 = next(m for m in gen if m.data.get("action_id") == "option_2")
+    session.submit_move(opt2)
+
+    gen = [m for m in session.legal_moves() if m.move_type == "resolve_generic"]
+    return_move = next(m for m in gen if m.data.get("action_id") is not None)
+    session.submit_move(return_move)
+
+    gen = [m for m in session.legal_moves() if m.move_type == "resolve_generic"]
+    first = next(m for m in gen if m.data.get("action_id") == "white_wyrmling")
+    session.submit_move(first)
+    assert "white_wyrmling" in _player_discard(session, _P1), \
+        "First recruited card should be in discard"
+
+    gen = [m for m in session.legal_moves() if m.move_type == "resolve_generic"]
+    second = next(m for m in gen if m.data.get("action_id") == "house_guard")
+    session.submit_move(second)
+
+    s = _sptr(session).contents
+    discard = _player_discard(session, _P1)
+    assert s.resource_pool.influence == 0, \
+        f"Both recruits should be free, influence: {s.resource_pool.influence}"
+    assert discard == ["white_wyrmling", "house_guard"], \
+        f"Both recruited cards should be in discard, got {discard}"
 
     session.destroy()
 
