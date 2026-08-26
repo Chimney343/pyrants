@@ -297,6 +297,14 @@ GameState *engine_determinize(const GameState *src, Sym observing_player_id, uin
         for (int j = 0; j < ps->discard_pile_count; j++) ps->discard_pile[j] = temp[pos++];
     }
 
+    /* Market deck order is hidden to all players (only its size is public):
+     * reshuffle it on every determinization so IS-MCTS cannot exploit a single
+     * clairvoyant deck order across simulations. The face-up market row and the
+     * (unused, non-recycled) market discard are left untouched. */
+    if (clone->market.deck_count > 1) {
+        rng_shuffle(&rng, (uint32_t *)clone->market.deck, clone->market.deck_count);
+    }
+
     return clone;
 }
 

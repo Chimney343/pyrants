@@ -102,7 +102,13 @@ def _parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--num-sims", type=int, default=200)
     parser.add_argument("--uct-c", type=float, default=1.4)
-    parser.add_argument("--max-world-samples", type=int, default=1000)
+    parser.add_argument(
+        "--max-world-samples",
+        type=int,
+        default=-1,
+        help="Max determinizations to pool before reusing (default: -1 = unlimited, "
+        "fresh determinization every iteration). A positive value opts into capped-pool reuse.",
+    )
     parser.add_argument("--final-policy", choices=list(POLICY_CHOICES), default="visited")
     parser.add_argument("--num-games", type=int, default=4)
     parser.add_argument("--seed", type=int, default=42)

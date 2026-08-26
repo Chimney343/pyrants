@@ -114,11 +114,12 @@ Both models are frozen and serialize to stable JSON via `model_dump_json()`.
 The serialized `PrivateView` is used as the information-state string in
 IS-MCTS (prefixed with the game history for perfect recall).
 
-The determinization module (`openspiel_pyrants/deterimization_c.py`) uses
-public-view equality to verify that resampled states are indistinguishable
-from the original to a third-party observer. The `resample_from_infostate`
+Determinization is implemented by `CEngineAdapter.determinize`
+(`engine_c/bindings/c_adapter.py`), which calls the C engine's
+`engine_determinize` (`engine_c/state.c`). The `resample_from_infostate`
 contract:
 1. Public view matches the original exactly.
 2. The observing player's hand and deck order are preserved.
 3. Every opponent's hidden zones preserve the same multiset of cards but
-    are reshuffled using the bot's RNG.
+    are reshuffled using the bot's RNG, and the market deck order is
+    reshuffled too (only its size is public).

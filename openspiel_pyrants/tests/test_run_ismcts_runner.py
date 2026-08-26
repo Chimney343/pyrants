@@ -52,6 +52,17 @@ class TestRunISMCTSRunner:
         assert isinstance(summary["winner"], (int, type(None)))
 
 
+class TestParseArgsDefaults:
+    def test_max_world_samples_defaults_to_unlimited(self, monkeypatch):
+        import sys
+
+        from scripts.run_ismcts import _parse_args
+
+        monkeypatch.setattr(sys, "argv", ["run_ismcts"])
+        args = _parse_args()
+        assert args.max_world_samples == -1
+
+
 class TestCMoveWrapperNormalization:
     def test_all_moves_normalized(self, requires_c_engine):
         from engine_c.bindings.ce_api import _MOVE_TYPE_MAP, CMoveWrapper  # noqa: I001

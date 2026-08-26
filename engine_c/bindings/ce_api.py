@@ -235,6 +235,16 @@ class CState:
         p = self._s.players[index]
         return [_sym_str(p.deck[i]) for i in range(p.deck_count)]
 
+    def market_deck(self) -> list:
+        """Return list of card ID strings in the (hidden) market deck."""
+        m = self._s.market
+        return [_sym_str(m.deck[i]) for i in range(m.deck_count)]
+
+    def market_row(self) -> list:
+        """Return list of card ID strings in the face-up market row."""
+        m = self._s.market
+        return [_sym_str(m.row[i]) for i in range(m.row_count)]
+
     def player_played(self, index: int) -> list:
         p = self._s.players[index]
         return [_sym_str(p.played_cards[i]) for i in range(p.played_cards_count)]
@@ -254,6 +264,11 @@ class CState:
         """Return list of card ID strings in the player's inner circle."""
         p = self._s.players[index]
         return [_sym_str(p.inner_circle[i]) for i in range(p.inner_circle_count)]
+
+    def player_trophy_hall(self, index: int) -> list:
+        """Return list of owner ID strings in the player's trophy hall."""
+        p = self._s.players[index]
+        return [_sym_str(p.trophy_hall[i]) for i in range(p.trophy_hall_count)]
 
     @property
     def player_ids(self) -> list:

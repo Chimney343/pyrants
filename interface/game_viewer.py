@@ -6,7 +6,7 @@ import argparse
 import json
 import tkinter as tk
 from collections import Counter
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -613,6 +613,16 @@ class GameViewerApp:
         self.other_discard_labels: dict[str, ttk.Label] = {}
         self.other_discards_frame: ttk.Frame | None = None
         self._other_discards_placeholder: ttk.Label | None = None
+        self.other_inner_circle_selection_vars: dict[str, tk.StringVar] = {}
+        self.other_inner_circle_boxes: dict[str, ttk.Combobox] = {}
+        self.other_inner_circle_labels: dict[str, ttk.Label] = {}
+        self.other_inner_circles_frame: ttk.Frame | None = None
+        self._other_inner_circles_placeholder: ttk.Label | None = None
+        self.other_trophy_hall_selection_vars: dict[str, tk.StringVar] = {}
+        self.other_trophy_hall_boxes: dict[str, ttk.Combobox] = {}
+        self.other_trophy_hall_labels: dict[str, ttk.Label] = {}
+        self.other_trophy_halls_frame: ttk.Frame | None = None
+        self._other_trophy_halls_placeholder: ttk.Label | None = None
         self._hover_market_cards: list[CardView] = []
         self._hover_hand_cards: list[CardView] = []
         self._hover_played_cards: list[CardView] = []
@@ -932,6 +942,18 @@ class GameViewerApp:
         self._other_discards_placeholder = ttk.Label(self.other_discards_frame, text="(none)", justify=tk.LEFT)
         self._other_discards_placeholder.pack(anchor=tk.W)
 
+        ttk.Label(sidebar, text="Other Player Inner Circles", font=("Segoe UI", 10, "bold")).pack(anchor=tk.W)
+        self.other_inner_circles_frame = ttk.Frame(sidebar)
+        self.other_inner_circles_frame.pack(fill=tk.X, pady=(0, 10))
+        self._other_inner_circles_placeholder = ttk.Label(self.other_inner_circles_frame, text="(none)", justify=tk.LEFT)
+        self._other_inner_circles_placeholder.pack(anchor=tk.W)
+
+        ttk.Label(sidebar, text="Other Player Trophy Halls", font=("Segoe UI", 10, "bold")).pack(anchor=tk.W)
+        self.other_trophy_halls_frame = ttk.Frame(sidebar)
+        self.other_trophy_halls_frame.pack(fill=tk.X, pady=(0, 10))
+        self._other_trophy_halls_placeholder = ttk.Label(self.other_trophy_halls_frame, text="(none)", justify=tk.LEFT)
+        self._other_trophy_halls_placeholder.pack(anchor=tk.W)
+
         ttk.Label(sidebar, text="Generic Choice Options", font=("Segoe UI", 10, "bold")).pack(anchor=tk.W)
         self.option_box = ttk.Combobox(sidebar, state="readonly", textvariable=self.option_var, height=256)
         self.option_box.pack(fill=tk.X, pady=(0, 8))
@@ -1186,6 +1208,12 @@ class GameViewerApp:
             # Other players' discard piles
             self._sync_other_player_discard_boxes_c(cstate, cards_by_id)
 
+            # Other players' inner circles
+            self._sync_other_player_inner_circle_boxes_c(cstate, cards_by_id)
+
+            # Other players' trophy halls
+            self._sync_other_player_trophy_hall_boxes_c(cstate, cards_by_id)
+
             # Own inner circle
             current_inner = cstate.player_inner_circle(current_index)
             for cid in current_inner:
@@ -1231,17 +1259,27 @@ class GameViewerApp:
         finally:
             self._is_refreshing = False
 
-    def _sync_other_player_discard_boxes_c(self, state: Any, cards_by_id: dict[str, Any]) -> None:
-        """C-engine variant of _sync_other_player_discard_boxes."""
-        if self.other_discards_frame is None:
+    def _sync_other_player_zone_c(
+        self,
+        state: Any,
+        *,
+        frame: ttk.Frame | None,
+        placeholder: ttk.Label | None,
+        boxes: dict[str, ttk.Combobox],
+        labels: dict[str, ttk.Label],
+        selection_vars: dict[str, tk.StringVar],
+        build_options: Callable[[int], list[str]],
+    ) -> None:
+        """Create/refresh one per-opponent dropdown row for a face-up zone."""
+        if frame is None:
             return
 
         other_player_ids = [pid for pid in state.turn_order if pid != state.current_player_id]
-        previous_player_ids = set(self.other_discard_boxes)
+        previous_player_ids = set(boxes)
 
         for player_id in other_player_ids:
-            if player_id not in self.other_discard_boxes:
-                row = ttk.Frame(self.other_discards_frame)
+            if player_id not in boxes:
+                row = ttk.Frame(frame)
                 row.pack(fill=tk.X, pady=(0, 4))
 
                 label = ttk.Label(row, text=f"{player_id}:", width=6)
@@ -1251,13 +1289,13 @@ class GameViewerApp:
                 box = ttk.Combobox(row, state="readonly", textvariable=selection_var, width=42, height=256)
                 box.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(6, 0))
 
-                self.other_discard_labels[player_id] = label
-                self.other_discard_selection_vars[player_id] = selection_var
-                self.other_discard_boxes[player_id] = box
+                labels[player_id] = label
+                selection_vars[player_id] = selection_var
+                boxes[player_id] = box
 
-            label = self.other_discard_labels[player_id]
-            box = self.other_discard_boxes[player_id]
-            selection_var = self.other_discard_selection_vars[player_id]
+            label = labels[player_id]
+            box = boxes[player_id]
+            selection_var = selection_vars[player_id]
 
             # Keep row order aligned with turn order as the active player rotates.
             row = box.master
@@ -1265,28 +1303,79 @@ class GameViewerApp:
             row.pack(fill=tk.X, pady=(0, 4))
 
             label.configure(text=f"{player_id}:")
-            discard_pile = state.player_discard(state.player_index(player_id))
-            # Ensure every card ID in the other player's discard is in cards_by_id.
-            for cid in discard_pile:
-                if cid and cid not in cards_by_id:
-                    from engine_c.bindings.view import _make_card_view
-                    cards_by_id[cid] = _make_card_view(cid)
-            options = format_discard_pile_options(discard_pile, cards_by_id)
+            options = build_options(state.player_index(player_id))
             box["values"] = options
             if selection_var.get() not in options:
                 selection_var.set(options[0])
 
         for player_id in previous_player_ids - set(other_player_ids):
-            box = self.other_discard_boxes.pop(player_id)
-            self.other_discard_selection_vars.pop(player_id, None)
-            self.other_discard_labels.pop(player_id, None)
+            box = boxes.pop(player_id)
+            selection_vars.pop(player_id, None)
+            labels.pop(player_id, None)
             box.master.destroy()
 
-        if self._other_discards_placeholder is not None:
+        if placeholder is not None:
             if other_player_ids:
-                self._other_discards_placeholder.pack_forget()
+                placeholder.pack_forget()
             else:
-                self._other_discards_placeholder.pack(anchor=tk.W)
+                placeholder.pack(anchor=tk.W)
+
+    def _sync_other_player_discard_boxes_c(self, state: Any, cards_by_id: dict[str, Any]) -> None:
+        """C-engine variant of _sync_other_player_discard_boxes."""
+
+        def build_options(index: int) -> list[str]:
+            discard_pile = state.player_discard(index)
+            # Ensure every card ID in the other player's discard is in cards_by_id.
+            for cid in discard_pile:
+                if cid and cid not in cards_by_id:
+                    from engine_c.bindings.view import _make_card_view
+                    cards_by_id[cid] = _make_card_view(cid)
+            return format_discard_pile_options(discard_pile, cards_by_id)
+
+        self._sync_other_player_zone_c(
+            state,
+            frame=self.other_discards_frame,
+            placeholder=self._other_discards_placeholder,
+            boxes=self.other_discard_boxes,
+            labels=self.other_discard_labels,
+            selection_vars=self.other_discard_selection_vars,
+            build_options=build_options,
+        )
+
+    def _sync_other_player_inner_circle_boxes_c(self, state: Any, cards_by_id: dict[str, Any]) -> None:
+        """Populate the other-player inner-circle dropdowns."""
+
+        def build_options(index: int) -> list[str]:
+            inner_circle = state.player_inner_circle(index)
+            for cid in inner_circle:
+                if cid and cid not in cards_by_id:
+                    from engine_c.bindings.view import _make_card_view
+                    cards_by_id[cid] = _make_card_view(cid)
+            return format_ordered_card_options(inner_circle, cards_by_id)
+
+        self._sync_other_player_zone_c(
+            state,
+            frame=self.other_inner_circles_frame,
+            placeholder=self._other_inner_circles_placeholder,
+            boxes=self.other_inner_circle_boxes,
+            labels=self.other_inner_circle_labels,
+            selection_vars=self.other_inner_circle_selection_vars,
+            build_options=build_options,
+        )
+
+    def _sync_other_player_trophy_hall_boxes_c(self, state: Any, cards_by_id: dict[str, Any]) -> None:
+        """Populate the other-player trophy-hall dropdowns."""
+        del cards_by_id
+
+        self._sync_other_player_zone_c(
+            state,
+            frame=self.other_trophy_halls_frame,
+            placeholder=self._other_trophy_halls_placeholder,
+            boxes=self.other_trophy_hall_boxes,
+            labels=self.other_trophy_hall_labels,
+            selection_vars=self.other_trophy_hall_selection_vars,
+            build_options=lambda index: format_trophy_hall_options(state.player_trophy_hall(index)),
+        )
 
     def _sync_market_row(
         self,

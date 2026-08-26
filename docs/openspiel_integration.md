@@ -111,7 +111,7 @@ The `scripts/run_ismcts.py` runner drives the stock
 |--------|---------|
 | `engine_c/bindings/` | C engine bindings: `CEngine`, `CSession`, `CEngineAdapter`, `CState` |
 | `openspiel_pyrants/observer_c.py` | `PyrantsCObserver` — returns private-view JSON from `string_from` |
-| `openspiel_pyrants/deterimization_c.py` | Reshuffles opponent hidden zones for IS-MCTS determinization |
+| `engine_c/bindings/c_adapter.py` | `CEngineAdapter.determinize` — reshuffles opponent hidden zones for IS-MCTS determinization |
 | `openspiel_pyrants/state_c.py` | `PyrantsCState` — `information_state_string`, `observation_string`, `resample_from_infostate` |
 | `openspiel_pyrants/game_c.py` | `PyrantsCGame` — declares `GameType`/`GameInfo`; returns `PyrantsCObserver` |
 | `scripts/run_ismcts.py` | Headless IS-MCTS runner with CLI control, per-game `replay.json` + `decisions.jsonl` + `summary.json`, and cross-run `summary.csv` / `summary.md` |
@@ -130,8 +130,9 @@ recall: two states at different nodes in the game tree produce distinct keys.
 
 `resample_from_infostate(player, rng)` clones the current state (preserving
 history), then reshuffles the opponent's hand/deck/discard using Fisher-Yates
-shuffle driven by the bot's RNG. The observing player's hand and deck order
-are preserved exactly. The public view is unchanged.
+shuffle driven by the bot's RNG, and reshuffles the market deck order (only
+its size is public). The observing player's hand and deck order are preserved
+exactly. The public view is unchanged.
 
 ### Running
 
