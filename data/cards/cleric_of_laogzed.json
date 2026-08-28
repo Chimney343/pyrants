@@ -8,7 +8,7 @@
   ],
   "deck_vp": 2,
   "inner_circle_vp": 4,
-  "rules_text": "Move an enemy troop. At end of turn, promote a played card.",
+  "rules_text": "Move an enemy troop. At end of turn, promote another played card.",
   "notes": "Any enemy troop within the current player's presence is a legal target and it can be moved anywhere. The end-of-turn promote must target a different played card, not Cleric of Laogzed itself.",
   "execution_model": {
     "kind": "sequence",
@@ -39,7 +39,9 @@
         },
         "filters": [],
         "source_fragment": "triggered_promote",
-        "metadata": {}
+        "metadata": {
+          "requires_another_played_card": true
+        }
       }
     ]
   },
@@ -70,7 +72,9 @@
       },
       "filters": [],
       "source_fragment": "triggered_promote",
-      "metadata": {}
+      "metadata": {
+        "requires_another_played_card": true
+      }
     }
   ],
   "global_conditions": [
