@@ -69,6 +69,41 @@ POLICY_CHOICES = {
 _BASE_SETUP_CACHE: dict | None = None
 
 
+def _write_jsonl_line(fh, obj: dict) -> None:
+    """Write one JSON object per line and flush immediately.
+
+    Durability note: per-line ``.flush()`` survives a Python exception or a
+    graceful Ctrl+C; it does *not* survive a hard process kill or segfault
+    (that would need ``os.fsync()`` per line, at real per-move cost). Both
+    known crash classes in ``docs/ismcts-generic-resolution-bugs.md`` are
+    ordinary Python RuntimeErrors, so flush-only is the right tradeoff.
+    """
+    fh.write(json.dumps(obj) + "\n")
+    fh.flush()
+
+
+class GameRunFailedError(Exception):
+    """Raised when ``run_one_game`` crashes mid-loop, carrying partial artifacts.
+
+    ``game_summary`` is a best-effort partial summary (same top-level keys as
+    a successful summary where derivable; fields that need a terminal state
+    are omitted or zeroed). ``crash_record`` is the structured crash record
+    dict (phase 1 stubs it with ``exception_type``/``exception_message``;
+    phase 3 fleshes it out).
+    """
+
+    def __init__(self, game_summary: dict, crash_record: dict):
+        # Forward both args to Exception.__init__ so self.args == (game_summary,
+        # crash_record) — that's what the default __reduce__ pickles/unpickles
+        # via GameRunFailedError(*self.args). This exception crosses process
+        # boundaries (ProcessPoolExecutor re-raises it in the parent process),
+        # so it must round-trip through pickle; passing only one arg here left
+        # crash_record missing on unpickle, breaking the whole worker pool.
+        super().__init__(game_summary, crash_record)
+        self.game_summary = game_summary
+        self.crash_record = crash_record
+
+
 def _base_setup() -> dict:
     global _BASE_SETUP_CACHE
     if _BASE_SETUP_CACHE is None:
@@ -196,6 +231,40 @@ def _legal_moves_strings(state, action_ids: list[int]) -> list[str]:
     return result
 
 
+def _base_game_summary(
+    *,
+    run_id: str,
+    game_index: int,
+    shuffle_seed: int,
+    deck_a_id: str,
+    deck_b_id: str,
+    num_players: int,
+    num_sims: int,
+    uct_c: float,
+    rollout_count: int,
+    rollout_max_length: int | None,
+    final_policy_name: str,
+    decision_count: int,
+    wall_sec: float,
+) -> dict:
+    """Shared base fields for both the success-path and partial game summaries."""
+    return {
+        "run_id": run_id,
+        "game_index": game_index,
+        "shuffle_seed": shuffle_seed,
+        "deck_a_id": deck_a_id,
+        "deck_b_id": deck_b_id,
+        "num_players": num_players,
+        "num_sims_per_move": num_sims,
+        "uct_c": uct_c,
+        "rollout_count": rollout_count,
+        "rollout_max_length": rollout_max_length,
+        "policy_type": final_policy_name,
+        "decision_count": decision_count,
+        "wall_time_sec": round(wall_sec, 3),
+    }
+
+
 def run_one_game(
     game: pyspiel.Game,
     game_index: int,
@@ -225,6 +294,13 @@ def run_one_game(
     )
     game_out = _game_dir(out_dir, game_index)
     game_out.mkdir(parents=True, exist_ok=True)
+
+    # Streaming per-game logs: one JSON object per line, flushed immediately
+    # after every event (see _write_jsonl_line's durability note).  These are
+    # kept open for the whole game so a mid-loop crash still leaves every
+    # step that happened before the crash on disk.
+    steps_fh = (game_out / "steps.jsonl").open("w", encoding="utf-8")
+    decisions_fh = (game_out / "decisions.jsonl").open("w", encoding="utf-8")
 
     from open_spiel.python.algorithms.ismcts import ISMCTSBot
     from open_spiel.python.algorithms.mcts import RandomRolloutEvaluator
@@ -267,86 +343,185 @@ def run_one_game(
         inner_bar.set_postfix_str("initialising...")
         inner_bar.update(0)
 
-    while not state.is_terminal():
-        if max_rounds > 0 and state._engine.round_number > max_rounds:
-            break
-        cp = state.current_player()
-        if cp < 0 or cp >= num_players:
-            break
+    try:
+        while not state.is_terminal():
+            if max_rounds > 0 and state._engine.round_number > max_rounds:
+                break
+            cp = state.current_player()
+            if cp < 0 or cp >= num_players:
+                break
 
-        bot = bots[cp]
-        legal_ids = state.legal_actions()
-        legal_moves = _legal_moves_strings(state, legal_ids)
+            bot = bots[cp]
+            legal_ids = state.legal_actions()
+            legal_moves = _legal_moves_strings(state, legal_ids)
 
+            if inner_bar is not None:
+                inner_bar.set_postfix_str("simulating...")
+                inner_bar.refresh()
+
+            t0 = time.perf_counter()
+            policy, chosen = bot.step_with_policy(state)
+            wall_ms = (time.perf_counter() - t0) * 1000.0
+
+            chosen_move_obj = state.decode_action(int(chosen))
+            chosen_move_str = state.move_to_str(chosen_move_obj)
+            phase = state._engine.phase.value
+            round_number = state._engine.round_number
+            player_id = state._game.get_player_ids()[cp]
+
+            logger.debug(
+                "move_decided",
+                round=state._engine.round_number,
+                player=player_id,
+                phase=phase,
+                action=chosen_move_str,
+                wall_ms=round(wall_ms, 3),
+            )
+
+            if metrics is not None:
+                metrics.record_move_latency(wall_ms, phase)
+            move_latencies.append(round(wall_ms, 3))
+
+            action_probs: dict[int, float] = {}
+            for aid, prob in policy:
+                action_probs[int(aid)] = float(prob)
+
+            decision = {
+                "run_id": run_id,
+                "node": decision_count,
+                "round": state._engine.round_number,
+                "phase": state._engine.phase.value,
+                "current_player": player_id,
+                "info_state_sha256": _sha256(state.information_state_string(cp)),
+                "legal_action_ids": [int(a) for a in legal_ids],
+                "legal_moves": legal_moves,
+                "policy": action_probs,
+                "visit_counts": {int(chosen): 1},
+                "chosen_action_id": int(chosen),
+                "chosen_move": chosen_move_str,
+                "wall_time_ms": round(wall_ms, 3),
+                "sims_requested": num_sims,
+            }
+            decisions.append(decision)
+            # Streamed unconditionally — the bot's decision is valid telemetry
+            # even if applying it crashes.
+            _write_jsonl_line(decisions_fh, decision)
+
+            state.apply_action(int(chosen))
+
+            _write_jsonl_line(steps_fh, {
+                "event": "step",
+                "node": decision_count,
+                "round": round_number,
+                "phase": phase,
+                "player_id": player_id,
+                "move_type": chosen_move_obj.move_type,
+                "chosen_move": chosen_move_str,
+                "wall_time_ms": round(wall_ms, 3),
+                "run_id": run_id,
+            })
+
+            replay_log.append({
+                "run_id": run_id,
+                "step_index": decision_count,
+                "player_id": player_id,
+                "round_number": round_number,
+                "phase": phase,
+                "prompts": [],
+                "move_type": chosen_move_obj.move_type,
+                "label": chosen_move_str,
+                "payload": state.move_to_payload(chosen_move_obj),
+            })
+            decision_count += 1
+            if inner_bar is not None:
+                sims_per_sec_rate = num_sims / (wall_ms / 1000.0) if wall_ms > 0 else 0.0
+                inner_bar.set_postfix_str(
+                    f"r{state._engine.round_number} {state._engine.phase.value} "
+                    f"sims/s={sims_per_sec_rate:.0f}"
+                )
+                inner_bar.update(1)
+    except Exception as exc:
         if inner_bar is not None:
-            inner_bar.set_postfix_str("simulating...")
-            inner_bar.refresh()
+            inner_bar.set_postfix_str("")
+            inner_bar.close()
+        steps_fh.close()
+        decisions_fh.close()
+        wall_sec = time.perf_counter() - wall_start
+        crash_record = {
+            "exception_type": type(exc).__name__,
+            "exception_message": str(exc),
+        }
+        partial_summary = _base_game_summary(
+            run_id=run_id,
+            game_index=game_index,
+            shuffle_seed=shuffle_seed,
+            deck_a_id=deck_a_id,
+            deck_b_id=deck_b_id,
+            num_players=num_players,
+            num_sims=num_sims,
+            uct_c=uct_c,
+            rollout_count=rollout_count,
+            rollout_max_length=rollout_max_length,
+            final_policy_name=final_policy_name,
+            decision_count=decision_count,
+            wall_sec=wall_sec,
+        )
+        partial_summary["stopped_reason"] = "error"
+        partial_summary["max_rounds"] = max_rounds
 
-        t0 = time.perf_counter()
-        policy, chosen = bot.step_with_policy(state)
-        wall_ms = (time.perf_counter() - t0) * 1000.0
+        # Salvage whatever replay/summary artifacts are computable from a
+        # game that never reached a terminal state.  Best-effort: a failure
+        # here must not mask the original exception.
+        try:
+            player_ids = list(state._game.get_player_ids())
+            salvage_payload = build_replay_payload(
+                run_id=run_id,
+                stopped_reason="error",
+                max_rounds=max_rounds,
+                step_count=decision_count,
+                is_terminal=False,
+                winner_id=None,
+                final_scores={},
+                replay_log=replay_log,
+                shuffle_seed=shuffle_seed,
+                deck_a_id=deck_a_id,
+                deck_b_id=deck_b_id,
+                board_path=str(ROOT / "data" / "boards" / "tyrants_of_the_underdark.json"),
+                card_path=str(ROOT / "data" / "cards"),
+                setup_path=str(ROOT / "data" / "decks" / "base_setup.json"),
+                player_ids=player_ids,
+            )
+            with (game_out / "replay.json").open("w", encoding="utf-8") as f:
+                json.dump(salvage_payload, f, indent=2)
+                f.write("\n")
 
-        chosen_move_obj = state.decode_action(int(chosen))
-        chosen_move_str = state.move_to_str(chosen_move_obj)
-        phase = state._engine.phase.value
-        round_number = state._engine.round_number
-        player_id = state._game.get_player_ids()[cp]
+            with (game_out / "summary.json").open("w", encoding="utf-8") as f:
+                summary_out = {
+                    k: v for k, v in partial_summary.items() if not k.startswith("_")
+                }
+                json.dump(summary_out, f, indent=2)
+                f.write("\n")
+        except Exception:
+            logger.exception("artifact_salvage_failed", game_index=game_index)
 
-        logger.debug(
-            "move_decided",
-            round=state._engine.round_number,
-            player=player_id,
-            phase=phase,
-            action=chosen_move_str,
-            wall_ms=round(wall_ms, 3),
+        with (game_out / "steps.jsonl").open("a", encoding="utf-8") as f:
+            _write_jsonl_line(f, {
+                "event": "game_crashed",
+                "node": decision_count,
+                "exception_type": type(exc).__name__,
+                "exception_message": str(exc),
+                "run_id": run_id,
+            })
+
+        logger.error(
+            "game_crashed",
+            decision_count=decision_count,
+            wall_time_sec=round(wall_sec, 3),
+            exception_type=type(exc).__name__,
+            exception_message=str(exc),
         )
 
-        if metrics is not None:
-            metrics.record_move_latency(wall_ms, phase)
-        move_latencies.append(round(wall_ms, 3))
-
-        action_probs: dict[int, float] = {}
-        for aid, prob in policy:
-            action_probs[int(aid)] = float(prob)
-
-        decisions.append({
-            "run_id": run_id,
-            "node": decision_count,
-            "round": state._engine.round_number,
-            "phase": state._engine.phase.value,
-            "current_player": player_id,
-            "info_state_sha256": _sha256(state.information_state_string(cp)),
-            "legal_action_ids": [int(a) for a in legal_ids],
-            "legal_moves": legal_moves,
-            "policy": action_probs,
-            "visit_counts": {int(chosen): 1},
-            "chosen_action_id": int(chosen),
-            "chosen_move": chosen_move_str,
-            "wall_time_ms": round(wall_ms, 3),
-            "sims_requested": num_sims,
-        })
-
-        state.apply_action(int(chosen))
-
-        replay_log.append({
-            "run_id": run_id,
-            "step_index": decision_count,
-            "player_id": player_id,
-            "round_number": round_number,
-            "phase": phase,
-            "prompts": [],
-            "move_type": chosen_move_obj.move_type,
-            "label": chosen_move_str,
-            "payload": state.move_to_payload(chosen_move_obj),
-        })
-        decision_count += 1
-        if inner_bar is not None:
-            sims_per_sec_rate = num_sims / (wall_ms / 1000.0) if wall_ms > 0 else 0.0
-            inner_bar.set_postfix_str(
-                f"r{state._engine.round_number} {state._engine.phase.value} "
-                f"sims/s={sims_per_sec_rate:.0f}"
-            )
-            inner_bar.update(1)
+        raise GameRunFailedError(partial_summary, crash_record) from exc
 
     if inner_bar is not None:
         inner_bar.set_postfix_str("")
@@ -450,19 +625,21 @@ def run_one_game(
     )
 
     game_summary = {
-        "run_id": run_id,
-        "game_index": game_index,
-        "shuffle_seed": shuffle_seed,
-        "deck_a_id": deck_a_id,
-        "deck_b_id": deck_b_id,
-        "num_players": num_players,
-        "num_sims_per_move": num_sims,
-        "uct_c": uct_c,
-        "rollout_count": rollout_count,
-        "rollout_max_length": rollout_max_length,
-        "policy_type": final_policy_name,
-        "decision_count": decision_count,
-        "wall_time_sec": round(wall_sec, 3),
+        **_base_game_summary(
+            run_id=run_id,
+            game_index=game_index,
+            shuffle_seed=shuffle_seed,
+            deck_a_id=deck_a_id,
+            deck_b_id=deck_b_id,
+            num_players=num_players,
+            num_sims=num_sims,
+            uct_c=uct_c,
+            rollout_count=rollout_count,
+            rollout_max_length=rollout_max_length,
+            final_policy_name=final_policy_name,
+            decision_count=decision_count,
+            wall_sec=wall_sec,
+        ),
         "sims_per_sec_avg": round(sims_per_sec, 1),
         "moves_per_sec_avg": round(moves_per_sec, 2),
         "returns": [round(float(ret[i]), 3) for i in range(num_players)],
@@ -488,6 +665,17 @@ def run_one_game(
         "initial_state_sha256": initial_state_sha256,
         "_move_latencies": move_latencies,
     }
+
+    _write_jsonl_line(steps_fh, {
+        "event": "game_end",
+        "node": decision_count,
+        "round": final_round_num,
+        "phase": final_phase,
+        "stopped_reason": stopped_reason,
+        "run_id": run_id,
+    })
+    steps_fh.close()
+    decisions_fh.close()
 
     player_ids = list(state._game.get_player_ids())
     winner_id = resolve_winner_id(state, winner, num_players)
@@ -515,10 +703,6 @@ def run_one_game(
     with (game_out / "replay.json").open("w", encoding="utf-8") as f:
         json.dump(replay_payload, f, indent=2)
         f.write("\n")
-
-    with (game_out / "decisions.jsonl").open("w", encoding="utf-8") as f:
-        for d in decisions:
-            f.write(json.dumps(d) + "\n")
 
     with (game_out / "summary.json").open("w", encoding="utf-8") as f:
         summary_out = {k: v for k, v in game_summary.items() if not k.startswith("_")}
@@ -604,7 +788,7 @@ def _log_game_done(index: int, total: int, summary: dict, t0_start: float) -> No
     rate = sims_done / elapsed if elapsed > 0 else 0
     tqdm.write(
         f"Game {index}/{total}: decisions={summary['decision_count']} "
-        f"winner={summary['winner']} "
+        f"winner={summary.get('winner', '-')} "
         f"wall={elapsed:.1f}s sims/s={rate:.0f}"
     )
 
@@ -667,6 +851,23 @@ def _run_one_game_standalone(
             setup_data_json=setup_data_json,
             num_players=num_players,
         )
+    except GameRunFailedError as exc:
+        logger = structlog.get_logger()
+        logger.exception("worker_game_failed", game_index=game_index)
+        failures_path = Path(output_dir) / "failures.jsonl"
+        with failures_path.open("a", encoding="utf-8") as f:
+            f.write(
+                json.dumps({
+                    "run_id": run_id,
+                    "game_index": game_index,
+                    "worker_pid": os.getpid(),
+                    "game_summary": exc.game_summary,
+                    "crash_record": exc.crash_record,
+                    "error": traceback.format_exc(),
+                })
+                + "\n"
+            )
+        raise
     except Exception:
         logger = structlog.get_logger()
         logger.exception("worker_game_failed", game_index=game_index)
@@ -729,28 +930,39 @@ def main() -> None:
             game = _load_game_or_die(args.game, load_params)
 
             t0 = time.perf_counter()
-            summary = run_one_game(
-                game=game,
-                game_index=gi,
-                num_sims=args.num_sims,
-                uct_c=args.uct_c,
-                max_world_samples=args.max_world_samples,
-                final_policy_type=policy_type,
-                final_policy_name=args.final_policy,
-                seed=args.seed,
-                shuffle_seed=shuffle_seed,
-                out_dir=args.output_dir,
-                deck_a_id=deck_a_id,
-                deck_b_id=deck_b_id,
-                show_progress=True,
-                run_id=run_id,
-                metrics=metrics,
-                rollout_count=args.rollout_count,
-                rollout_max_length=rollout_max_len,
-                max_rounds=args.max_rounds,
-                setup_data_json=setup_json,
-                num_players=args.num_players,
-            )
+            try:
+                summary = run_one_game(
+                    game=game,
+                    game_index=gi,
+                    num_sims=args.num_sims,
+                    uct_c=args.uct_c,
+                    max_world_samples=args.max_world_samples,
+                    final_policy_type=policy_type,
+                    final_policy_name=args.final_policy,
+                    seed=args.seed,
+                    shuffle_seed=shuffle_seed,
+                    out_dir=args.output_dir,
+                    deck_a_id=deck_a_id,
+                    deck_b_id=deck_b_id,
+                    show_progress=True,
+                    run_id=run_id,
+                    metrics=metrics,
+                    rollout_count=args.rollout_count,
+                    rollout_max_length=rollout_max_len,
+                    max_rounds=args.max_rounds,
+                    setup_data_json=setup_json,
+                    num_players=args.num_players,
+                )
+            except GameRunFailedError as exc:
+                logger.exception(
+                    "game_failed",
+                    game_index=gi,
+                    decision_count=exc.game_summary.get("decision_count"),
+                )
+                summaries.append(exc.game_summary)
+                metrics.games_failed += 1
+                _log_game_done(gi + 1, args.num_games, exc.game_summary, t0)
+                continue
             summaries.append(summary)
             metrics.games_completed += 1
             if summary.get("stopped_reason") == "round_cap":

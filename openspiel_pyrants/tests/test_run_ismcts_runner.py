@@ -6,10 +6,12 @@ tiny simulation budgets.
 
 from __future__ import annotations
 
+import json
+
 import pytest
 
 import openspiel_pyrants  # noqa: F401
-from scripts.run_ismcts import _load_game_or_die, _resolve_policy, run_one_game
+from scripts.run_ismcts import _game_dir, _load_game_or_die, _resolve_policy, run_one_game
 
 
 def _build_quick_params(game_name: str, num_players: int) -> dict:
@@ -50,6 +52,16 @@ class TestRunISMCTSRunner:
         final_scores = summary["final_scores_per_player"]
         assert len(final_scores) == num_players
         assert isinstance(summary["winner"], (int, type(None)))
+
+        # A successful run must have produced a streaming steps.jsonl with one
+        # "step" line per decision and a trailing "game_end" line.
+        game_out = _game_dir(tmp_path, 0)
+        steps_path = game_out / "steps.jsonl"
+        assert steps_path.exists(), "steps.jsonl missing after a successful run"
+        steps = [json.loads(line) for line in steps_path.open(encoding="utf-8")]
+        step_events = [s["event"] for s in steps]
+        assert step_events[-1] == "game_end"
+        assert len([e for e in step_events if e == "step"]) == summary["decision_count"]
 
 
 class TestParseArgsDefaults:
@@ -95,7 +107,10 @@ class TestCMoveWrapperNormalization:
         """Verify to_payload() returns move_type + data for a mock move."""
         from engine_c.bindings.ce_api import CMove, CMoveWrapper, MOVE_PLAY_CARD, _lib  # noqa: I001
 
-        _lib.intern_init(4096)
+        # NOTE: do NOT call _lib.intern_init here — the intern table is global
+        # C state; re-initializing it wipes Syms referenced by any loaded game
+        # definition and corrupts subsequent tests in the session. intern()
+        # self-initializes when the table is empty.
         card_sym = _lib.intern(b"test_card")
         c_move = CMove()
         c_move.type = MOVE_PLAY_CARD
@@ -111,7 +126,6 @@ class TestCMoveWrapperNormalization:
     def test_str_smoke(self):
         from engine_c.bindings.ce_api import CMove, CMoveWrapper, MOVE_PLAY_CARD, _lib  # noqa: I001
 
-        _lib.intern_init(4096)
         card_sym = _lib.intern(b"test_card")
         c_move = CMove()
         c_move.type = MOVE_PLAY_CARD
@@ -126,7 +140,6 @@ class TestCMoveWrapperNormalization:
     def test_activate_ability_normalized(self):
         from engine_c.bindings.ce_api import CMove, CMoveWrapper, MOVE_ACTIVATE_ABILITY, _lib  # noqa: I001
 
-        _lib.intern_init(4096)
         card_sym = _lib.intern(b"noble")
         ability_sym = _lib.intern(b"spy")
         c_move = CMove()

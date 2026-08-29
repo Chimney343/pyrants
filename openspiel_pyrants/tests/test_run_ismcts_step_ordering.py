@@ -17,7 +17,13 @@ import json
 import pytest
 
 import openspiel_pyrants  # noqa: F401
-from scripts.run_ismcts import _game_dir, _load_game_or_die, _resolve_policy, run_one_game
+from scripts.run_ismcts import (
+    GameRunFailedError,
+    _game_dir,
+    _load_game_or_die,
+    _resolve_policy,
+    run_one_game,
+)
 
 _MOVE_FAIL_ON_CALL = 3  # 1 = shuffle chance action, 2 = move 1, 3 = move 2
 
@@ -64,7 +70,7 @@ class TestReplayLogOrdering:
         """A move whose apply_action raises must not appear in the replay log."""
         game, state, counters = _flaky_game()
 
-        with pytest.raises(RuntimeError, match="boom"):
+        with pytest.raises(GameRunFailedError) as excinfo:
             run_one_game(
                 game=game,
                 game_index=0,
@@ -86,6 +92,11 @@ class TestReplayLogOrdering:
                 deck_b_id="deck_b",
                 run_id="order_test",
             )
+
+        # The original RuntimeError ("boom") is chained onto the wrapped
+        # GameRunFailedError, so it is still reachable.
+        assert isinstance(excinfo.value.__cause__, RuntimeError)
+        assert str(excinfo.value.__cause__) == "boom"
 
         assert counters["apply_calls"] == _MOVE_FAIL_ON_CALL
         # One move applied successfully before the third apply call raised
