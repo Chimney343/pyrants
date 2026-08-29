@@ -7,6 +7,13 @@ python := ".venv/Scripts/python.exe"
 build-c:
     cmd /c "engine_c\\compile.bat"
 
+# AddressSanitizer build: catches C memory-safety bugs (buffer overflows,
+# use-after-free) that a normal build and test run can't see. Produces
+# separate engine_c_asan.dll / *_asan.exe artifacts; does not touch the
+# normal build-c output.
+build-c-asan:
+    cmd /c "engine_c\\compile_asan.bat"
+
 build-game players="p1,p2" board="data/boards/tyrants_of_the_underdark.json" layout="data/layouts/tyrants_of_the_underdark_layout.json" card="data/cards" setup="data/decks/base_setup.json": build-c
     & {{python}} -m interface.game_viewer --players {{players}} --board-path {{board}} --layout-path {{layout}} --card-path {{card}} --setup-path {{setup}}
 
@@ -27,6 +34,13 @@ test-c:
 
 test-c-python: generate-test-card-scenarios
     & {{python}} -m pytest tests/c_engine -v
+
+# Run the C-engine test suite through the AddressSanitizer build instead of
+# the normal one, to surface memory-safety bugs the functional tests can't
+# see on their own. Slower than test-c-python; run it periodically, not on
+# every commit.
+test-c-asan: build-c-asan generate-test-card-scenarios
+    $env:PYRANTS_ENGINE_DLL = (Resolve-Path "engine_c/engine_c_asan.dll").Path; & {{python}} -m pytest tests/c_engine -v
 
 # ── Game Interface ───────────────────────────────────────────────────────────
 

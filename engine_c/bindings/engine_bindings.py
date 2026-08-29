@@ -18,11 +18,14 @@ from ctypes import (
     c_uint64, c_void_p, byref, cast, pointer,
 )
 
-_dll_path = os.path.join(os.path.dirname(__file__), "..", "engine_c.dll")
-_dll_path = os.path.abspath(_dll_path)
+_dll_path = os.environ.get("PYRANTS_ENGINE_DLL")
 
-if not os.path.exists(_dll_path):
-    _dll_path = os.path.join(os.path.dirname(__file__), "..", "engine_c", "engine_c.dll")
+if not _dll_path:
+    _dll_path = os.path.join(os.path.dirname(__file__), "..", "engine_c.dll")
+    _dll_path = os.path.abspath(_dll_path)
+
+    if not os.path.exists(_dll_path):
+        _dll_path = os.path.join(os.path.dirname(__file__), "..", "engine_c", "engine_c.dll")
 
 _lib = None
 try:

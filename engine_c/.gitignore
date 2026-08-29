@@ -4,6 +4,9 @@
 *.exp
 *.lib
 *.exe
+*.pdb
+*.ilk
+clang_rt.asan*.dll
 __pycache__/
 build_profile/
 test_intern_perf
