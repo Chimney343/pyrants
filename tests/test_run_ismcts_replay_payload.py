@@ -21,6 +21,29 @@ from scripts._replay_payload import (
     resolve_winner_id,
 )
 
+
+class TestRunISMCTSUsesReplayPayload:
+    """The runner must wire in the tested _replay_payload helpers, not a
+    second inline duplicate."""
+
+    def test_imports_build_replay_payload_from_module(self):
+        import scripts._replay_payload as rp
+        import scripts.run_ismcts as m
+
+        assert m.build_replay_payload is rp.build_replay_payload
+
+    def test_imports_compute_final_scores_from_module(self):
+        import scripts._replay_payload as rp
+        import scripts.run_ismcts as m
+
+        assert m.compute_final_scores is rp.compute_final_scores
+
+    def test_imports_resolve_winner_id_from_module(self):
+        import scripts._replay_payload as rp
+        import scripts.run_ismcts as m
+
+        assert m.resolve_winner_id is rp.resolve_winner_id
+
 # ── compute_final_scores ────────────────────────────────────────────────────
 
 

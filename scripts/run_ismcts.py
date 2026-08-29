@@ -50,6 +50,11 @@ from scripts._obs import (  # noqa: E402
     configure_logging,
     new_run_id,
 )
+from scripts._replay_payload import (  # noqa: E402
+    build_replay_payload,
+    compute_final_scores,
+    resolve_winner_id,
+)
 
 DEFAULT_OUTPUT_DIR = ROOT / "artifacts" / "ismcts"
 _BASE_SETUP_PATH = ROOT / "data" / "decks" / "base_setup.json"
@@ -284,6 +289,7 @@ def run_one_game(
         chosen_move_obj = state.decode_action(int(chosen))
         chosen_move_str = state.move_to_str(chosen_move_obj)
         phase = state._engine.phase.value
+        round_number = state._engine.round_number
         player_id = state._game.get_player_ids()[cp]
 
         logger.debug(
@@ -320,19 +326,19 @@ def run_one_game(
             "sims_requested": num_sims,
         })
 
+        state.apply_action(int(chosen))
+
         replay_log.append({
             "run_id": run_id,
             "step_index": decision_count,
             "player_id": player_id,
-            "round_number": state._engine.round_number,
-            "phase": state._engine.phase.value,
+            "round_number": round_number,
+            "phase": phase,
             "prompts": [],
             "move_type": chosen_move_obj.move_type,
             "label": chosen_move_str,
             "payload": state.move_to_payload(chosen_move_obj),
         })
-
-        state.apply_action(int(chosen))
         decision_count += 1
         if inner_bar is not None:
             sims_per_sec_rate = num_sims / (wall_ms / 1000.0) if wall_ms > 0 else 0.0
@@ -424,7 +430,7 @@ def run_one_game(
 
     final_phase = state._engine.phase.value
     final_round_num = state._engine.round_number
-    final_scores = state.final_scores()
+    final_scores = compute_final_scores(state)
 
     if stopped_reason == "round_cap":
         outcome = "truncated"
@@ -484,39 +490,27 @@ def run_one_game(
     }
 
     player_ids = list(state._game.get_player_ids())
-    winner_id = player_ids[winner] if winner is not None else None
+    winner_id = resolve_winner_id(state, winner, num_players)
 
-    replay_payload = {
-        "run_id": run_id,
-        "stopped_reason": stopped_reason,
-        "max_rounds": max_rounds,
-        "step_count": decision_count,
-        "is_terminal": state.is_terminal(),
-        "winner_id": winner_id,
-        "final_scores": final_scores,
-        "replay_log": replay_log,
-        "replay_context": {
-            "board_path": str(ROOT / "data" / "boards" / "tyrants_of_the_underdark.json"),
-            "card_path": str(ROOT / "data" / "cards"),
-            "setup_path": str(ROOT / "data" / "decks" / "base_setup.json"),
-            "player_ids": player_ids,
-            "seed": shuffle_seed,
-            "deck_a_id": deck_a_id,
-            "deck_b_id": deck_b_id,
-        },
-    }
-    if stopped_reason == "terminal" and state.is_terminal():
-        replay_payload["replay_log"].append({
-            "run_id": run_id,
-            "step_index": decision_count,
-            "player_id": None,
-            "round_number": final_round_num,
-            "phase": final_phase,
-            "prompts": [],
-            "move_type": "__terminal__",
-            "label": "game_over",
-            "payload": {"move_type": "__terminal__"},
-        })
+    replay_payload = build_replay_payload(
+        run_id=run_id,
+        stopped_reason=stopped_reason,
+        max_rounds=max_rounds,
+        step_count=decision_count,
+        is_terminal=state.is_terminal(),
+        winner_id=winner_id,
+        final_scores=final_scores,
+        replay_log=replay_log,
+        shuffle_seed=shuffle_seed,
+        deck_a_id=deck_a_id,
+        deck_b_id=deck_b_id,
+        board_path=str(ROOT / "data" / "boards" / "tyrants_of_the_underdark.json"),
+        card_path=str(ROOT / "data" / "cards"),
+        setup_path=str(ROOT / "data" / "decks" / "base_setup.json"),
+        player_ids=player_ids,
+        final_round_num=final_round_num,
+        final_phase=final_phase,
+    )
 
     with (game_out / "replay.json").open("w", encoding="utf-8") as f:
         json.dump(replay_payload, f, indent=2)
@@ -552,7 +546,7 @@ def write_summaries(out_dir: Path, summaries: list[dict], run_id: str) -> None:
         "setup_data_sha256", "initial_state_sha256",
     ]
     with csv_path.open("w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames, extrasaction="ignore")
+        writer = csv.DictWriter(f, fieldnames=fieldnames, extrasaction="ignore", restval="")
         writer.writeheader()
         for s in summaries:
             writer.writerow(s)
