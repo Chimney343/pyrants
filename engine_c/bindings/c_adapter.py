@@ -100,6 +100,27 @@ class CEngineAdapter:
         self._engine.destroy(self._state)
         self._state = new_state
 
+    def pending_generic_op(self) -> Optional[str]:
+        """Return the op of the currently active pending-generic action, if any.
+
+        Mirrors ``pending_generic_active_action()`` (``engine_c/generic_runtime.c``):
+        the *op* (e.g. ``"deploy_troops"``) of
+        ``pending_generic.current_actions[next_action_index]`` — not the
+        ``resolve_generic`` move's own ``action_id`` field, which holds the
+        selected target (a site/route/troop/player id), never the action verb.
+        Must be read before the move answering this choice is applied —
+        ``next_action_index`` advances (or ``pending_generic`` is cleared)
+        once it is.
+        """
+        pg = self._state._ptr.contents.pending_generic
+        if not pg:
+            return None
+        p = pg.contents
+        idx = p.next_action_index
+        if idx < 0 or idx >= p.current_action_count:
+            return None
+        return _sym_str(p.current_actions[idx].op)
+
     def is_terminal(self) -> bool:
         return self._engine.is_terminal(self._state)
 

@@ -87,6 +87,15 @@ class NodeOccupancyView:
 
 
 @dataclass(frozen=True)
+class CBoardViewData:
+    board_nodes: tuple[NodeOccupancyView, ...]
+    current_player_controlled_sites: int
+    current_player_total_control_sites: int
+    current_player_control_vp: int
+    current_player_total_control_vp: int
+
+
+@dataclass(frozen=True)
 class CGameViewData:
     round_number: int
     phase: str
@@ -362,6 +371,72 @@ def _session_attr(session, name: str, default=None):
         return default
 
 
+def _resolve_state_ptr(session):
+    """Resolve a CSession/CState/pointer into the raw C state pointer."""
+    from .ce_api import CState
+
+    if isinstance(session, ctypes.c_void_p) or (hasattr(session, "_ptr") and hasattr(session, "round_number")):
+        return session._ptr if hasattr(session, "_ptr") else session
+    if hasattr(session, "_state"):
+        inner = session._state
+        return inner._ptr if isinstance(inner, CState) else inner
+    raise TypeError(f"Unsupported session type: {type(session)}")
+
+
+def _build_board_nodes(c_view) -> list[NodeOccupancyView]:
+    """Project a CGameView node array into NodeOccupancyView objects."""
+    board_nodes: list[NodeOccupancyView] = []
+    for i in range(c_view.node_count):
+        nv = c_view.nodes[i]
+        nid = _sym_str(nv.node_id) or f"node_{i}"
+
+        adjacent: list[str] = []
+        for j in range(nv.adjacent_count):
+            a = _sym_str(nv.adjacent_to[j])
+            if a:
+                adjacent.append(a)
+
+        troop_slots: list[str | None] = []
+        for j in range(nv.troop_slot_count):
+            troop_slots.append(_sym_str(nv.troop_slots[j]))
+
+        spies: list[str] = []
+        for j in range(nv.spy_count):
+            s = _sym_str(nv.spies[j])
+            if s:
+                spies.append(s)
+
+        board_nodes.append(NodeOccupancyView(
+            node_id=nid,
+            kind="site" if nv.kind == 0 else "route",
+            adjacent_to=tuple(adjacent),
+            control_vp=nv.control_vp,
+            total_control_vp_per_turn=nv.total_control_vp_per_turn,
+            troop_slots=tuple(troop_slots),
+            spies=tuple(sorted(spies)),
+            vp_tokens=nv.vp_tokens,
+        ))
+    return board_nodes
+
+
+def build_c_board_view(session) -> CBoardViewData:
+    """Project only the board-facing fields of a game state.
+
+    Avoids per-card ``CardView`` construction, aspect computation, and legal-move
+    building — intended for high-frequency snapshots that only need board nodes.
+    """
+    state_ptr = _resolve_state_ptr(session)
+    c_view = CGameView()
+    _lib.engine_build_view(state_ptr, ctypes.byref(c_view))
+    return CBoardViewData(
+        board_nodes=tuple(_build_board_nodes(c_view)),
+        current_player_controlled_sites=c_view.controlled_sites,
+        current_player_total_control_sites=c_view.total_control_sites,
+        current_player_control_vp=c_view.current_player_control_vp,
+        current_player_total_control_vp=c_view.current_player_total_control_vp,
+    )
+
+
 def build_c_game_view(
     session,
     *,
@@ -373,19 +448,7 @@ def build_c_game_view(
         session: CSession instance or CState pointer (ctypes).
         node_names: Optional friendly-name override for node IDs.
     """
-    from .ce_api import CState
-
-    state_ptr = None
-    if isinstance(session, ctypes.c_void_p) or (hasattr(session, "_ptr") and hasattr(session, "round_number")):
-        state_ptr = session._ptr if hasattr(session, "_ptr") else session
-    elif hasattr(session, "_state"):
-        inner = session._state
-        if isinstance(inner, CState):
-            state_ptr = inner._ptr
-        else:
-            state_ptr = inner
-    else:
-        raise TypeError(f"Unsupported session type: {type(session)}")
+    state_ptr = _resolve_state_ptr(session)
 
     c_view = CGameView()
     _lib.engine_build_view(state_ptr, ctypes.byref(c_view))
@@ -460,38 +523,7 @@ def build_c_game_view(
         if cid:
             market_row.append(_make_card_view(cid))
 
-    board_nodes: list[NodeOccupancyView] = []
-    for i in range(c_view.node_count):
-        nv = c_view.nodes[i]
-        nid = _sym_str(nv.node_id) or f"node_{i}"
-
-        adjacent: list[str] = []
-        for j in range(nv.adjacent_count):
-            a = _sym_str(nv.adjacent_to[j])
-            if a:
-                adjacent.append(a)
-
-        troop_slots: list[str | None] = []
-        for j in range(nv.troop_slot_count):
-            t = _sym_str(nv.troop_slots[j])
-            troop_slots.append(t)
-
-        spies: list[str] = []
-        for j in range(nv.spy_count):
-            s = _sym_str(nv.spies[j])
-            if s:
-                spies.append(s)
-
-        board_nodes.append(NodeOccupancyView(
-            node_id=nid,
-            kind="site" if nv.kind == 0 else "route",
-            adjacent_to=tuple(adjacent),
-            control_vp=nv.control_vp,
-            total_control_vp_per_turn=nv.total_control_vp_per_turn,
-            troop_slots=tuple(troop_slots),
-            spies=tuple(sorted(spies)),
-            vp_tokens=nv.vp_tokens,
-        ))
+    board_nodes = _build_board_nodes(c_view)
 
     return CGameViewData(
         round_number=c_view.round_number,

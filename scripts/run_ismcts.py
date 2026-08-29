@@ -55,6 +55,11 @@ from scripts._replay_payload import (  # noqa: E402
     compute_final_scores,
     resolve_winner_id,
 )
+from scripts._state_snapshot import (  # noqa: E402
+    _is_board_mutating,
+    _tier1_snapshot,
+    _tier2_snapshot,
+)
 
 DEFAULT_OUTPUT_DIR = ROOT / "artifacts" / "ismcts"
 _BASE_SETUP_PATH = ROOT / "data" / "decks" / "base_setup.json"
@@ -331,6 +336,7 @@ def run_one_game(
     replay_log: list[dict] = []
     move_latencies: list[float] = []
     wall_start = time.perf_counter()
+    previous_round_number = state._engine.round_number
 
     inner_bar: tqdm | None = None
     if show_progress:
@@ -407,7 +413,23 @@ def run_one_game(
             # even if applying it crashes.
             _write_jsonl_line(decisions_fh, decision)
 
+            # Must read before apply_action(): applying the move advances (or
+            # clears) the pending-generic-choice state this reflects.
+            pending_op = (
+                state._adapter.pending_generic_op()
+                if chosen_move_obj.move_type == "resolve_generic"
+                else None
+            )
+
             state.apply_action(int(chosen))
+
+            move_payload = state.move_to_payload(chosen_move_obj)
+            current_round_number = state._engine.round_number
+            round_changed = current_round_number != previous_round_number
+            previous_round_number = current_round_number
+            state_snapshot = _tier1_snapshot(state._adapter)
+            if round_changed or _is_board_mutating(move_payload.get("move_type", chosen_move_obj.move_type), pending_op):
+                state_snapshot["board"] = _tier2_snapshot(state._adapter)
 
             _write_jsonl_line(steps_fh, {
                 "event": "step",
@@ -419,6 +441,7 @@ def run_one_game(
                 "chosen_move": chosen_move_str,
                 "wall_time_ms": round(wall_ms, 3),
                 "run_id": run_id,
+                "state": state_snapshot,
             })
 
             replay_log.append({
@@ -430,7 +453,7 @@ def run_one_game(
                 "prompts": [],
                 "move_type": chosen_move_obj.move_type,
                 "label": chosen_move_str,
-                "payload": state.move_to_payload(chosen_move_obj),
+                "payload": move_payload,
             })
             decision_count += 1
             if inner_bar is not None:
