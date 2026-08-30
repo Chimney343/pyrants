@@ -26,6 +26,7 @@ from scripts.run_ismcts import (
     _game_dir,
     _load_game_or_die,
     _resolve_policy,
+    _run_one_game_standalone,
     main,
     run_one_game,
 )
@@ -142,6 +143,33 @@ def _decisions_lines(game_out) -> list[dict]:
     if not decisions_path.exists():
         return []
     return [json.loads(line) for line in decisions_path.open(encoding="utf-8")]
+
+
+def _read_failures(out_dir) -> list[dict]:
+    failures_path = out_dir / "failures.jsonl"
+    if not failures_path.exists():
+        return []
+    return [json.loads(line) for line in failures_path.open(encoding="utf-8")]
+
+
+# Every field the phase-3 structured crash record must surface in the
+# failures.jsonl line, merged additively into the base shape
+# {run_id, game_index, worker_pid, error}.  Both the single-worker (main()
+# workers==1) and multi-worker (_run_one_game_standalone) paths must produce
+# the identical key set.
+_FAILURE_KEYS = {
+    "run_id", "game_index", "worker_pid", "error",
+    "exception_type", "exception_message", "traceback",
+    "step_index", "attempted_move_type", "attempted_move_label", "attempted_payload",
+    "pending_card_id", "phase_at_failure", "round_number_at_failure",
+    "current_player_at_failure", "is_terminal_at_failure",
+    "legal_moves_count_at_failure", "legal_moves_at_failure",
+}
+
+
+def _assert_failure_keys(line: dict) -> None:
+    for key in _FAILURE_KEYS:
+        assert key in line, f"missing failures.jsonl key {key!r} in {sorted(line)}"
 
 
 class TestStreamingStepsJsonl:
@@ -396,6 +424,55 @@ class TestSingleWorkerContinue:
         # The crashed game's steps.jsonl must show step + game_crashed.
         crashed_steps = _steps_lines(_game_dir(tmp_path, 1))
         assert crashed_steps[-1]["event"] == "game_crashed"
+
+        # The single-worker path must write the same structured failures.jsonl
+        # line the multi-worker path writes (phase 3).
+        failures = _read_failures(tmp_path)
+        assert len(failures) == 1
+        failure = failures[0]
+        assert failure["game_index"] == crash_at_game
+        assert failure["worker_pid"] is None
+        assert failure["run_id"] == "single_worker_crash_test"
+        _assert_failure_keys(failure)
+
+
+class TestFailuresJsonlStructuredFields:
+    def test_standalone_worker_writes_structured_failures_jsonl(
+        self, requires_c_engine, tmp_path, monkeypatch
+    ):
+        """The multi-worker path (_run_one_game_standalone) must write the
+        structured failures.jsonl line via record_game_failure, carrying the
+        same keys as the single-worker path (phase 3)."""
+        counters = {}
+        game = _load_flaky_game(_CHANCE_AND_FIRST_MOVE_CALLS, counters)
+        monkeypatch.setattr(
+            "scripts.run_ismcts._load_game_or_die", lambda name, params: game
+        )
+
+        with pytest.raises(GameRunFailedError):
+            _run_one_game_standalone(
+                game_index=3,
+                num_sims=2,
+                uct_c=1.4,
+                max_world_samples=10,
+                final_policy_name="visited",
+                seed=42,
+                shuffle_seed=45,
+                output_dir=str(tmp_path),
+                run_id="standalone_crash",
+                num_players=2,
+                max_rounds=15,
+            )
+
+        failures = _read_failures(tmp_path)
+        assert len(failures) == 1
+        line = failures[0]
+        assert line["run_id"] == "standalone_crash"
+        assert line["game_index"] == 3
+        assert line["worker_pid"] is not None
+        assert line["exception_type"] == "RuntimeError"
+        assert line["exception_message"] == "simulated demon bite"
+        _assert_failure_keys(line)
 
 
 def _read_summaries(out_dir) -> list[dict]:

@@ -8,13 +8,16 @@ pipeline and its side-effect imports.
 
 from __future__ import annotations
 
+import json
 import logging
 import math
 import os
 import random
 import sys
+import traceback
 import uuid
 from dataclasses import dataclass, field
+from pathlib import Path
 
 
 def new_run_id() -> str:
@@ -58,6 +61,37 @@ def bind_worker_context(game_index: int, worker_pid: int) -> None:
     import structlog
 
     structlog.contextvars.bind_contextvars(game_index=game_index, worker_pid=worker_pid)
+
+
+def record_game_failure(
+    output_dir,
+    run_id: str,
+    game_index: int,
+    exc: BaseException,
+    crash_record: dict | None = None,
+    worker_pid: int | None = None,
+) -> dict:
+    """Append a structured failure line to ``failures.jsonl`` and return it.
+
+    Starts from the phase-1 base shape ``{run_id, game_index, worker_pid,
+    error}`` (keeping ``error`` verbatim for anything that greps for it today)
+    and merges ``crash_record``'s fields additively.  Both the single-worker
+    (``main()`` workers==1) and multi-worker (``_run_one_game_standalone``)
+    paths call this so both produce identical line shapes.
+    """
+    line: dict = {
+        "run_id": run_id,
+        "game_index": game_index,
+        "worker_pid": worker_pid,
+        "error": traceback.format_exc(),
+    }
+    if crash_record:
+        line.update(crash_record)
+    failures_path = Path(output_dir) / "failures.jsonl"
+    failures_path.parent.mkdir(parents=True, exist_ok=True)
+    with failures_path.open("a", encoding="utf-8") as f:
+        f.write(json.dumps(line) + "\n")
+    return line
 
 
 # ---------------------------------------------------------------------------

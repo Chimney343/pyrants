@@ -38,6 +38,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 import openspiel_pyrants  # noqa: E402, F401 — registers python_pyrants
+from engine_c.bindings.ce_api import _sym_str  # noqa: E402
 from game_setup.market_setup import (  # noqa: E402
     combine_two_deck_market_setup,
     discover_full_deck_profiles,
@@ -49,6 +50,7 @@ from scripts._obs import (  # noqa: E402
     compute_percentiles,
     configure_logging,
     new_run_id,
+    record_game_failure,
 )
 from scripts._replay_payload import (  # noqa: E402
     build_replay_payload,
@@ -236,6 +238,62 @@ def _legal_moves_strings(state, action_ids: list[int]) -> list[str]:
     return result
 
 
+def _diagnose_apply_failure(adapter) -> dict:
+    """Introspect a still-valid adapter after ``apply()`` raised.
+
+    ``CEngineAdapter.apply()`` raises *before* mutating ``self._state``, so the
+    adapter remains queryable after the exception propagates.  This reads the
+    same "private" ``_state._ptr.contents.pending_generic`` attribute the
+    adapter itself reads internally — a deliberate, minimal, read-only coupling.
+
+    A failure to introspect must never mask or replace the original exception
+    being handled, so this is wrapped in its own try/except.
+    """
+    try:
+        legal = adapter.legal_moves()
+        pg = adapter._state._ptr.contents.pending_generic
+        pending_card_id = _sym_str(pg.contents.source_card_id) if pg else None
+        return {
+            "pending_card_id": pending_card_id,
+            "phase_at_failure": adapter.phase(),
+            "round_number_at_failure": adapter.round_number(),
+            "current_player_at_failure": adapter.current_player_id(),
+            "is_terminal_at_failure": adapter.is_terminal(),
+            "legal_moves_count_at_failure": len(legal),
+            "legal_moves_at_failure": [str(m) for m in legal][:10],
+        }
+    except Exception as diag_exc:
+        return {"diagnosis_failed": str(diag_exc)}
+
+
+def _build_crash_record(
+    exc: BaseException,
+    state,
+    step_index: int,
+    attempted_move_type,
+    attempted_move_label,
+    attempted_payload,
+) -> dict:
+    """Merge exception info, attempted-move context, and adapter diagnosis.
+
+    ``state`` is the OpenSpiel state object; its ``_adapter`` (if any) is
+    introspected via ``_diagnose_apply_failure`` and merged additively.
+    """
+    record = {
+        "exception_type": type(exc).__name__,
+        "exception_message": str(exc),
+        "traceback": traceback.format_exc(),
+        "step_index": step_index,
+        "attempted_move_type": attempted_move_type,
+        "attempted_move_label": attempted_move_label,
+        "attempted_payload": attempted_payload,
+    }
+    adapter = getattr(state, "_adapter", None)
+    if adapter is not None:
+        record.update(_diagnose_apply_failure(adapter))
+    return record
+
+
 def _base_game_summary(
     *,
     run_id: str,
@@ -338,6 +396,12 @@ def run_one_game(
     wall_start = time.perf_counter()
     previous_round_number = state._engine.round_number
 
+    # Tracked per-iteration so the except block can record the *attempted*
+    # move even though ``chosen_move_obj``/``chosen_move_str`` are loop-scoped.
+    attempted_move_type = None
+    attempted_move_label = ""
+    attempted_payload: dict = {}
+
     inner_bar: tqdm | None = None
     if show_progress:
         inner_bar = tqdm(
@@ -374,6 +438,10 @@ def run_one_game(
             phase = state._engine.phase.value
             round_number = state._engine.round_number
             player_id = state._game.get_player_ids()[cp]
+
+            attempted_move_type = chosen_move_obj.move_type
+            attempted_move_label = chosen_move_str
+            attempted_payload = chosen_move_obj.to_payload()
 
             logger.debug(
                 "move_decided",
@@ -470,10 +538,14 @@ def run_one_game(
         steps_fh.close()
         decisions_fh.close()
         wall_sec = time.perf_counter() - wall_start
-        crash_record = {
-            "exception_type": type(exc).__name__,
-            "exception_message": str(exc),
-        }
+        crash_record = _build_crash_record(
+            exc,
+            state,
+            decision_count,
+            attempted_move_type,
+            attempted_move_label,
+            attempted_payload,
+        )
         partial_summary = _base_game_summary(
             run_id=run_id,
             game_index=game_index,
@@ -531,9 +603,8 @@ def run_one_game(
             _write_jsonl_line(f, {
                 "event": "game_crashed",
                 "node": decision_count,
-                "exception_type": type(exc).__name__,
-                "exception_message": str(exc),
                 "run_id": run_id,
+                **crash_record,
             })
 
         logger.error(
@@ -877,34 +948,25 @@ def _run_one_game_standalone(
     except GameRunFailedError as exc:
         logger = structlog.get_logger()
         logger.exception("worker_game_failed", game_index=game_index)
-        failures_path = Path(output_dir) / "failures.jsonl"
-        with failures_path.open("a", encoding="utf-8") as f:
-            f.write(
-                json.dumps({
-                    "run_id": run_id,
-                    "game_index": game_index,
-                    "worker_pid": os.getpid(),
-                    "game_summary": exc.game_summary,
-                    "crash_record": exc.crash_record,
-                    "error": traceback.format_exc(),
-                })
-                + "\n"
-            )
+        record_game_failure(
+            output_dir,
+            run_id,
+            game_index,
+            exc,
+            crash_record=getattr(exc, "crash_record", None),
+            worker_pid=os.getpid(),
+        )
         raise
-    except Exception:
+    except Exception as exc:
         logger = structlog.get_logger()
         logger.exception("worker_game_failed", game_index=game_index)
-        failures_path = Path(output_dir) / "failures.jsonl"
-        with failures_path.open("a", encoding="utf-8") as f:
-            f.write(
-                json.dumps({
-                    "run_id": run_id,
-                    "game_index": game_index,
-                    "worker_pid": os.getpid(),
-                    "error": traceback.format_exc(),
-                })
-                + "\n"
-            )
+        record_game_failure(
+            output_dir,
+            run_id,
+            game_index,
+            exc,
+            worker_pid=os.getpid(),
+        )
         raise
 
 
@@ -981,6 +1043,13 @@ def main() -> None:
                     "game_failed",
                     game_index=gi,
                     decision_count=exc.game_summary.get("decision_count"),
+                )
+                record_game_failure(
+                    args.output_dir,
+                    run_id,
+                    gi,
+                    exc,
+                    crash_record=exc.crash_record,
                 )
                 summaries.append(exc.game_summary)
                 metrics.games_failed += 1
