@@ -238,6 +238,12 @@ def _format_action_with_target(card_name: str, action_desc: str, target_id: str,
     return f"{card_name}: {action_desc} at {humanized}"
 
 
+def _format_spy_relocation(card_name: str, source_id: str, destination_id: str, *, node_names: dict[str, str] | None = None) -> str:
+    src = node_names.get(source_id) if node_names and source_id in node_names else _humanize_action(source_id)
+    dst = node_names.get(destination_id) if node_names and destination_id in node_names else _humanize_action(destination_id)
+    return f"{card_name}: Move your spy from {src} to {dst}"
+
+
 def _card_id_from_data(move_data: dict) -> str:
     target_id = move_data.get("target_id", "")
     if target_id:
@@ -297,16 +303,19 @@ def enrich_label(move_type: str, raw_label: str, move_data: dict, *, source_card
         action_id = move_data.get("action_id", "")
         target_id = move_data.get("target_id", "")
 
-        # Skip moves have no action_id; label them with the current action's description.
+        # Skip/closing moves have no action_id; label them with the current
+        # action's description, or as finishing the card when no action remains.
         if not action_id:
             card_name = (card_entry.get("name") if card_entry else source_card_id) or source_card_id
             card_action = _lookup_card_action(card_entry, card_action_id) if card_action_id else None
             if card_action:
+                if not is_optional_action and card_action.get("op") == "deploy_troops":
+                    return "Barracks empty; gain 1 VP token instead of deploying a troop"
                 desc = _describe_single_action(card_action)
                 if is_optional_action:
                     return f"Decline {desc} for {card_name}"
                 return f"Skip {desc} for {card_name}"
-            return f"Skip for {card_name}"
+            return f"Finish resolving {card_name}"
 
         # Level 1: Describe using the card's execution model from the catalog.
         # When is_option_choice=True, the move's action_id is the option_id.
@@ -341,6 +350,8 @@ def enrich_label(move_type: str, raw_label: str, move_data: dict, *, source_card
                                 return raw_label
                             if _is_self_purge_custom_effect(act):
                                 return raw_label
+                            if act.get("op") == "place_spy" and target_id:
+                                return _format_spy_relocation(card_name, target_id, action_id, node_names=node_names)
                             desc = _describe_single_action(act, spy_count=player_spy_count)
                             if target_display:
                                 return _format_action_with_target(card_name, desc, target_display, node_names=node_names)
@@ -357,6 +368,8 @@ def enrich_label(move_type: str, raw_label: str, move_data: dict, *, source_card
                             return raw_label
                         if _is_self_purge_custom_effect(act):
                             return raw_label
+                        if act.get("op") == "place_spy" and target_id:
+                            return _format_spy_relocation(card_name, target_id, action_id, node_names=node_names)
                         desc = _describe_single_action(act, spy_count=player_spy_count)
                         if target_display:
                             return _format_action_with_target(card_name, desc, target_display, node_names=node_names)

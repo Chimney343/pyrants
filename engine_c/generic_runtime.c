@@ -1,5 +1,6 @@
 #include "generic_runtime.h"
 #include "helpers.h"
+#include "selection.h"
 #include "arena.h"
 #include "engine.h"
 #include "rng.h"
@@ -212,6 +213,53 @@ int action_requires_selection(const CardAction *action) {
         }
     }
     return 0;
+}
+
+static int devour_action_unpayable(const GameState *state, Sym player_id,
+                                   const CardAction *action, int hand_index) {
+    const char *op = intern_str(action->op);
+    if (!op) return 0;
+    if (strcmp(op, "devour") != 0 && strcmp(op, "devour_cost") != 0) return 0;
+    if (action->optional) return 0;
+    int count = devour_target_count(state, player_id, action, hand_index);
+    if (count < 0) return 0; /* always satisfiable */
+    int required_qty = (action->quantity_kind == QUANT_FIXED) ? action->quantity_value : 1;
+    if (required_qty < 1) required_qty = 1;
+    return count < required_qty;
+}
+
+/* True iff playing `card` from hand slot `hand_index` leaves every
+ * unavoidable mandatory devour cost payable. Pure read. */
+int card_play_devour_costs_payable(const GameState *state, Sym player_id,
+                                   const CardDefinition *card, int hand_index) {
+    int kind = card->execution.kind;
+
+    if (kind == EXEC_SEQUENCE) {
+        for (int i = 0; i < card->execution.action_count; i++) {
+            if (devour_action_unpayable(state, player_id, &card->execution.actions[i], hand_index))
+                return 0;
+        }
+        return 1;
+    }
+
+    if (kind == EXEC_MODAL || kind == EXEC_REPEAT) {
+        if (card->execution.option_count == 0) return 1; /* never block */
+        for (int oi = 0; oi < card->execution.option_count; oi++) {
+            const CardOption *opt = &card->execution.options[oi];
+            int option_blocked = 0;
+            for (int ai = 0; ai < opt->action_count; ai++) {
+                if (devour_action_unpayable(state, player_id, &opt->actions[ai], hand_index)) {
+                    option_blocked = 1;
+                    break;
+                }
+            }
+            if (!option_blocked) return 1; /* at least one option is payable */
+        }
+        return 0; /* every option blocked */
+    }
+
+    /* Unknown/missing execution kind → payable (never false-block). */
+    return 1;
 }
 
 static Sym pending_action_limit_key(const CardAction *action) {
@@ -711,7 +759,28 @@ GameState *apply_resolve_generic_choice(GameState *src, const Move *move) {
         if (p->exec_kind == EXEC_REPEAT) p->remaining_repeats--;
     } else {
         const CardAction *action = pending_generic_active_action(p);
-        if (!action) { engine_destroy(state); return NULL; }
+        if (!action) {
+            /* The card's action list is exhausted; this empty confirm-move
+             * closes the book. Rewind a repeat frame that still has repeats
+             * left, pop back to the parent resolution (advancing its index
+             * past the action that spawned this nested card), or finish a
+             * top-level card entirely. Mirrors the done-handling in
+             * auto_resolve_pending_generic. */
+            if (check_repeat_sequence_while_spies(state, pid, p)) {
+                p->next_action_index = 0;
+                return auto_resolve_pending_generic(state, pid);
+            }
+            if (p->exec_kind == EXEC_REPEAT && p->remaining_repeats > 0) {
+                p->awaiting_option = 1;
+                p->current_actions = NULL;
+                p->current_action_count = 0;
+                p->next_action_index = 0;
+                return auto_resolve_pending_generic(state, pid);
+            }
+            if (p->parent) p->parent->next_action_index++;
+            state->pending_generic = p->parent;
+            return auto_resolve_pending_generic(state, pid);
+        }
         int pre_idx = state->pending_generic ? state->pending_generic->next_action_index : -1;
         int nested = 0;
         if (!action_focus_requirement_met(state, pid, card, p->source_card_id, action)) {
@@ -735,6 +804,19 @@ GameState *apply_resolve_generic_choice(GameState *src, const Move *move) {
         if (action_requires_selection(action)) {
             /* Optional action with NULL action_id = player chose to skip. */
             if (action->optional && move->data.resolve_generic.action_id == SYM_NULL) {
+                /* A skip flagged skip_ends_card ends the whole card (e.g.
+                 * Graz'zt's optional repeat-return) rather than advancing to
+                 * the next action. */
+                for (int mi = 0; mi < action->metadata_count; mi++) {
+                    const char *mk = intern_str(action->metadata[mi].key);
+                    const char *mv = intern_str(action->metadata[mi].value);
+                    if (mk && strcmp(mk, "skip_ends_card") == 0
+                        && mv && strcmp(mv, "true") == 0) {
+                        if (p->parent) p->parent->next_action_index++;
+                        state->pending_generic = p->parent;
+                        return state;
+                    }
+                }
                 int skip_to = -1;
                 for (int mi = 0; mi < action->metadata_count; mi++) {
                     const char *mk = intern_str(action->metadata[mi].key);
@@ -757,6 +839,9 @@ GameState *apply_resolve_generic_choice(GameState *src, const Move *move) {
             if (op) {
                 if (strcmp(op, "deploy_troops") == 0 || strcmp(op, "place_spy") == 0) {
                     if (aid != SYM_NULL) { sk[sc] = intern("target_node_id"); sv[sc] = aid; sc++; }
+                    if (strcmp(op, "place_spy") == 0 && tid != SYM_NULL) {
+                        sk[sc] = intern("source_node_id"); sv[sc] = tid; sc++;
+                    }
                 } else if (strcmp(op, "assassinate_troop") == 0 ||
                            strcmp(op, "supplant_troop") == 0) {
                     if (aid != SYM_NULL) { sk[sc] = intern("target_node_id"); sv[sc] = aid; sc++; }
@@ -1049,105 +1134,142 @@ GameState *apply_resolve_generic_choice(GameState *src, const Move *move) {
     return auto_resolve_pending_generic(state, pid);
 }
 
+/* True iff modal option `oid` is currently viable: every non-optional
+ * selection-requiring action it contains has at least one legal target
+ * (generic check, EXEC_MODAL only), and any card-specific viability
+ * override passes. `pending` may be a live pending frame (legal-move
+ * generation) or a zeroed scratch frame (the play-card gate); selection
+ * handlers only read source_card_id / last_played_card_id /
+ * last_selection_* from it. Pure read. */
+static int modal_option_is_viable(GameState *state, Sym player_id,
+                                  const PendingGenericChoiceState *pending,
+                                  const CardDefinition *opt_card, Sym oid) {
+    int viable = 1;
+    int pi = -1;
+    for (int pi2 = 0; pi2 < state->player_count; pi2++)
+        if (state->players[pi2].player_id == player_id) { pi = pi2; break; }
+
+    /* --- Generic viability: every non-optional selection-requiring
+     *     action in the option must have at least one legal target. --- */
+    if (opt_card && opt_card->execution.kind == EXEC_MODAL) {
+        const CardOption *opt = NULL;
+        for (int oi = 0; oi < opt_card->execution.option_count; oi++) {
+            if (opt_card->execution.options[oi].option_id == oid) {
+                opt = &opt_card->execution.options[oi];
+                break;
+            }
+        }
+        if (opt) {
+            for (int ai = 0; ai < opt->action_count && viable; ai++) {
+                const CardAction *act = &opt->actions[ai];
+                if (act->optional) continue;
+                if (!action_requires_selection(act)) continue;
+                /* Skip actions that depend on a last_selection from a
+                 * prior action in the same option — those selections
+                 * haven't been made yet, so their handler would
+                 * incorrectly report zero targets here. */
+                int depends_on_prior = 0;
+                for (int mi = 0; mi < act->metadata_count; mi++) {
+                    const char *mk = intern_str(act->metadata[mi].key);
+                    const char *mv = intern_str(act->metadata[mi].value);
+                    if (mk && strcmp(mk, "requires_last_selected_node") == 0) depends_on_prior = 1;
+                    if (mk && strcmp(mk, "requires_returned_spy_site") == 0) depends_on_prior = 1;
+                }
+                if (depends_on_prior) continue;
+                Move dummy[1];
+                int nc = legal_generic_target_selection_moves(
+                    state, player_id, pending, opt_card, act, dummy, 1);
+                if (nc == 0) {
+                    /* Gauth option_2: draw_cards works unconditionally;
+                     * targeted_discard auto-skips when no opponent has
+                     * 3+ cards — option remains viable. */
+                    const char *cid2 = intern_str(pending->source_card_id);
+                    const char *os = intern_str(oid);
+                    if (!(cid2 && strcmp(cid2, "gauth") == 0
+                          && os && strcmp(os, "option_2") == 0))
+                        viable = 0;
+                }
+            }
+        }
+    }
+    /* --- Card-specific viability overrides (more restrictive) --- */
+    if (viable && pending->source_card_id != SYM_NULL && oid != SYM_NULL) {
+        const char *cid = intern_str(pending->source_card_id);
+        const char *oid_str = intern_str(oid);
+        /* Cloaker option_2: requires a site where the current player
+         * has a spy deployed AND another (player or white) troop. */
+        if (cid && strcmp(cid, "cloaker") == 0
+            && oid_str && strcmp(oid_str, "option_2") == 0 && pi >= 0) {
+            viable = 0;
+            for (int n = 0; n < state->node_count && !viable; n++) {
+                const NodeState *ns = &state->nodes[n];
+                int has_spy = 0;
+                for (int s = 0; s < ns->spy_count; s++)
+                    if (ns->spies[s] == player_id) { has_spy = 1; break; }
+                if (!has_spy) continue;
+                int has_troop = 0;
+                for (int t = 0; t < ns->troop_slot_count; t++) {
+                    Sym occ = ns->troop_slots[t];
+                    if (occ == SYM_NULL) continue;
+                    if (occ == player_id) { has_troop = 1; break; }
+                    const char *os = intern_str(occ);
+                    if (os && strcmp(os, "white") == 0) { has_troop = 1; break; }
+                }
+                if (has_troop) viable = 1;
+            }
+        }
+        /* Mummy Lord option_2: requires at least one enemy player
+         * with a white troop in their trophy hall. */
+        if (cid && strcmp(cid, "mummy_lord") == 0
+            && oid_str && strcmp(oid_str, "option_2") == 0) {
+            viable = 0;
+            for (int ep = 0; ep < state->player_count && !viable; ep++) {
+                if (state->players[ep].player_id == player_id) continue;
+                for (int ti = 0; ti < state->players[ep].trophy_hall_count && !viable; ti++) {
+                    Sym occ = state->players[ep].trophy_hall[ti];
+                    const char *os = intern_str(occ);
+                    if (os && strcmp(os, "white") == 0) viable = 1;
+                }
+            }
+        }
+        /* Graz'zt option_2: requires at least one own spy on the board. */
+        if (cid && strcmp(cid, "grazzt") == 0
+            && oid_str && strcmp(oid_str, "option_2") == 0) {
+            if (count_player_spies(state, player_id) == 0) viable = 0;
+        }
+    }
+    return viable;
+}
+
+int card_play_modal_options_viable(const GameState *state, Sym player_id,
+                                   const CardDefinition *card) {
+    int kind = card->execution.kind;
+    if (kind != EXEC_MODAL && kind != EXEC_REPEAT) return 1;
+    if (card->execution.option_count == 0) return 1; /* never block */
+    /* Zeroed scratch frame: mirrors the fresh awaiting_option state the
+     * option choice would start from (no last_selection yet). */
+    PendingGenericChoiceState scratch;
+    memset(&scratch, 0, sizeof(scratch));
+    scratch.source_card_id = card->card_id;
+    for (int oi = 0; oi < card->execution.option_count; oi++) {
+        if (modal_option_is_viable((GameState *)state, player_id, &scratch,
+                                   card, card->execution.options[oi].option_id))
+            return 1;
+    }
+    return 0;
+}
+
 int legal_pending_generic_choice_moves(GameState *state, Sym player_id, Move *out, int max_out) {
     PendingGenericChoiceState *p = state->pending_generic;
     if (!p || max_out <= 0) return 0;
 
     if (p->awaiting_option) {
         int w = 0;
-        int pi = -1;
-        for (int pi2 = 0; pi2 < state->player_count; pi2++)
-            if (state->players[pi2].player_id == player_id) { pi = pi2; break; }
         const CardDefinition *opt_card = NULL;
         pending_generic_card_definition(state, p, &opt_card);
         for (int i = 0; i < p->option_count && w < max_out; i++) {
             Sym oid = p->option_ids[i];
-            int viable = 1;
-            /* --- Generic viability: every non-optional selection-requiring
-             *     action in the option must have at least one legal target. --- */
-            if (opt_card && opt_card->execution.kind == EXEC_MODAL) {
-                const CardOption *opt = NULL;
-                for (int oi = 0; oi < opt_card->execution.option_count; oi++) {
-                    if (opt_card->execution.options[oi].option_id == oid) {
-                        opt = &opt_card->execution.options[oi];
-                        break;
-                    }
-                }
-                if (opt) {
-                    for (int ai = 0; ai < opt->action_count && viable; ai++) {
-                        const CardAction *act = &opt->actions[ai];
-                        if (act->optional) continue;
-                        if (!action_requires_selection(act)) continue;
-                        /* Skip actions that depend on a last_selection from a
-                         * prior action in the same option — those selections
-                         * haven't been made yet, so their handler would
-                         * incorrectly report zero targets here. */
-                        int depends_on_prior = 0;
-                        for (int mi = 0; mi < act->metadata_count; mi++) {
-                            const char *mk = intern_str(act->metadata[mi].key);
-                            const char *mv = intern_str(act->metadata[mi].value);
-                            if (mk && strcmp(mk, "requires_last_selected_node") == 0) depends_on_prior = 1;
-                            if (mk && strcmp(mk, "requires_returned_spy_site") == 0) depends_on_prior = 1;
-                        }
-                        if (depends_on_prior) continue;
-                        Move dummy[1];
-                        int nc = legal_generic_target_selection_moves(
-                            state, player_id, p, opt_card, act, dummy, 1);
-                        if (nc == 0) {
-                            /* Gauth option_2: draw_cards works unconditionally;
-                             * targeted_discard auto-skips when no opponent has
-                             * 3+ cards — option remains viable. */
-                            const char *cid2 = intern_str(p->source_card_id);
-                            const char *os = intern_str(oid);
-                            if (!(cid2 && strcmp(cid2, "gauth") == 0
-                                  && os && strcmp(os, "option_2") == 0))
-                                viable = 0;
-                        }
-                    }
-                }
-            }
-            /* --- Card-specific viability overrides (more restrictive) --- */
-            if (viable && p->source_card_id != SYM_NULL && oid != SYM_NULL) {
-                const char *cid = intern_str(p->source_card_id);
-                const char *oid_str = intern_str(oid);
-                /* Cloaker option_2: requires a site where the current player
-                 * has a spy deployed AND another (player or white) troop. */
-                if (cid && strcmp(cid, "cloaker") == 0
-                    && oid_str && strcmp(oid_str, "option_2") == 0 && pi >= 0) {
-                    viable = 0;
-                    for (int n = 0; n < state->node_count && !viable; n++) {
-                        const NodeState *ns = &state->nodes[n];
-                        int has_spy = 0;
-                        for (int s = 0; s < ns->spy_count; s++)
-                            if (ns->spies[s] == player_id) { has_spy = 1; break; }
-                        if (!has_spy) continue;
-                        int has_troop = 0;
-                        for (int t = 0; t < ns->troop_slot_count; t++) {
-                            Sym occ = ns->troop_slots[t];
-                            if (occ == SYM_NULL) continue;
-                            if (occ == player_id) { has_troop = 1; break; }
-                            const char *os = intern_str(occ);
-                            if (os && strcmp(os, "white") == 0) { has_troop = 1; break; }
-                        }
-                        if (has_troop) viable = 1;
-                    }
-                }
-                /* Mummy Lord option_2: requires at least one enemy player
-                 * with a white troop in their trophy hall. */
-                if (cid && strcmp(cid, "mummy_lord") == 0
-                    && oid_str && strcmp(oid_str, "option_2") == 0) {
-                    viable = 0;
-                    for (int ep = 0; ep < state->player_count && !viable; ep++) {
-                        if (state->players[ep].player_id == player_id) continue;
-                        for (int ti = 0; ti < state->players[ep].trophy_hall_count && !viable; ti++) {
-                            Sym occ = state->players[ep].trophy_hall[ti];
-                            const char *os = intern_str(occ);
-                            if (os && strcmp(os, "white") == 0) viable = 1;
-                        }
-                    }
-                }
-            }
-            if (!viable) {
+            if (!modal_option_is_viable(state, player_id, p, opt_card, oid)) {
                 out[w].type = MOVE_RESOLVE_GENERIC;
                 out[w].data.resolve_generic.action_id = oid;
                 out[w].data.resolve_generic.target_id = intern("unavailable");

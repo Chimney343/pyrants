@@ -29,8 +29,10 @@ test-c:
     & .\engine_c\test_engine.exe
     & .\engine_c\test_view.exe
     & .\engine_c\test_describe.exe
+    & .\engine_c\test_generic_actions.exe
     & .\engine_c\test_saveload.exe
     & .\engine_c\test_catalog_assembly.exe
+    & .\engine_c\test_rollout.exe
 
 test-c-python: generate-test-card-scenarios
     & {{python}} -m pytest tests/c_engine -v
@@ -64,6 +66,9 @@ ismcts num_sims="200" num_games="4" seed="42" output_dir="artifacts/ismcts" work
 ismcts-quick workers="1" num_players="2":
     & {{python}} -m scripts.run_ismcts --num-sims 2 --num-games 1 --seed 42 --workers {{workers}} --num-players {{num_players}} --game python_pyrants_c
 
+bench-rollout engine="py" num_rollouts="200" seed="42" warmup_steps="10":
+    & {{python}} -m scripts.bench_rollout --engine {{engine}} --num-rollouts {{num_rollouts}} --seed {{seed}} --warmup-steps {{warmup_steps}}
+
 ismcts-perf num_players="2" *args:
     powershell -NoProfile -Command "New-Item -ItemType Directory -Force -Path artifacts/ismcts/performance_testing | Out-Null"
     & {{python}} -m cProfile -o artifacts/ismcts/performance_testing/cprofile.pstats -m scripts.run_ismcts --num-sims 10 --num-games 1 --seed 42 --num-players {{num_players}} --max-rounds 10 --output-dir artifacts/ismcts/performance_testing --workers 1 --game python_pyrants_c {{args}}
@@ -81,9 +86,16 @@ openspiel-smoke:
 # ── Scenario Generation ─────────────────────────────────────────────────────
 #
 # generate-card-scenarios [workers] [spy] [aspect] [seed] [attempts] [steps]
-#   spy:   "true" to require the current player to have a spy on the board.
-#   aspect: "ASPECT:COUNT" to require COUNT cards of ASPECT in hand (e.g. "guile:2").
-#   Both are AND-combined with the always-on "target card playable now" condition.
+#   workers:  number of parallel workers (default 1).
+#   spy:      "true" to require the current player to have a spy on the board;
+#             "false" (default) means spy does NOT matter.
+#   aspect:   "ASPECT:COUNT" to require COUNT cards of ASPECT in hand (e.g. "guile:2");
+#             empty (default) means aspect does NOT matter.
+#   seed:     base RNG seed (default 4).
+#   attempts: max reachable-search attempts per card (default 30).
+#   steps:    max steps per attempt (default 3000).
+#   Conditions are AND-combined with the always-on "target card playable now"
+#   condition. To ignore a condition, omit it (trailing) or pass "false"/"".
 # Examples:
 #   just generate-card-scenarios
 #   just generate-card-scenarios 1 true
@@ -97,9 +109,15 @@ generate-test-card-scenarios workers="1" seed="4" attempts="30" steps="3000":
     $sw = [System.Diagnostics.Stopwatch]::StartNew(); $outDir = "data/scenarios/test_card_generation"; if ((Test-Path -LiteralPath $outDir) -and (Get-ChildItem -LiteralPath $outDir -Filter "*_seed_4_*.json" | Select-Object -First 1)) { Write-Host "Test scenario folder already populated; skipping regeneration." } else { $flags = @('--output-dir', $outDir, '--base-seed', '{{seed}}', '--max-attempts', '{{attempts}}', '--max-steps', '{{steps}}', '--workers', '{{workers}}'); & {{python}} scripts/generate_card_scenarios.py $flags; $exit = $LASTEXITCODE; $sw.Stop(); $elapsed = [math]::Round($sw.Elapsed.TotalSeconds, 1); Write-Host "Runtime: ${elapsed}s"; Set-Content -Path (Join-Path $outDir "runtime.txt") -Value "Runtime: ${elapsed}s"; if ($exit -ne 0) { exit $exit } }
 
 # generate-card-scenario <card_id> [spy] [aspect] [seed] [attempts] [steps]
-#   spy:   "true" to require the current player to have a spy on the board.
-#   aspect: "ASPECT:COUNT" to require COUNT cards of ASPECT in hand (e.g. "guile:2").
-#   Both are AND-combined with the always-on "target card playable now" condition.
+#   spy:      "true" to require the current player to have a spy on the board;
+#             "false" (default) means spy does NOT matter.
+#   aspect:   "ASPECT:COUNT" to require COUNT cards of ASPECT in hand (e.g. "guile:2");
+#             empty (default) means aspect does NOT matter.
+#   seed:     base RNG seed (default 4).
+#   attempts: max reachable-search attempts per card (default 30).
+#   steps:    max steps per attempt (default 10000).
+#   Conditions are AND-combined with the always-on "target card playable now"
+#   condition. To ignore a condition, omit it (trailing) or pass "false"/"".
 # Examples:
 #   just generate-card-scenario noble
 #   just generate-card-scenario noble true
@@ -113,3 +131,9 @@ generate-card-scenario card_id spy="false" aspect="" seed="4" attempts="30" step
 
 review-workbook:
     & {{python}} scripts/build_review_workbook.py
+
+move-label-templates *args:
+    & {{python}} -m scripts.generate_move_label_templates {{args}}
+
+card-complexity *args:
+    & {{python}} -m scripts.card_complexity_review {{args}}

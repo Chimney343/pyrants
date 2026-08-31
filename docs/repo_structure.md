@@ -98,7 +98,6 @@ Terminal UI built on Tk:
 | `run_ismcts.py` | IS-MCTS runner: parallel game execution, per-game decision traces, cross-run summary CSV/Markdown, metrics |
 | `generate_card_scenarios.py` | Generate card scenario data (C engine) |
 | `catalog_audit.py` | Card catalog consistency checker |
-| `generate_first_deck_artifacts.py` | Generate initial deck artifacts |
 | `_obs.py` | Structured logging, metrics, run-ID helpers for IS-MCTS |
 | `_replay_payload.py` | Replay payload builders for IS-MCTS runs |
 
@@ -118,10 +117,18 @@ Terminal UI built on Tk:
 
 | Command | Entry Point | Description |
 |---------|------------|-------------|
+| `just build-game` | `interface/game_viewer.py` | Build C engine, then launch the game viewer |
 | `just game-viewer` | `interface/game_viewer.py` | Interactive terminal play (C engine) |
 | `just simulate-c` | `engine_c/bindings/session.py` | Headless simulation |
 | `just board-creator` | `interface/board_creator.py` | Design boards |
 | `just ismcts` | `scripts/run_ismcts.py` | IS-MCTS bot tournament (C backend) |
+| `just bench-rollout` | `scripts/bench_rollout.py` | Rollout performance benchmark |
+| `just ismcts-perf` | `scripts/run_ismcts.py` (cProfile) | IS-MCTS profiling run |
+| `just card-complexity` | `scripts/card_complexity_review.py` | Card complexity review |
+| `just review-workbook` | `scripts/build_review_workbook.py` | Build the review workbook |
+| `just generate-card-scenarios` | `scripts/generate_card_scenarios.py` | Batch card-scenario generation |
+| `just generate-card-scenario` | `scripts/generate_card_scenarios.py` | Single-card scenario generation |
+| `just generate-test-card-scenarios` | `scripts/generate_card_scenarios.py` | Test scenario generation |
 | `just openspiel-test` | `pytest openspiel_pyrants/tests/` | OpenSpiel wrapper tests |
 | `just openspiel-smoke` | — | Quick registration check |
 

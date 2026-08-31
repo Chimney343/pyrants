@@ -26,6 +26,23 @@
         "filters": [],
         "source_fragment": "deploy_troops_with_focus_draw",
         "metadata": {}
+      },
+      {
+        "action_id": "action_2",
+        "op": "draw_cards",
+        "target_scope": "self",
+        "timing": "immediate",
+        "optional": false,
+        "quantity": {
+          "kind": "fixed",
+          "value": 1
+        },
+        "filters": [],
+        "source_fragment": "focus_draw",
+        "metadata": {
+          "requires_focus": true,
+          "focus_aspect": "conquest"
+        }
       }
     ]
   },
@@ -43,6 +60,23 @@
       "filters": [],
       "source_fragment": "deploy_troops_with_focus_draw",
       "metadata": {}
+    },
+    {
+      "action_id": "action_2",
+      "op": "draw_cards",
+      "target_scope": "self",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "fixed",
+        "value": 1
+      },
+      "filters": [],
+      "source_fragment": "focus_draw",
+      "metadata": {
+        "requires_focus": true,
+        "focus_aspect": "conquest"
+      }
     }
   ],
   "global_conditions": [
@@ -58,11 +92,16 @@
   "state_contract": {
     "reads": [
       "player.barracks",
-      "board.troop_slots"
+      "board.troop_slots",
+      "player.deck",
+      "player.discard_pile"
     ],
     "writes": [
       "board.troop_slots",
-      "player.barracks"
+      "player.barracks",
+      "player.hand",
+      "player.deck",
+      "player.discard_pile"
     ]
   },
   "effect_key": "generic_card",

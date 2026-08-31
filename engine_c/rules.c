@@ -131,14 +131,24 @@ static int legal_main_phase_actions(const GameState *state, Sym player_id,
                                      Move *out, int max_out) {
     int w = 0;
     if (state->resource_pool.power >= 1) {
-        int ht = player_has_any_troops_on_board(state, player_id);
-        for (int i = 0; i < state->node_count && w < max_out; i++) {
-            Sym nid = state->nodes[i].node_id;
-            if (can_deploy_to_node(state, player_id, nid, ht)) {
+        int pi = player_index_for_id_state(state, player_id);
+        if (pi >= 0 && state->players[pi].barracks <= 0) {
+            if (w < max_out) {
                 out[w].type = MOVE_DEPLOY;
-                out[w].data.deploy.node_id = nid;
+                out[w].data.deploy.node_id = SYM_NULL;
                 out[w].data.deploy.slot_index = 0;
                 w++;
+            }
+        } else {
+            int ht = player_has_any_troops_on_board(state, player_id);
+            for (int i = 0; i < state->node_count && w < max_out; i++) {
+                Sym nid = state->nodes[i].node_id;
+                if (can_deploy_to_node(state, player_id, nid, ht)) {
+                    out[w].type = MOVE_DEPLOY;
+                    out[w].data.deploy.node_id = nid;
+                    out[w].data.deploy.slot_index = 0;
+                    w++;
+                }
             }
         }
     }
@@ -228,6 +238,10 @@ int engine_legal_moves(const GameState *state, Move *out, int max_moves) {
             int pi = player_index_for_id_state(state, player_id);
             if (pi >= 0) {
                 for (int i = 0; i < state->players[pi].hand_count && w < max_moves; i++) {
+                    const CardDefinition *cd = card_by_id_state(state, state->players[pi].hand[i]);
+                    if (cd && (!card_play_devour_costs_payable(state, player_id, cd, i)
+                               || !card_play_modal_options_viable(state, player_id, cd)))
+                        continue;
                     out[w].type = MOVE_PLAY_CARD;
                     out[w].data.play_card.card_id = state->players[pi].hand[i];
                     out[w].data.play_card.hand_index = i;
@@ -282,15 +296,17 @@ static GameState *apply_play_card(GameState *state, Sym card_id, int hand_index,
     Sym played = ps->hand[hand_index];
     if (played != card_id) return NULL;
 
+    const CardDefinition *cd = card_by_id_state(state, played);
+    if (!cd) return NULL;
+    if (!card_play_devour_costs_payable(state, player_id, cd, hand_index)) return NULL;
+    if (!card_play_modal_options_viable(state, player_id, cd)) return NULL;
+
     for (int i = hand_index; i < ps->hand_count - 1; i++)
         ps->hand[i] = ps->hand[i + 1];
     ps->hand_count--;
 
     if (ps->played_cards_count < MAX_ZONE_SIZE)
         ps->played_cards[ps->played_cards_count++] = played;
-
-    const CardDefinition *cd = card_by_id_state(state, played);
-    if (!cd) return NULL;
 
     GameState *result = apply_effect_with_wrappers(state, player_id, cd, played);
     if (!result) return NULL;
@@ -332,13 +348,13 @@ static GameState *apply_assassinate(GameState *state, Sym player_id, Sym target_
 
 static GameState *apply_deploy(GameState *state, Sym player_id, Sym target_node_id) {
     if (state->resource_pool.power < 1) return NULL;
-    int ht = player_has_any_troops_on_board(state, player_id);
-    if (!can_deploy_to_node(state, player_id, target_node_id, ht)) return NULL;
-
     cow_resource_pool(state)->power -= 1;
     PlayerState *ps = cow_player(state, player_id);
     if (!ps) return NULL;
-    if (ps->barracks == 0) { ps->score += 1; return state; }
+    if (ps->barracks == 0) { ps->vp_tokens += 1; return state; }
+
+    int ht = player_has_any_troops_on_board(state, player_id);
+    if (!can_deploy_to_node(state, player_id, target_node_id, ht)) return NULL;
 
     NodeState *ns = cow_node(state, target_node_id);
     if (!ns) return NULL;

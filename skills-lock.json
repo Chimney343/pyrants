@@ -48,6 +48,12 @@
       "skillPath": "plugins/systems-programming/skills/memory-safety-patterns/SKILL.md",
       "computedHash": "f516e181e086afa8dbd3e18c27a56c2b1271438968a23e5b3fa9261232626699"
     },
+    "observability-and-instrumentation": {
+      "source": "addyosmani/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/observability-and-instrumentation/SKILL.md",
+      "computedHash": "6a22881e154faa94c7312ff1a083309a4ac75dd2b8c05eceef9fc3d7ba3827e5"
+    },
     "python-code-style": {
       "source": "wshobson/agents",
       "sourceType": "github",

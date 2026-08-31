@@ -185,7 +185,6 @@ static GameState *apply_deploy_troops(GameState *state, Sym player_id, const Car
                                        int *sk, Sym *sv, int sc) {
     (void)card; (void)source;
     Sym target = find_sel(sk, sv, sc, "target_node_id");
-    if (target == SYM_NULL) return state;
     if (apply_free_deploy(state, player_id, target) != 0) return state;
     if (state->pending_generic)
         increment_pending_counter(state->pending_generic, action);

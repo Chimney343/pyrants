@@ -55,7 +55,7 @@
             "op": "return_spy",
             "target_scope": "board_site",
             "timing": "immediate",
-            "optional": false,
+            "optional": true,
             "quantity": {
               "kind": "unspecified",
               "value": null
@@ -63,7 +63,9 @@
             "filters": [],
             "source_fragment": "return_spy_for_site_supplant",
             "metadata": {
-              "spy_owner": "self"
+              "spy_owner": "self",
+              "requires_supplant_target": true,
+              "skip_ends_card": true
             }
           },
           {
@@ -81,7 +83,8 @@
             ],
             "source_fragment": "multi_supplant",
             "metadata": {
-              "requires_returned_spy_site": true
+              "requires_returned_spy_site": true,
+              "repeat_sequence_while_spies": true
             }
           }
         ]
@@ -122,7 +125,7 @@
       "op": "return_spy",
       "target_scope": "board_site",
       "timing": "immediate",
-      "optional": false,
+      "optional": true,
       "quantity": {
         "kind": "unspecified",
         "value": null
@@ -130,7 +133,9 @@
       "filters": [],
       "source_fragment": "return_spy_for_site_supplant",
       "metadata": {
-        "spy_owner": "self"
+        "spy_owner": "self",
+        "requires_supplant_target": true,
+        "skip_ends_card": true
       }
     },
     {
@@ -148,7 +153,8 @@
       ],
       "source_fragment": "multi_supplant",
       "metadata": {
-        "requires_returned_spy_site": true
+        "requires_returned_spy_site": true,
+        "repeat_sequence_while_spies": true
       }
     }
   ],

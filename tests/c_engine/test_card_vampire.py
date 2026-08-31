@@ -251,6 +251,85 @@ def test_view_before_and_after_consistent() -> None:
     session.destroy()
 
 
+# ── play gate: modal with zero viable options ────────────────────────────────
+
+def _build_dead_state_session(discard: list[str] | None = None,
+                              troops: dict | None = None) -> CSession:
+    """Vampire in p3's hand; optional discard pile and board troops."""
+    eng = CEngine()
+    eng.initialize(
+        catalog_path=str(DATA_DIR / "cards"),
+        board_path=str(DATA_DIR / "boards" / "tyrants_of_the_underdark.json"),
+        setup_path=str(DATA_DIR / "decks" / "base_setup.json"),
+    )
+    session = make_card_test_session(
+        eng, ["p1", "p2", "p3", "p4"],
+        hand={"p3": [CARD_ID]},
+        current_player="p3",
+        seed=42,
+        troops=troops,
+    )
+    if discard:
+        _set_discard(session, "p3", discard)
+    return session
+
+
+def _vampire_play_moves(session: CSession) -> list:
+    return [m for m in session.legal_moves()
+            if m._move_type == "play_card" and m.data.get("card_id") == CARD_ID]
+
+
+def test_vampire_unplayable_when_no_mode_viable() -> None:
+    """No supplant targets (no presence) + empty discard: the modal card
+    cannot be played, and the turn can still be ended with it in hand."""
+    session = _build_dead_state_session()
+    assert _vampire_play_moves(session) == [], (
+        "Vampire must not be offered as play_card when neither mode is viable"
+    )
+    end_moves = [m for m in session.legal_moves() if m._move_type == "end_main_phase"]
+    assert end_moves, "The round must still be endable with the card unplayed"
+    session.destroy()
+
+
+def test_vampire_playable_when_discard_has_card() -> None:
+    """A card in the discard pile makes option_2 viable: vampire playable."""
+    session = _build_dead_state_session(discard=["noble"])
+    assert _vampire_play_moves(session), (
+        "Vampire must be playable when the discard pile is non-empty"
+    )
+    session.destroy()
+
+
+def test_vampire_playable_when_supplant_target_exists() -> None:
+    """An enemy player troop at a site where p3 has presence makes option_1
+    viable even with an empty discard pile."""
+    session = _build_dead_state_session(troops={"p3": {"route_1": ["p3", "p1"]}})
+    assert _vampire_play_moves(session), (
+        "Vampire must be playable when a supplant target exists"
+    )
+    session.destroy()
+
+
+def test_view_marks_dead_vampire_as_unplayable() -> None:
+    """The view projects playable=False for the blocked hand card, so the
+    GUI can grey it out as ILLEGAL MOVE."""
+    session = _build_dead_state_session()
+    view = build_c_game_view(session)
+    vamp_view = next(c for c in view.hand if c.card_id == CARD_ID)
+    assert vamp_view.playable is False, (
+        f"Dead-modal vampire should be projected unplayable, got {vamp_view.playable}"
+    )
+    session.destroy()
+
+    session = _build_dead_state_session(discard=["noble"])
+    view = build_c_game_view(session)
+    vamp_view = next(c for c in view.hand if c.card_id == CARD_ID)
+    assert vamp_view.playable is True, (
+        "Viable vampire should be projected playable"
+    )
+    session.destroy()
+
+
 # ── integration: scenario file ───────────────────────────────────────────────
 
 def test_scenario_file_loads_and_plays_end_to_end() -> None:

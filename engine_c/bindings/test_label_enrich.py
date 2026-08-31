@@ -148,20 +148,21 @@ class TestEnrichLabel:
         assert result == "Aboleth: Draw cards (from spies on board)"
 
     def test_resolve_generic_aboleth_action_with_target(self):
+        "Relocation: place_spy with a source node in target_id labels a spy move."
         result = enrich_label(
             "resolve_generic",
-            "Resolve option_1_action_1",
-            {"action_id": "option_1_action_1", "target_id": "site_gauntlgrym", "selection_index": 0},
+            "Resolve site_gauntlgrym",
+            {"action_id": "site_gauntlgrym", "target_id": "site_blingdenfire", "selection_index": 0},
             source_card_id="aboleth", card_action_id="option_1_action_1",
         )
-        assert result == "Aboleth: Place spy at Site gauntlgrym"
+        assert result == "Aboleth: Move your spy from Site blingdenfire to Site gauntlgrym"
     def test_resolve_generic_true_fallback(self):
         result = enrich_label(
             "resolve_generic",
             "Resolve",
             {"action_id": "", "selection_index": 0},
         )
-        assert result == "Skip for "
+        assert result == "Finish resolving "
 
     def test_resolve_generic_target_selection_uses_card_action_id(self):
         "For target selection, card_action_id comes from state, not the move."

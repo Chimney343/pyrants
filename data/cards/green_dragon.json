@@ -30,6 +30,22 @@
             "filters": [],
             "source_fragment": "spy",
             "metadata": {}
+          },
+          {
+            "action_id": "option_1_action_2",
+            "op": "supplant_troop",
+            "target_scope": "board_site",
+            "timing": "immediate",
+            "optional": false,
+            "quantity": {
+              "kind": "unspecified",
+              "value": null
+            },
+            "filters": [],
+            "source_fragment": "supplant",
+            "metadata": {
+              "requires_last_selected_node": true
+            }
           }
         ]
       },
@@ -48,7 +64,9 @@
             },
             "filters": [],
             "source_fragment": "return_spy",
-            "metadata": {}
+            "metadata": {
+              "spy_owner": "self"
+            }
           },
           {
             "action_id": "option_2_action_2",
@@ -62,7 +80,9 @@
             },
             "filters": [],
             "source_fragment": "supplant",
-            "metadata": {}
+            "metadata": {
+              "requires_returned_spy_site": true
+            }
           },
           {
             "action_id": "option_2_action_3",
@@ -101,6 +121,22 @@
       "metadata": {}
     },
     {
+      "action_id": "option_1_action_2",
+      "op": "supplant_troop",
+      "target_scope": "board_site",
+      "timing": "immediate",
+      "optional": false,
+      "quantity": {
+        "kind": "unspecified",
+        "value": null
+      },
+      "filters": [],
+      "source_fragment": "supplant",
+      "metadata": {
+        "requires_last_selected_node": true
+      }
+    },
+    {
       "action_id": "option_2_action_1",
       "op": "return_spy",
       "target_scope": "board_site",
@@ -112,7 +148,9 @@
       },
       "filters": [],
       "source_fragment": "return_spy",
-      "metadata": {}
+      "metadata": {
+        "spy_owner": "self"
+      }
     },
     {
       "action_id": "option_2_action_2",
@@ -126,7 +164,9 @@
       },
       "filters": [],
       "source_fragment": "supplant",
-      "metadata": {}
+      "metadata": {
+        "requires_returned_spy_site": true
+      }
     },
     {
       "action_id": "option_2_action_3",

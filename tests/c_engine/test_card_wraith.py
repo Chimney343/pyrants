@@ -4,7 +4,8 @@ Verifies:
 - Place a spy at a chosen board site
 - Optional devour of self (played_self)
 - If devour skipped → no assassinate (skip_advance_to_index)
-- If devour taken → assassinate a troop at the spy site only (requires_last_selected_node)
+- If devour taken → offer an optional assassinate (skip allowed) of a troop
+  at the spy site only (requires_last_selected_node)
 """
 from __future__ import annotations
 
@@ -178,11 +179,15 @@ def test_wraith_devour_then_assassinate() -> None:
     # Should now have assassinate prompt
     assert _has_pending_generic(session), "Should have assassinate after devour"
 
-    assassinate_moves = [m for m in session.legal_moves() if m.move_type == "resolve_generic"]
-    assert len(assassinate_moves) > 0, "Should have at least one assassination target"
+    # The optional assassinate offers a skip move (action_id None) plus targets.
+    target_moves = [
+        m for m in session.legal_moves()
+        if m.move_type == "resolve_generic" and m.data.get("action_id") is not None
+    ]
+    assert len(target_moves) > 0, "Should have at least one assassination target"
 
     # Pick the first target and execute
-    session.submit_move(assassinate_moves[0])
+    session.submit_move(target_moves[0])
 
     # Card should be fully resolved
     assert not _has_pending_generic(session), "Expected no pending generic after full resolution"
@@ -221,8 +226,11 @@ def test_wraith_assassinate_constrained_to_spy_site() -> None:
     assert _has_pending_generic(session), "Should have assassinate prompt"
 
     # All assassination targets should be at SITE_A (the spy site), NOT SITE_B
-    assassinate_moves = [m for m in session.legal_moves() if m.move_type == "resolve_generic"]
-    site_ids = [m.data.get("action_id") for m in assassinate_moves]
+    target_moves = [
+        m for m in session.legal_moves()
+        if m.move_type == "resolve_generic" and m.data.get("action_id") is not None
+    ]
+    site_ids = [m.data.get("action_id") for m in target_moves]
 
     assert all(s == _SITE_A for s in site_ids), (
         f"All assassinate targets should be at spy site {_SITE_A}, got sites: {site_ids}"
@@ -230,5 +238,58 @@ def test_wraith_assassinate_constrained_to_spy_site() -> None:
     assert _SITE_B not in site_ids, (
         f"{_SITE_B} should NOT be targetable for assassinate, but was found in sites: {site_ids}"
     )
+
+    # The skip (decline) move should also be offered alongside the targets.
+    skip_move = None
+    for m in session.legal_moves():
+        if m.move_type == "resolve_generic" and m.data.get("action_id") is None:
+            skip_move = m
+            break
+    assert skip_move is not None, "Should offer a skip/decline move for the optional assassinate"
+
+    session.destroy()
+
+
+def test_wraith_devour_then_skip_assassinate() -> None:
+    """After devouring Wraith, the player may skip the assassinate."""
+    session = _build_session()
+    _play_card(session)
+
+    # Place spy at SITE_A
+    spy_moves = [m for m in session.legal_moves() if m.move_type == "resolve_generic"]
+    spy_move_a = None
+    for m in spy_moves:
+        if m.data.get("action_id") == _SITE_A:
+            spy_move_a = m
+            break
+    assert spy_move_a is not None, f"Should have spy move for {_SITE_A}"
+    session.submit_move(spy_move_a)
+
+    # Devour Wraith
+    devour_move = None
+    for m in session.legal_moves():
+        if m.move_type == "resolve_generic" and m.data.get("action_id") == CARD_ID:
+            devour_move = m
+            break
+    assert devour_move is not None
+    session.submit_move(devour_move)
+
+    assert CARD_ID in _devour_pile(session), "Wraith should be devoured"
+    assert _has_pending_generic(session), "Should have assassinate prompt"
+
+    # Skip the assassinate
+    skip_move = None
+    for m in session.legal_moves():
+        if m.move_type == "resolve_generic" and m.data.get("action_id") is None:
+            skip_move = m
+            break
+    assert skip_move is not None, "Should have a skip/decline move for the assassinate"
+
+    session.submit_move(skip_move)
+
+    # Card fully resolved; no troop assassinated
+    assert not _has_pending_generic(session), "Expected no pending generic after skipping assassinate"
+    trophy = _trophy_hall(session, _P1)
+    assert _P2 not in trophy, f"Expected no assassination, but {_P2} is in p1 trophy hall: {trophy}"
 
     session.destroy()

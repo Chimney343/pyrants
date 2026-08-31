@@ -430,6 +430,23 @@ class CEngine:
             result[pid] = scores_arr[i]
         return result
 
+    def random_rollout(self, state: CState, seed: int, max_length: int) -> tuple[bool, dict]:
+        """Run a whole random rollout to terminal (or max_length cutoff) in C.
+
+        Mirrors PyrantsCState.returns()'s terminal/non-terminal branching:
+        the returned scores are compute_final_scores() if the rollout reached
+        a real terminal state, otherwise each player's current score.
+        """
+        scores_arr = (ctypes.c_int * MAX_PLAYERS)()
+        terminal = _lib.engine_random_rollout(
+            state.ptr, ctypes.c_uint64(seed), ctypes.c_int(max_length), scores_arr
+        )
+        result = {}
+        for i in range(state.player_count):
+            pid = _sym_str(state._s.player_ids[i])
+            result[pid] = scores_arr[i]
+        return bool(terminal), result
+
     def determinize(self, state: CState, observing_player_id: str, seed: int) -> CState:
         """Clone state with opponent hidden zones reshuffled for observing player."""
         obs_sym = _lib.intern(observing_player_id.encode())

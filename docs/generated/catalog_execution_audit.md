@@ -1,21 +1,26 @@
 # Catalog Execution Audit
 
-Source catalog: C:/Users/mkkom/pyrants/data/cards/catalog.json
-Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
+Source catalog: C:/Users/mkkom/pyrants/data/cards
+Probe artifact: not provided
 
 ## Summary
 
 - Total cards audited: 125
-- Clean cards: 125
+- Clean cards: 120
 - Cards with rules-text mismatches: 0
-- Cards with runtime gaps: 0
-- Cards flagged as heuristic-review only: 0
+- Cards with runtime gaps: 4
+- Cards flagged as heuristic-review only: 1
 - Cards blocked, errored, or stuck in the live probe: 0
 
 ## Cards With Findings
 
 | card_id | verdict | findings | probe |
 |---|---|---:|---|
+| derro | runtime_gap | 1 | n/a |
+| ghost | runtime_gap | 1 | n/a |
+| lich | runtime_gap | 3 | n/a |
+| orcus | runtime_gap | 4 | n/a |
+| skeletal_horde | heuristic-only | 1 | n/a |
 
 ## Card Review
 
@@ -24,7 +29,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `guile`
 - Cost: `7`
-- Probe: `ok` (turn_completed)
 - Execution model: `modal_choice`
 - Rules text: Choose exactly one mode. Either place 2 spies on any nodes, with at most 1 of your spies per node, or draw 1 card for each of your spies on the board. If you have fewer than 2 spies available to place, you may move one of your spies that is already on the board instead.
 - Actions:
@@ -38,7 +42,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `conquest`
 - Cost: `3`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Supplant a white troop.
 - Actions:
@@ -50,7 +53,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `ambition`
 - Cost: `2`
-- Probe: `ok` (turn_completed)
 - Execution model: `modal_choice`
 - Rules text: Choose exactly one mode. Either gain 2 influence, or at end of turn promote another card played this turn.
 - Actions:
@@ -63,7 +65,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `guile`
 - Cost: `5`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Gain 1 power, place 1 spy, then recruit a Guile card that costs 4 or less.
 - Actions:
@@ -77,7 +78,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `guile`
 - Cost: `3`
-- Probe: `ok` (turn_completed)
 - Execution model: `modal_choice`
 - Rules text: Choose exactly one mode. Either place a spy, or return one of your spies to deploy 3 troops. If the focus condition is met for Guile, draw a card.
 - Actions:
@@ -94,7 +94,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `guile`
 - Cost: `4`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Place a spy. At end of turn, promote an Obedience card played this turn.
 - Actions:
@@ -107,7 +106,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `ambition`
 - Cost: `3`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: At end of turn, promote another card you played this turn. If this card would be discarded from hand to discard pile, you may choose to promote this card instead.
 - Actions:
@@ -119,11 +117,10 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `conquest`
 - Cost: `6`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Devour a card from your hand to supplant a white troop anywhere on the board, then deploy 1 troop.
 - Actions:
-  - action_1 -> devour [hand] timing=immediate quantity=unspecified source_fragment=hand_devour
+  - action_1 -> devour_cost [hand] timing=immediate quantity=unspecified source_fragment=hand_devour
   - action_2 -> supplant_troop [board_site] timing=immediate quantity=unspecified source_fragment=supplant_white_troop_anywhere
   - action_3 -> deploy_troops [board_site] timing=immediate quantity=fixed:1 source_fragment=deploy_troop
 - Findings: none
@@ -133,7 +130,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `guile`
 - Cost: `4`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Place a spy. If there is another spy there, gain 3 power.
 - Actions:
@@ -146,7 +142,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `malice`
 - Cost: `5`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Assassinate a troop. Then gain 1 power for every 3 troops in your trophy hall.
 - Actions:
@@ -159,7 +154,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `conquest`
 - Cost: `8`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Supplant a white troop anywhere. Gain 1 VP for every 3 white trophies.
 - Actions:
@@ -172,7 +166,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `ambition`
 - Cost: `2`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: At end of turn, promote another played card. If the focus condition is met for Ambition, gain 2 influence.
 - Actions:
@@ -185,7 +178,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `conquest`
 - Cost: `3`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Gain 1 influence. Assassinate a white troop.
 - Actions:
@@ -198,7 +190,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `malice`
 - Cost: `3`
-- Probe: `ok` (turn_completed)
 - Execution model: `modal_choice`
 - Rules text: Choose exactly one mode. Either gain 2 power, or assassinate.
 - Actions:
@@ -211,7 +202,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `ambition`
 - Cost: `8`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: At end of turn, promote 2 other cards you played this turn. Gain 1 VP for every 3 promoted cards.
 - Actions:
@@ -224,7 +214,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `ambition`
 - Cost: `5`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Gain 3 influence. Return another players troop or spy where you have Presence.
 - Actions:
@@ -237,7 +226,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `malice`
 - Cost: `5`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Gain 3 power.
 - Actions:
@@ -249,7 +237,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `guile`
 - Cost: `4`
-- Probe: `ok` (turn_completed)
 - Execution model: `modal_choice`
 - Rules text: Choose exactly one mode. Either place a spy, or return one of your spies to gain 2 power and 2 influence.
 - Actions:
@@ -264,12 +251,11 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `malice`
 - Cost: `2`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Gain 3 power. Devour a card in the market and replace it with this one.
 - Actions:
   - action_1 -> gain_resource [self] timing=immediate quantity=fixed:3 source_fragment=gain_power
-  - action_2 -> devour [market] timing=immediate quantity=unspecified source_fragment=devour_market_card_and_self_replace
+  - action_2 -> devour_cost [market] timing=immediate quantity=unspecified source_fragment=devour_market_card_and_self_replace
 - Findings: none
 
 ### Chosen of Lolth (`chosen_of_lolth`)
@@ -277,11 +263,10 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `conquest`
 - Cost: `4`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Return another player's troop or spy where you have presence. At end of turn, promote another played card.
 - Actions:
-  - action_1 -> return_unit [self_or_opponent_unit] timing=immediate quantity=unspecified source_fragment=return_unit
+  - action_1 -> return_unit [opponent_unit] timing=immediate quantity=unspecified source_fragment=return_unit
   - action_2 -> promote_card [self] timing=end_of_turn quantity=unspecified source_fragment=triggered_promote
 - Findings: none
 
@@ -290,7 +275,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `guile`
 - Cost: `3`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Place a spy from your units onto the board. Then each opponent there who has 3 or more cards in hand discards 1 card from hand.
 - Actions:
@@ -303,9 +287,8 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `ambition`
 - Cost: `4`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
-- Rules text: Move an enemy troop. At end of turn, promote a played card.
+- Rules text: Move an enemy troop. At end of turn, promote another played card.
 - Actions:
   - action_1 -> move_troop [board_site] timing=immediate quantity=unspecified source_fragment=move_enemy_troop
   - action_2 -> promote_card [self] timing=end_of_turn quantity=unspecified source_fragment=triggered_promote
@@ -316,7 +299,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `guile`
 - Cost: `2`
-- Probe: `ok` (turn_completed)
 - Execution model: `modal_choice`
 - Rules text: Choose exactly one mode. Either place a spy from your units onto the board, or return one of your own spies from the board to your barracks and assassinate a troop there.
 - Actions:
@@ -330,12 +312,13 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `guile`
 - Cost: `5`
-- Probe: `ok` (turn_completed)
 - Execution model: `modal_choice`
-- Rules text: Choose exactly one mode. Either place a spy, or return one of your spies to recruit up to 2 cards that cost 3 or less.
+- Rules text: Choose exactly one mode. Either place a spy, or return one of your spies to recruit up to 2 cards that cost 3 or less without paying their cost.
 - Actions:
   - option_1_action_1 -> place_spy [board_site] timing=immediate quantity=unspecified source_fragment=spy
-  - option_2_action_1 -> return_spy [board_site] timing=immediate quantity=variable_repeat source_fragment=return_spy_to_recruit_multiple_low_cost_cards
+  - option_2_action_1 -> return_spy [board_site] timing=immediate quantity=unspecified source_fragment=return_own_spy
+  - option_2_action_2 -> recruit_card [market] timing=immediate quantity=unspecified source_fragment=recruit_low_cost_card
+  - option_2_action_3 -> recruit_card [market] timing=immediate quantity=unspecified source_fragment=recruit_low_cost_card
 - Findings: none
 
 ### Council Member (`council_member`)
@@ -343,11 +326,10 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `ambition`
 - Cost: `6`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Move 2 enemy troops. At end of turn, promote another played card.
 - Actions:
-  - action_1 -> move_troop [board_site] timing=immediate quantity=unspecified source_fragment=move_enemy_troops
+  - action_1 -> move_troop [board_site] timing=immediate quantity=fixed:2 source_fragment=move_enemy_troops
   - action_2 -> promote_card [self] timing=end_of_turn quantity=unspecified source_fragment=triggered_promote
 - Findings: none
 
@@ -356,7 +338,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `conquest`
 - Cost: `2`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Deploy 2 troops. Then choose an opponent with 3 or more cards in hand to discard 1 card from hand.
 - Actions:
@@ -369,7 +350,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `conquest`
 - Cost: `3`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Assassinate a white troop. If the focus condition is met for Conquest, deploy 2 troops.
 - Actions:
@@ -382,12 +362,11 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `ambition`
 - Cost: `3`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Gain 2 influence. You may devour a market card.
 - Actions:
   - action_1 -> gain_resource [self] timing=immediate quantity=fixed:2 source_fragment=gain_influence
-  - action_2 -> devour [market] timing=immediate quantity=unspecified source_fragment=optional_devour_market_card
+  - action_2 -> devour_cost [market] timing=immediate quantity=unspecified source_fragment=optional_devour_market_card
 - Findings: none
 
 ### Cultist of Myrkul (`cultist_of_myrkul`)
@@ -395,13 +374,12 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `ambition`
 - Cost: `2`
-- Probe: `ok` (turn_completed)
 - Execution model: `modal_choice`
 - Rules text: Choose exactly one mode. Either gain 2 influence, or devour this card so that at end of turn you promote up to 2 other cards you played this turn.
 - Actions:
   - option_1_action_1 -> gain_resource [self] timing=immediate quantity=fixed:2 source_fragment=gain_influence
-  - option_2_action_1 -> devour [played_self] timing=immediate quantity=unspecified source_fragment=self_devour
-  - option_2_action_2 -> promote_card [self] timing=end_of_turn quantity=variable_repeat source_fragment=triggered_multi_promote
+  - option_2_action_1 -> devour_cost [played_self] timing=immediate quantity=unspecified source_fragment=self_devour
+  - option_2_action_2 -> promote_card [self] timing=end_of_turn quantity=fixed:2 source_fragment=triggered_multi_promote
 - Findings: none
 
 ### Death Knight (`death_knight`)
@@ -409,7 +387,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `malice`
 - Cost: `6`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Supplant a troop. Then gain 1 VP for every 5 player trophies you have.
 - Actions:
@@ -422,7 +399,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `malice`
 - Cost: `7`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Assassinate up to 3 troops at a single site. Gain 1 influence for each troop removed by this effect.
 - Actions:
@@ -437,7 +413,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `malice`
 - Cost: `6`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Assassinate 2 troops.
 - Actions:
@@ -450,34 +425,35 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `conquest`
 - Cost: `8`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Devour a card from your hand to supplant a white troop anywhere on the board. Then supplant 2 more white troops. Then each opponent recruits 2 Insane Outcasts.
 - Actions:
-  - action_1 -> devour [hand] timing=immediate quantity=unspecified source_fragment=hand_devour
-  - action_2 -> supplant_troop [board_site] timing=immediate quantity=variable_repeat source_fragment=mass_supplant_white
-  - action_3 -> recruit_card [market] timing=immediate quantity=variable_repeat source_fragment=mass_negative_recruit
+  - action_1 -> devour_cost [hand] timing=immediate quantity=unspecified source_fragment=hand_devour
+  - action_2 -> supplant_troop [board_site] timing=immediate quantity=fixed:1 source_fragment=supplant_white_troop_anywhere
+  - action_3 -> supplant_troop [board_site] timing=immediate quantity=fixed:2 source_fragment=supplant_white_troop
+  - action_4 -> custom_effect [opponent_player] timing=immediate quantity=fixed:2 source_fragment=give_negative_card_to_each_opponent
 - Findings: none
 
 ### Derro (`derro`)
 
-- Verdict: `clean`
+- Verdict: `runtime_gap`
 - Aspect: `conquest`
 - Cost: `3`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Supplant a white troop anywhere. Recruit an Insane Outcast.
 - Actions:
   - action_1 -> supplant_troop [board_site] timing=immediate quantity=unspecified source_fragment=supplant_white_troop_anywhere
-  - action_2 -> recruit_card [market] timing=immediate quantity=unspecified source_fragment=recruit_negative_card
-- Findings: none
+  - action_2 -> custom_effect [self] timing=immediate quantity=unspecified source_fragment=give_negative_card
+- Findings:
+  - [runtime_gap][high][engine_fix] action_2: custom_effect_unsupported:give_insane_outcast_to_self
+    - action_2 -> custom_effect [self] timing=immediate quantity=unspecified source_fragment=give_negative_card
+    - owning_engine_path=engine/rules.py::_legal_generic_target_selection_moves + _apply_generic_action
 
 ### Doppelganger (`doppelganger`)
 
 - Verdict: `clean`
 - Aspect: `malice`
 - Cost: `5`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Supplant.
 - Actions:
@@ -489,7 +465,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `malice`
 - Cost: `3`
-- Probe: `ok` (turn_completed)
 - Execution model: `modal_choice`
 - Rules text: Choose exactly one mode. Either gain 2 power, or gain 2 influence.
 - Actions:
@@ -502,7 +477,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `malice`
 - Cost: `4`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Assassinate a troop. Then, if you have 5 or more player trophies in your trophy hall, gain 2 power.
 - Actions:
@@ -515,7 +489,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `ambition`
 - Cost: `3`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: If there are 4 or more promoted cards, gain 3 influence. At end of turn, promote a card played this turn.
 - Actions:
@@ -528,7 +501,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `guile`
 - Cost: `3`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Gain 1 influence. Return another player's troop or spy to their garrison. If the focus condition is met for Ambition, draw a card from your draw deck.
 - Actions:
@@ -542,7 +514,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `ambition`
 - Cost: `4`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Gain 2 influence. At end of turn, promote another played card.
 - Actions:
@@ -555,7 +526,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `ambition`
 - Cost: `7`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Promote the top card of your draw deck. Then play a card from your inner circle as if it were in your hand; it remains in your inner circle after being played.
 - Actions:
@@ -568,7 +538,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `guile`
 - Cost: `4`
-- Probe: `ok` (turn_completed)
 - Execution model: `modal_choice`
 - Rules text: Choose exactly one mode. Either place a spy, or return one of your spies and gain 4 power.
 - Actions:
@@ -582,7 +551,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `malice`
 - Cost: `4`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Assassinate a troop. If the focus condition is met for Malice, gain 2 power.
 - Actions:
@@ -595,7 +563,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `conquest`
 - Cost: `4`
-- Probe: `ok` (turn_completed)
 - Execution model: `modal_choice`
 - Rules text: Choose exactly one mode. Either deploy 3 troops, or assassinate 2 white troops.
 - Actions:
@@ -609,7 +576,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `malice`
 - Cost: `3`
-- Probe: `ok` (turn_completed)
 - Execution model: `modal_choice`
 - Rules text: Choose exactly one mode. Either gain 2 power, or gain 2 influence. If the focus condition is met for Malice, draw a card.
 - Actions:
@@ -624,7 +590,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `malice`
 - Cost: `4`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Gain 2 power. At end of turn, promote an Obedience card played this turn.
 - Actions:
@@ -637,12 +602,11 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `malice`
 - Cost: `3`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Gain 2 power. You may devour this card to assassinate a troop.
 - Actions:
   - action_1 -> gain_resource [self] timing=immediate quantity=fixed:2 source_fragment=gain_power
-  - action_2 -> devour [played_self] timing=immediate quantity=unspecified source_fragment=optional_self_devour
+  - action_2 -> devour_cost [played_self] timing=immediate quantity=unspecified source_fragment=optional_self_devour
   - action_3 -> assassinate_troop [board_site] timing=immediate quantity=unspecified source_fragment=assassinate
 - Findings: none
 
@@ -651,7 +615,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `conquest`
 - Cost: `5`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Deploy 3 troops. Recruit a Conquest card that costs 4 or less.
 - Actions:
@@ -664,35 +627,35 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `malice`
 - Cost: `3`
-- Probe: `ok` (turn_completed)
 - Execution model: `modal_choice`
 - Rules text: Choose one mode. Either gain 2 influence, or draw a card and choose an opponent with 3 or more cards to discard a card.
 - Actions:
   - option_1_action_1 -> gain_resource [self] timing=immediate quantity=fixed:2 source_fragment=gain_influence
   - option_2_action_1 -> draw_cards [self] timing=immediate quantity=unspecified source_fragment=draw
-  - option_2_action_2 -> force_discard [opponent] timing=immediate quantity=unspecified source_fragment=force_discard
+  - option_2_action_2 -> force_discard [opponent] timing=immediate quantity=unspecified source_fragment=targeted_discard
 - Findings: none
 
 ### Ghost (`ghost`)
 
-- Verdict: `clean`
+- Verdict: `runtime_gap`
 - Aspect: `guile`
 - Cost: `3`
-- Probe: `ok` (turn_completed)
 - Execution model: `modal_choice`
 - Rules text: Choose exactly one mode. Either place a spy, or return one of your spies and take the top card from the devour pile into your discard pile for free.
 - Actions:
   - option_1_action_1 -> place_spy [board_site] timing=immediate quantity=unspecified source_fragment=spy
-  - option_2_action_1 -> devour [unknown] timing=immediate quantity=unspecified source_fragment=return_spy
-  - option_2_action_2 -> devour [market] timing=immediate quantity=unspecified source_fragment=play_top_devoured_as_market
-- Findings: none
+  - option_2_action_1 -> return_spy [board_site] timing=immediate quantity=unspecified source_fragment=return_spy
+  - option_2_action_2 -> custom_effect [self] timing=immediate quantity=unspecified source_fragment=take_from_devour_pile_to_discard
+- Findings:
+  - [runtime_gap][high][engine_fix] option_2_action_2: custom_effect_unsupported:take_from_devour_pile_to_discard
+    - option_2_action_2 -> custom_effect [self] timing=immediate quantity=unspecified source_fragment=take_from_devour_pile_to_discard
+    - owning_engine_path=engine/rules.py::_legal_generic_target_selection_moves + _apply_generic_action
 
 ### Ghoul (`ghoul`)
 
 - Verdict: `clean`
 - Aspect: `malice`
 - Cost: `4`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Gain 2 power. Give an Insane Outcast to each opponent.
 - Actions:
@@ -705,7 +668,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `conquest`
 - Cost: `2`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Deploy 2 troops. Choose a player who has Presence in the same site as one of the troops you deployed. That player adds an Insane Outcast to their discard pile.
 - Actions:
@@ -718,11 +680,10 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `malice`
 - Cost: `5`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Devour a card from your hand to assassinate 2 troops.
 - Actions:
-  - action_1 -> devour [hand] timing=immediate quantity=unspecified source_fragment=hand_devour
+  - action_1 -> devour_cost [hand] timing=immediate quantity=unspecified source_fragment=hand_devour
   - action_2 -> assassinate_troop [board_site] timing=immediate quantity=fixed:1 source_fragment=assassinate_step_1
   - action_3 -> assassinate_troop [board_site] timing=immediate quantity=fixed:1 source_fragment=assassinate_step_2
 - Findings: none
@@ -732,7 +693,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `guile`
 - Cost: `6`
-- Probe: `ok` (turn_completed)
 - Execution model: `modal_choice`
 - Rules text: Choose exactly one mode. Either place 2 spies, or return any spies to supplant a troop at each of those sites.
 - Actions:
@@ -747,11 +707,11 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `guile`
 - Cost: `8`
-- Probe: `ok` (turn_completed)
 - Execution model: `modal_choice`
 - Rules text: Choose exactly one mode. Either place a spy and supplant a troop there, or return one of your spies, supplant a troop there, and gain 1 VP for each site control marker you have.
 - Actions:
   - option_1_action_1 -> place_spy [board_site] timing=immediate quantity=unspecified source_fragment=spy
+  - option_1_action_2 -> supplant_troop [board_site] timing=immediate quantity=unspecified source_fragment=supplant
   - option_2_action_1 -> return_spy [board_site] timing=immediate quantity=unspecified source_fragment=return_spy
   - option_2_action_2 -> supplant_troop [board_site] timing=immediate quantity=unspecified source_fragment=supplant
   - option_2_action_3 -> grant_vp [self] timing=immediate quantity=unspecified source_fragment=scaled_vp
@@ -762,7 +722,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `guile`
 - Cost: `4`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Place a spy. If there is another player's troop on the site where you placed that spy, gain 2 influence.
 - Actions:
@@ -775,7 +734,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `conquest`
 - Cost: `1`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Deploy 1 troop. If your opponent causes you to discard this card from hand to discard pile, draw 2 cards.
 - Actions:
@@ -788,7 +746,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `ambition`
 - Cost: `3`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Move an enemy troop. Promote the top card of your draw deck directly into your promoted area. If your draw deck is empty, apply normal shuffle-to-refill rules first.
 - Actions:
@@ -801,7 +758,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `ambition`
 - Cost: `6`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Return another player's troop or spy. At end of turn, you may promote any number of Undead cards you played this turn (zero, one, some, or all).
 - Actions:
@@ -814,7 +770,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `obedience`
 - Cost: `3`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Gain 2 power.
 - Actions:
@@ -826,7 +781,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `guile`
 - Cost: `3`
-- Probe: `ok` (turn_completed)
 - Execution model: `modal_choice`
 - Rules text: Choose exactly one mode. Either place a spy, or return one of your spies and gain 3 influence. Focus: gain 1 power.
 - Actions:
@@ -841,7 +795,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `malice`
 - Cost: `6`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Gain 4 power. If the focus condition is met for Malice, gain 2 power.
 - Actions:
@@ -854,7 +807,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `guile`
 - Cost: `3`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Place a spy with normal legality. If there is another player's troop at that site, gain 1 power.
 - Actions:
@@ -867,7 +819,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `guile`
 - Cost: `5`
-- Probe: `ok` (turn_completed)
 - Execution model: `modal_choice`
 - Rules text: Choose exactly one mode. Either place a spy, or return one of your spies and draw 3 cards.
 - Actions:
@@ -881,7 +832,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `malice`
 - Cost: `3`
-- Probe: `ok` (turn_completed)
 - Execution model: `modal_choice`
 - Rules text: Choose exactly one mode. Either gain 2 influence, or assassinate.
 - Actions:
@@ -894,7 +844,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `-`
 - Cost: `0`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: You may discard a card from your hand to return this card to supply. If this card would be devoured or promoted, return it to supply instead.
 - Actions:
@@ -906,7 +855,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `ambition`
 - Cost: `4`
-- Probe: `ok` (turn_completed)
 - Execution model: `modal_choice`
 - Rules text: Choose one mode. Either gain 3 influence, or return up to 2 of your own units to your barracks in any mix of troops and spies.
 - Actions:
@@ -920,7 +868,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `guile`
 - Cost: `4`
-- Probe: `ok` (turn_completed)
 - Execution model: `modal_choice`
 - Rules text: Choose exactly one mode. Either place a spy, or return one of your own spies from the board to your barracks and gain 2 power and 2 influence.
 - Actions:
@@ -935,7 +882,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `conquest`
 - Cost: `1`
-- Probe: `ok` (turn_completed)
 - Execution model: `modal_choice`
 - Rules text: Choose exactly one mode. Either deploy 1 troop, or assassinate a white troop.
 - Actions:
@@ -945,27 +891,36 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 
 ### Lich (`lich`)
 
-- Verdict: `clean`
+- Verdict: `runtime_gap`
 - Aspect: `guile`
 - Cost: `7`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Place a spy. If another player has a troop there, take 2 troops from that same player's trophy hall and deploy them anywhere on the board, regardless of presence.
 - Actions:
   - action_1 -> place_spy [board_site] timing=immediate quantity=unspecified source_fragment=spy
-  - action_2 -> deploy_troops [board_site] timing=immediate quantity=unspecified source_fragment=conditional_take_from_trophy_hall_and_deploy
-- Findings: none
+  - action_2 -> custom_effect [self] timing=immediate quantity=fixed:1 source_fragment=lich_select_target_player
+  - action_3 -> custom_effect [self] timing=immediate quantity=fixed:1 source_fragment=lich_take_trophy
+  - action_4 -> custom_effect [self] timing=immediate quantity=fixed:1 source_fragment=lich_take_trophy
+- Findings:
+  - [runtime_gap][high][engine_fix] action_2: custom_effect_unsupported:lich_select_target_player
+    - action_2 -> custom_effect [self] timing=immediate quantity=fixed:1 source_fragment=lich_select_target_player
+    - owning_engine_path=engine/rules.py::_legal_generic_target_selection_moves + _apply_generic_action
+  - [runtime_gap][high][engine_fix] action_3: custom_effect_unsupported:deploy_from_trophy_hall
+    - action_3 -> custom_effect [self] timing=immediate quantity=fixed:1 source_fragment=lich_take_trophy
+    - owning_engine_path=engine/rules.py::_legal_generic_target_selection_moves + _apply_generic_action
+  - [runtime_gap][high][engine_fix] action_4: custom_effect_unsupported:deploy_from_trophy_hall
+    - action_4 -> custom_effect [self] timing=immediate quantity=fixed:1 source_fragment=lich_take_trophy
+    - owning_engine_path=engine/rules.py::_legal_generic_target_selection_moves + _apply_generic_action
 
 ### Marilith (`marilith`)
 
 - Verdict: `clean`
 - Aspect: `malice`
 - Cost: `6`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Devour a card from your hand to gain 5 power.
 - Actions:
-  - action_1 -> devour [hand] timing=immediate quantity=unspecified source_fragment=hand_devour
+  - action_1 -> devour_cost [hand] timing=immediate quantity=unspecified source_fragment=hand_devour
   - action_2 -> gain_resource [self] timing=immediate quantity=fixed:5 source_fragment=gain_power
 - Findings: none
 
@@ -974,9 +929,8 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `ambition`
 - Cost: `5`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
-- Rules text: Gain 1 influence. At end of turn, promote another played card. Then recruit an Ambition card that costs 4 or less.
+- Rules text: Gain 1 influence. At end of turn, promote another played card. Then recruit an Ambition card that costs 4 or less without paying its cost.
 - Actions:
   - action_1 -> gain_resource [self] timing=immediate quantity=fixed:1 source_fragment=gain_influence
   - action_2 -> promote_card [self] timing=end_of_turn quantity=unspecified source_fragment=triggered_promote
@@ -988,7 +942,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `conquest`
 - Cost: `5`
-- Probe: `ok` (turn_completed)
 - Execution model: `modal_choice`
 - Rules text: Choose exactly one mode. Either deploy 4 troops, or supplant a white troop anywhere.
 - Actions:
@@ -1001,7 +954,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `guile`
 - Cost: `3`
-- Probe: `ok` (turn_completed)
 - Execution model: `modal_choice`
 - Rules text: Choose exactly one mode. Either place 2 spies, or return one of your spies and gain 4 power.
 - Actions:
@@ -1016,7 +968,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `ambition`
 - Cost: `6`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Put your draw deck into your discard pile. Then promote a card from your discard pile.
 - Actions:
@@ -1029,7 +980,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `conquest`
 - Cost: `3`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Deploy 3 troops.
 - Actions:
@@ -1041,13 +991,12 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `malice`
 - Cost: `3`
-- Probe: `ok` (turn_completed)
 - Execution model: `modal_choice`
 - Rules text: Devour a card from your hand, then choose exactly one mode: either gain 3 influence, or assassinate a troop.
 - Actions:
-  - option_1_action_1 -> devour [hand] timing=immediate quantity=unspecified source_fragment=hand_devour
+  - option_1_action_1 -> devour_cost [hand] timing=immediate quantity=unspecified source_fragment=hand_devour
   - option_1_action_2 -> gain_resource [self] timing=immediate quantity=fixed:3 source_fragment=gain_influence
-  - option_2_action_1 -> devour [hand] timing=immediate quantity=unspecified source_fragment=hand_devour
+  - option_2_action_1 -> devour_cost [hand] timing=immediate quantity=unspecified source_fragment=hand_devour
   - option_2_action_2 -> assassinate_troop [board_site] timing=immediate quantity=unspecified source_fragment=assassinate
 - Findings: none
 
@@ -1056,7 +1005,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `malice`
 - Cost: `3`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Assassinate a troop. Then that player discards 1 card from hand if they have 3 or more cards in hand.
 - Actions:
@@ -1069,14 +1017,14 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `conquest`
 - Cost: `3`
-- Probe: `ok` (turn_completed)
 - Execution model: `modal_choice`
 - Rules text: Choose exactly one mode. Either deploy 3 troops, or devour this card to assassinate up to 3 white troops at a single site.
 - Actions:
   - option_1_action_1 -> deploy_troops [board_site] timing=immediate quantity=fixed:3 source_fragment=deploy_troops
-  - option_2_action_1 -> assassinate_troop [board_site] timing=immediate quantity=fixed:1 source_fragment=self_devour_multi_white_assassinate_single_site
+  - option_2_action_1 -> devour_cost [played_self] timing=immediate quantity=unspecified source_fragment=self_devour
   - option_2_action_2 -> assassinate_troop [board_site] timing=immediate quantity=fixed:1 source_fragment=self_devour_multi_white_assassinate_single_site
   - option_2_action_3 -> assassinate_troop [board_site] timing=immediate quantity=fixed:1 source_fragment=self_devour_multi_white_assassinate_single_site
+  - option_2_action_4 -> assassinate_troop [board_site] timing=immediate quantity=fixed:1 source_fragment=self_devour_multi_white_assassinate_single_site
 - Findings: none
 
 ### Mummy Lord (`mummy_lord`)
@@ -1084,7 +1032,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `conquest`
 - Cost: `6`
-- Probe: `ok` (turn_completed)
 - Execution model: `repeat_choice`
 - Rules text: Choose two times from this menu: (a) assassinate a white troop, (b) take a white trophy from another player and place it anywhere.
 - Actions:
@@ -1097,7 +1044,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `ambition`
 - Cost: `3`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Gain 2 influence. Choose another player. That player adds an Insane Outcast from the Insane Outcast deck to their discard pile.
 - Actions:
@@ -1110,7 +1056,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `ambition`
 - Cost: `4`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Choose another player. That player adds an Insane Outcast from the Insane Outcast deck to their discard pile. At end of turn, promote another played card.
 - Actions:
@@ -1123,7 +1068,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `ambition`
 - Cost: `5`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Gain 3 influence. Promote the top card of your draw deck directly into your promoted area. If your draw deck is empty, apply normal shuffle-to-refill rules first.
 - Actions:
@@ -1136,7 +1080,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `ambition`
 - Cost: `5`
-- Probe: `ok` (turn_completed)
 - Execution model: `modal_choice`
 - Rules text: Choose exactly one mode. Either gain 3 influence, or perform exactly one promote action on exactly one card chosen from: this card, a card from hand, or a card from discard.
 - Actions:
@@ -1149,7 +1092,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `conquest`
 - Cost: `7`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Deploy 4 troops. At end of turn, each opponent discards a card.
 - Actions:
@@ -1162,7 +1104,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `guile`
 - Cost: `3`
-- Probe: `ok` (turn_completed)
 - Execution model: `modal_choice`
 - Rules text: Choose exactly one mode. Either place a spy, or return one of your own spies from the board to your barracks and draw 2 cards from your draw deck.
 - Actions:
@@ -1176,7 +1117,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `obedience`
 - Cost: `0`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Gain 1 influence.
 - Actions:
@@ -1188,13 +1128,13 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `guile`
 - Cost: `3`
-- Probe: `ok` (turn_completed)
 - Execution model: `modal_choice`
 - Rules text: Choose one mode. Either place a spy from your units onto the board, or return one of your own spies from the board to your barracks, draw a card, and then each opponent with 3 or more cards in hand discards 1 card from hand.
 - Actions:
   - option_1_action_1 -> place_spy [board_site] timing=immediate quantity=unspecified source_fragment=spy
   - option_2_action_1 -> return_spy [board_site] timing=immediate quantity=unspecified source_fragment=return_spy_draw
-  - option_2_action_2 -> force_discard [opponent] timing=immediate quantity=variable_repeat source_fragment=mass_discard
+  - option_2_action_2 -> draw_cards [self] timing=immediate quantity=fixed:1 source_fragment=draw_cards
+  - option_2_action_3 -> force_discard [opponent] timing=immediate quantity=variable_repeat source_fragment=mass_discard
 - Findings: none
 
 ### Ogre Zombie (`ogre_zombie`)
@@ -1202,7 +1142,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `conquest`
 - Cost: `4`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Supplant a white troop anywhere.
 - Actions:
@@ -1214,7 +1153,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `ambition`
 - Cost: `6`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Gain 2 influence. At end of turn, promote another played card. Focus: at end of turn, promote another played card.
 - Actions:
@@ -1228,7 +1166,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `conquest`
 - Cost: `6`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Supplant a white troop anywhere on the board. If the focus condition is met for Conquest, deploy 2 troops.
 - Actions:
@@ -1238,26 +1175,39 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 
 ### Orcus (`orcus`)
 
-- Verdict: `clean`
+- Verdict: `runtime_gap`
 - Aspect: `malice`
 - Cost: `8`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Devour a card from your hand for 5 power. Assassinate 2 troops. Take up to 2 troops from any trophy halls and deploy them anywhere on the board.
 - Actions:
-  - action_1 -> devour [hand] timing=immediate quantity=unspecified source_fragment=hand_devour
+  - action_1 -> devour_cost [hand] timing=immediate quantity=unspecified source_fragment=hand_devour
   - action_2 -> gain_resource [self] timing=immediate quantity=fixed:5 source_fragment=gain_power_from_devour
   - action_3 -> assassinate_troop [board_site] timing=immediate quantity=fixed:1 source_fragment=assassinate_step_1
   - action_4 -> assassinate_troop [board_site] timing=immediate quantity=fixed:1 source_fragment=assassinate_step_2
-  - action_5 -> deploy_troops [board_site] timing=immediate quantity=unspecified source_fragment=redeploy_captured_units
-- Findings: none
+  - action_5 -> custom_effect [self] timing=immediate quantity=unspecified source_fragment=steal_trophy_1
+  - action_6 -> custom_effect [self] timing=immediate quantity=unspecified source_fragment=steal_trophy_1_deploy
+  - action_7 -> custom_effect [self] timing=immediate quantity=unspecified source_fragment=steal_trophy_2
+  - action_8 -> custom_effect [self] timing=immediate quantity=unspecified source_fragment=steal_trophy_2_deploy
+- Findings:
+  - [runtime_gap][high][engine_fix] action_5: custom_effect_unsupported:select_trophy_hall
+    - action_5 -> custom_effect [self] timing=immediate quantity=unspecified source_fragment=steal_trophy_1
+    - owning_engine_path=engine/rules.py::_legal_generic_target_selection_moves + _apply_generic_action
+  - [runtime_gap][high][engine_fix] action_6: custom_effect_unsupported:steal_from_selected_trophy
+    - action_6 -> custom_effect [self] timing=immediate quantity=unspecified source_fragment=steal_trophy_1_deploy
+    - owning_engine_path=engine/rules.py::_legal_generic_target_selection_moves + _apply_generic_action
+  - [runtime_gap][high][engine_fix] action_7: custom_effect_unsupported:select_trophy_hall
+    - action_7 -> custom_effect [self] timing=immediate quantity=unspecified source_fragment=steal_trophy_2
+    - owning_engine_path=engine/rules.py::_legal_generic_target_selection_moves + _apply_generic_action
+  - [runtime_gap][high][engine_fix] action_8: custom_effect_unsupported:steal_from_selected_trophy
+    - action_8 -> custom_effect [self] timing=immediate quantity=unspecified source_fragment=steal_trophy_2_deploy
+    - owning_engine_path=engine/rules.py::_legal_generic_target_selection_moves + _apply_generic_action
 
 ### Priestess of Lolth (`priestess_of_lolth`)
 
 - Verdict: `clean`
 - Aspect: `obedience`
 - Cost: `2`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Gain 2 influence.
 - Actions:
@@ -1269,7 +1219,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `ambition`
 - Cost: `5`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Gain 2 influence. At end of turn, promote another card you played this turn.
 - Actions:
@@ -1282,19 +1231,17 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `conquest`
 - Cost: `5`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Assassinate a white troop for each site you control.
 - Actions:
   - action_1 -> assassinate_troop [board_site] timing=immediate quantity=variable_repeat source_fragment=repeated_white_troop_assassinate_by_controlled_sites
 - Findings: none
 
-### Rather Modar (`rather_modar`)
+### Rath Modar (`rath_modar`)
 
 - Verdict: `clean`
 - Aspect: `guile`
 - Cost: `6`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Draw 2 cards. Place a spy.
 - Actions:
@@ -1307,7 +1254,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `conquest`
 - Cost: `3`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Gain 1 power. Assassinate a white troop.
 - Actions:
@@ -1320,13 +1266,12 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `malice`
 - Cost: `8`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Supplant a troop. Return an enemy spy. Gain 1 VP for each total controlled site.
 - Actions:
   - action_1 -> supplant_troop [board_site] timing=immediate quantity=unspecified source_fragment=supplant
   - action_2 -> return_spy [board_site] timing=immediate quantity=unspecified source_fragment=return_enemy_spy
-  - action_3 -> grant_vp [self] timing=immediate quantity=unspecified source_fragment=scaled_vp_from_controlled_sites
+  - action_3 -> grant_vp [self] timing=immediate quantity=unspecified source_fragment=scaled_vp_from_total_controlled_sites
 - Findings: none
 
 ### Red Wyrmling (`red_wyrmling`)
@@ -1334,7 +1279,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `malice`
 - Cost: `5`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Gain 2 power and 2 influence.
 - Actions:
@@ -1347,7 +1291,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `malice`
 - Cost: `4`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Assassinate 2 troops. If you have 8 or more trophies, promote this card.
 - Actions:
@@ -1361,7 +1304,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `malice`
 - Cost: `7`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Gain 5 power.
 - Actions:
@@ -1370,24 +1312,26 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 
 ### Skeletal Horde (`skeletal_horde`)
 
-- Verdict: `clean`
+- Verdict: `heuristic-only`
 - Aspect: `conquest`
 - Cost: `2`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Deploy 2 troops. You can devour this card to deploy 3 more troops.
 - Actions:
   - action_1 -> deploy_troops [board_site] timing=immediate quantity=fixed:2 source_fragment=deploy_troops
-  - action_2 -> devour [played_self] timing=immediate quantity=unspecified source_fragment=optional_self_devour
-  - action_3 -> deploy_troops [board_site] timing=immediate quantity=unspecified source_fragment=extra_deploy
-- Findings: none
+  - action_2 -> devour_cost [played_self] timing=immediate quantity=unspecified source_fragment=optional_self_devour
+  - action_3 -> deploy_troops [board_site] timing=immediate quantity=fixed:3 source_fragment=extra_deploy
+- Findings:
+  - [heuristic_false_positive][low][audit_fix] deploy_troops_expected_2_fixed_sum_5
+    - rules_text fixed expectation for deploy_troops=2
+    - flattened deploy_troops fixed sum=5
+    - matching actions present=True, non_fixed=False
 
 ### Soldier (`soldier`)
 
 - Verdict: `clean`
 - Aspect: `obedience`
 - Cost: `0`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Gain 1 power.
 - Actions:
@@ -1399,12 +1343,11 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `malice`
 - Cost: `4`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Gain 2 power and 1 influence.
 - Actions:
   - action_1 -> gain_resource [self] timing=immediate quantity=fixed:2 source_fragment=gain_power_and_influence
-  - action_2 -> gain_resource [self] timing=immediate quantity=fixed:2 source_fragment=gain_power_and_influence
+  - action_2 -> gain_resource [self] timing=immediate quantity=fixed:1 source_fragment=gain_power_and_influence
 - Findings: none
 
 ### Spellspinner (`spellspinner`)
@@ -1412,7 +1355,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `guile`
 - Cost: `3`
-- Probe: `ok` (turn_completed)
 - Execution model: `modal_choice`
 - Rules text: Choose exactly one mode. Either place a spy, or return one of your spies to supplant a troop at that site.
 - Actions:
@@ -1426,7 +1368,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `guile`
 - Cost: `2`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Place a spy.
 - Actions:
@@ -1438,11 +1379,10 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `guile`
 - Cost: `5`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Devour a card from your hand to place a spy and assassinate a troop there.
 - Actions:
-  - action_1 -> devour [hand] timing=immediate quantity=unspecified source_fragment=hand_devour
+  - action_1 -> devour_cost [hand] timing=immediate quantity=unspecified source_fragment=hand_devour
   - action_2 -> place_spy [board_site] timing=immediate quantity=unspecified source_fragment=spy
   - action_3 -> assassinate_troop [board_site] timing=immediate quantity=unspecified source_fragment=assassinate
 - Findings: none
@@ -1452,12 +1392,11 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `ambition`
 - Cost: `6`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Choose a market card that costs 4 or less. Play it immediately by resolving its instructions without recruiting it. After its full effect finishes, devour that card. While it is being played this way, it does not count for aspect checks or end-of-turn effects.
 - Actions:
   - action_1 -> play_card [inner_circle_or_market] timing=immediate quantity=unspecified source_fragment=play
-  - action_2 -> devour [unknown] timing=immediate quantity=unspecified source_fragment=devour
+  - action_2 -> devour_cost [unknown] timing=immediate quantity=unspecified source_fragment=devour
 - Findings: none
 
 ### Umber Hulk (`umber_hulk`)
@@ -1465,7 +1404,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `conquest`
 - Cost: `4`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Deploy 3 troops. If an opponent causes you to discard this card, that opponent discards a card.
 - Actions:
@@ -1478,7 +1416,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `conquest`
 - Cost: `4`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Assassinate 2 white troops.
 - Actions:
@@ -1491,7 +1428,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `ambition`
 - Cost: `7`
-- Probe: `ok` (turn_completed)
 - Execution model: `modal_choice`
 - Rules text: Choose exactly one mode. Either supplant a troop, or promote a card from your discard pile and then gain 1 VP for every 3 promoted cards.
 - Actions:
@@ -1505,7 +1441,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `ambition`
 - Cost: `2`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Gain 1 influence. Return another player's troop or spy.
 - Actions:
@@ -1518,9 +1453,8 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `malice`
 - Cost: `5`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
-- Rules text: Assassinate a troop. Recruit a Malice card that costs 4 or less.
+- Rules text: Assassinate a troop. You may recruit a Malice card that costs 4 or less without paying its cost.
 - Actions:
   - action_1 -> assassinate_troop [board_site] timing=immediate quantity=unspecified source_fragment=assassinate_troop
   - action_2 -> recruit_card [market] timing=immediate quantity=unspecified source_fragment=recruit_aspect_filtered_card_by_cost
@@ -1531,7 +1465,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `guile`
 - Cost: `5`
-- Probe: `ok` (turn_completed)
 - Execution model: `modal_choice`
 - Rules text: Choose exactly one mode. Either place a spy, or return one of your own spies from the board to your barracks and gain 5 power.
 - Actions:
@@ -1545,7 +1478,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `guile`
 - Cost: `3`
-- Probe: `ok` (turn_completed)
 - Execution model: `modal_choice`
 - Rules text: Choose exactly one mode. Either place a spy, or return one of your spies and gain 3 influence.
 - Actions:
@@ -1559,11 +1491,11 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `conquest`
 - Cost: `2`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Deploy 2 troops. If the focus condition is met for Conquest, draw a card.
 - Actions:
   - action_1 -> deploy_troops [board_site] timing=immediate quantity=fixed:2 source_fragment=deploy_troops_with_focus_draw
+  - action_2 -> draw_cards [self] timing=immediate quantity=fixed:1 source_fragment=focus_draw
 - Findings: none
 
 ### Water Elemental Myrmidon (`water_elemental_myrmidon`)
@@ -1571,7 +1503,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `conquest`
 - Cost: `4`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Assassinate a white troop. At end of turn, promote an Obedience card played this turn.
 - Actions:
@@ -1584,7 +1515,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `conquest`
 - Cost: `6`
-- Probe: `ok` (turn_completed)
 - Execution model: `modal_choice`
 - Rules text: Choose exactly one mode. Either deploy 1 troop, or assassinate a white troop.
 - Actions:
@@ -1597,7 +1527,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `conquest`
 - Cost: `8`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Deploy 3 troops. Gain 1 VP for every 2 sites controlled.
 - Actions:
@@ -1610,12 +1539,11 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `conquest`
 - Cost: `2`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Deploy 2 troops. You may devour a card in the market.
 - Actions:
   - action_1 -> deploy_troops [board_site] timing=immediate quantity=fixed:2 source_fragment=deploy_troops
-  - action_2 -> devour [market] timing=immediate quantity=unspecified source_fragment=optional_market_devour
+  - action_2 -> devour_cost [market] timing=immediate quantity=unspecified source_fragment=optional_market_devour
 - Findings: none
 
 ### Wight (`wight`)
@@ -1623,12 +1551,11 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `malice`
 - Cost: `3`
-- Probe: `ok` (turn_completed)
 - Execution model: `modal_choice`
 - Rules text: Choose exactly one mode. Either gain 2 power, or devour a card from your hand to supplant a troop.
 - Actions:
   - option_1_action_1 -> gain_resource [self] timing=immediate quantity=fixed:2 source_fragment=gain_power
-  - option_2_action_1 -> devour [hand] timing=immediate quantity=unspecified source_fragment=devour_from_hand
+  - option_2_action_1 -> devour_cost [hand] timing=immediate quantity=unspecified source_fragment=devour_from_hand
   - option_2_action_2 -> supplant_troop [board_site] timing=immediate quantity=unspecified source_fragment=supplant
 - Findings: none
 
@@ -1637,12 +1564,11 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `guile`
 - Cost: `2`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Place a spy. You may devour this card to assassinate a troop there.
 - Actions:
   - action_1 -> place_spy [board_site] timing=immediate quantity=unspecified source_fragment=spy
-  - action_2 -> devour [played_self] timing=immediate quantity=unspecified source_fragment=optional_self_devour
+  - action_2 -> devour_cost [played_self] timing=immediate quantity=unspecified source_fragment=optional_self_devour
   - action_3 -> assassinate_troop [board_site] timing=immediate quantity=unspecified source_fragment=assassinate_there
 - Findings: none
 
@@ -1651,7 +1577,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `ambition`
 - Cost: `3`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Gain 1 influence. At end of turn, promote a played card other than this card.
 - Actions:
@@ -1664,7 +1589,6 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `guile`
 - Cost: `6`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Place a spy, then assassinate a troop at that site. If the focus condition is met, place another spy.
 - Actions:
@@ -1678,11 +1602,10 @@ Probe artifact: C:/Users/mkkom/pyrants/artifacts/card_stuck_report.json
 - Verdict: `clean`
 - Aspect: `ambition`
 - Cost: `6`
-- Probe: `ok` (turn_completed)
 - Execution model: `sequence`
 - Rules text: Devour a card in your inner circle to gain 3 influence and at end of turn promote up to 2 other played cards.
 - Actions:
-  - action_1 -> devour [inner_circle] timing=immediate quantity=unspecified source_fragment=inner_circle_devour
+  - action_1 -> devour_cost [inner_circle] timing=immediate quantity=unspecified source_fragment=inner_circle_devour
   - action_2 -> gain_resource [self] timing=immediate quantity=fixed:3 source_fragment=gain_influence
   - action_3 -> promote_card [self] timing=end_of_turn quantity=variable_repeat source_fragment=triggered_multi_promote
 - Findings: none

@@ -34,7 +34,7 @@ REM traces) + /Od (no optimization, so line numbers in reports are accurate)
 REM + /fsanitize=address. Incompatible with /RTC1, which we don't use anyway.
 set CFLAGS=/nologo /W3 /std:c11 /MTd /Zi /Od /fsanitize=address
 
-set SRCS=intern.c arena.c rng.c state.c moves.c rules.c helpers.c phases.c scoring.c generic_runtime.c actions.c selection.c player_view.c loader.c cJSON.c view.c describe.c saveload.c
+set SRCS=intern.c arena.c rng.c state.c moves.c rules.c helpers.c phases.c scoring.c generic_runtime.c actions.c selection.c player_view.c loader.c cJSON.c view.c describe.c saveload.c rollout.c
 
 call %VCVARS% > nul
 if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
@@ -88,6 +88,14 @@ echo Running saveload tests under ASan...
 .\test_saveload_asan.exe
 if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 
+echo Building test_rollout_asan.exe...
+cl %CFLAGS% /I. /Fe:test_rollout_asan.exe tests\test_rollout.c libengine_asan.lib
+if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
+
+echo Running rollout tests under ASan...
+.\test_rollout_asan.exe
+if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
+
 echo Building test_catalog_assembly_asan.exe...
 cl %CFLAGS% /I. /Fe:test_catalog_assembly_asan.exe tests\test_catalog_assembly.c libengine_asan.lib
 if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
@@ -97,7 +105,7 @@ echo Running catalog assembly tests under ASan...
 if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 
 echo Building engine_c_asan.dll...
-del /Q test_engine.obj test_intern_c.obj test_view.obj test_describe.obj test_generic_actions.obj test_saveload.obj test_catalog_assembly.obj 2>nul
+del /Q test_engine.obj test_intern_c.obj test_view.obj test_describe.obj test_generic_actions.obj test_saveload.obj test_catalog_assembly.obj test_rollout.obj 2>nul
 del /Q engine_c_asan.dll 2>nul
 cl %CFLAGS% /LD /Fe:engine_c_asan.dll *.obj /link /DEF:engine_c.def /INCREMENTAL:NO
 if %ERRORLEVEL% neq 0 (

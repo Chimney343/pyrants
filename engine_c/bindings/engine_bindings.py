@@ -426,6 +426,11 @@ def _setup():
     _lib.compute_final_scores.argtypes = [POINTER(GameStateStruct), POINTER(c_int)]
     _lib.compute_final_scores.restype = None
 
+    _lib.engine_random_rollout.argtypes = [
+        POINTER(GameStateStruct), c_uint64, c_int, POINTER(c_int),
+    ]
+    _lib.engine_random_rollout.restype = c_int
+
     _lib.set_game_over.argtypes = [POINTER(GameStateStruct)]
     _lib.set_game_over.restype = None
     _lib.advance_phase.argtypes = [POINTER(GameStateStruct)]

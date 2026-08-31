@@ -139,7 +139,7 @@ def test_grazzt_option_2_repeats_for_each_spy() -> None:
         view = build_c_game_view(session)
         legal = [m for m in view.legal_moves if m.move_type == "resolve_generic"]
 
-        spy_returns = [m for m in legal if "Return spy" in m.label]
+        spy_returns = [m for m in legal if "Return spy" in m.label and m.move.data.get("action_id")]
         assert spy_returns, f"Cycle {cycle}: no return-spy moves, labels={[m.label for m in legal]}"
 
         # Each should only show sites with p1's own spies
@@ -212,7 +212,7 @@ def test_grazzt_option_2_spy_owner_filtering() -> None:
         eng,
         [_P1, _P2],
         hand={_P1: ["grazzt"]},
-        spies={"site_jhachalkhyn": [_P2]},
+        spies={"site_gauntlgrym": [_P1], "site_jhachalkhyn": [_P2]},
         troops={_P2: {"site_jhachalkhyn": [_P2, None, None, None]}},
         current_player=_P1,
     )
@@ -224,14 +224,42 @@ def test_grazzt_option_2_spy_owner_filtering() -> None:
             break
     opt2 = [m for m in session.legal_moves() if m.data.get("action_id") == "option_2"]
     assert opt2, "option_2 missing"
+    assert opt2[0].data.get("target_id") != "unavailable", "option_2 should be viable (p1 has a spy)"
     session.submit_move(opt2[0])
 
     view = build_c_game_view(session)
     legal = [m for m in view.legal_moves if m.move_type == "resolve_generic"]
-    spy_sites = [m.move.data.get("action_id") for m in legal if "Return spy" in m.label]
+    spy_sites = [m.move.data.get("action_id") for m in legal if "Return spy" in m.label and m.move.data.get("action_id")]
+    assert "site_gauntlgrym" in spy_sites, f"Should offer p1's own spy site; got {spy_sites}"
     assert "site_jhachalkhyn" not in spy_sites, (
         f"Should not offer p2 spy site for return; got {spy_sites}"
     )
+
+    session.destroy()
+
+
+def test_grazzt_option_2_unavailable_with_no_spies() -> None:
+    """With no spies on board, option_2 is still listed but marked unavailable (ILLEGAL)."""
+    eng = _make_engine()
+    session = make_card_test_session(
+        eng,
+        [_P1, _P2],
+        hand={_P1: ["grazzt"]},
+        current_player=_P1,
+    )
+
+    for m in session.legal_moves():
+        if getattr(m, "move_type", "") == "play_card" and m.data.get("card_id") == "grazzt":
+            session.submit_move(m)
+            break
+
+    opt2 = [m for m in session.legal_moves() if m.data.get("action_id") == "option_2"]
+    assert opt2, "option_2 should still be listed even when unavailable"
+    assert opt2[0].data.get("target_id") == "unavailable", (
+        f"option_2 should be unavailable with no spies; got {opt2[0].data}"
+    )
+    # Submitting the unavailable option is rejected and leaves the state unchanged.
+    assert session.submit_move(opt2[0]) is None
 
     session.destroy()
 
@@ -262,5 +290,35 @@ def test_grazzt_option_2_supplant_constrained_to_returned_site() -> None:
     assert "site_gauntlgrym" in supplant_sites, "Should allow supplant at gauntlgrym"
     assert "site_jhachalkhyn" not in supplant_sites, "Should NOT allow supplant at jhachalkhyn"
     assert "site_gracklstugh" not in supplant_sites, "Should NOT allow supplant at gracklstugh"
+
+    session.destroy()
+
+
+def test_grazzt_option_2_skip_ends_card() -> None:
+    """Choosing skip on the optional return ends the card, leaving spies on board."""
+    eng = _make_engine()
+    session = make_card_test_session(
+        eng,
+        [_P1, _P2],
+        hand={_P1: ["grazzt"]},
+        spies={"site_gauntlgrym": [_P1]},
+        current_player=_P1,
+    )
+
+    for m in session.legal_moves():
+        if getattr(m, "move_type", "") == "play_card" and m.data.get("card_id") == "grazzt":
+            session.submit_move(m)
+            break
+    opt2 = [m for m in session.legal_moves() if m.data.get("action_id") == "option_2"]
+    session.submit_move(opt2[0])
+
+    view = build_c_game_view(session)
+    legal = [m for m in view.legal_moves if m.move_type == "resolve_generic"]
+    skip = [m for m in legal if m.move.data.get("action_id") is None]
+    assert skip, f"Expected a skip move; got {[m.move.data for m in legal]}"
+    session.submit_move(skip[0].move)
+
+    assert not _has_pending_generic(session), "Card should be resolved after skip"
+    assert _P1 in _spies_at_node(session, "site_gauntlgrym"), "Spy should remain on board after skip"
 
     session.destroy()

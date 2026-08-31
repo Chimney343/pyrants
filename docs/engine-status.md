@@ -1,6 +1,6 @@
 # Engine Status
 
-Use this file for the current engine surface, the active gameplay backlog, and the main unresolved rules questions.
+Use this file for the current engine surface, the active gameplay backlog, and the main unresolved rules questions. As of 2026-08-30.
 
 ## Source Of Truth
 
@@ -14,8 +14,7 @@ Checks:
 - `tests/c_engine/` (C-binding tests)
 
 Supporting status files:
-- `docs/cards-status.md`
-- `docs/generated/engine_action_gap_report.md`
+- `docs/generated/catalog_execution_audit.md`
 
 ## Done
 
@@ -24,7 +23,7 @@ Supporting status files:
 - The engine uses pure state models, legal-move generation, and move application as its main control flow.
 - Generic-card execution is live in the C engine, including targeted, modal, and repeat selection flows.
 - Headless session, simulation, and scenario save/load are in place through `engine_c/bindings/session.py` and the viewer tools.
-- The current test suite is green, so the implemented behavior is consistent at the present coverage level.
+- Test status is tracked by dated snapshot; see `docs/cards-failing-tests.md` for the latest failing-test listing.
 - Initial placement moves are legal only during SETUP and target site nodes with empty troop slots. Routes are excluded.
 
 ## Awaiting
@@ -43,4 +42,4 @@ Supporting status files:
 ## Related Files
 
 - Archived rules briefs, phase reviews, and backlog notes live in `docs/archive/`.
-- For card-execution breadth, use `docs/cards-status.md` and the generated gap report.
+- For card-execution breadth, use the generated catalog execution audit.

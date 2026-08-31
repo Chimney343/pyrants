@@ -33,7 +33,21 @@ static int sel_deploy(const GameState *state, Sym player_id,
                       Move *out, int max_out) {
     int w = 0;
     int pi = player_index_for_id(state, player_id);
-    if (pi < 0 || state->players[pi].barracks <= 0) return 0;
+    if (pi < 0) return 0;
+    if (state->players[pi].barracks <= 0) {
+        /* Rulebook 319/589: taking the Deploy action with an empty barracks
+         * grants 1 VP instead. Nothing is placed, so the node is irrelevant —
+         * emit a single sentinel move rather than one per node. */
+        if (max_out > 0) {
+            out[0].type = MOVE_RESOLVE_GENERIC;
+            out[0].data.resolve_generic.action_id = SYM_NULL;
+            out[0].data.resolve_generic.target_id = SYM_NULL;
+            out[0].data.resolve_generic.selection_index = 0;
+            out[0].player_index = 0;
+            return 1;
+        }
+        return 0;
+    }
     int ht = player_has_any_troops_on_board(state, player_id);
     for (int i = 0; i < state->node_count && w < max_out; i++) {
         Sym nid = state->nodes[i].node_id;
@@ -387,6 +401,12 @@ static int sel_custom_effect(const GameState *state, Sym player_id,
     return w;
 }
 
+static int node_has_own_spy(const GameState *state, Sym player_id, int node_index) {
+    for (int s = 0; s < state->nodes[node_index].spy_count; s++)
+        if (state->nodes[node_index].spies[s] == player_id) return 1;
+    return 0;
+}
+
 static int sel_place_spy(const GameState *state, Sym player_id,
                           const PendingGenericChoiceState *pending,
                           const CardDefinition *card, const CardAction *action,
@@ -398,24 +418,56 @@ static int sel_place_spy(const GameState *state, Sym player_id,
     if (pi < 0) return 0;
 
     int has_spies = state->players[pi].spies_available > 0;
+
+    if (!has_spies && w < max_out) {
+        /* Rulebook 338: all spies placed → may do nothing. */
+        out[w].type = MOVE_RESOLVE_GENERIC;
+        out[w].data.resolve_generic.action_id = SYM_NULL;
+        out[w].data.resolve_generic.target_id = SYM_NULL;
+        out[w].player_index = 0;
+        w++;
+    }
+
     for (int i = 0; i < state->node_count && w < max_out; i++) {
         Sym nid = state->nodes[i].node_id;
         const NodeDefinition *nd = NULL;
         for (int j = 0; j < state->definition->board.node_count; j++)
             if (state->definition->board.nodes[j].node_id == nid) { nd = &state->definition->board.nodes[j]; break; }
         if (!nd || strcmp(intern_str(nd->kind), "site") != 0) continue;
-        int has_spy = 0;
-        for (int s = 0; s < state->nodes[i].spy_count; s++)
-            if (state->nodes[i].spies[s] == player_id) { has_spy = 1; break; }
-        if (has_spy) continue;
+        if (node_has_own_spy(state, player_id, i)) continue;
         if (has_spies) {
             out[w].type = MOVE_RESOLVE_GENERIC;
             out[w].data.resolve_generic.action_id = nid;
             out[w].player_index = 0;
             w++;
+        } else {
+            /* Rulebook 338: all spies placed → may return one of your spies and
+             * place it. Emit (source, destination) pairs; apply_place_spy already
+             * consumes source_node_id. */
+            for (int s = 0; s < state->node_count && w < max_out; s++) {
+                if (state->nodes[s].node_id == nid) continue;      /* no self-move */
+                if (!node_has_own_spy(state, player_id, s)) continue;
+                out[w].type = MOVE_RESOLVE_GENERIC;
+                out[w].data.resolve_generic.action_id = nid;                     /* destination */
+                out[w].data.resolve_generic.target_id = state->nodes[s].node_id; /* source */
+                out[w].player_index = 0;
+                w++;
+            }
         }
     }
     return w;
+}
+
+static int node_has_supplantable_troop(const GameState *state, Sym player_id, Sym nid) {
+    for (int i = 0; i < state->node_count; i++) {
+        if (state->nodes[i].node_id != nid) continue;
+        for (int s = 0; s < state->nodes[i].troop_slot_count; s++) {
+            Sym occ = state->nodes[i].troop_slots[s];
+            if (occ != SYM_NULL && occ != player_id) return 1;
+        }
+        return 0;
+    }
+    return 0;
 }
 
 static int sel_return_spy(const GameState *state, Sym player_id,
@@ -424,15 +476,22 @@ static int sel_return_spy(const GameState *state, Sym player_id,
                            Move *out, int max_out) {
     int w = 0;
     const char *spy_owner = NULL;
+    int requires_supplant_target = 0;
     for (int mi = 0; mi < action->metadata_count; mi++) {
         const char *mk = intern_str(action->metadata[mi].key);
+        const char *mv = intern_str(action->metadata[mi].value);
         if (mk && strcmp(mk, "spy_owner") == 0)
-            spy_owner = intern_str(action->metadata[mi].value);
+            spy_owner = mv;
+        if (mk && strcmp(mk, "requires_supplant_target") == 0
+            && mv && strcmp(mv, "true") == 0)
+            requires_supplant_target = 1;
     }
     bool only_self = spy_owner && strcmp(spy_owner, "self") == 0;
     bool only_enemy = spy_owner && strcmp(spy_owner, "opponent") == 0;
     for (int i = 0; i < state->node_count && w < max_out; i++) {
         Sym nid = state->nodes[i].node_id;
+        if (requires_supplant_target && !node_has_supplantable_troop(state, player_id, nid))
+            continue;
         for (int s = 0; s < state->nodes[i].spy_count && w < max_out; s++) {
             Sym spy = state->nodes[i].spies[s];
             if (spy == player_id && !only_enemy) {
@@ -687,6 +746,45 @@ static int sel_recruit(const GameState *state, Sym player_id,
         w++;
     }
     return w;
+}
+
+int devour_target_count(const GameState *state, Sym player_id,
+                        const CardAction *action, int exclude_hand_index) {
+    /* Resolve the source zone exactly like sel_devour: metadata.source_zone
+     * wins, falling back to target_scope; known zones are market /
+     * inner_circle / played_self, default is hand. */
+    Sym zone = SYM_NULL;
+    for (int i = 0; i < action->metadata_count; i++) {
+        const char *k = intern_str(action->metadata[i].key);
+        if (k && strcmp(k, "source_zone") == 0) { zone = action->metadata[i].value; break; }
+    }
+    if (zone == SYM_NULL) zone = action->target_scope;
+    const char *z = intern_str(zone);
+
+    if (z && strcmp(z, "market") == 0) {
+        for (int i = 0; i < action->metadata_count; i++) {
+            const char *k = intern_str(action->metadata[i].key);
+            const char *v = intern_str(action->metadata[i].value);
+            if (k && strcmp(k, "requires_last_selected_market_slot") == 0
+                && v && strcmp(v, "true") == 0)
+                return -1; /* dependent selection: always satisfiable */
+        }
+        return state->market.row_count;
+    } else if (z && strcmp(z, "played_self") == 0) {
+        return -1; /* always satisfiable: the played card itself is the target */
+    } else if (z && strcmp(z, "inner_circle") == 0) {
+        int pi = player_index_for_id(state, player_id);
+        if (pi < 0) return 0;
+        return state->players[pi].inner_circle_count;
+    } else {
+        /* Default: hand. */
+        int pi = player_index_for_id(state, player_id);
+        if (pi < 0) return 0;
+        int count = state->players[pi].hand_count;
+        if (exclude_hand_index >= 0 && exclude_hand_index < state->players[pi].hand_count)
+            count--;
+        return count;
+    }
 }
 
 static int sel_devour(const GameState *state, Sym player_id,

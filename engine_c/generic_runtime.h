@@ -14,6 +14,14 @@ int action_requires_selection(const CardAction *action);
 int action_focus_requirement_met(GameState *state, Sym player_id,
                                   const CardDefinition *card, Sym source_card_id,
                                   const CardAction *action);
+int card_play_devour_costs_payable(const GameState *state, Sym player_id,
+                                   const CardDefinition *card, int hand_index);
+/* True iff at least one option of a modal/repeat card is currently viable;
+ * sequence cards are always playable. False means the card may not be
+ * played (every mode lacks a legal target — e.g. Vampire with no supplant
+ * targets and an empty discard pile). Pure read. */
+int card_play_modal_options_viable(const GameState *state, Sym player_id,
+                                   const CardDefinition *card);
 
 typedef GameState* (*ActionApplier)(GameState*, Sym, const CardDefinition*, Sym, const CardAction*, int* selection_keys, Sym* selection_values, int selection_count);
 GameState *apply_generic_action(GameState *state, Sym player_id, const CardDefinition *card,

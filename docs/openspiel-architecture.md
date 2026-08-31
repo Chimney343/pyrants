@@ -31,31 +31,27 @@ The hash function (`_public_to_seed`) uses a Knuth multiplicative hash: `(id * 2
 
 ### Decision Mode
 
-Once the engine exists, the state delegates all game queries to it. `current_player()` reads `engine.current_player_id`. `is_terminal()` calls `engine.rules.is_terminal(engine)`. For 2 players `returns()` computes the score difference: `p0_score - p1_score` for player 0, the reverse for player 1. For 3+ players `returns()` reports each player's raw score.
+Once the engine exists, the state delegates all game queries to the adapter. `current_player()` reads `self._adapter.current_player_id()`. `is_terminal()` calls `self._adapter.is_terminal()`. For 2 players `returns()` computes the score difference: `p0_score - p1_score` for player 0, the reverse for player 1. For 3+ players `returns()` reports each player's raw score.
 
-`_legal_actions()` calls `engine.rules.legal_moves(engine)`, sorts the moves deterministically, and assigns each an integer index. It caches the full (index, move) list on `self._cached_indexed_moves` so `_apply_action` and `_action_to_string` can reuse it without re-enumerating. The cache invalidates after each `_apply_action`.
+`_legal_actions()` calls `compute_c_action_map(self._adapter)`, which returns the engine's legal moves in native order with an integer index assigned to each. It caches the full (index, move) list on `self._cached_indexed_moves` so `_apply_action` and `_action_to_string` can reuse it without re-enumerating. The cache invalidates after each `_apply_action`.
 
 ## Action Encoding
 
-OpenSpiel consumes integer actions. The engine produces `Move` objects with typed fields: `PlayCardMove(hand_index=2)`, `DeployMove(node="site_7")`, `AssassinateMove(node="site_3", slot=1)`, and ten other move kinds.
+OpenSpiel consumes integer actions. The C engine produces `CMoveWrapper` moves with typed fields: `PlayCardMove(hand_index=2)`, `DeployMove(node="site_7")`, `AssassinateMove(node="site_3", slot=1)`, and the other move kinds.
 
-The encoding flattens these into a per-state list:
+`compute_c_action_map(adapter)` in `openspiel_pyrants/action_encoding_c.py` flattens these into a per-state list, assigning action ids 0, 1, 2, ... in the **C engine's native order** — no sorting, because the engine already emits legal moves in a deterministic order.
 
-1. Call `engine.rules.legal_moves(state)` to get the raw move objects.
-2. Sort them by their JSON representation, excluding `player_id`, to guarantee deterministic ordering.
-3. Assign action ids 0, 1, 2, ... in sorted order.
+The only filtering is dropping UI-only placeholder moves: `generic_runtime.c` emits a `resolve_generic` move tagged `target_id="unavailable"` for each non-viable modal option (so the Tkinter viewer can grey it out), and `engine_apply` rejects those moves outright. `_is_unavailable()` filters them out so every action in `legal_actions()` is actually applicable. If *every* option is a placeholder, the raw list is returned instead — an empty `legal_actions()` at a non-terminal state would deadlock OpenSpiel silently, whereas the raw list fails loudly in `engine_apply` with full context.
 
-The sort key is the move's `model_dump_json(exclude={"player_id"})`. Same engine state always produces the same mapping, satisfying OpenSpiel's determinism requirement.
-
-`compute_action_map(state)` returns the full sorted list as `[(original_index, Move), ...]`. The state caches this list once per node visit and uses it for all three operations: enumerating legal actions, decoding an action id into a move, and formatting the action string for history.
+The state caches the `(index, move)` list once per node visit and reuses it for all three operations: enumerating legal actions, decoding an action id into a move, and formatting the action string for history. Indices are recomputed per state and never persist across determinizations.
 
 The `NUM_DISTINCT_ACTIONS` constant (1024) is a static upper bound, not the per-state count. It covers the worst case across all states: 5 play-card moves, 81 deploy targets, 486 assassinate combos (81 nodes × 6 slots), 162 return-spy targets, 9 recruit slots, 2 ability toggles, 2 promotion choices, 3 resolution moves, and 5 chance outcomes. The total rounds to 1024, a power of two.
 
 ## Shuffle Determinism (Engine Side)
 
-The engine uses two functions to shuffle decks. Both need identical seeding logic.
+Deck shuffling is fully deterministic under seed control. The `GameState` stores two fields — `shuffle_seed` (from the chance node) and a monotonic `shuffle_counter` (`engine_c/state.h:332-333`).
 
-The C engine seeds all shuffles from the chance-node `shuffle_seed` and a per-shuffle counter. It handles the initial setup deal and the cleanup discard reshuffle identically.
+Every shuffle funnels through `shuffle_deck(deck, count, seed, counter, rng)` (`engine_c/state.c:19`), which derives a per-shuffle RNG seed as `(seed << 16) ^ counter` (`state.c:20`) and reseeds the RNG before shuffling. The same seed/counter path is used by the initial setup deal, the draw helper `draw_cards_state` (`state.c:29`), and `reshuffle_discard_into_deck` (`state.c:219`); each increments `shuffle_counter` after shuffling so consecutive shuffles never repeat a seed.
 
 ## Full Sequence
 

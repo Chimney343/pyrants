@@ -6,8 +6,8 @@ board site (requires selection). Verifies:
 - draw_cards reshuffles the discard pile into the deck when the deck is empty.
 - draw_cards draws nothing (and still resolves) when deck and discard are empty.
 - place_spy excludes sites where the player already has a spy.
-- place_spy is skipped (card still resolves) when the player has no spies
-  available.
+- place_spy offers a decline (card still resolves) when the player has no
+  spies available and no own spies on the board.
 """
 
 from __future__ import annotations
@@ -212,7 +212,8 @@ def test_rath_modar_place_spy_excludes_site_with_own_spy():
 
 
 def test_rath_modar_skips_placement_when_no_spies_available():
-    """With zero available spies, place_spy has no targets and the card still resolves."""
+    """With zero available spies and no own spies on board, place_spy offers a
+    single decline move; the card resolves without placing a spy."""
     session = _build_session()
     _set_deck(session, _P1, ["soldier", "noble", "priestess_of_lolth"])
     s = _sptr(session).contents
@@ -220,9 +221,16 @@ def test_rath_modar_skips_placement_when_no_spies_available():
 
     _play_card(session)
 
-    # draw_cards applied; place_spy had no legal targets and was auto-skipped.
+    # draw_cards applied; place_spy is still pending with only a decline move.
     assert _hand_count(session, _P1) == 2
-    assert not _has_pending_generic(session), "card should resolve when no spy can be placed"
+    assert _has_pending_generic(session), "place_spy should offer a decline when no spy can be placed"
+
+    declines = [m for m in session.legal_moves()
+                if m.move_type == "resolve_generic" and m.data.get("action_id") is None]
+    assert len(declines) == 1, f"expected exactly one decline move, got {[m.data for m in session.legal_moves() if m.move_type == 'resolve_generic']}"
+    session.submit_move(declines[0])
+
+    assert not _has_pending_generic(session), "card should resolve after declining"
     assert _spies_at_node(session, _SITE_A) == []
 
     session.destroy()

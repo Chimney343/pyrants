@@ -65,3 +65,4 @@ EXPORTS
     engine_determinize
     count_controlled_sites
     count_total_controlled_sites
+    engine_random_rollout

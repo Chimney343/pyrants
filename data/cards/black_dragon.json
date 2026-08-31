@@ -46,7 +46,8 @@
         "source_fragment": "scaled_vp_from_white_trophies",
         "metadata": {
           "count_from": "trophy_hall_white",
-          "per": 3
+          "per": 3,
+          "as": "vp_tokens"
         }
       }
     ]
@@ -85,7 +86,8 @@
       "source_fragment": "scaled_vp_from_white_trophies",
       "metadata": {
         "count_from": "trophy_hall_white",
-        "per": 3
+        "per": 3,
+        "as": "vp_tokens"
       }
     }
   ],

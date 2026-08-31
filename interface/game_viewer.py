@@ -1500,6 +1500,9 @@ class GameViewerApp:
             selected_index=selected_hand_index,
             selected_has_focus=self._active_card_row == "hand",
             compact=self._compact_player_rows,
+            greyed_indices={
+                i for i, card in enumerate(view.hand) if not getattr(card, "playable", True)
+            },
         )
 
     def _draw_card_row(
@@ -1512,6 +1515,7 @@ class GameViewerApp:
         tint_colors: dict[int, str] | None = None,
         compact: bool = False,
         empty_label: str = "No cards",
+        greyed_indices: set[int] | None = None,
     ) -> list[tuple[int, int, int, int, int]]:
         canvas.delete("all")
         canvas.update_idletasks()
@@ -1536,6 +1540,7 @@ class GameViewerApp:
             return []
 
         tint_colors_map = tint_colors if tint_colors is not None else {}
+        greyed = greyed_indices if greyed_indices is not None else set()
 
         hitboxes: list[tuple[int, int, int, int, int]] = []
         for index, card in enumerate(cards):
@@ -1544,13 +1549,28 @@ class GameViewerApp:
             x1 = x0 + card_width
             y1 = y0 + card_height
 
+            is_greyed = index in greyed
             is_selected = index == selected_index
-            if is_selected:
+            if is_greyed:
+                fill = "#e6e9ef"
+                outline = "#c2c9d6"
+                name_fill = "#8a94a6"
+                meta_fill = "#9aa3b5"
+            elif is_selected:
                 fill = "#dcecff"
+                outline = "#9eb4d0"
+                name_fill = "#152238"
+                meta_fill = "#2c3f5f"
             elif index in tint_colors_map:
                 fill = tint_colors_map[index]
+                outline = "#9eb4d0"
+                name_fill = "#152238"
+                meta_fill = "#2c3f5f"
             else:
                 fill = "#ffffff"
+                outline = "#9eb4d0"
+                name_fill = "#152238"
+                meta_fill = "#2c3f5f"
 
             if is_selected and selected_has_focus:
                 outline = "#224f95"
@@ -1559,7 +1579,8 @@ class GameViewerApp:
                 outline = "#4d76b3"
                 line_width = 2
             else:
-                outline = "#9eb4d0"
+                if not is_greyed:
+                    outline = "#9eb4d0"
                 line_width = 1
             canvas.create_rectangle(x0, y0, x1, y1, fill=fill, outline=outline, width=line_width)
 
@@ -1588,7 +1609,7 @@ class GameViewerApp:
                 name_y,
                 anchor=tk.W,
                 text=_ellipsize(card.name, name_chars),
-                fill="#152238",
+                fill=name_fill,
                 font=("Segoe UI", 9, "bold"),
             )
 
@@ -1606,17 +1627,22 @@ class GameViewerApp:
                     f"{aspect_display}Cost {card.cost}  |  VP {card.deck_vp}/{card.inner_circle_vp}",
                     meta_chars,
                 ),
-                fill="#2c3f5f",
+                fill=meta_fill,
                 font=("Segoe UI", 8),
             )
 
-            rules_text = card.rules_text.strip() or "(no rules text)"
+            if is_greyed:
+                rules_text = "ILLEGAL MOVE"
+                rules_fill = "#a34747"
+            else:
+                rules_text = card.rules_text.strip() or "(no rules text)"
+                rules_fill = "#394f71"
             canvas.create_text(
                 x0 + 8,
                 rules_y,
                 anchor=tk.NW,
                 text=rules_text,
-                fill="#394f71",
+                fill=rules_fill,
                 font=("Segoe UI", 8),
                 width=rules_width,
                 justify=tk.LEFT,

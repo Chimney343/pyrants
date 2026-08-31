@@ -29,7 +29,7 @@ set CFLAGS=/nologo /W3 /std:c11 /MT
 if "%BUILD_TYPE%"=="debug" set CFLAGS=%CFLAGS% /Zi /Od
 if "%BUILD_TYPE%"=="release" set CFLAGS=%CFLAGS% /O2
 
-set SRCS=intern.c arena.c rng.c state.c moves.c rules.c helpers.c phases.c scoring.c generic_runtime.c actions.c selection.c player_view.c loader.c cJSON.c view.c describe.c saveload.c
+set SRCS=intern.c arena.c rng.c state.c moves.c rules.c helpers.c phases.c scoring.c generic_runtime.c actions.c selection.c player_view.c loader.c cJSON.c view.c describe.c saveload.c rollout.c
 
 call %VCVARS% > nul
 if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
@@ -83,6 +83,14 @@ echo Running saveload tests...
 .\test_saveload.exe
 if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 
+echo Building test_rollout.exe...
+cl %CFLAGS% /I. /Fe:test_rollout.exe tests\test_rollout.c libengine.lib
+if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
+
+echo Running rollout tests...
+.\test_rollout.exe
+if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
+
 echo Building test_catalog_assembly.exe...
 cl %CFLAGS% /I. /Fe:test_catalog_assembly.exe tests\test_catalog_assembly.c libengine.lib
 if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
@@ -93,7 +101,7 @@ if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 
 echo Building engine_c.dll...
 REM Remove test object files so DLL only links library objects
-del /Q test_engine.obj test_intern_c.obj test_view.obj test_describe.obj test_generic_actions.obj test_saveload.obj test_catalog_assembly.obj 2>nul
+del /Q test_engine.obj test_intern_c.obj test_view.obj test_describe.obj test_generic_actions.obj test_saveload.obj test_catalog_assembly.obj test_rollout.obj 2>nul
 REM Delete old DLL first — link fails with LNK1104 if the file is in use
 del /Q engine_c.dll 2>nul
 link /DLL /DEF:engine_c.def /OUT:engine_c.dll *.obj

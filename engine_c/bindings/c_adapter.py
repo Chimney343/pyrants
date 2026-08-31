@@ -13,7 +13,7 @@ from __future__ import annotations
 import json
 from typing import Optional, Sequence
 
-from .ce_api import CEngine, CState, CMoveWrapper
+from .ce_api import CEngine, CState, CMoveWrapper, _sym_str
 from .engine_bindings import _lib, MAX_PLAYERS
 
 _PHASE_NAMES = {0: "setup", 1: "draw", 2: "main", 3: "end_of_turn", 4: "cleanup", 5: "game_over"}
@@ -42,7 +42,14 @@ class CEngineAdapter:
         self._player_id_to_index = {pid: i for i, pid in enumerate(player_ids)}
 
     def __deepcopy__(self, memo):
-        return self
+        cloned_ptr = _lib.engine_clone(self._state._ptr)
+        if not cloned_ptr:
+            return self
+        new_adapter = CEngineAdapter(
+            CState(cloned_ptr), self._engine, self._player_ids, self._shuffle_seed
+        )
+        memo[id(self)] = new_adapter
+        return new_adapter
 
     @property
     def state(self) -> CState:
@@ -89,8 +96,11 @@ class CEngineAdapter:
             # Capture diagnostic context before raising
             legal = self.legal_moves()
             legal_strs = [str(m) for m in legal]
+            pg = self._state._ptr.contents.pending_generic
+            pending_card_id = _sym_str(pg.contents.source_card_id) if pg else None
             raise RuntimeError(
                 f"Failed to apply move: {move} | "
+                f"pending_card_id={pending_card_id!r} "
                 f"phase={self.phase()} round={self.round_number()} "
                 f"current_player={self.current_player_id()} "
                 f"is_terminal={self.is_terminal()} "
@@ -141,6 +151,9 @@ class CEngineAdapter:
 
     def final_scores(self) -> dict[str, int]:
         return self._engine.compute_final_scores(self._state)
+
+    def random_rollout(self, seed: int, max_length: int) -> tuple[bool, dict[str, int]]:
+        return self._engine.random_rollout(self._state, seed, max_length)
 
     def _build_public_dict(self) -> dict:
         """Build a JSON-serialisable public-view dict from CState properties."""

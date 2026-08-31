@@ -1,6 +1,6 @@
 ---
 name: card-execution-validator
-description: Validate that a Tyrants of the Underdraft card's execution model is correctly interpreted end-to-end through the C engine, the JSON catalog, and the terminal GUI. Use this skill whenever the user is reviewing or debugging a specific card's behavior — playing out a card scenario from data/scenarios and checking whether spies, troops, draws, assassinations, promotions, VP, or resource gains happen as the rules_text says. Trigger it on phrases like "this card is wrong", "card X doesn't work", "validate card", "play the aboleth scenario", "the C engine misinterprets <card>", "GUI shows wrong <card> behavior", "fix card execution model", or whenever iterating card-by-card through the 125 card scenarios. Also use it when the user wants to add tests locking in a card's correct behavior. Do NOT use it for general engine architecture work, OpenSpiel integration, board creation, or deck roster balancing — those are out of scope.
+description: Validate that a Tyrants of the Underdraft card's execution model is correctly interpreted end-to-end through the C engine, the JSON catalog, and the terminal GUI. Use whenever the user is reviewing or debugging a specific card's behavior — playing out a card scenario from data/scenarios and checking whether spies, troops, draws, assassinations, promotions, VP, or resource gains happen as the rules_text says. Trigger on "this card is wrong", "card X doesn't work", "validate card", "play the aboleth scenario", "the C engine misinterprets [a named card]", "GUI shows wrong [named card] behavior", "fix card execution model", or when iterating card-by-card through the 125 scenarios. Also use when the user wants tests locking in a card's correct behavior. Works one card at a time, start to finish, even if the user names several cards or asks to "go through the deck" — see the Scope section below. Do NOT use for general engine architecture, OpenSpiel integration, board creation, or deck roster balancing.
 ---
 
 # Card Execution Validator
@@ -11,9 +11,36 @@ Python `engine/` directory is a deprecated port — never extend it. The catalog
 of card execution models is `data/cards/*.json`. Each of the 125 cards has
 a corresponding saved scenario the human plays through to judge correctness.
 
-The unit of work is **one card**. You and the human iterate on that card until
-they accept it, then move to the next. Always finish a card by writing a test
-that locks in the correct behavior before starting the next.
+## Scope: exactly one card, start to finish
+
+The unit of work is **one card**, not a batch. This matters because the human
+review step (step 1 and step 5 below) only produces a reliable verdict when
+they're looking at one card's behavior at a time — stack up several cards in a
+single pass and the human's feedback stops mapping cleanly to a single fix,
+and a regression is much harder to bisect later.
+
+- **Pick one card before doing anything else.** If the human names a single
+  card, that's your card. If they name several ("cards 12, 13, and 14 are all
+  broken") or ask to sweep the whole deck ("go through all 125", "fix the rest
+  of the batch"), say you'll work them one at a time in the order they gave
+  (or number order), and start with the first one only. Don't pre-diagnose or
+  touch the catalog/engine for the others yet.
+- **Don't advance until the current card is actually done.** "Done" means: the
+  human has explicitly accepted the behavior in the GUI (step 5) *and* a
+  regression test for it exists and passes (step 6). A fix that merely looks
+  right to you is not done — see "The human reviews; you don't" below.
+- **Shared-code fixes are expected to help other cards — that's fine, just
+  don't claim it.** Step 4 asks you to extend a shared applier/handler rather
+  than write one-off C, which often means your fix incidentally corrects other
+  cards using the same `op`. That's the generic interpreter working as
+  intended. But "incidentally correct" isn't "verified": don't write tests for,
+  mark as done, or start reviewing those other cards in the same pass. If you
+  notice the fix likely affects card Y too, say so in one line and leave it
+  for its own turn.
+- **One card's test, one commit of understanding.** Finish the current card
+  (write its test, confirm it passes) before loading the next scenario. Then
+  explicitly ask the human if they're ready to move on — don't auto-advance,
+  even if the next card in the numbered sequence seems obvious.
 
 ## Mental model: where a card can be wrong
 
@@ -57,8 +84,9 @@ For the full catalog schema and the op→handler dispatch table, read
 
 ## The per-card workflow
 
-Run these steps for the card the human is reviewing. Don't skip ahead — each
-step feeds the next.
+Run these steps for **the one card** currently in scope (see "Scope" above).
+Don't skip ahead — each step feeds the next — and don't start these steps for
+a second card until the first has cleared step 6.
 
 ### 1. Load the scenario and let the human play it
 
@@ -133,6 +161,11 @@ combination, fixable by extending an existing handler. Prefer extending a
 shared applier over adding a per-card special case — per-card special cases
 accumulate and make the next card harder.
 
+Extending a shared applier will often touch code that other cards also rely
+on — that's expected and good (see "Scope" above), but keep your testing and
+sign-off focused on the one card the human is reviewing right now. Note any
+other cards you suspect are now also fixed; don't go verify them yet.
+
 When you do touch C: keep the engine pure (no I/O, no platform calls), match
 `-Wall -Wextra -std=c11` / MSVC `/W3 /std:c11`, and **rebuild with
 `just build-c`** before any re-test — the Python tools load `engine_c.dll` and
@@ -170,13 +203,21 @@ just test-c                                                      # C tests
 ruff check .                                                     # lint
 ```
 
+This is the point where the current card is actually finished. Only now should
+you say so and ask the human whether they want to move on to another card.
+
 ## Picking the next card
+
+Only do this once the current card has cleared step 6 — passing test, human
+sign-off — and only after the human confirms they're ready to continue. Don't
+auto-advance on your own initiative, even between clearly sequential cards.
 
 The scenarios in `data/scenarios/batch_card_generation/` are numbered
 (`001_..._aboleth.json` … ~125). When the human is ready for the next card,
-suggest the next untested one in number order, or whichever card they name.
-Track progress mentally or in a short note the human keeps — this skill doesn't
-own a persistent checklist file.
+suggest the next untested one in number order, or whichever card they name —
+but treat it as a fresh instance of this same one-card workflow, starting again
+at step 1. Track progress mentally or in a short note the human keeps — this
+skill doesn't own a persistent checklist file.
 
 ## Things to keep in mind
 
@@ -189,9 +230,11 @@ own a persistent checklist file.
 - **Don't extend the Python `engine/`.** It's deprecated. Fixes go in
   `engine_c/` and (for display) `interface/` / `game_view.py` / the C view.
   Engine purity (`tests/test_engine_purity.py`) must stay green.
-- **Generalize, don't overfit.** A fix that only makes *this* card work is a
-  liability. Extend the shared interpreter so the next card with the same
-  pattern works for free.
+- **Generalize the fix, but don't generalize the scope of review.** A fix that
+  only makes *this* card work is a liability — extend the shared interpreter so
+  the next card with the same pattern works for free. But "the next card" still
+  gets its own turn through steps 1–6; a shared fix is not a shortcut past human
+  review for the cards it happens to also help.
 - **Keep `rules_text` and `execution_model` in agreement.** If you change the
   catalog, re-read `rules_text` to confirm the encoding still matches; if they
   can't agree, surface that to the human rather than silently picking one.

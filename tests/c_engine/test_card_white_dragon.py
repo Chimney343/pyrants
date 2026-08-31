@@ -187,12 +187,12 @@ def test_white_dragon_deploys_three_troops() -> None:
 
 
 def test_white_dragon_short_barracks_grants_no_score() -> None:
-    """A free card-effect deploy must not convert empty-barracks deploys into score.
+    """A free card-effect deploy awards VP tokens (never score) for the deploys
+    it cannot place.
 
-    White Dragon says "Deploy 3 troops" for free. The "barracks empty -> 1 VP"
-    fallback belongs only to the paid 1-power Deploy basic action, so with only
-    1 troop in barracks the card deploys 1 troop and awards only the VP tokens
-    (never score).
+    White Dragon says "Deploy 3 troops" for free. With only 1 troop in barracks
+    the card deploys 1 troop and the 2 empty-barracks deploys award 2 VP tokens,
+    plus the controlled-sites VP (4 // 2 = 2). Score never changes.
     """
     session = _build_white_dragon_session(controlled_site_count=4)
 
@@ -226,8 +226,8 @@ def test_white_dragon_short_barracks_grants_no_score() -> None:
         f"Only 1 troop available; barracks should drop by 1: "
         f"{before_barracks} -> {s.players[pi].barracks}"
     )
-    assert _player_vp_tokens(session, _P1) == before_tokens + 2, (
-        f"Expected 2 VP tokens (4 controlled sites // 2), "
+    assert _player_vp_tokens(session, _P1) == before_tokens + 4, (
+        f"Expected 4 VP tokens (2 empty-barracks deploys + 2 controlled sites), "
         f"got {_player_vp_tokens(session, _P1)}"
     )
     assert _player_score(session, _P1) == before_score, (
@@ -238,12 +238,13 @@ def test_white_dragon_short_barracks_grants_no_score() -> None:
     session.destroy()
 
 
-def test_white_dragon_zero_barracks_skips_deploy_still_grants_vp() -> None:
-    """With 0 troops in barracks the deploy is skipped and the VP clause still resolves.
+def test_white_dragon_zero_barracks_grants_vp_tokens() -> None:
+    """With 0 troops in barracks each deploy grants a VP token, then the VP
+    clause still resolves.
 
     White Dragon is "Deploy 3 troops. Gain 1 VP for every 2 sites controlled."
-    With an empty barracks the free deploy must deploy nothing (no score, no
-    stall) and the card must still grant its VP tokens for controlled sites.
+    With an empty barracks the free deploy places nothing (no score, no stall)
+    and awards 3 VP tokens (one per deploy), plus 1 VP for 2 controlled sites.
     """
     session = _build_white_dragon_session(controlled_site_count=2)
 
@@ -260,16 +261,23 @@ def test_white_dragon_zero_barracks_skips_deploy_still_grants_vp() -> None:
     assert playable, "White Dragon must be playable"
     session.submit_move(playable[0])
 
-    # Deploy must be skipped, so the card resolves with no pending choice.
-    assert not _has_pending_generic(session), "Card must fully resolve without a deploy choice"
+    # Resolve every pending deploy (3 VP-token moves) until the card resolves.
+    while True:
+        view = build_c_game_view(session)
+        resolve_moves = [m for m in view.legal_moves if m.move_type == "resolve_generic"]
+        if not resolve_moves:
+            break
+        session.submit_move(resolve_moves[0].move)
+
+    assert not _has_pending_generic(session), "Card must fully resolve"
 
     s = _sptr(session).contents
     pi = _session_player_index(session, _P1)
     assert s.players[pi].barracks == 0, (
         f"Barracks must stay 0 (nothing to deploy), got {s.players[pi].barracks}"
     )
-    assert _player_vp_tokens(session, _P1) == before_tokens + 1, (
-        f"Expected 1 VP token (2 controlled sites // 2), "
+    assert _player_vp_tokens(session, _P1) == before_tokens + 4, (
+        f"Expected 4 VP tokens (3 deploys + 1 for 2 controlled sites), "
         f"got {_player_vp_tokens(session, _P1)}"
     )
     assert _player_score(session, _P1) == before_score, (

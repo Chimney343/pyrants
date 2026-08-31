@@ -1,3 +1,5 @@
+> **Archived 2026-08-30** — pre-C-engine analysis; superseded by `docs/generated/catalog_execution_audit.md`. Retained for history only.
+
 # Engine Action Gap Report
 
 Source review log: docs/source/first_deck_review.md

@@ -99,6 +99,11 @@ int engine_describe_move(const GameState *state, const Move *move,
             snprintf(buf, sizeof(buf), "Proceed to cleanup");
             break;
         case MOVE_DEPLOY: {
+            if (move->data.deploy.node_id == SYM_NULL) {
+                snprintf(buf, sizeof(buf),
+                         "Barracks empty; gain 1 VP token instead of deploying a troop");
+                break;
+            }
             const char *nid = intern_str(move->data.deploy.node_id);
             const char *label = node_label(nid, node_ids, node_labels, node_pair_count);
             snprintf(buf, sizeof(buf), "Deploy a troop to %s", label);
@@ -153,7 +158,15 @@ int engine_describe_move(const GameState *state, const Move *move,
         case MOVE_RESOLVE_GENERIC: {
             Sym aid = move->data.resolve_generic.action_id;
             if (aid == SYM_NULL) {
-                snprintf(buf, sizeof(buf), "Skip");
+                const CardAction *act = (state && state->pending_generic)
+                    ? pending_generic_active_action(state->pending_generic) : NULL;
+                const char *op = act ? intern_str(act->op) : NULL;
+                if (op && strcmp(op, "deploy_troops") == 0) {
+                    snprintf(buf, sizeof(buf),
+                             "Barracks empty; gain 1 VP token instead of deploying a troop");
+                } else {
+                    snprintf(buf, sizeof(buf), "Skip");
+                }
             } else if (state && state->pending_generic) {
                 const CardAction *act = pending_generic_active_action(state->pending_generic);
                 if (act) {
@@ -197,6 +210,15 @@ int engine_describe_move(const GameState *state, const Move *move,
                     } else if (op && strcmp(op, "recruit_card") == 0) {
                         const char *name = card_name_for(state, aid);
                         snprintf(buf, sizeof(buf), "Recruit %s", name);
+                    } else if (op && strcmp(op, "place_spy") == 0) {
+                        Sym tid = move->data.resolve_generic.target_id;
+                        const char *dst_label = node_label(intern_str(aid), node_ids, node_labels, node_pair_count);
+                        if (tid != SYM_NULL) {
+                            const char *src_label = node_label(intern_str(tid), node_ids, node_labels, node_pair_count);
+                            snprintf(buf, sizeof(buf), "Move your spy from %s to %s", src_label, dst_label);
+                        } else {
+                            snprintf(buf, sizeof(buf), "Place a spy at %s", dst_label);
+                        }
                     } else if (op && strcmp(op, "assassinate_troop") == 0) {
                         Sym tid = move->data.resolve_generic.target_id;
                         int slot_idx = 0;

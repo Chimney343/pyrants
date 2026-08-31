@@ -50,14 +50,16 @@
         "op": "assassinate_troop",
         "target_scope": "board_site",
         "timing": "immediate",
-        "optional": false,
+        "optional": true,
         "quantity": {
           "kind": "unspecified",
           "value": null
         },
         "filters": [],
         "source_fragment": "assassinate_there",
-        "metadata": {}
+        "metadata": {
+          "requires_last_selected_node": true
+        }
       }
     ]
   },
@@ -99,14 +101,16 @@
       "op": "assassinate_troop",
       "target_scope": "board_site",
       "timing": "immediate",
-      "optional": false,
+      "optional": true,
       "quantity": {
         "kind": "unspecified",
         "value": null
       },
       "filters": [],
       "source_fragment": "assassinate_there",
-      "metadata": {}
+      "metadata": {
+        "requires_last_selected_node": true
+      }
     }
   ],
   "global_conditions": [],

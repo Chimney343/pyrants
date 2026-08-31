@@ -11,7 +11,7 @@ Usage:
 from __future__ import annotations
 
 import ctypes
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from functools import lru_cache
 from pathlib import Path
 
@@ -56,6 +56,7 @@ class CardView:
     rules_text: str
     notes: str
     secondary_aspects: tuple[str, ...] = ()
+    playable: bool = True
 
 
 @dataclass(frozen=True)
@@ -227,11 +228,12 @@ def _end_main_phase_available(state_ptr):
 
 
 def _build_c_legal_moves(session, state_ptr, *, node_names=None, player_spy_count=0,
-                          player_card_aspects=None) -> tuple:
-    try:
-        moves = session.legal_moves()
-    except Exception:
-        return ()
+                          player_card_aspects=None, moves=None) -> tuple:
+    if moves is None:
+        try:
+            moves = session.legal_moves()
+        except Exception:
+            return ()
 
     from .engine_bindings import _lib as _elib
 
@@ -464,6 +466,26 @@ def build_c_game_view(
 
     current_player_id = _sym_str(c_view.current_player_id) or ""
 
+    # Determine which hand cards are actually playable. Cards blocked by the
+    # engine (unpayable devour costs, or a modal card whose every option is
+    # currently impossible — e.g. Vampire with no supplant targets and an
+    # empty discard pile) are projected with playable=False so the GUI can
+    # grey them out as ILLEGAL MOVE. Only meaningful while hand play is
+    # actually possible (main phase, no pending choice).
+    try:
+        moves = session.legal_moves()
+    except Exception:
+        moves = None
+    playable_hand_ids: set[str] | None = None
+    if moves is not None:
+        s_raw = state_ptr.contents
+        if (s_raw.phase == PHASE_MAIN
+                and not s_raw.pending_generic
+                and not s_raw.pending_ability):
+            playable_hand_ids = {
+                m.data.get("card_id") for m in moves if m.move_type == "play_card"
+            }
+
     hand: list[CardView] = []
     played: list[CardView] = []
     discard: list[CardView] = []
@@ -496,7 +518,10 @@ def build_c_game_view(
             for j in range(zv.hand_count):
                 cid = _sym_str(zv.hand[j])
                 if cid:
-                    hand.append(_make_card_view(cid))
+                    cv = _make_card_view(cid)
+                    if playable_hand_ids is not None and cv.card_id not in playable_hand_ids:
+                        cv = replace(cv, playable=False)
+                    hand.append(cv)
             for j in range(zv.played_count):
                 cid = _sym_str(zv.played[j])
                 if cid:
@@ -550,7 +575,7 @@ def build_c_game_view(
         player_summaries=tuple(player_summaries),
         board_nodes=tuple(board_nodes),
         prompts=(f"{current_player_id} is acting in {_PHASE_MAP.get(c_view.phase, 'unknown').replace('_', ' ')}.",),
-        legal_moves=_build_c_legal_moves(session, state_ptr, node_names=node_names, player_spy_count=player_spy_count, player_card_aspects=player_card_aspects),
+        legal_moves=_build_c_legal_moves(session, state_ptr, node_names=node_names, player_spy_count=player_spy_count, player_card_aspects=player_card_aspects, moves=moves),
         is_terminal=_session_attr(session, "is_terminal"),
         winner_id=_session_attr(session, "winner_id"),
         final_scores=_session_attr(session, "final_scores", default={}),

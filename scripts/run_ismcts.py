@@ -157,6 +157,14 @@ def _parse_args() -> argparse.Namespace:
         "fresh determinization every iteration). A positive value opts into capped-pool reuse.",
     )
     parser.add_argument("--final-policy", choices=list(POLICY_CHOICES), default="visited")
+    parser.add_argument(
+        "--evaluator", choices=["random-py", "random-c"], default="random-c",
+        help="Rollout evaluator backend: random-py = OpenSpiel's stock "
+             "RandomRolloutEvaluator (one ctypes call per game step); "
+             "random-c = CRolloutEvaluator, the whole rollout in one C call "
+             "via engine_random_rollout (default: random-c, ~19x faster at "
+             "num_sims=200 — see docs for the measured comparison)",
+    )
     parser.add_argument("--num-games", type=int, default=4)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--num-players", type=int, default=2,
@@ -350,6 +358,7 @@ def run_one_game(
     max_rounds: int = 0,
     setup_data_json: str = "",
     num_players: int = 2,
+    evaluator_name: str = "random-py",
 ) -> dict:
     logger = structlog.get_logger().bind(
         game_index=game_index,
@@ -366,7 +375,13 @@ def run_one_game(
     decisions_fh = (game_out / "decisions.jsonl").open("w", encoding="utf-8")
 
     from open_spiel.python.algorithms.ismcts import ISMCTSBot
-    from open_spiel.python.algorithms.mcts import RandomRolloutEvaluator
+
+    def _build_evaluator(rng_i):
+        if evaluator_name == "random-c":
+            from openspiel_pyrants.c_rollout_evaluator import CRolloutEvaluator
+            return CRolloutEvaluator(max_length=rollout_max_length or 0, random_state=rng_i)
+        from open_spiel.python.algorithms.mcts import RandomRolloutEvaluator
+        return RandomRolloutEvaluator(n_rollouts=rollout_count, max_length=rollout_max_length, random_state=rng_i)
 
     bots = []
     for i in range(num_players):
@@ -374,7 +389,7 @@ def run_one_game(
         bots.append(
             ISMCTSBot(
                 game=game,
-                evaluator=RandomRolloutEvaluator(n_rollouts=rollout_count, max_length=rollout_max_length, random_state=rng_i),
+                evaluator=_build_evaluator(rng_i),
                 uct_c=uct_c,
                 max_simulations=num_sims,
                 max_world_samples=max_world_samples,
@@ -908,6 +923,7 @@ def _run_one_game_standalone(
     rollout_count: int = 1,
     rollout_max_length: int | None = None,
     max_rounds: int = 0,
+    evaluator_name: str = "random-py",
 ) -> dict:
     """Load game and run one game in a worker process.
 
@@ -944,6 +960,7 @@ def _run_one_game_standalone(
             max_rounds=max_rounds,
             setup_data_json=setup_data_json,
             num_players=num_players,
+            evaluator_name=evaluator_name,
         )
     except GameRunFailedError as exc:
         logger = structlog.get_logger()
@@ -1037,6 +1054,7 @@ def main() -> None:
                     max_rounds=args.max_rounds,
                     setup_data_json=setup_json,
                     num_players=args.num_players,
+                    evaluator_name=args.evaluator,
                 )
             except GameRunFailedError as exc:
                 logger.exception(
@@ -1091,6 +1109,7 @@ def main() -> None:
                         rollout_count=args.rollout_count,
                         rollout_max_length=rollout_max_len,
                         max_rounds=args.max_rounds,
+                        evaluator_name=args.evaluator,
                     )
                 ] = gi
 

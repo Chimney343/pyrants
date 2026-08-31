@@ -196,8 +196,9 @@ def test_option_1_can_place_at_node_with_enemy_spy():
     session.destroy()
 
 
-def test_option_1_unavailable_when_spies_exhausted():
-    """When spies_available is 0, option_1 is unavailable even with a spy on board."""
+def test_option_1_viable_when_spies_exhausted():
+    """With spies_available=0 and an own spy on board, option_1 remains viable
+    (offers relocation) instead of being tagged unavailable."""
     session = _build_session(spies={_SITE_A: [_P1]})
     s = _sptr(session).contents
     for pi in range(s.player_count):
@@ -210,8 +211,8 @@ def test_option_1_unavailable_when_spies_exhausted():
     opt1 = [m for m in session.legal_moves()
             if m.move_type == "resolve_generic" and m.data.get("action_id") == "option_1"]
     assert opt1, "option_1 should still be listed"
-    assert opt1[0].data.get("target_id") == "unavailable", (
-        f"option_1 should be unavailable with 0 spies_available; got {opt1[0].data}"
+    assert opt1[0].data.get("target_id") != "unavailable", (
+        f"option_1 should be viable with 0 spies_available; got {opt1[0].data}"
     )
 
     session.destroy()

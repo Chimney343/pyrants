@@ -1,6 +1,6 @@
 # Board Creator Status
 
-Use this file for the current board-authoring surface: implemented editor behavior, pending polish, and remaining contract notes.
+Use this file for the current board-authoring surface: implemented editor behavior, pending polish, and remaining contract notes. As of 2026-08-30.
 
 ## Source Of Truth
 
@@ -15,7 +15,7 @@ Implementation:
 - `game_setup/loaders.py`
 
 Data and checks:
-- `data/boards/base_game.json`
+- `data/boards/tyrants_of_the_underdark.json`
 - `data/layouts/base_game_layout.json`
 - `tests/test_board_creator_collaborators.py`
 - `tests/test_board_package.py`
@@ -31,7 +31,7 @@ Data and checks:
 
 ## Awaiting
 
-- The board creator still has a pending UX-copy sweep. The replacement inventory exists, but it has not been applied to the live strings.
+- The board creator still has a pending UX-copy sweep. The replacement inventory (`docs/source/board_creator_copy_replacements.md`) exists, but it has not been applied to the live strings.
 - A tighter manual or automated check for user-facing messages would help once that copy pass lands.
 - Older phase notes still mention planned graphical-board and layout-editor work. Those notes are now historical, not the current status.
 
@@ -43,5 +43,5 @@ Data and checks:
 
 ## Related Files
 
-- Archived board creator notes and copy inventories live in `docs/archive/`.
+- Archived board creator notes live in `docs/archive/`; the pending copy-sweep inventory lives in `docs/source/`.
 - Use the files listed above for exact behavior and validation rules.
