@@ -314,10 +314,13 @@ class PyrantsCState(pyspiel.State):
             hi = rng.randint(0, 2**31 - 1)
             lo = rng.randint(0, 2**31 - 1)
             seed = (int(hi) << 31) | int(lo)
-        elif callable(rng):
-            seed = int(rng() * 2**63)
         else:
-            seed = 0
+            raise TypeError(
+                "resample_from_infostate requires a seeded numpy RandomState/Generator. "
+                "A bare callable (e.g. pyspiel.UniformProbabilitySampler) makes the run "
+                "irreproducible — see docs/validation/findings.md F-010. "
+                "Build bots via openspiel_pyrants.make_ismcts_bot()."
+            )
 
         determinized_adapter = self._adapter.determinize(player_id, seed)
         if determinized_adapter is None:

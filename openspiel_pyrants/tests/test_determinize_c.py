@@ -171,20 +171,23 @@ class TestDeterminizeC:
 
     def test_ismcts_smoke_with_determinization(self, requires_c_engine):
         """Existing smoke test pattern should still pass — regression check."""
-        from open_spiel.python.algorithms.ismcts import ISMCTSBot, ISMCTSFinalPolicyType
+        from open_spiel.python.algorithms.ismcts import ISMCTSFinalPolicyType
         from open_spiel.python.algorithms.mcts import RandomRolloutEvaluator
 
-        game = _load_c_game(2)
-        rng = np.random.RandomState(42)
+        from openspiel_pyrants.ismcts_factory import make_ismcts_bot
 
-        bot = ISMCTSBot(
+        game = _load_c_game(2)
+
+        bot = make_ismcts_bot(
             game=game,
-            evaluator=RandomRolloutEvaluator(n_rollouts=1, random_state=rng),
+            seed=42,
+            num_sims=5,
             uct_c=1.4,
-            max_simulations=5,
             max_world_samples=100,
-            random_state=rng,
             final_policy_type=ISMCTSFinalPolicyType.NORMALIZED_VISITED_COUNT,
+            evaluator=RandomRolloutEvaluator(
+                n_rollouts=1, random_state=np.random.RandomState(42)
+            ),
         )
 
         state = game.new_initial_state()

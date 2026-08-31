@@ -25,23 +25,26 @@ def _load_c_game(num_players: int = 2):
 class TestISMCTSSmokeC:
     @pytest.mark.parametrize("num_players", [2, 3, 4])
     def test_one_game_low_sims(self, requires_c_engine, num_players):
-        from open_spiel.python.algorithms.ismcts import ISMCTSBot, ISMCTSFinalPolicyType
+        from open_spiel.python.algorithms.ismcts import ISMCTSFinalPolicyType
         from open_spiel.python.algorithms.mcts import RandomRolloutEvaluator
 
+        from openspiel_pyrants.ismcts_factory import make_ismcts_bot
+
         game = _load_c_game(num_players)
-        rng = np.random.RandomState(42)
 
         bots = [
-            ISMCTSBot(
+            make_ismcts_bot(
                 game=game,
-                evaluator=RandomRolloutEvaluator(n_rollouts=1, random_state=rng),
+                seed=42 + i,
+                num_sims=5,
                 uct_c=1.4,
-                max_simulations=5,
                 max_world_samples=100,
-                random_state=rng,
                 final_policy_type=ISMCTSFinalPolicyType.NORMALIZED_VISITED_COUNT,
+                evaluator=RandomRolloutEvaluator(
+                    n_rollouts=1, random_state=np.random.RandomState(42 + i)
+                ),
             )
-            for _ in range(num_players)
+            for i in range(num_players)
         ]
 
         state = game.new_initial_state()

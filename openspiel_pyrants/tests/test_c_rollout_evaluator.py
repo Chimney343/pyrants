@@ -56,24 +56,26 @@ class TestCRolloutEvaluator:
         assert all(abs(p - 1.0 / len(legal)) < 1e-9 for p in probs)
 
     def test_ismcts_bot_runs_with_c_rollout_evaluator(self, requires_c_engine):
-        from open_spiel.python.algorithms.ismcts import ISMCTSBot, ISMCTSFinalPolicyType
+        from open_spiel.python.algorithms.ismcts import ISMCTSFinalPolicyType
 
         from openspiel_pyrants.c_rollout_evaluator import CRolloutEvaluator
+        from openspiel_pyrants.ismcts_factory import make_ismcts_bot
 
         game = _load_c_game(2)
-        rng = np.random.RandomState(42)
 
         bots = [
-            ISMCTSBot(
+            make_ismcts_bot(
                 game=game,
-                evaluator=CRolloutEvaluator(max_length=20, random_state=rng),
+                seed=42 + i,
+                num_sims=5,
                 uct_c=1.4,
-                max_simulations=5,
                 max_world_samples=100,
-                random_state=rng,
                 final_policy_type=ISMCTSFinalPolicyType.NORMALIZED_VISITED_COUNT,
+                evaluator=CRolloutEvaluator(
+                    max_length=20, random_state=np.random.RandomState(42 + i)
+                ),
             )
-            for _ in range(2)
+            for i in range(2)
         ]
 
         state = game.new_initial_state()

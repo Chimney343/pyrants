@@ -12,5 +12,8 @@ Usage:
 import pyspiel
 
 from openspiel_pyrants.game_c import PyrantsCGame, _build_c_game_type
+from openspiel_pyrants.ismcts_factory import make_ismcts_bot
 
 pyspiel.register_game(_build_c_game_type(2), PyrantsCGame)
+
+__all__ = ["make_ismcts_bot"]

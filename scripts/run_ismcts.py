@@ -374,7 +374,7 @@ def run_one_game(
     steps_fh = (game_out / "steps.jsonl").open("w", encoding="utf-8")
     decisions_fh = (game_out / "decisions.jsonl").open("w", encoding="utf-8")
 
-    from open_spiel.python.algorithms.ismcts import ISMCTSBot
+    from openspiel_pyrants.ismcts_factory import make_ismcts_bot
 
     def _build_evaluator(rng_i):
         if evaluator_name == "random-c":
@@ -385,16 +385,17 @@ def run_one_game(
 
     bots = []
     for i in range(num_players):
-        rng_i = np.random.RandomState(seed + game_index * num_players + i)
+        seat_seed = seed + game_index * num_players + i
+        rng_i = np.random.RandomState(seat_seed)
         bots.append(
-            ISMCTSBot(
+            make_ismcts_bot(
                 game=game,
-                evaluator=_build_evaluator(rng_i),
+                seed=seat_seed,
+                num_sims=num_sims,
                 uct_c=uct_c,
-                max_simulations=num_sims,
                 max_world_samples=max_world_samples,
-                random_state=rng_i,
                 final_policy_type=final_policy_type,
+                evaluator=_build_evaluator(rng_i),
             )
         )
 
