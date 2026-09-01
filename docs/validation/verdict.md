@@ -205,10 +205,35 @@ Post-fix evidence:
 
 ### CRITICAL
 
-**F-004 — `Returns()` contract violated for 3–4 players.**
-The project's own default (`just ismcts` runs `num_players=4`) declares `utility_sum=0.0`
-and `min_utility=-400.0` while returning non-negative raw VP totals summing to 4–23.
-> Repro: `python -u docs/validation/harness/findings.py` — 16/16 terminal 3p/4p states positive-sum, none negative; 2p control passes.
+**F-004 — `Returns()` contract violated for 3–4 players. FIXED.**
+The project's own default (`just ismcts` runs `num_players=4`) declared `utility_sum=0.0`
+and `min_utility=-400.0` while returning non-negative raw VP totals summing to 4–23. Fixed by
+`openspiel_pyrants/game_c.py::_build_c_game_info`: `n==2` is byte-identical to pre-fix
+(`utility_sum=0.0`, `min_utility=-200.0`, `max_utility=200.0`, `ZERO_SUM` — its `returns()` is a
+genuine zero-sum margin); `n>2` now declares the honest general-sum contract
+(`utility_sum=None`, `min_utility=-50.0`, `max_utility=400.0`, `GENERAL_SUM`). `returns()` itself
+is untouched — this is a metadata correction, not a reward-computation change.
+> Fix plan: `docs/validation/f004-fix-plan.md`; tests `openspiel_pyrants/tests/test_utility_contract.py`.
+> Post-fix evidence (G1–G6): `n==2` unchanged (G1); `n∈{3,4}` honest declaration (G2); N=50
+> terminal random-policy games per player count, 0 out-of-bounds returns, `n==2` zero-sums 50/50
+> (G3); stress probe (T6) worst return −23.0 (2p, within −200) / 0.0 (3p/4p, within −50) over
+> N=200 greedy-play games per count (G4); zero production consumers of the three fields (G5);
+> `openspiel_pyrants` suite 70/70 pass and full repo `pytest` shows the same 3 pre-existing
+> `engine_c`/catalog failures (Zuggtmoy, Air Elemental, Neogi), zero new (G6). The T6
+> direct-injection probe confirmed the −50 floor is practical (not formally tight) — the
+> engine's uncapped `give_insane_outcast` issuance is filed separately as **F-014** (MAJOR, OPEN).
+> Repro: `python -u docs/validation/harness/f004_utility.py`.
+>
+> **Review 01** (`docs/validation/reviews/f004-review-01.md`, working tree at base `b0f3173`):
+> **ACCEPTED-WITH-DEBT** (F-014 open). Independently re-ran the falsification test (declared
+> contract now numerically consistent with the observed N=8 returns), the 8-test suite (8/8 pass),
+> G5's zero-production-consumer grep (confirmed, repo-wide), T5/T6 (byte-identical to
+> `baseline/f004_utility.post.txt`), the always-on battery (INV-1/2/3/6, all PASS), and the full
+> repo suite (same 3 pre-existing `engine_c`/catalog failures as `f010`/`f011-review-01.md`, zero
+> new). Zero out-of-scope hunks. Also independently corrected a factual error in the fix plan's own
+> supporting evidence (a claimed "zero matches" grep against the installed `open_spiel` package was
+> actually 182 matches) without disturbing the plan's underlying conclusion, which holds for the
+> narrower, correct reason that `ISMCTSBot` itself (`ismcts.py`) has zero matches.
 
 **F-003 — mid-game random events are never chance nodes.**
 134 `shuffle_counter` advances over 2,112 transitions, **0** preceded by `is_chance_node()==True`.
@@ -231,6 +256,17 @@ where the paper's 0.7 assumed rewards normalised to ±1.
 > Repro: `python -u docs/validation/harness/f006.py`
 
 ### MINOR
+
+**F-014 — `give_insane_outcast` mints without its 30-copy cap; `min_utility=-50.0` is practical, not tight.**
+
+`engine_c/actions.c:698-705` appends fresh `insane_outcast` copies to a target's discard pile
+without consulting `remaining_special_stack_count` or the `stack_total=30` cap
+(`engine_c/helpers.c:266`). Direct injection drove `compute_final_scores` to −30 at the 30-copy
+design intent and −80 at the `MAX_ZONE_SIZE` (80) hard cap, so the F-004 floor is a
+labeled-practical bound, not a formal one. Random greedy play never approached it (worst −23.0
+over N=200 games). Root cause is a C rules-correctness question in `engine_c/`, out of scope for
+the F-004 `GameInfo` metadata fix; tracked here per `docs/validation/f004-fix-plan.md` § 11.
+> Repro: `python -u docs/validation/harness/f004_utility.py` (section T6, "direct injection upper bound").
 
 **F-013 — board projection costs ~388 µs/call; `private_view_json` regressed 9.66×. MITIGATED.**
 
@@ -314,7 +350,7 @@ itself for unauthorized bundled changes, so F-010 is not yet closed procedurally
 the fix is confirmed correct. The observation is now the game: the board and own-discard
 identities are present in `information_state_string`/`observation_string` (F-011 fixed).
 The problem that keeps this NO-GO is the remaining open defects below — the mid-game chance
-events and the 3–4 player returns contract — not the observation.
+events — not the observation or the 3–4 player returns contract.
 
 Conditions that must clear before GO, in dependency order:
 
@@ -326,11 +362,15 @@ Conditions that must clear before GO, in dependency order:
    9.66× (independently re-measured at 9.655×; see F-013) — correctness first; throughput
    tracked separately. Zero out-of-scope hunks in the fixing commit.
 
-2. **F-004 (blocking for any 3–4 player run, i.e. the project default).** Either make
-   `returns()` zero-sum for n > 2, or declare `utility_sum=None` with honest
-   `min_utility`/`max_utility`. **Gate:** for `num_players` ∈ {2,3,4}, terminal returns satisfy
-   the declared contract over N ≥ 50 games. Until then, restrict runs to `num_players=2`,
-   which passes today.
+2. ~~**F-004 (blocking for any 3–4 player run, i.e. the project default).**~~ **RESOLVED —
+   Review 01 ACCEPTED-WITH-DEBT** (`docs/validation/reviews/f004-review-01.md`, working tree at
+   base `b0f3173`; F-014 open). `_build_c_game_info` now declares the honest contract per player
+   count: `n==2` unchanged (`utility_sum=0.0`, `min=-200.0`, `max=200.0`, `ZERO_SUM`); `n>2`
+   general-sum (`utility_sum=None`, `min=-50.0`, `max=400.0`, `GENERAL_SUM`). `returns()`
+   untouched. **Gate met:** for `num_players` ∈ {2,3,4}, terminal returns satisfy the declared
+   contract over N ≥ 50 games (0 out-of-bounds; `n==2` zero-sums 50/50), independently re-run by
+   Review 01. Residual risk on the −50 floor tracked as F-014. Zero out-of-scope hunks in the
+   fixing diff.
 
 3. **F-002 + F-003 (blocking for search validity).**
    3a. ~~**F-002 (shared reshuffle stream).**~~ **RESOLVED** — reroll `shuffle_seed`/`shuffle_counter`
@@ -348,7 +388,7 @@ Conditions that must clear before GO, in dependency order:
    is far above 1.4, or that returns should be normalised before backup. **Gate:** a documented
    sweep artifact, with the chosen value beating its neighbours seat-swapped at N ≥ 200 per arm.
 
-5. **F-005, F-009, F-013 (non-blocking).** F-005 and F-009 are fidelity/API-correctness gaps
+5. **F-005, F-009, F-013, F-014 (non-blocking).** F-005 and F-009 are fidelity/API-correctness gaps
    (neither showed a measurable effect on results; F-005 is contradicted as a strength bias by
    INV-8; F-009 is dormant at default configuration). F-013 is the throughput regression from the
    F-011 fix (9.66× search wall-time at `num_sims=200`): MITIGATED to 1.66× of the regression by
@@ -356,11 +396,12 @@ Conditions that must clear before GO, in dependency order:
    baseline to be closed by the narrower C-level board-only accessor before any large-scale ISMCTS
    throughput claim.
 
-**Conditional partial GO.** Reproducibility (F-010) and observation completeness (F-011) are
-resolved; the 3–4 player contract (condition 2 above) being fixed means 2-player runs may
-proceed for *engine and performance* work — throughput, crash-rate, memory. No *strength,
-policy quality, or agent-training* claim should be made until (3) and (4) above also clear, and
-no throughput claim until F-013 closes.
+**Conditional partial GO.** Reproducibility (F-010), observation completeness (F-011), and the
+3–4 player returns contract (F-004, condition 2 above) are resolved; 2-player runs may proceed
+for *engine and performance* work — throughput, crash-rate, memory — and 3–4 player runs may
+now carry an honest, non-violated `GameInfo` contract. No *strength, policy quality, or
+agent-training* claim should be made until (3) and (4) above also clear, and no throughput
+claim until F-013 closes.
 
 **Note on § 1 win-rate figures:** the INV-7/8/9 win rates (budget ladder, self-play
 calibration, baseline sanity) were measured *before* the F-010 RNG fix, so their specific
@@ -389,6 +430,7 @@ All scripts run from the repo root with `.venv/Scripts/python.exe -u <path>`:
 | `harness/f002b.py` | F-002 reshuffle-permutation half |
 | `harness/f006.py` | F-006 reward-scale quantification |
 | `harness/f009.py` | F-009 |
+| `harness/f004_utility.py` | F-004 G3/G4 (returns bounds + insane_outcast stress) |
 | `harness/obs.py` | F-011 own-discard, INV-10 resource stability |
 | `harness/timing.py` | per-game cost at each budget (ladder sizing) |
 

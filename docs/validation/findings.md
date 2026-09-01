@@ -37,6 +37,7 @@ All six required components exist; none had to be substituted.
 | F-011 | ENGINE-OPENSPIEL | CRITICAL | *(found empirically, not in the static pass)* The entire board — sites, troops, spies, control — is absent from `information_state_string`/`observation_string` |
 | F-012 | OPENSPIEL-ISMCTS | MINOR | *(found by Review 01 of F-010, not in the static pass)* `resample_from_infostate`'s accept-branch and its own error message both claim `numpy.random.Generator` works, but the branch body calls `.randint()`, which `Generator` does not have |
 | F-013 | ENGINE-OPENSPIEL | MINOR | *(found by the F-011 fix)* routing `build_c_board_view` into `private_view_json` costs ~388 µs/call and regresses search wall-time 9.66×; mitigated by caching the board projection on `CEngineAdapter` (residual gap remains for a narrower C-level board-only accessor) |
+| F-014 | ENGINE | MAJOR | *(found by the F-004 fix's T6 stress probe)* `give_insane_outcast` mints fresh instances without consulting its 30-copy special-stack cap, so `min_utility=-50.0` is a practical, not formally tight, bound |
 
 ## 3. Findings
 
@@ -120,9 +121,10 @@ All six required components exist; none had to be substituted.
 - Falsification test: `pyspiel.load_game("python_pyrants_c", {"num_players": "4"}).new_initial_state()`, play to terminal, call `.returns()`, and check `sum(returns) == 0` and `all(r >= -400 for r in returns)` against the declared contract.
 - Expected if REAL: `sum(returns())` is strongly positive and no return is ever negative.
 - Expected if FALSE POSITIVE: Observed returns are numerically consistent with the declared zero-sum, symmetric-bound contract.
-- Status: **CONFIRMED**
+- Status: **CONFIRMED — FIXED** (working-tree change; not yet committed)
 - Command: `.venv/Scripts/python.exe -u docs/validation/harness/findings.py` (section F-004)
-- N: 8 games played to terminal per player count (2, 3, 4) = 24 terminal states. Seeds: shuffle_seeds 1-8, uniform-random policy
+- Resolution: `openspiel_pyrants/game_c.py::_build_c_game_info` now declares the honest contract per player count: `n==2` keeps `utility_sum=0.0` / `min_utility=-200.0` / `max_utility=200.0` (byte-identical to pre-fix, its `returns()` is a genuine zero-sum margin); `n>2` declares `utility_sum=None` (general-sum, the documented OpenSpiel convention — omit for general-sum) with `min_utility=-50.0` (conservative, practical floor derived from the `insane_outcast` 30-copy design intent) and `max_utility=400.0` unchanged. `PyrantsCState.returns()` is untouched — the fix corrects the declared metadata to match existing, rulebook-conformant behaviour, not the reward computation. Tests in `openspiel_pyrants/tests/test_utility_contract.py`; gate probe `docs/validation/harness/f004_utility.py`. See `verdict.md` §2 and `docs/validation/f004-fix-plan.md`.
+- N: 8 games played to terminal per player count (2, 3, 4) = 24 terminal states (original ledger capture, append-only). Seeds: shuffle_seeds 1-8, uniform-random policy
 - Observed:
   ```
   --- num_players=3  utility_sum=0.0 min_utility=-400.0 max_utility=400.0 type=Utility.GENERAL_SUM
@@ -131,6 +133,13 @@ All six required components exist; none had to be substituted.
   --- num_players=4  sum(returns) values=[14.0, 14.0, 9.0, 11.0, 8.0, 12.0, 14.0, 9.0]  any negative=False
   ```
 - Verdict rationale: Matches "Expected if REAL" - for both 3- and 4-player games `sum(returns())` was strongly positive in 16/16 terminal states (never the declared `utility_sum=0.0`) and no return was ever negative despite `min_utility=-400.0`. The 2-player case was run as a control and did satisfy its zero-sum declaration (`sum(returns)==0.0` in 8/8), which localises the defect to exactly the `num_players>2` branch the finding names.
+- Post-fix gate evidence (Phase 4, `docs/validation/harness/f004_utility.py`): G1 — `n==2` `utility_sum=0.0`/`min=-200.0`/`max=200.0` byte-identical; G2 — `n∈{3,4}` `utility_sum=None`/`min=-50.0`/`max=400.0`/`GENERAL_SUM`; G3 — N=50 terminal random-policy games per player count, 0 out-of-bounds returns (`min(returns)=0.0`, `max(returns)=18.0` across 3p/4p), `n==2` `sum(returns)==0.0` in 50/50; G4 — stress probe (T6) worst random-policy return across N=200 greedy-play games per count is −23.0 (2p, within −200) and 0.0 (3p/4p, within −50); direct-struct-injection upper-bound proxy yields −30 at the 30-copy `insane_outcast` design intent and −80 at the MAX_ZONE_SIZE (80) hard cap — see F-014 for the over-issuance gap this exposes.
+- Review 01 [2026-09-01] at `<working tree, not yet committed; base b0f3173>`: **ACCEPTED-WITH-DEBT** [F-014 open]
+- Diff: `openspiel_pyrants/game_c.py`, `openspiel_pyrants/tests/test_utility_contract.py` (new), `docs/validation/{findings.md,verdict.md,f004-fix-plan.md}`, `docs/validation/harness/f004_utility.py` (new), `docs/validation/baseline/{f004_utility.pre.txt,f004_utility.post.txt}` | out-of-scope hunks: 0 | test changes: 1 file (new, 8 tests), cleared against the Hard Rule 4 gaming checklist (no weakened assertion, no reduced N, no seed-pinning, no swallowed exceptions, no special-cased input)
+- Conformance: CONFORMANT vs rulebook § Final Scoring (VP is additive; this is a metadata-only fix, `returns()` untouched), no whitepaper anchor (same as the finding's own citation-free framing)
+- Test: `docs/validation/harness/findings.py` (F-004 section) N=8 seeds=1-8 result=declared contract now numerically consistent with observed returns (was violated: `sum≠0`, `min≥0` vs declared `utility_sum=0.0`/`min_utility=-400.0`); `pytest openspiel_pyrants/tests/test_utility_contract.py` 8/8 PASS; `f004_utility.py` T5/T6 re-run byte-identical to `baseline/f004_utility.post.txt`
+- Regressions: none — full repo `pytest -q` shows the same 3 pre-existing failures as `f010-review-01.md`/`f011-review-01.md` (Zuggtmoy, Air Elemental, Neogi, all `engine_c`/catalog issues untouched by this diff, confined to `openspiel_pyrants/game_c.py`); `openspiel_pyrants/tests/` 70/70 pass; always-on battery (INV-1/2/3/6) all PASS, N=100/235/1200/30 unchanged
+- Invalidated: STALE rows [none newly STALE — INV-7/8/9 already STALE from prior reviews (a third, independent reason via Hard Rule 4c's "the utilities" trigger), not re-counted] | New findings raised: 0 (F-014 already on record, independently reproduced byte-for-byte against `baseline/f004_utility.post.txt`)
 
 ### F-005 Rulebook mandates random first-player selection; engine always seats `player_ids[0]`
 - Class: RULE-ENGINE
@@ -344,6 +353,35 @@ All six required components exist; none had to be substituted.
 - Observed: `f013_timing.pre.txt` mean 1.7453 s → `f013_timing.post.txt` mean 1.0500 s = **1.66×** relative to the pre-fix regression, under the 2× gate. Relative to the pre-F-011 original (0.1646 s, `f011_timing.pre.txt`) the remaining gap is ~6.4×, i.e. the 9.66× regression recovered partially but not fully.
 - Verdict rationale: the cache is a strict, low-risk improvement confined to `engine_c/bindings/c_adapter.py`, and every invariant battery number (INV-1 0/100, INV-2 N=235, INV-3 N=1200 empty/dup/oor=0, INV-4a 0/300, INV-4b 403/403 visible, INV-5 mean 11.11/12, `det_bot` B1 1 distinct action, F-002 0/100 + 3/3) reproduces exactly. The residual ~6.4× gap vs. the F-011 baseline is the deeper-tree unique-board recomputation: per-simulation determinizations clone to fresh adapters whose board cache starts empty, so the root `information_state_string` assert (ismcts.py:130) and every in-tree node still pay a full board rebuild per distinct board. Closing that requires the narrower C-level `engine_build_board_view` accessor described in `docs/validation/f011-fix-plan.md` § 10, which remains the recommended follow-up.
 - Residual (planned follow-up): a narrower `engine_build_board_view`-only C function that populates just `nodes`/`node_count` and skips the card-zone and special-stack work `engine_build_view` always does, then re-point `_board_nodes_view` at it — still warranted, now justified by the residual ~6.4× rather than the original 9.66×.
+
+### F-014 `give_insane_outcast` mints fresh instances without its 30-copy special-stack cap
+- Class: ENGINE
+- Severity: MAJOR (bounds the honestness of the F-004 `min_utility` declaration; no demonstrated effect on ordinary play)
+- Origin: **Found by the F-004 fix's T6 stress probe (`docs/validation/harness/f004_utility.py`), not by the static pass.**
+- Code: `engine_c/actions.c:698-705` (`give_insane_outcast`) appends `intern("insane_outcast")` directly to a target's `discard_pile` up to `MAX_ZONE_SIZE` (80, `state.h:16`), never calling `remaining_special_stack_count` or consulting the 30-copy `special_stack_config` cap (`engine_c/helpers.c:266`, `market_slot==102` declares `stack_total=30`). The 30-copy figure therefore governs only the shared *market* supply's replenishment display, not what the four `give_insane_outcast_*` effect handlers can mint.
+- Rulebook: `docs/tyrants-rulebook.md` § Final Scoring (line 398) — VP is additive; `insane_outcast` is the single negative-`deck_vp` card (`data/cards/insane_outcast.json`: `"deck_vp": -1`, notes confirm "a negative-VP card opponents can force into your deck").
+- Whitepaper: [absent]
+- Disagreement: `compute_final_scores` (`scoring.c:90-126`) sums `cards_vp(...)` over each player's hand+deck+discard, and `cards_vp` adds `insane_outcast`'s `-1` per copy. With no issuance cap, the *true* worst-case negative `deck_vp` contribution is `-MAX_ZONE_SIZE` (= −80) per player zone, not −30 as the shared-supply design intends. The direct-struct-injection upper-bound probe (T6, part 2) measured this exactly: `final_score` = −30 at the 30-copy design intent, −80 at the 80-copy hard cap. Random greedy play (T6, part 1) never came close — worst observed return across N=200 greedy games per player count was −23.0 (2p) and 0.0 (3p/4p) — so this is a latent, not demonstrated, gap.
+- Steelman: the 30-copy cap is a *market-stack* display figure; the six `give_insane_outcast_*` handlers mint "a fresh Insane Outcast" per the cards' own `rules_text` ("Give an Insane Outcast to each opponent"), which arguably should draw from — and be bounded by — the shared supply, but the engine currently treats the special stack as infinite. F-004 accepted this explicitly (§ 1 load-bearing detail) as out-of-scope for the `GameInfo` metadata fix and chose `min_utility=-50.0` as a conservative *practical* bound above the −30 design intent, rather than a formally tight bound.
+- Falsification test: force-inject `insane_outcast` copies into one player's discard pile at counts 30/50/80 (direct struct surgery), call `compute_final_scores`/`returns()`, and compare against the declared `min_utility=-50.0`.
+- Expected if REAL: a return below −50.0 is reachable (e.g. −80 at the 80-copy hard cap), meaning the declared floor is practical, not tight, and the engine's uncapped issuance is the root cause.
+- Expected if FALSE POSITIVE: the 30-copy cap is actually enforced somewhere, and no injection beyond 30 produces a return below −50.0.
+- Status: **OPEN**
+- Command: `.venv/Scripts/python.exe -u docs/validation/harness/f004_utility.py` (section T6, "direct injection upper bound")
+- N: direct-injection at counts {30, 50, 80} for each of `num_players` ∈ {2,3,4} = 9 measurements
+- Observed:
+  ```
+  num_players=2 inject=30 -> final_score[0]=-30 (n==2 diff=-30.0)
+  num_players=2 inject=50 -> final_score[0]=-50 (n==2 diff=-50.0)
+  num_players=2 inject=80 -> final_score[0]=-80 (n==2 diff=-80.0)
+  num_players=3 inject=30 -> final_score[0]=-30 (n>2 raw=-30.0)
+  num_players=3 inject=50 -> final_score[0]=-50 (n>2 raw=-50.0)
+  num_players=3 inject=80 -> final_score[0]=-80 (n>2 raw=-80.0)
+  num_players=4 inject=30 -> final_score[0]=-30 (n>2 raw=-30.0)
+  num_players=4 inject=50 -> final_score[0]=-50 (n>2 raw=-50.0)
+  num_players=4 inject=80 -> final_score[0]=-80 (n>2 raw=-80.0)
+  ```
+- Verdict rationale: Matches "Expected if REAL" — the 30-copy cap is not enforced by `give_insane_outcast`; every injected copy above 30 drove the score below the declared −50 floor in direct proportion, confirming the floor is practical (validated at −30 for the design intent) rather than formally tight. Random greedy play never approached it (worst −23.0), so the finding is `OPEN`, not a blocker: F-004's `min_utility=-50.0` stands as a labeled-practical bound, with this finding carrying the residual risk per `docs/validation/f004-fix-plan.md` § 11.
 
 ## 4. Unanchored (suspicions that could not be fully anchored)
 
