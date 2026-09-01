@@ -26,7 +26,14 @@ class CEngineAdapter:
     The adapter owns the CState and provides mutation operations.
     """
 
-    __slots__ = ("_state", "_engine", "_player_ids", "_shuffle_seed", "_player_id_to_index")
+    __slots__ = (
+        "_state",
+        "_engine",
+        "_player_ids",
+        "_shuffle_seed",
+        "_player_id_to_index",
+        "_board_cache",
+    )
 
     def __init__(
         self,
@@ -40,6 +47,7 @@ class CEngineAdapter:
         self._player_ids = list(player_ids)
         self._shuffle_seed = shuffle_seed
         self._player_id_to_index = {pid: i for i, pid in enumerate(player_ids)}
+        self._board_cache = None
 
     def __deepcopy__(self, memo):
         cloned_ptr = _lib.engine_clone(self._state._ptr)
@@ -109,6 +117,7 @@ class CEngineAdapter:
             )
         self._engine.destroy(self._state)
         self._state = new_state
+        self._board_cache = None
 
     def pending_generic_op(self) -> Optional[str]:
         """Return the op of the currently active pending-generic action, if any.
@@ -227,20 +236,22 @@ class CEngineAdapter:
         """Player-agnostic raw board occupancy. Only the per-node fields — never the
         current-player-scoped aggregates on CBoardViewData, which are relative to
         state->current_player_id, not whichever player_id is asking. See f011-fix-plan.md § 1."""
-        from .view import build_c_board_view
+        if self._board_cache is None:
+            from .view import build_c_board_view
 
-        view = build_c_board_view(self)
-        return [
-            {
-                "node_id": n.node_id,
-                "troop_slots": list(n.troop_slots),
-                "spies": list(n.spies),
-                "control_vp": n.control_vp,
-                "total_control_vp_per_turn": n.total_control_vp_per_turn,
-                "vp_tokens": n.vp_tokens,
-            }
-            for n in view.board_nodes
-        ]
+            view = build_c_board_view(self)
+            self._board_cache = [
+                {
+                    "node_id": n.node_id,
+                    "troop_slots": list(n.troop_slots),
+                    "spies": list(n.spies),
+                    "control_vp": n.control_vp,
+                    "total_control_vp_per_turn": n.total_control_vp_per_turn,
+                    "vp_tokens": n.vp_tokens,
+                }
+                for n in view.board_nodes
+            ]
+        return list(self._board_cache)
 
     def destroy(self):
         if self._state:

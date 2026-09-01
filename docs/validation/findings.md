@@ -36,7 +36,7 @@ All six required components exist; none had to be substituted.
 | F-010 | OPENSPIEL-ISMCTS | CRITICAL | *(found empirically, not in the static pass)* ISMCTS determinization seeds come from an **unseeded** `pyspiel.UniformProbabilitySampler`, so `--seed` does not reproduce a run |
 | F-011 | ENGINE-OPENSPIEL | CRITICAL | *(found empirically, not in the static pass)* The entire board — sites, troops, spies, control — is absent from `information_state_string`/`observation_string` |
 | F-012 | OPENSPIEL-ISMCTS | MINOR | *(found by Review 01 of F-010, not in the static pass)* `resample_from_infostate`'s accept-branch and its own error message both claim `numpy.random.Generator` works, but the branch body calls `.randint()`, which `Generator` does not have |
-| F-013 | ENGINE-OPENSPIEL | MINOR | *(found by the F-011 fix)* routing `build_c_board_view` into `private_view_json` costs ~388 µs/call and regresses search wall-time 9.66×; needs a narrower C-level board-only accessor |
+| F-013 | ENGINE-OPENSPIEL | MINOR | *(found by the F-011 fix)* routing `build_c_board_view` into `private_view_json` costs ~388 µs/call and regresses search wall-time 9.66×; mitigated by caching the board projection on `CEngineAdapter` (residual gap remains for a narrower C-level board-only accessor) |
 
 ## 3. Findings
 
@@ -329,7 +329,7 @@ All six required components exist; none had to be substituted.
 - Expected if FALSE POSITIVE: succeeds and returns a determinized state.
 - Status: **OPEN** (not investigated further, per review protocol — falsification test defined but not executed)
 
-### F-013 Board projection regresses `private_view_json` cost 9.66×; needs a narrower C accessor
+### F-013 Board projection regresses `private_view_json` cost 9.66×; cache mitigates, narrower C accessor still warranted
 - Class: ENGINE-OPENSPIEL
 - Severity: MINOR (performance — non-blocking for 2-player engine work, blocking for any large-scale ISMCTS throughput claim)
 - Origin: **Found by the F-011 fix while re-running the G5 timing gate.**
@@ -338,9 +338,12 @@ All six required components exist; none had to be substituted.
 - Steelman: correctness first — the F-011 observation gap is blocking and had to be fixed regardless of cost; the two-tier snapshot design was preserved (Tier-1 `_build_public_dict` untouched), and the regression is a constant-factor slowdown, not a complexity change.
 - Falsification test: `python -u docs/validation/harness/f011_timing.py` before/after, compare mean wall-time.
 - Expected if REAL: mean wall-time ratio > 2×.
-- Status: **OPEN**
-- Command: `.venv/Scripts/python.exe -u docs/validation/harness/f011_timing.py` (baseline `docs/validation/baseline/f011_timing.pre.txt` vs `.post.txt`)
-- Resolution (planned): a narrower `engine_build_board_view`-only C function that populates just `nodes`/`node_count` and skips the card-zone and special-stack work `engine_build_view` always does, then re-point `_board_nodes_view` at it.
+- Status: **CONFIRMED — MITIGATED** (working-tree change; not yet committed) — see `docs/validation/f013-fix-plan.md`
+- Resolution: cache the player-agnostic board projection on `CEngineAdapter` (`_board_cache`), invalidated on `apply()` — the sole state-reassignment site on an existing adapter. Per-adapter repeated `private_view_json` calls now build the board once instead of once per call (G3, `openspiel_pyrants/tests/test_board_view_cache.py::test_repeated_calls_hit_the_cache`).
+- Command: `.venv/Scripts/python.exe -u docs/validation/harness/f013_timing.py` (baseline `docs/validation/baseline/f013_timing.pre.txt` vs `.post.txt`)
+- Observed: `f013_timing.pre.txt` mean 1.7453 s → `f013_timing.post.txt` mean 1.0500 s = **1.66×** relative to the pre-fix regression, under the 2× gate. Relative to the pre-F-011 original (0.1646 s, `f011_timing.pre.txt`) the remaining gap is ~6.4×, i.e. the 9.66× regression recovered partially but not fully.
+- Verdict rationale: the cache is a strict, low-risk improvement confined to `engine_c/bindings/c_adapter.py`, and every invariant battery number (INV-1 0/100, INV-2 N=235, INV-3 N=1200 empty/dup/oor=0, INV-4a 0/300, INV-4b 403/403 visible, INV-5 mean 11.11/12, `det_bot` B1 1 distinct action, F-002 0/100 + 3/3) reproduces exactly. The residual ~6.4× gap vs. the F-011 baseline is the deeper-tree unique-board recomputation: per-simulation determinizations clone to fresh adapters whose board cache starts empty, so the root `information_state_string` assert (ismcts.py:130) and every in-tree node still pay a full board rebuild per distinct board. Closing that requires the narrower C-level `engine_build_board_view` accessor described in `docs/validation/f011-fix-plan.md` § 10, which remains the recommended follow-up.
+- Residual (planned follow-up): a narrower `engine_build_board_view`-only C function that populates just `nodes`/`node_count` and skips the card-zone and special-stack work `engine_build_view` always does, then re-point `_board_nodes_view` at it — still warranted, now justified by the residual ~6.4× rather than the original 9.66×.
 
 ## 4. Unanchored (suspicions that could not be fully anchored)
 

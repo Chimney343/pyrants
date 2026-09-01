@@ -232,16 +232,22 @@ where the paper's 0.7 assumed rewards normalised to ±1.
 
 ### MINOR
 
-**F-013 — board projection costs ~388 µs/call; `private_view_json` regressed 9.66×.**
+**F-013 — board projection costs ~388 µs/call; `private_view_json` regressed 9.66×. MITIGATED.**
 
 `_board_nodes_view` (added by the F-011 fix) calls `build_c_board_view`, which invokes the
 monolithic `engine_build_view` that `memset`s the full `CGameView` and populates every card zone
 for every player plus three `remaining_special_stack_count` scans — ~388 µs/call — while the
 board-only wrapper reads back just `nodes`. End-to-end search wall-time rose 9.66× at
-`num_sims=200`. The fix is a narrower C-level `engine_build_board_view`-only function that skips
-the card-zone and special-stack work. Tracked, non-blocking for 2-player engine/performance work;
-blocking for any large-scale ISMCTS throughput claim.
-> Repro: `python -u docs/validation/harness/f011_timing.py` — mean 0.165 s → 1.589 s (baseline `.pre.txt` vs `.post.txt`).
+`num_sims=200`. The `CEngineAdapter` board cache (`f013-fix-plan.md`) makes repeated views on one
+adapter build the board once instead of per call (G3) and is invalidated on `apply()` (G2),
+recovering the per-decision redundancy. The residual gap is deeper-tree unique-board
+recomputation: determinizations clone to fresh adapters whose cache starts empty. The narrower
+C-level `engine_build_board_view`-only function that skips the card-zone and special-stack work
+remains the recommended follow-up. Non-blocking for 2-player engine/performance work; blocking
+for any large-scale ISMCTS throughput claim.
+> Repro: `python -u docs/validation/harness/f013_timing.py` — mean 1.7453 s → 1.0500 s
+> (1.66× vs. the pre-fix regression, under the 2× gate; ~6.4× residual vs. the pre-F-011
+> 0.1646 s baseline). See `docs/validation/f013-fix-plan.md` § 7/§ 9.
 
 **F-009 — `max_chance_outcomes` hardcoded at 1000.** At `shuffle_seed_count=5000` the state
 offers 5,000 outcomes against a declared 1,000, and outcome id 4999 applies without error.
@@ -344,9 +350,11 @@ Conditions that must clear before GO, in dependency order:
 
 5. **F-005, F-009, F-013 (non-blocking).** F-005 and F-009 are fidelity/API-correctness gaps
    (neither showed a measurable effect on results; F-005 is contradicted as a strength bias by
-   INV-8; F-009 is dormant at default configuration). F-013 is a throughput regression from the
-   F-011 fix (9.66× search wall-time at `num_sims=200`) that must be closed before any
-   large-scale ISMCTS throughput claim, via a narrower C-level board-only accessor.
+   INV-8; F-009 is dormant at default configuration). F-013 is the throughput regression from the
+   F-011 fix (9.66× search wall-time at `num_sims=200`): MITIGATED to 1.66× of the regression by
+   the `CEngineAdapter` board cache (`f013-fix-plan.md`), with a residual ~6.4× vs. the pre-F-011
+   baseline to be closed by the narrower C-level board-only accessor before any large-scale ISMCTS
+   throughput claim.
 
 **Conditional partial GO.** Reproducibility (F-010) and observation completeness (F-011) are
 resolved; the 3–4 player contract (condition 2 above) being fixed means 2-player runs may
