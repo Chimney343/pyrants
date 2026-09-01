@@ -202,6 +202,22 @@ Post-fix evidence:
 > `engine_c/test_engine.c` (T-A1/T-A2) and
 > `openspiel_pyrants/tests/test_determinize_reshuffle_independence.py` (T-A3/T-A4/T-A5).
 > Post-fix repro: `python -u docs/validation/harness/f002_reroll.py` (GA1 0/100, GA3 3/3 changed).
+>
+> **Review 01** (`docs/validation/reviews/f002-review-01.md`, commit `e9a2702`):
+> **ACCEPTED.** The dedicated Phase 5 review required by the fix plan's § 0 constraint 2, run as
+> F-002's own primary review target. Diff audit: 0 out-of-scope hunks; the single `state.c` hunk
+> is the plan's two code lines verbatim, placed after every other `rng` draw (verified by source
+> reading at HEAD, not trusted from the plan); opponent-zone loop and market-deck block
+> byte-identical to pre-fix; both new test files cleared against the Hard Rule 4 gaming checklist.
+> One correction recorded: `e9a2702`'s parent is `b0f3173`, not the `2cfd836` the completion plan
+> states. Fresh independent re-runs at HEAD `d26a920` (equivalent to `e9a2702` for every audited
+> path): **GA1 0/100** (N=100, was 100/100 pre-fix), **GA3 3/3**, `f002b.py` 3/3+3/3+3/3
+> unchanged, C suite green incl. both new tests, INV-1/2/3/6 exact-match, INV-4a/4b/5
+> exact-match, F-010 `det_bot.py` B1 unchanged (1 distinct action), F-013 cache suite 5/5,
+> OpenSpiel suite 78/78, full repo suite same 3 pre-existing `engine_c`/catalog failures, zero
+> new. No newly-STALE rows (INV-7/8/9 already STALE; this change is a fifth independent trigger,
+> correctly not double-counted). Condition 3a stands struck with review backing; condition 3b
+> (F-003) remains the open half.
 
 ### CRITICAL
 
@@ -284,6 +300,23 @@ for any large-scale ISMCTS throughput claim.
 > Repro: `python -u docs/validation/harness/f013_timing.py` — mean 1.7453 s → 1.0500 s
 > (1.66× vs. the pre-fix regression, under the 2× gate; ~6.4× residual vs. the pre-F-011
 > 0.1646 s baseline). See `docs/validation/f013-fix-plan.md` § 7/§ 9.
+>
+> **Review 01** (`docs/validation/reviews/f013-review-01.md`, commit `16f8712`):
+> **ACCEPTED-WITH-DEBT.** Independently re-ran the pre-registered falsification test using
+> `f011_timing.py` (the originally-registered script, not the new `f013_timing.py`) and got mean
+> `1.0569s` — ratio vs. the pre-F-011 `0.1646s` baseline = **6.42×**, which still matches the
+> finding's own "Expected if REAL" (>2×): the regression is reduced from 9.66× but not
+> eliminated. Also found and independently corrected a characterization issue: the "1.66× ...
+> under the 2× gate" phrasing above computes against the freshly-recaptured pre-F-013 baseline
+> (1.7453s), not the pre-F-011 baseline the G4 gate (borrowed from `f011-fix-plan.md`'s G5) is
+> actually defined against — by that definition the gate is **not** cleared. Not gaming (no test
+> was touched) and not concealment (the true ~6.4× figure is stated in the same sentence), but the
+> "under the 2× gate" framing should not be read as the gate having passed. Independently re-ran
+> INV-4b (403/403 unchanged), INV-4a (0/300 unchanged), INV-5 (mean 11.11/12 unchanged), the
+> always-on battery (INV-1/2/3/6, all exact-match), F-010's `det_bot.py` B1 (unchanged, 1 distinct
+> action), F-002's `f002b.py` (unchanged), the new 5-test suite (5/5 pass), a standalone live
+> repro of G2 (cache correctly invalidates on `apply()`), and the full repo suite (same 3
+> pre-existing `engine_c`/catalog failures, zero new). Zero out-of-scope hunks.
 
 **F-009 — `max_chance_outcomes` hardcoded at 1000.** At `shuffle_seed_count=5000` the state
 offers 5,000 outcomes against a declared 1,000, and outcome id 4999 applies without error.
@@ -373,10 +406,13 @@ Conditions that must clear before GO, in dependency order:
    fixing diff.
 
 3. **F-002 + F-003 (blocking for search validity).**
-   3a. ~~**F-002 (shared reshuffle stream).**~~ **RESOLVED** — reroll `shuffle_seed`/`shuffle_counter`
-       inside `engine_determinize`, as was already done for the market deck. **Gate met:** two
-       determinizations of one information set no longer share `(shuffle_seed, shuffle_counter)`
-       over N ≥ 100 pairs (0/100, was 141/141) — `docs/validation/f002-f003-fix-plan.md` Part A.
+   3a. ~~**F-002 (shared reshuffle stream).**~~ **RESOLVED — Review 01 ACCEPTED**
+       (`docs/validation/reviews/f002-review-01.md`, commit `e9a2702`) — reroll
+       `shuffle_seed`/`shuffle_counter` inside `engine_determinize`, as was already done for the
+       market deck. **Gate met:** two determinizations of one information set no longer share
+       `(shuffle_seed, shuffle_counter)` over N ≥ 100 pairs (0/100, was 141/141), independently
+       re-run by Review 01 — `docs/validation/f002-f003-fix-plan.md` Part A. Zero out-of-scope
+       hunks in the fixing commit.
    3b. **F-003 (mid-game chance nodes). OPEN.** Expose the mid-game random events (discard-into-deck
        reshuffles, forced random discards, card-effect mass-discards) as real OpenSpiel chance
        nodes, then F-008 can be measured. **Gate:** every `shuffle_counter` advance is preceded by
@@ -394,7 +430,11 @@ Conditions that must clear before GO, in dependency order:
    F-011 fix (9.66× search wall-time at `num_sims=200`): MITIGATED to 1.66× of the regression by
    the `CEngineAdapter` board cache (`f013-fix-plan.md`), with a residual ~6.4× vs. the pre-F-011
    baseline to be closed by the narrower C-level board-only accessor before any large-scale ISMCTS
-   throughput claim.
+   throughput claim. **Review 01** (`docs/validation/reviews/f013-review-01.md`, `16f8712`)
+   ACCEPTED-WITH-DEBT this mitigation, independently re-measuring the residual at 6.42× (still
+   >2×, the finding's own "Expected if REAL" threshold) and clarifying that the gate is not fully
+   cleared by its own borrowed definition — the narrower C-level accessor remains required, not
+   merely recommended, before any throughput claim.
 
 **Conditional partial GO.** Reproducibility (F-010), observation completeness (F-011), and the
 3–4 player returns contract (F-004, condition 2 above) are resolved; 2-player runs may proceed
