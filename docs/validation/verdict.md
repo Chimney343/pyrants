@@ -11,8 +11,11 @@ given with each row. Read-only on all source outside `docs/validation/`.
 
 **Overall: NO-GO for large-scale simulation.** Three independent defects each
 sufficient on their own to invalidate results (F-011, F-004, F-002/F-003), plus
-uncalibrated search parameters (F-006). Reproducibility (F-010) is now fixed — runs
-reproduce from `--seed`. See §5 for the clearance conditions.
+uncalibrated search parameters (F-006). Reproducibility (F-010): the fix logic is verified
+correct (runs do reproduce from `--seed`), but the commit that lands it was **REJECTED-SCOPE**
+by Review 01 (`docs/validation/reviews/f010-review-01.md`) for bundling unauthorized,
+plan-external changes — treat F-010 as fix-verified-but-not-yet-merge-clean until
+re-submission. See §5 for the clearance conditions.
 
 ---
 
@@ -28,9 +31,9 @@ reproduce from `--seed`. See §5 for the clearance conditions.
 | INV-4b | Info-set completeness — observable differs ⇒ string differs | ❌ **FAIL** | 403 board-differing pairs, seeds 1–139 | `python -u docs/validation/harness/inv_b2.py` |
 | INV-5 | Determinisation consistency + conservation | ✅ PASS | 200 info sets × K=12 = 2,400 worlds | `python -u docs/validation/harness/inv_b.py` |
 | INV-6 | Chance mass sums to 1 | ✅ PASS | 30 chance nodes, seeds 1–30 | `python -u docs/validation/harness/inv_a.py` |
-| INV-7 | Budget monotonicity | ✅ PASS | 32/rung × 4 rungs + 32 head-to-head | `python -u docs/validation/harness/exp2.py 32 s1|s2|s3|s5` |
-| INV-8 | Self-play calibration ≈ 50% | ✅ PASS | 48 games, seat-swapped | `python -u docs/validation/harness/exp2.py 48 s4` |
-| INV-9 | Baseline sanity vs uniform-random | ✅ PASS | 32 games, seat-swapped | `python -u docs/validation/harness/exp2.py 32 s1` |
+| INV-7 | Budget monotonicity | ⚠️ PASS *(STALE — Review 01)* | 32/rung × 4 rungs + 32 head-to-head | `python -u docs/validation/harness/exp2.py 32 s1|s2|s3|s5` |
+| INV-8 | Self-play calibration ≈ 50% | ⚠️ PASS *(STALE — Review 01)* | 48 games, seat-swapped | `python -u docs/validation/harness/exp2.py 48 s4` |
+| INV-9 | Baseline sanity vs uniform-random | ⚠️ PASS *(STALE — Review 01)* | 32 games, seat-swapped | `python -u docs/validation/harness/exp2.py 32 s1` |
 | INV-10 | Resource stability | ⚠️ PASS with note | 4 budget levels | `python -u docs/validation/harness/obs.py` |
 
 ### INV-4b detail — the two directions reported separately
@@ -101,7 +104,7 @@ Not a defect, but it is what makes the 10,000-sim rung unaffordable.
 
 ### RESOLVED
 
-**F-010 — determinization seeds are unseeded; no run is reproducible. RESOLVED.**
+**F-010 — determinization seeds are unseeded; no run is reproducible. FIX LOGIC VERIFIED, COMMIT REJECTED-SCOPE (Review 01).**
 Fixed by `openspiel_pyrants/ismcts_factory.py::make_ismcts_bot` (installs a seeded numpy
 resampler via the stock `ISMCTSBot.set_resampler` hook, with a dedicated
 `RandomState(seed ^ 0x5F10)` stream decoupled from the bot's `random_state`) plus a guard in
@@ -113,6 +116,18 @@ seed-paired games (0 divergent); `det_bot.py` B1 returns exactly 1 distinct chos
 across 10 identically-seeded searches (was 3–4 distinct); INV-5 world diversity is unchanged
 (mean 10.26/12 distinct worlds, 0 singletons), confirming the fix did not collapse sampling.
 > Fix plan: `docs/validation/f010-fix-plan.md`; post-fix repro `python -u docs/validation/harness/det_bot.py`.
+>
+> **Review 01** (`docs/validation/reviews/f010-review-01.md`, commit `028ff9d`): independently
+> re-ran INV-1 (N=100, PASS), `det_bot.py` B1 (1/1 distinct), INV-5 (mean 10.26/12 unchanged),
+> F-002 (still CONFIRMED, undisturbed), full `openspiel_pyrants` suite (100% pass) and the
+> repo-root suite (3 pre-existing failures, none attributable to this diff — see review for the
+> file-scope argument). Fix logic is CONFORMANT and reproducibility above is confirmed accurate.
+> **However the commit is REJECTED-SCOPE**: it bundles 3 debug-script deletions
+> (`scripts/check_clone_attrs.py`, `check_ismcts_chain.py`, `trace_clone.py`) and one new doc
+> (`docs/validation/grug_findings.md`) that `f010-fix-plan.md` never authorized. Do not treat
+> F-010 as closed-by-review until a re-submission resolves the scope gap (see review §9). One
+> new MINOR finding raised in passing: F-012 (dormant `Generator`/`.randint()` mismatch in the
+> new guard's accept branch).
 
 ### CRITICAL
 
@@ -209,10 +224,15 @@ Adding a `--opponent` flag would let these run through the supported entry point
 ### 🔴 NO-GO for large-scale simulation.
 
 The search itself is sound — budget monotonicity, self-play calibration, and baseline
-sanity all pass, and legality, clone independence, chance mass, and determinisation
-consistency are clean. Replay determinism is now fixed (F-010, see §2 RESOLVED): runs
-reproduce from `--seed`, so the remaining defects can actually be verified. The problem
-that keeps this NO-GO is that **what the search is searching over is still not the game**.
+sanity all pass (though these three are now STALE per Review 01, §1, pending re-measurement
+at the final gate), and legality, clone independence, chance mass, and determinisation
+consistency are clean. Replay determinism is fixed at the code level (F-010): runs
+reproduce from `--seed`, independently re-verified by Review 01
+(`docs/validation/reviews/f010-review-01.md`) — but that review REJECTED-SCOPE the commit
+itself for unauthorized bundled changes, so F-010 is not yet closed procedurally even though
+the fix is confirmed correct. The remaining defects can be verified once it lands cleanly.
+The problem that keeps this NO-GO is that **what the search is searching over is still not
+the game**.
 
 Conditions that must clear before GO, in dependency order:
 

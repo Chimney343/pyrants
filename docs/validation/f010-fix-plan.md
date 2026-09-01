@@ -200,6 +200,16 @@ decided at review rather than unilaterally.
 **before** enabling the guard, so the suite never goes simultaneously red on seven files. The
 guard is the last edit in the change, not the first.
 
+**Decision record — 3 additional dead scripts (post-review, owner-approved):** `028ff9d` also
+deleted `scripts/check_clone_attrs.py`, `scripts/check_ismcts_chain.py`, and
+`scripts/trace_clone.py`. These were never `ISMCTSBot(` construction sites (they don't appear
+in the grep above) and so were outside this plan's originally authorized 7-site table — flagged
+as out-of-scope by `docs/validation/reviews/f010-review-01.md`. Repo owner has reviewed and
+accepts the deletions: `grep -rn "check_clone_attrs|check_ismcts_chain|trace_clone"` across the
+repo returns no hits, confirming all three were unreferenced ad hoc debug scripts with no
+assertions and no callers, in the same spirit as the three originally-budgeted deletions. This
+record retroactively authorizes them; no code change follows from this note.
+
 Verified as *not* affected: all six `resample_from_infostate` call sites in
 `openspiel_pyrants/tests/test_resample_c.py` already pass `np.random.RandomState(123)`.
 

@@ -35,6 +35,7 @@ All six required components exist; none had to be substituted.
 | F-009 | ENGINE-OPENSPIEL | MINOR | `max_chance_outcomes` is hardcoded to 1000 independent of the configurable `shuffle_seed_count` game parameter |
 | F-010 | OPENSPIEL-ISMCTS | CRITICAL | *(found empirically, not in the static pass)* ISMCTS determinization seeds come from an **unseeded** `pyspiel.UniformProbabilitySampler`, so `--seed` does not reproduce a run |
 | F-011 | ENGINE-OPENSPIEL | CRITICAL | *(found empirically, not in the static pass)* The entire board — sites, troops, spies, control — is absent from `information_state_string`/`observation_string` |
+| F-012 | OPENSPIEL-ISMCTS | MINOR | *(found by Review 01 of F-010, not in the static pass)* `resample_from_infostate`'s accept-branch and its own error message both claim `numpy.random.Generator` works, but the branch body calls `.randint()`, which `Generator` does not have |
 
 ## 3. Findings
 
@@ -265,6 +266,12 @@ All six required components exist; none had to be substituted.
   S5 control, resample with RandomState(555) x6:   1 distinct world  (deterministic)
   ```
 - Verdict rationale: Matches "Expected if REAL" on both clauses, and the layer isolation is decisive — the C engine (L1), the full game loop under a pure-Python policy (L2), the C rollout (L4) and the evaluator are each deterministic, and the root is not mutated (B2), so the only remaining source is the search's world sampling; S1 shows the sampler it uses is unseeded and S5 shows the same code path is fully deterministic when a seeded `RandomState` is passed instead. Note this defect masks F-002 in practice rather than cancelling it: the *hidden-zone* draw varies per simulation, but the `shuffle_seed`/`shuffle_counter` stream F-002 identifies stays shared across all of them.
+- Review 01 [2026-08-31] at `028ff9d1d27841e63f0945b5ddd69b4afe838d85`: **REJECTED-SCOPE**
+- Diff: `openspiel_pyrants/__init__.py`, `openspiel_pyrants/ismcts_factory.py` (new), `openspiel_pyrants/state_c.py`, `scripts/run_ismcts.py`, 3 test-file conversions, `openspiel_pyrants/tests/test_ismcts_reproducibility.py` (new), 6 deleted debug scripts, `docs/validation/{findings.md,verdict.md,f010-fix-plan.md,grug_findings.md}` (new), `docs/validation/harness/*.py` (new), `docs/validation/baseline/*.txt` (new) | out-of-scope hunks: 4 (deletion of `scripts/check_clone_attrs.py`, `scripts/check_ismcts_chain.py`, `scripts/trace_clone.py` — not on the fix plan's authorized 7-site table; addition of `docs/validation/grug_findings.md` — not mentioned anywhere in the fix plan) | test changes: 4 files, all cleared against the Hard Rule 4 gaming checklist (no weakened assertion, no reduced N, no seed-pinning, no swallowed exceptions — bot-construction calls only)
+- Conformance: CONFORMANT vs [no rulebook/whitepaper anchor — pure engine/API reproducibility contract, same as the finding's own citation-free framing]
+- Test: `docs/validation/harness/inv_a.py` + `det_bot.py` + `inv_b.py` + `f002b.py` + `pytest openspiel_pyrants/tests/` + `pytest -q` (repo root) N=100 seed-paired games (INV-1), N=10 fixed-root searches (det_bot B1), N=2400 determinizations (INV-5) seeds=1-100/1-200×12/4242 result=INV-1 PASS 0/100 diverged (was FAIL 10/10); det_bot B1 1 distinct chosen action (was 4); INV-5 mean 10.26/12 unchanged (G2 holds, no world-sampling collapse)
+- Regressions: none attributable to this diff — 3 pre-existing failures in the full repo suite (`test_card_zuggtmoy`, `test_engine_c::test_air_elemental_option_1_focus_draw`, `test_card_neogi`) exercise `engine_c`/`data/cards/catalog.json`, files this diff does not touch at all
+- Invalidated: STALE rows [verdict.md §1 INV-7, INV-8, INV-9 — STRENGTH rows measured under the unseeded resampler, already flagged by the fixing agent, independently confirmed here] | New findings raised: 1 (F-012)
 
 ### F-011 Board state is absent from the information state and the observation
 - Class: ENGINE-OPENSPIEL
@@ -291,6 +298,20 @@ All six required components exist; none had to be substituted.
   keys exposing only COUNTS:  ['barracks','deck_size','devour_size','discard_size','score','spies_available','vp_tokens']
   ```
 - Verdict rationale: Matches "Expected if REAL" in 403/403 pairs - placing a troop at Blingdenfire versus Buiyrandyn yields genuinely different boards and a byte-identical observation, and a scan of the schema confirms zero board fields are exposed. `information_state_string` distinguishes these pairs only because the raw action-index history is prepended, which means the ISMCTS node key encodes *which index was chosen*, not *what the board looks like*; that also explains the measured `info_state_repeat_rate=0.0` (618 unique keys over 618 sampled states), i.e. no information-set statistic sharing across moves at all.
+
+### F-012 `resample_from_infostate`'s accept branch and its own new error message claim `Generator` support that does not work
+- Class: OPENSPIEL-ISMCTS
+- Severity: MINOR (dormant — no caller in the repo passes a `Generator`; every call site uses `np.random.RandomState`)
+- Origin: **Found by Review 01 of F-010 while auditing the diff, not by a run.**
+- Code: `openspiel_pyrants/state_c.py:313-316` (`if hasattr(rng, 'shuffle'): hi = rng.randint(0, 2**31-1); lo = rng.randint(0, 2**31-1)`) vs. the new text this diff adds at `state_c.py:318-323` ("requires a seeded numpy RandomState/Generator") and `openspiel_pyrants/ismcts_factory.py`'s module docstring, which also names `Generator` as acceptable
+- Rulebook: [absent] — pure API-contract concern, same category as F-010 itself
+- Whitepaper: [absent]
+- Disagreement: `numpy.random.Generator` (the modern numpy random API) has `.shuffle()` and so passes the `hasattr(rng, 'shuffle')` gate, but has no `.randint()` method — `Generator` uses `.integers()` instead; `.randint()` exists only on the legacy `numpy.random.RandomState`. A caller who followed the new error message's own advice and passed a `Generator` instead of a `RandomState` would hit an unrelated `AttributeError` deeper inside the accept branch, not the clean, documented behavior the message promises.
+- Steelman: fully dormant today — `make_ismcts_bot`, all converted tests, and `docs/validation/harness/common.py::make_bot` construct only `np.random.RandomState`, never `Generator`. The `hasattr`/`randint` branch itself predates this diff and is unchanged by it; the diff's only new contribution is message text asserting `Generator` support that was never actually there.
+- Falsification test: call `state.resample_from_infostate(player, np.random.default_rng(1))` (a `Generator`) on any live mid-game state.
+- Expected if REAL: raises `AttributeError: 'Generator' object has no attribute 'randint'`.
+- Expected if FALSE POSITIVE: succeeds and returns a determinized state.
+- Status: **OPEN** (not investigated further, per review protocol — falsification test defined but not executed)
 
 ## 4. Unanchored (suspicions that could not be fully anchored)
 
