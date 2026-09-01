@@ -64,13 +64,19 @@ def _build_c_game_type(num_players: int) -> pyspiel.GameType:
 
 def _build_c_game_info(num_players: int) -> pyspiel.GameInfo:
     max_utility = 200.0 if num_players == 2 else 400.0
+    if num_players == 2:
+        min_utility = -max_utility  # n==2 returns() is a genuine zero-sum margin
+        utility_sum = 0.0  # margin always sums to 0
+    else:
+        min_utility = -50.0  # honest floor; see docs/validation/f004-fix-plan.md § 1
+        utility_sum = None  # general-sum, no fixed sum; omit per OpenSpiel convention
     return pyspiel.GameInfo(
         num_distinct_actions=NUM_DISTINCT_ACTIONS,
         max_chance_outcomes=1000,
         num_players=num_players,
-        min_utility=-max_utility,
+        min_utility=min_utility,
         max_utility=max_utility,
-        utility_sum=0.0,
+        utility_sum=utility_sum,
         max_game_length=4096,
     )
 
