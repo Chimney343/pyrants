@@ -136,6 +136,17 @@ Post-fix evidence:
 
 > Fix plan: `docs/validation/f011-fix-plan.md`; tests `openspiel_pyrants/tests/test_observation_completeness.py`.
 > Post-fix repro: `python -u docs/validation/harness/inv_b2.py` (403/403 visible), `inv_b.py` (INV-4a 0/300, INV-5 mean 11.11/12).
+>
+> **Review 01** (`docs/validation/reviews/f011-review-01.md`, commit `a7cee83`): **ACCEPTED-WITH-DEBT**
+> (F-013 open). Independently re-ran the falsification test (403/403 now visible), INV-4a
+> (0/300 violations), INV-5 (mean 11.11/12, 0 singletons), the always-on battery (INV-1/2/3/6,
+> all PASS), F-010's `det_bot.py` regression check (unchanged, 1 distinct chosen action — the
+> larger observation string does not disturb F-010's reproducibility guarantee), the new 8-test
+> suite (8/8 pass), and the full repo suite (same 3 pre-existing `engine_c`/catalog failures as
+> `f010-review-01.md`, zero new failures). Zero out-of-scope hunks — unlike F-010's `028ff9d`,
+> this commit bundled nothing beyond the plan's authorized scope. G5's 9.66× regression was
+> independently re-measured at 9.655×, confirming F-013 (still `OPEN`) rather than raising a new
+> finding.
 
 **F-010 — determinization seeds are unseeded; no run is reproducible. FIX LOGIC VERIFIED, COMMIT REJECTED-SCOPE (Review 01).**
 Fixed by `openspiel_pyrants/ismcts_factory.py::make_ismcts_bot` (installs a seeded numpy
@@ -274,11 +285,13 @@ events and the 3–4 player returns contract — not the observation.
 
 Conditions that must clear before GO, in dependency order:
 
-1. ~~**F-011 (blocking).**~~ **RESOLVED.** Board occupancy and own discard-pile identities now
+1. ~~**F-011 (blocking).**~~ **RESOLVED — Review 01 ACCEPTED-WITH-DEBT** (`docs/validation/reviews/f011-review-01.md`,
+   commit `a7cee83`; F-013 open). Board occupancy and own discard-pile identities now
    flow through `private_view_json` (`public.board_nodes` + `discard`). **Gate met:** INV-4b
    passes at N=403 board-differing pairs (0 invisible) while INV-4a still passes at N=300
-   (0 leakage violations). Search-time cost regressed 9.66× (see F-013) — correctness first;
-   throughput tracked separately.
+   (0 leakage violations), both independently re-run by Review 01. Search-time cost regressed
+   9.66× (independently re-measured at 9.655×; see F-013) — correctness first; throughput
+   tracked separately. Zero out-of-scope hunks in the fixing commit.
 
 2. **F-004 (blocking for any 3–4 player run, i.e. the project default).** Either make
    `returns()` zero-sum for n > 2, or declare `utility_sum=None` with honest
