@@ -11,28 +11,27 @@
 > (documentation, ownership, history, decisions). **Always verify against
 > actual source files before making changes** — the index may be stale.
 
-Last indexed: 2026-08-30 (commit fe1ba99). Confidence: 100%.
+Last indexed: 2026-09-01 (commit a6509b1). Confidence: 100%.
 ### Architecture
-Repo is a C/Python game engine and AI-training harness for a card-and-board game called PyRants: it ingests JSON-serialised card and board definitions through the game_setup package, loads and type-checks them into game configurations, simulates legal state transitions, reward and action logic in a C core (engine_c), exposes the live game state, observations, and legal actions to Python via ctypes bindings, and adapts that engine to OpenSpiel so that information-set Monte Carlo tree search (ISMCTS) agents can be trained and evaluated through Python scripts and a regression test suite. The repository is a monorepo of ~1011 files (~225k LOC) whose composition is dominated by JSON game data (≈49%), Python logic (≈24%), and Markdown documentation (≈20%), with a small but pivotal C/C++ engine core. The PageRank profile confirms a clean dependency flow: game_setup/loaders.py feeds engine_c/bindings/engine_bindings.py, which wraps the C engine and is in turn consumed by the OpenSpiel integration (openspiel_pyrants) and by the training/evaluation scripts (scripts/run_ismcts.py). | Layer | Technology | Evidence in repo |
+Repo is a card-game research and validation monorepo: it consumes board packages and game-rule configuration via game_setup loaders, simulates authoritative game state in the C engine engine_c (state.h, intern.h, rng.h, arena.h), bridges that engine to Python through an adapter/binding layer, wraps it as an OpenSpiel game under openspiel_pyrants to run IS-MCTS agents with C-backed rollout evaluators, and produces evaluation artifacts such as markdown findings and verdicts through the docs/validation harness. The repository spans 1046 files (~239k LOC), but the runtime core is small and layered: C and Python dominate the actual code (3.1% + 2.0% C/C++, 25.2% Python), while JSON (47.8%) supplies board/config data and Markdown (20.1%) carries validation reports and documentation. Two TypeScript tooling packages (.kilo, .kilocode) provide IDE/agent tooling and are peripheral to the engine pipeline. | Layer | Technology | Key modules |
 |---|---|---|
-| **Core engine** | C (with some C++) | engine_c/state.h, engine_c/intern.h, engine_c/arena.h, engine_c/rng.h |
-| **Python bindings** | Python 3 via ctypes | engine_c/bindings/engine_bindings.py, ce_api.py, session.py, c_adapter.py, view.py |
-| **Game setup / data pipeline** | Python 3 | game_setup/loaders.py, game_setup/types.py, game_setup/board_package.py |
-| **Game-config data** | JSON (≈49% of repo) | Card/board definitions loaded at runtime by game_setup |
-| **RL / search integration** | OpenSpiel (Python) | openspiel_pyrants/__init__.py, openspiel_pyrants/game_c.py, action_encoding_c.py |
-| **Experiment scripts** | Python | scripts/run_ismcts.py, scripts/_obs.py (highest churn in last 90 days) |
-| **Testing** | Python pytest | tests/conftest.py, tests/c_engine/card_test_helpers.py, openspiel_pyrants/tests/ |
-| **Build tooling** | Makefile | makefile entries in language distribution |
-| **Auxiliary tooling** | TypeScript | .kilo and .kilocode packages — editor/CLI tooling, not part of the runtime engine |
+| Core engine | C / C++ | engine_c/state.h, intern.h, rng.h, arena.h |
+| Python bridge | Python (ctypes adapter) | engine_c/bindings/engine_bindings.py, ce_api.py, session.py, view.py, c_adapter.py |
+| Game setup | Python | game_setup/loaders.py, board_package.py, types.py |
+| AI / research | Python + OpenSpiel | openspiel_pyrants/game_c.py, ismcts_factory.py, c_rollout_evaluator.py |
+| Configuration & data | JSON (47.8%) | Board packages, game definitions, test fixtures |
+| Docs & validation artifacts | Markdown (20.1%) | docs/validation/findings.md, docs/validation/verdict.md |
+| Testing | pytest | tests/conftest.py, tests/c_engine/card_test_helpers.py |
+| Tooling | TypeScript | .kilo, .kilocode |
 
-The C engine is small relative to the Python surface but sits at the top of the PageRank graph, indicating it is the semantic core: rule enforcement, randomness (rng.h), and game-state bookkeeping (state.h, arena.h) all live there.
+The stack is intentionally split: a fast, authoritative C simulator underneath a Python research/agent layer, with OpenSpiel as the interface to the wider game-theory and reinforcement-learning ecosystem.
 ### Key Modules
 | Module | Purpose | Owner |
 |--------|---------|-------|
-| `community-1` | The tests/c_engine module is the conformance and regression verification layer f | — |
-| `community-0` | engine_c is the generic card-action resolution layer within repowise's C engine  | — |
+| `community-1` | The tests/c_engine module is the integration and conformance layer for repowise' | — |
+| `community-0` | engine_c is the C-language simulation and lifecycle core of repowise's engine su | — |
 | `community-3` | The tests/c_engine module is the behavior-verification harness for repowise's C  | — |
-| `community-2` | The interface module is the presentation and client-interaction layer of the rep | — |
+| `community-2` | The test module is the empirical validation layer of the pyrants/OpenSpiel toolc | — |
 | `community-248` | The **tests** module is the verification subsystem of repowise — it consumes gen | — |
 | `community-4` | The scripts module is the execution and experiment orchestration layer of the ** | — |
 | `community-6` | The **scripts** module is the integration and validation layer of the Pyrants ga | — |
@@ -81,13 +80,13 @@ The C engine is small relative to the Python surface but sits at the top of the 
 |------|-------|-------------|-------|
 | `data/cards/catalog.json` | 100.0th %ile | 58 | Chimney343 |
 | `interface/game_viewer.py` | 99.9th %ile | 21 | Chimney343 |
-| `scripts/run_ismcts.py` | 99.9th %ile | 8 | Chimney343 |
+| `engine_c/generic_runtime.c` | 99.9th %ile | 24 | Chimney343 |
+| `scripts/run_ismcts.py` | 99.8th %ile | 10 | Chimney343 |
 | `engine/rules.py` | 99.8th %ile | 9 | Chimney343 |
-| `game_setup/scenario_generation/card_scenarios.py` | 99.7th %ile | 6 | Chimney343 |
 
 ## Code health
-Hotspot health: 6.41/10 (stable) ·
-Average: 7.51/10 ·
+Hotspot health: 6.47/10 (stable) ·
+Average: 7.54/10 ·
 Worst: 1.0/10 (`engine/rules.py`)
 
 ### Critical biomarkers
