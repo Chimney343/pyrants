@@ -305,6 +305,16 @@ GameState *engine_determinize(const GameState *src, Sym observing_player_id, uin
         rng_shuffle(&rng, (uint32_t *)clone->market.deck, clone->market.deck_count);
     }
 
+    /* F-002: decouple the shared mid-game reshuffle/forced-discard stream
+     * across sampled worlds, the same way the market deck already is. Every
+     * mid-game random event reseeds from state->shuffle_seed/shuffle_counter;
+     * rerolling them here makes each determinized world draw an independent
+     * stream. Placed after every prior rng draw so the rerolled seed is a
+     * deterministic function of `seed` (F-010 reproducibility). See
+     * docs/validation/f002-f003-fix-plan.md Part A. */
+    clone->shuffle_seed = rng_next(&rng);
+    clone->shuffle_counter = 0;
+
     return clone;
 }
 

@@ -173,6 +173,36 @@ across 10 identically-seeded searches (was 3–4 distinct); INV-5 world diversit
 > new MINOR finding raised in passing: F-012 (dormant `Generator`/`.randint()` mismatch in the
 > new guard's accept branch).
 
+**F-002 — determinization never rerolls `shuffle_seed`/`shuffle_counter`. FIXED.**
+`engine_determinize` cloned `src` byte-for-byte, so every ISMCTS-sampled determinization of one
+information set inherited the root's `shuffle_seed`/`shuffle_counter`, and every mid-game
+reshuffle/forced-discard — each a pure function of exactly those two fields — collapsed onto one
+shared outcome across all sampled worlds. Fixed by two lines at the tail of
+`engine_c/state.c::engine_determinize`: after every prior `rng` draw, reroll
+`clone->shuffle_seed = rng_next(&rng)` and reset `clone->shuffle_counter = 0`, the same treatment
+the adjacent market-deck block already gives the market deck. No call site changes were needed —
+all ten `shuffle_seed`/`shuffle_counter` readers already consume those fields polymorphically.
+
+Post-fix evidence:
+- **GA1 (condition 3 gate, verbatim):** 0/100 determinization pairs preserve the root
+  `(shuffle_seed, shuffle_counter)` (was 141/141 in `findings.py` and 100/100 in the new harness) —
+  `python -u docs/validation/harness/f002_reroll.py`.
+- **GA2/GA3:** same seed ⇒ identical rerolled stream (reproducibility preserved); different seeds
+  ⇒ different first-reshuffle deck order 3/3 (was 0/3) — same harness, plus C-level
+  `test_determinize_shuffle_stream_deterministic_per_seed`.
+- **GA4:** market-deck reshuffle multiset byte-unchanged —
+  `openspiel_pyrants/tests/test_determinize_reshuffle_independence.py::test_market_deck_reshuffle_unaffected`.
+- **GA5:** `just test-c` green (incl. new C tests `test_determinize_rerolls_shuffle_stream` /
+  `test_determinize_shuffle_stream_deterministic_per_seed`); `openspiel_pyrants` suite 100% pass;
+  full repo `pytest` shows the same 3 pre-existing failures (Zuggtmoy, Air Elemental, Neogi),
+  zero new.
+- **GA6:** F-010's `det_bot.py` B1 unchanged — 1 distinct chosen action, root intact.
+
+> Fix plan: `docs/validation/f002-f003-fix-plan.md` Part A; tests
+> `engine_c/test_engine.c` (T-A1/T-A2) and
+> `openspiel_pyrants/tests/test_determinize_reshuffle_independence.py` (T-A3/T-A4/T-A5).
+> Post-fix repro: `python -u docs/validation/harness/f002_reroll.py` (GA1 0/100, GA3 3/3 changed).
+
 ### CRITICAL
 
 **F-004 — `Returns()` contract violated for 3–4 players.**
@@ -182,13 +212,10 @@ and `min_utility=-400.0` while returning non-negative raw VP totals summing to 4
 
 **F-003 — mid-game random events are never chance nodes.**
 134 `shuffle_counter` advances over 2,112 transitions, **0** preceded by `is_chance_node()==True`.
+Part A (F-002) fixed the *shared-stream* half; this finding — exposing the events themselves as
+OpenSpiel chance nodes — remains OPEN and is tracked as condition 3b below
+(`docs/validation/f002-f003-fix-plan.md` Part B).
 > Repro: `python -u docs/validation/harness/findings.py`
-
-**F-002 — determinization never rerolls `shuffle_seed`/`shuffle_counter`.**
-141/141 determinizations inherited both fields bit-identically, and the reshuffle permutation
-is a pure function of exactly those two fields (3/3 identical when held fixed; 3/3 changed
-when either is perturbed). All sampled worlds share one reshuffle stream.
-> Repro: `python -u docs/validation/harness/f002b.py`
 
 ### MAJOR
 
@@ -299,11 +326,16 @@ Conditions that must clear before GO, in dependency order:
    the declared contract over N ≥ 50 games. Until then, restrict runs to `num_players=2`,
    which passes today.
 
-3. **F-002 + F-003 (blocking for search validity).** Reroll `shuffle_seed`/`shuffle_counter`
-   inside `engine_determinize`, as was already done for the market deck. This is the cheap half
-   and it removes the shared reshuffle stream. Exposing the events as real chance nodes (F-003,
-   and then F-008) is the larger design change and can follow. **Gate:** two determinizations of
-   one information set no longer share `(shuffle_seed, shuffle_counter)` over N ≥ 100 pairs.
+3. **F-002 + F-003 (blocking for search validity).**
+   3a. ~~**F-002 (shared reshuffle stream).**~~ **RESOLVED** — reroll `shuffle_seed`/`shuffle_counter`
+       inside `engine_determinize`, as was already done for the market deck. **Gate met:** two
+       determinizations of one information set no longer share `(shuffle_seed, shuffle_counter)`
+       over N ≥ 100 pairs (0/100, was 141/141) — `docs/validation/f002-f003-fix-plan.md` Part A.
+   3b. **F-003 (mid-game chance nodes). OPEN.** Expose the mid-game random events (discard-into-deck
+       reshuffles, forced random discards, card-effect mass-discards) as real OpenSpiel chance
+       nodes, then F-008 can be measured. **Gate:** every `shuffle_counter` advance is preceded by
+       an `is_chance_node()==True` state, over N ≥ 2,000 transitions
+       (`docs/validation/f002-f003-fix-plan.md` Part B).
 
 4. **F-006 (re-calibrate before trusting any strength number).** Run a `uct_c` sweep on this
    game's actual reward scale — the measured 6.4:1 exploitation ratio suggests the useful range

@@ -116,6 +116,57 @@ static void test_clone(void) {
     arena_destroy(arena);
 }
 
+static void test_determinize_rerolls_shuffle_stream(void) {
+    const char *player_ids[] = {"player_1", "player_2"};
+    Arena *arena = arena_create(2 * 1024 * 1024);
+    GameDefinition *def = test_load_definition(arena);
+    assert(def);
+    GameState *gs = engine_create_game_definition(def, player_ids, 2, 42);
+    gs->shuffle_seed = 0xDEADBEEFULL;
+    gs->shuffle_counter = 77;
+
+    Sym observing = intern("player_1");
+    GameState *d1 = engine_determinize(gs, observing, 1111ULL);
+    GameState *d2 = engine_determinize(gs, observing, 2222ULL);
+    assert(d1);
+    assert(d2);
+
+    assert(d1->shuffle_seed != gs->shuffle_seed);
+    assert(d2->shuffle_seed != gs->shuffle_seed);
+    assert(d1->shuffle_seed != d2->shuffle_seed);
+
+    printf("PASS: determinize rerolls shuffle stream\n");
+    engine_destroy(d1);
+    engine_destroy(d2);
+    engine_destroy(gs);
+    arena_destroy(arena);
+}
+
+static void test_determinize_shuffle_stream_deterministic_per_seed(void) {
+    const char *player_ids[] = {"player_1", "player_2"};
+    Arena *arena = arena_create(2 * 1024 * 1024);
+    GameDefinition *def = test_load_definition(arena);
+    assert(def);
+    GameState *gs = engine_create_game_definition(def, player_ids, 2, 42);
+    gs->shuffle_seed = 0xDEADBEEFULL;
+    gs->shuffle_counter = 77;
+
+    Sym observing = intern("player_1");
+    GameState *a1 = engine_determinize(gs, observing, 1111ULL);
+    GameState *a2 = engine_determinize(gs, observing, 1111ULL);
+    assert(a1);
+    assert(a2);
+
+    assert(a1->shuffle_seed == a2->shuffle_seed);
+    assert(a1->shuffle_counter == a2->shuffle_counter);
+
+    printf("PASS: determinize shuffle stream deterministic per seed\n");
+    engine_destroy(a1);
+    engine_destroy(a2);
+    engine_destroy(gs);
+    arena_destroy(arena);
+}
+
 static void test_moves(void) {
     Sym card_id = intern("noble");
     Move m = make_play_card_move(card_id, 0);
@@ -238,6 +289,8 @@ int main(void) {
     test_loader_catalog();
     test_state_creation();
     test_clone();
+    test_determinize_rerolls_shuffle_stream();
+    test_determinize_shuffle_stream_deterministic_per_seed();
     test_moves();
     test_cow();
     test_focus_requirement_met();
