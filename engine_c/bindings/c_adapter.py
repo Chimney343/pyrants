@@ -204,10 +204,12 @@ class CEngineAdapter:
         p = self._state._s.players[idx]
 
         hand = [_sym_str(p.hand[i]) for i in range(p.hand_count)]
+        discard = [_sym_str(p.discard_pile[i]) for i in range(p.discard_pile_count)]
 
         result = {
-            "public": pub,
+            "public": {**pub, "board_nodes": self._board_nodes_view()},
             "hand": hand,
+            "discard": discard,
             "deck_size": p.deck_count,
             "discard_size": p.discard_pile_count,
             "devour_size": self._state._s.devour_pile_count,
@@ -220,6 +222,25 @@ class CEngineAdapter:
             "score": p.score,
         }
         return json.dumps(result, sort_keys=True)
+
+    def _board_nodes_view(self) -> list[dict]:
+        """Player-agnostic raw board occupancy. Only the per-node fields — never the
+        current-player-scoped aggregates on CBoardViewData, which are relative to
+        state->current_player_id, not whichever player_id is asking. See f011-fix-plan.md § 1."""
+        from .view import build_c_board_view
+
+        view = build_c_board_view(self)
+        return [
+            {
+                "node_id": n.node_id,
+                "troop_slots": list(n.troop_slots),
+                "spies": list(n.spies),
+                "control_vp": n.control_vp,
+                "total_control_vp_per_turn": n.total_control_vp_per_turn,
+                "vp_tokens": n.vp_tokens,
+            }
+            for n in view.board_nodes
+        ]
 
     def destroy(self):
         if self._state:

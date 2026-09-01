@@ -28,7 +28,7 @@ re-submission. See §5 for the clearance conditions.
 | INV-2 | Clone independence | ✅ PASS | 235 clone probes, seeds 1–100 | `python -u docs/validation/harness/inv_a.py` |
 | INV-3 | Legality (non-empty, in-range, no duplicates) | ✅ PASS | 1,200 states, seeds 1–22 | `python -u docs/validation/harness/inv_a.py` |
 | INV-4a | Info-set leakage — hidden differs ⇒ string same | ✅ PASS | 300 info sets | `python -u docs/validation/harness/inv_b.py` |
-| INV-4b | Info-set completeness — observable differs ⇒ string differs | ❌ **FAIL** | 403 board-differing pairs, seeds 1–139 | `python -u docs/validation/harness/inv_b2.py` |
+| INV-4b | Info-set completeness — observable differs ⇒ string differs | ✅ **PASS** | 403 board-differing pairs, seeds 1–139 | `python -u docs/validation/harness/inv_b2.py` |
 | INV-5 | Determinisation consistency + conservation | ✅ PASS | 200 info sets × K=12 = 2,400 worlds | `python -u docs/validation/harness/inv_b.py` |
 | INV-6 | Chance mass sums to 1 | ✅ PASS | 30 chance nodes, seeds 1–30 | `python -u docs/validation/harness/inv_a.py` |
 | INV-7 | Budget monotonicity | ⚠️ PASS *(STALE — Review 01)* | 32/rung × 4 rungs + 32 head-to-head | `python -u docs/validation/harness/exp2.py 32 s1|s2|s3|s5` |
@@ -40,14 +40,21 @@ re-submission. See §5 for the clearance conditions.
 - **No leakage (hidden ⇒ identical):** 300/300 pass. Two determinizations of one
   information set produced byte-identical `information_state_string(p)`, matching the root's.
   Determinization leaks nothing.
-- **Completeness (observable ⇒ different):** 403/403 **fail**. Placing a troop at
-  `site_blingdenfire` vs `site_buiyrandyn` yields genuinely different boards and a
-  byte-identical `private_view_json`. Filed as F-011.
+- **Completeness (observable ⇒ different):** 403/403 **pass** (was 403/403 fail).
+  Placing a troop at `site_blingdenfire` vs `site_buiyrandyn` now yields a different
+  `private_view_json` in every one of the 403 board-differing pairs. Fixed by F-011.
 
 ### INV-5 detail
-`distinct worlds per info set: mean 10.26 / 12, min 6, max 12, singleton info sets = 0`
+`distinct worlds per info set: mean 11.11 / 12, min 7, max 12, singleton info sets = 0`
 — comfortably above the failure threshold of 1. Zero conservation violations and zero
 history mismatches across 2,400 draws.
+
+The mean shifted from the pre-F-011 value of 10.26/12 to 11.11/12 for an expected, benign
+reason: the omniscient fingerprint used to count distinct worlds (`harness/common.py::fingerprint`)
+now includes each player's own `discard` identities via the F-011 fix, so two determinizations
+that reshuffle an opponent's discard into different contents are no longer collapsed onto one
+fingerprint. This is *more* informative, not leakage — `information_state_string(p)` still shows
+only `p`'s own discard (G3, asserted at N=300 by INV-4a, which stayed at 0 violations).
 
 ### INV-7 detail — budget monotonicity
 Vs a fixed uniform-random baseline, seat-swapped, N=32 per rung (seeds 300–315 × 2 seats).
@@ -104,6 +111,32 @@ Not a defect, but it is what makes the 10,000-sim rung unaffordable.
 
 ### RESOLVED
 
+**F-011 — the board is absent from the observation. FIXED.**
+
+`information_state_string` / `observation_string` contained no sites, troops, spies, or control,
+and a player's own discard-pile contents were also absent. Fixed by routing the existing,
+already-public `engine_c/bindings/view.py::build_c_board_view` into `private_view_json` (merged
+as `public.board_nodes`) and reading `p.discard_pile` into a new `discard` key — both confined to
+`engine_c/bindings/c_adapter.py`. The cheap Tier-1 path (`_build_public_dict`, used by
+`_tier1_snapshot` on every ISMCTS step) is untouched; the board projection is added only at the
+`private_view_json` layer via a fresh `{**pub, "board_nodes": ...}` dict.
+
+Post-fix evidence:
+- **INV-4b (G1):** 403/403 board-differing pairs now produce a different `private_view_json`
+  (was 403/403 byte-identical) — `python -u docs/validation/harness/inv_b2.py`.
+- **INV-4a (G2):** unchanged, 0 leakage violations at N=300 — `python -u docs/validation/harness/inv_b.py`.
+- **Own-only discard (G3):** locked in by
+  `openspiel_pyrants/tests/test_observation_completeness.py::test_opponent_discard_pile_still_not_leaked`.
+- **Tier-1 cost untouched (G4):** `_build_public_dict()`'s key set and cost unchanged; guarded by
+  `test_tier1_snapshot_shape_and_cost_unaffected`.
+- **Search-time budget (G5):** FAILED — mean search wall-time at `num_sims=200` rose
+  **9.66×** (0.165 s → 1.589 s, `docs/validation/harness/f011_timing.py`). Per G5's own terms the
+  correctness fix still lands, but a follow-up finding (F-013) is opened for a narrower C-level
+  board-only accessor that skips the card-zone/special-stack work `engine_build_view` always does.
+
+> Fix plan: `docs/validation/f011-fix-plan.md`; tests `openspiel_pyrants/tests/test_observation_completeness.py`.
+> Post-fix repro: `python -u docs/validation/harness/inv_b2.py` (403/403 visible), `inv_b.py` (INV-4a 0/300, INV-5 mean 11.11/12).
+
 **F-010 — determinization seeds are unseeded; no run is reproducible. FIX LOGIC VERIFIED, COMMIT REJECTED-SCOPE (Review 01).**
 Fixed by `openspiel_pyrants/ismcts_factory.py::make_ismcts_bot` (installs a seeded numpy
 resampler via the stock `ISMCTSBot.set_resampler` hook, with a dedicated
@@ -130,13 +163,6 @@ across 10 identically-seeded searches (was 3–4 distinct); INV-5 world diversit
 > new guard's accept branch).
 
 ### CRITICAL
-
-**F-011 — the board is absent from the observation.**
-`information_state_string` / `observation_string` contain no sites, troops, spies, or control
-— the primary VP source in Tyrants. 403/403 board-differing pairs are observationally
-identical. A player's own discard-pile contents are likewise absent, though 12 cards require
-selecting from that pile.
-> Repro: `python -u docs/validation/harness/inv_b2.py` — 403/403 pairs, `private_view_json` byte-identical.
 
 **F-004 — `Returns()` contract violated for 3–4 players.**
 The project's own default (`just ismcts` runs `num_players=4`) declares `utility_sum=0.0`
@@ -167,6 +193,17 @@ where the paper's 0.7 assumed rewards normalised to ±1.
 > Repro: `python -u docs/validation/harness/f006.py`
 
 ### MINOR
+
+**F-013 — board projection costs ~388 µs/call; `private_view_json` regressed 9.66×.**
+
+`_board_nodes_view` (added by the F-011 fix) calls `build_c_board_view`, which invokes the
+monolithic `engine_build_view` that `memset`s the full `CGameView` and populates every card zone
+for every player plus three `remaining_special_stack_count` scans — ~388 µs/call — while the
+board-only wrapper reads back just `nodes`. End-to-end search wall-time rose 9.66× at
+`num_sims=200`. The fix is a narrower C-level `engine_build_board_view`-only function that skips
+the card-zone and special-stack work. Tracked, non-blocking for 2-player engine/performance work;
+blocking for any large-scale ISMCTS throughput claim.
+> Repro: `python -u docs/validation/harness/f011_timing.py` — mean 0.165 s → 1.589 s (baseline `.pre.txt` vs `.post.txt`).
 
 **F-009 — `max_chance_outcomes` hardcoded at 1000.** At `shuffle_seed_count=5000` the state
 offers 5,000 outcomes against a declared 1,000, and outcome id 4999 applies without error.
@@ -225,20 +262,23 @@ Adding a `--opponent` flag would let these run through the supported entry point
 
 The search itself is sound — budget monotonicity, self-play calibration, and baseline
 sanity all pass (though these three are now STALE per Review 01, §1, pending re-measurement
-at the final gate), and legality, clone independence, chance mass, and determinisation
-consistency are clean. Replay determinism is fixed at the code level (F-010): runs
-reproduce from `--seed`, independently re-verified by Review 01
+at the final gate), and legality, clone independence, chance mass, determinisation
+consistency, and information-set completeness/leakage are clean. Replay determinism is fixed
+at the code level (F-010): runs reproduce from `--seed`, independently re-verified by Review 01
 (`docs/validation/reviews/f010-review-01.md`) — but that review REJECTED-SCOPE the commit
 itself for unauthorized bundled changes, so F-010 is not yet closed procedurally even though
-the fix is confirmed correct. The remaining defects can be verified once it lands cleanly.
-The problem that keeps this NO-GO is that **what the search is searching over is still not
-the game**.
+the fix is confirmed correct. The observation is now the game: the board and own-discard
+identities are present in `information_state_string`/`observation_string` (F-011 fixed).
+The problem that keeps this NO-GO is the remaining open defects below — the mid-game chance
+events and the 3–4 player returns contract — not the observation.
 
 Conditions that must clear before GO, in dependency order:
 
-1. **F-011 (blocking).** Route `build_c_board_view` into `private_view_json`, and add own
-   discard-pile identities. **Gate:** INV-4b passes at N ≥ 400 board-differing pairs while
-   INV-4a still passes at N ≥ 300 (do not fix completeness by leaking hidden information).
+1. ~~**F-011 (blocking).**~~ **RESOLVED.** Board occupancy and own discard-pile identities now
+   flow through `private_view_json` (`public.board_nodes` + `discard`). **Gate met:** INV-4b
+   passes at N=403 board-differing pairs (0 invisible) while INV-4a still passes at N=300
+   (0 leakage violations). Search-time cost regressed 9.66× (see F-013) — correctness first;
+   throughput tracked separately.
 
 2. **F-004 (blocking for any 3–4 player run, i.e. the project default).** Either make
    `returns()` zero-sum for n > 2, or declare `utility_sum=None` with honest
@@ -257,15 +297,17 @@ Conditions that must clear before GO, in dependency order:
    is far above 1.4, or that returns should be normalised before backup. **Gate:** a documented
    sweep artifact, with the chosen value beating its neighbours seat-swapped at N ≥ 200 per arm.
 
-5. **F-005, F-009 (non-blocking).** Fix for fidelity and API correctness; neither showed a
-   measurable effect on results (F-005 is contradicted as a strength bias by INV-8; F-009 is
-   dormant at default configuration).
+5. **F-005, F-009, F-013 (non-blocking).** F-005 and F-009 are fidelity/API-correctness gaps
+   (neither showed a measurable effect on results; F-005 is contradicted as a strength bias by
+   INV-8; F-009 is dormant at default configuration). F-013 is a throughput regression from the
+   F-011 fix (9.66× search wall-time at `num_sims=200`) that must be closed before any
+   large-scale ISMCTS throughput claim, via a narrower C-level board-only accessor.
 
-**Conditional partial GO.** Reproducibility (formerly condition 1, now resolved) and the 3–4
-player contract (condition 2 above) being fixed means 2-player runs may proceed for *engine and
-performance* work — throughput, crash-rate, memory — where F-011's observation gap does not
-affect the measurement. No *strength, policy quality, or agent-training* claim should be made
-until (1), (3), and (4) above also clear.
+**Conditional partial GO.** Reproducibility (F-010) and observation completeness (F-011) are
+resolved; the 3–4 player contract (condition 2 above) being fixed means 2-player runs may
+proceed for *engine and performance* work — throughput, crash-rate, memory. No *strength,
+policy quality, or agent-training* claim should be made until (3) and (4) above also clear, and
+no throughput claim until F-013 closes.
 
 **Note on § 1 win-rate figures:** the INV-7/8/9 win rates (budget ladder, self-play
 calibration, baseline sanity) were measured *before* the F-010 RNG fix, so their specific

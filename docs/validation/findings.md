@@ -36,6 +36,7 @@ All six required components exist; none had to be substituted.
 | F-010 | OPENSPIEL-ISMCTS | CRITICAL | *(found empirically, not in the static pass)* ISMCTS determinization seeds come from an **unseeded** `pyspiel.UniformProbabilitySampler`, so `--seed` does not reproduce a run |
 | F-011 | ENGINE-OPENSPIEL | CRITICAL | *(found empirically, not in the static pass)* The entire board — sites, troops, spies, control — is absent from `information_state_string`/`observation_string` |
 | F-012 | OPENSPIEL-ISMCTS | MINOR | *(found by Review 01 of F-010, not in the static pass)* `resample_from_infostate`'s accept-branch and its own error message both claim `numpy.random.Generator` works, but the branch body calls `.randint()`, which `Generator` does not have |
+| F-013 | ENGINE-OPENSPIEL | MINOR | *(found by the F-011 fix)* routing `build_c_board_view` into `private_view_json` costs ~388 µs/call and regresses search wall-time 9.66×; needs a narrower C-level board-only accessor |
 
 ## 3. Findings
 
@@ -283,8 +284,10 @@ All six required components exist; none had to be substituted.
 - Falsification test: construct state pairs that differ only in a public board fact — same move type applied to a different site, so barracks/resource bookkeeping is identical — verify the boards genuinely differ, then compare `private_view_json(p)`.
 - Expected if REAL: boards differ while the observation is byte-identical.
 - Expected if FALSE POSITIVE: the observation differs whenever the board differs.
-- Status: **CONFIRMED**
+- Status: **CONFIRMED — FIXED** (working-tree change; not yet committed)
 - Command: `.venv/Scripts/python.exe -u docs/validation/harness/inv_b2.py` ; `.venv/Scripts/python.exe -u docs/validation/harness/obs.py`
+- Resolution: `engine_c/bindings/c_adapter.py::private_view_json` now merges `{**pub, "board_nodes": self._board_nodes_view()}` (using the existing, already-public `engine_c/bindings/view.py::build_c_board_view`, reading only the player-agnostic per-node fields — never the current-player-scoped `CBoardViewData` aggregates) and adds `discard = [_sym_str(p.discard_pile[i]) ...]` as a new `discard` key. The cheap Tier-1 path (`_build_public_dict`) is untouched. Post-fix INV-4b passes at N=403 (403/403 pairs now visible), INV-4a unchanged at 0/300, INV-5 mean distinct worlds 11.11/12 (0 singletons — the rise from 10.26 is the omniscient fingerprint now seeing own-discard reshuffles, not leakage). Tests in `openspiel_pyrants/tests/test_observation_completeness.py`. See `verdict.md` §2.
+- Cost note: the board projection costs ~388 µs/call and regresses end-to-end search wall-time 9.66× at `num_sims=200` — filed as F-013 (open, performance).
 - N: 403 board-differing state pairs (board test); 110 own-discard permutations (discard test). Seeds: shuffle_seeds 1-139 and 1-119 respectively, uniform-random policy
 - Observed:
   ```
@@ -297,7 +300,13 @@ All six required components exist; none had to be substituted.
   keys exposing identities: ['hand','inner_circle','played_cards','trophy_hall']
   keys exposing only COUNTS:  ['barracks','deck_size','devour_size','discard_size','score','spies_available','vp_tokens']
   ```
-- Verdict rationale: Matches "Expected if REAL" in 403/403 pairs - placing a troop at Blingdenfire versus Buiyrandyn yields genuinely different boards and a byte-identical observation, and a scan of the schema confirms zero board fields are exposed. `information_state_string` distinguishes these pairs only because the raw action-index history is prepended, which means the ISMCTS node key encodes *which index was chosen*, not *what the board looks like*; that also explains the measured `info_state_repeat_rate=0.0` (618 unique keys over 618 sampled states), i.e. no information-set statistic sharing across moves at all.
+- Post-fix observed (inv_b2.py / inv_b.py):
+  ```
+  INV4b-DECISIVE: N=403  private_view_json IDENTICAL=0  differs=403
+  INV4a leakage: N=300 violations=0
+  INV4b board fields present in private_view_json: ['board_nodes']
+  ```
+- Verdict rationale: Matches "Expected if REAL" in 403/403 pairs - placing a troop at Blingdenfire versus Buiyrandyn yields genuinely different boards and a byte-identical observation, and a scan of the schema confirms zero board fields are exposed. `information_state_string` distinguishes these pairs only because the raw action-index history is prepended, which means the ISMCTS node key encodes *which index was chosen*, not *what the board looks like*; that also explains the measured `info_state_repeat_rate=0.0` (618 unique keys over 618 sampled states), i.e. no information-set statistic sharing across moves at all. The fix closes the board and own-discard gap; the remaining performance regression is F-013.
 
 ### F-012 `resample_from_infostate`'s accept branch and its own new error message claim `Generator` support that does not work
 - Class: OPENSPIEL-ISMCTS
@@ -312,6 +321,19 @@ All six required components exist; none had to be substituted.
 - Expected if REAL: raises `AttributeError: 'Generator' object has no attribute 'randint'`.
 - Expected if FALSE POSITIVE: succeeds and returns a determinized state.
 - Status: **OPEN** (not investigated further, per review protocol — falsification test defined but not executed)
+
+### F-013 Board projection regresses `private_view_json` cost 9.66×; needs a narrower C accessor
+- Class: ENGINE-OPENSPIEL
+- Severity: MINOR (performance — non-blocking for 2-player engine work, blocking for any large-scale ISMCTS throughput claim)
+- Origin: **Found by the F-011 fix while re-running the G5 timing gate.**
+- Code: `engine_c/bindings/c_adapter.py::_board_nodes_view` (added by F-011) calls `engine_c/bindings/view.py::build_c_board_view`, which invokes `engine_build_view` (`engine_c/view.c`) — a monolithic C projection that `memset`s the full `CGameView` and populates every card zone for every player (4 × 80) plus every board node (128) and three `remaining_special_stack_count` scans, ~388 µs/call — while the board-only wrapper reads back only the `nodes` array.
+- Disagreement: `private_view_json` is called once per ISMCTS node expansion for every observing player, so the ~388 µs board cost (vs ~24 µs for the rest of the call) lands on the hot path. Measured end-to-end search wall-time at `num_sims=200` rose 9.66× (0.165 s → 1.589 s).
+- Steelman: correctness first — the F-011 observation gap is blocking and had to be fixed regardless of cost; the two-tier snapshot design was preserved (Tier-1 `_build_public_dict` untouched), and the regression is a constant-factor slowdown, not a complexity change.
+- Falsification test: `python -u docs/validation/harness/f011_timing.py` before/after, compare mean wall-time.
+- Expected if REAL: mean wall-time ratio > 2×.
+- Status: **OPEN**
+- Command: `.venv/Scripts/python.exe -u docs/validation/harness/f011_timing.py` (baseline `docs/validation/baseline/f011_timing.pre.txt` vs `.post.txt`)
+- Resolution (planned): a narrower `engine_build_board_view`-only C function that populates just `nodes`/`node_count` and skips the card-zone and special-stack work `engine_build_view` always does, then re-point `_board_nodes_view` at it.
 
 ## 4. Unanchored (suspicions that could not be fully anchored)
 
