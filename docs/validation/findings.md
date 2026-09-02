@@ -38,6 +38,7 @@ All six required components exist; none had to be substituted.
 | F-012 | OPENSPIEL-ISMCTS | MINOR | *(found by Review 01 of F-010, not in the static pass)* `resample_from_infostate`'s accept-branch and its own error message both claim `numpy.random.Generator` works, but the branch body calls `.randint()`, which `Generator` does not have |
 | F-013 | ENGINE-OPENSPIEL | MINOR | *(found by the F-011 fix)* routing `build_c_board_view` into `private_view_json` costs ~388 µs/call and regresses search wall-time 9.66×; mitigated by caching the board projection on `CEngineAdapter` (residual gap remains for a narrower C-level board-only accessor) |
 | F-014 | ENGINE | MAJOR | *(found by the F-004 fix's T6 stress probe)* `give_insane_outcast` mints fresh instances without consulting its 30-copy special-stack cap, so `min_utility=-50.0` is a practical, not formally tight, bound |
+| F-015 | ENGINE | MODERATE | *(found while mapping F-003 Part B's ten call sites)* `neogi`'s `timing:"end_of_turn"` force_discard fires twice — once inline during pending-generic resolution (which does not filter by `timing`), once again for real at end-of-turn — discarding 2 cards per opponent instead of the rulebook's 1 |
 
 ## 3. Findings
 
@@ -394,6 +395,30 @@ All six required components exist; none had to be substituted.
   num_players=4 inject=80 -> final_score[0]=-80 (n>2 raw=-80.0)
   ```
 - Verdict rationale: Matches "Expected if REAL" — the 30-copy cap is not enforced by `give_insane_outcast`; every injected copy above 30 drove the score below the declared −50 floor in direct proportion, confirming the floor is practical (validated at −30 for the design intent) rather than formally tight. Random greedy play never approached it (worst −23.0), so the finding is `OPEN`, not a blocker: F-004's `min_utility=-50.0` stands as a labeled-practical bound, with this finding carrying the residual risk per `docs/validation/f004-fix-plan.md` § 11.
+
+### F-015 `neogi`'s end-of-turn `force_discard` fires twice: once inline during pending-generic resolution, once again at real end-of-turn
+- Class: ENGINE (card execution model)
+- Severity: MODERATE (wrong game outcome for one specific card; not a crash, not blocking GO on its own)
+- Origin: **Found while investigating `docs/validation/f002-f003-completion-plan.md`'s F-003 Part B M4 milestone** (mapping the ten § 1(b) reshuffle/forced-discard call sites to concrete triggering cards). Promotes the pre-existing `[unverified]` suspicion at § 4 Unanchored (below): "whether these are genuinely mutually exclusive... or can both fire for the same card, causing a double discard, was not traced through the full call graph" — now traced by direct execution (not left in § 4, per Hard Rule 7 the existing § 4 bullet is not edited).
+- Code: `engine_c/generic_runtime.c:519-548` (`end_of_turn_mass_discard` interceptor, fires inside `auto_resolve_pending_generic`'s action-advance walk) and `engine_c/rules.c:504-561` / `:597-603` (`apply_end_of_turn_effects`, called from `enter_end_of_turn`/`apply_resolve_end_of_turn` on the real `PHASE_MAIN`→`PHASE_END_OF_TURN` transition) both key off the identical `(op=="force_discard", target_scope=="opponent", source_fragment=="end_of_turn_mass_discard")` triple on the same card action (`data/cards/neogi.json` `action_2`, tagged `"timing": "end_of_turn"`). `generic_runtime.c`'s action-advance loop does not filter by an action's `timing` field at all — it walks every action in a card's `execution_model.actions` sequence in order regardless of tag, so the `timing:"end_of_turn"`-tagged discard still fires immediately, inline, the moment its turn in the sequence comes up during `PHASE_MAIN` pending-generic resolution — then `apply_end_of_turn_effects` fires the *same* action again, correctly, when the turn actually ends.
+- Rulebook: Neogi's own `rules_text` (`data/cards/neogi.json`): "Deploy 4 troops. At end of turn, each opponent discards a card" — singular, one discard per opponent per play; `notes` confirms "makes each opponent discard 1 card from hand."
+- Whitepaper: [absent] — pure engine/card-execution-model concern, not an ISMCTS/OpenSpiel conformance question.
+- Disagreement: playing Neogi discards **two** cards from each opponent's hand, not one (Observed below).
+- Steelman: none found — both code paths key off the identical source-fragment string with no guard (e.g. an "already resolved this action" marker) preventing the second fire; the rules text and notes both say "1 card," so this reads as an oversight, not an intentional double-trigger design.
+- Falsification test: build a 2-player scenario (`tests/c_engine/card_test_helpers.py`-style direct construction) with `neogi` in `p1`'s hand and 4 cards in `p2`'s hand; play `neogi`, resolve all 4 deploys, then submit `end_main_phase`; track `p2`'s `hand_count` and `shuffle_counter` at each step.
+- Expected if REAL: `p2`'s hand count drops by 2 total — once during pending-generic resolution, once again at the end-of-turn transition.
+- Expected if FALSE POSITIVE: `p2`'s hand count drops by exactly 1, with only one of the two code paths actually firing for this card.
+- Status: **OPEN**
+- Command: ad hoc diagnostic (reproduced live via `tests.c_engine.card_test_helpers.make_card_test_session`; not yet promoted to a permanent `docs/validation/harness/*.py` script)
+- N: 1 traced scenario (2 players, `neogi` vs. a 4-card opponent hand); deterministic in *that* two discards happen (not in *which* cards are discarded)
+- Observed:
+  ```
+  initial:                                            shuffle_counter=3, p2 hand=4
+  after 4th deploy resolves (still PHASE_MAIN,
+    pending_generic clears):                          shuffle_counter=4, p2 hand=3
+  after end_main_phase (PHASE_MAIN -> PHASE_END_OF_TURN): shuffle_counter=5, p2 hand=2
+  ```
+- Verdict rationale: Matches "Expected if REAL" exactly — two independent discards, two independent `shuffle_counter` advances, for a card whose rules text specifies one. Folded into `docs/validation/f002-f003-completion-plan.md`'s F-003 Part B M4 milestone rather than fixed standalone, since M4 already has to touch both `generic_runtime.c`'s interceptor and (per the original fix plan's D5) resolve whether `rules.c:530-538` is a duplicate of one of the `generic_runtime.c` variants — the answer, now traced: not a duplicate, an unguarded double-fire of the same action, and M4's chance-node conversion of this site should produce exactly one discard per opponent, not two.
 
 ## 4. Unanchored (suspicions that could not be fully anchored)
 

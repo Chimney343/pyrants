@@ -424,7 +424,7 @@ Conditions that must clear before GO, in dependency order:
    is far above 1.4, or that returns should be normalised before backup. **Gate:** a documented
    sweep artifact, with the chosen value beating its neighbours seat-swapped at N ≥ 200 per arm.
 
-5. **F-005, F-009, F-013, F-014 (non-blocking).** F-005 and F-009 are fidelity/API-correctness gaps
+5. **F-005, F-009, F-013, F-014, F-015 (non-blocking).** F-005 and F-009 are fidelity/API-correctness gaps
    (neither showed a measurable effect on results; F-005 is contradicted as a strength bias by
    INV-8; F-009 is dormant at default configuration). F-013 is the throughput regression from the
    F-011 fix (9.66× search wall-time at `num_sims=200`): MITIGATED to 1.66× of the regression by
@@ -434,7 +434,12 @@ Conditions that must clear before GO, in dependency order:
    ACCEPTED-WITH-DEBT this mitigation, independently re-measuring the residual at 6.42× (still
    >2×, the finding's own "Expected if REAL" threshold) and clarifying that the gate is not fully
    cleared by its own borrowed definition — the narrower C-level accessor remains required, not
-   merely recommended, before any throughput claim.
+   merely recommended, before any throughput claim. F-015 is a live double-discard bug on
+   `neogi`'s end-of-turn `force_discard` (traced while mapping F-003 Part B's ten call sites —
+   `generic_runtime.c`'s pending-generic resolver fires the action inline regardless of its
+   `timing` tag, then `rules.c`'s `apply_end_of_turn_effects` fires it again for real at
+   end-of-turn), tracked for correction inside F-003 Part B's M4 milestone rather than fixed
+   standalone.
 
 **Conditional partial GO.** Reproducibility (F-010), observation completeness (F-011), and the
 3–4 player returns contract (F-004, condition 2 above) are resolved; 2-player runs may proceed

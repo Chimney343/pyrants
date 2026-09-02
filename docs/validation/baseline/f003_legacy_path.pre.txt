@@ -1,0 +1,41 @@
+# F-003 Part B Phase 0: frozen legacy-path baseline
+# 39 rows captured across 7 sites: ['apply_force_discard', 'chuul_local_discard', 'draw_cards_state', 'mindwitness_conditional_owner_discard', 'neogi_mass_discard', 'nothic_mass_discard', 'reshuffle_discard_into_deck']
+{"resulting_deck_order": ["695", "608", "695", "695", "646", "608", "646", "608"], "seed": 11, "shuffle_counter_after": 4, "shuffle_counter_before": 3, "shuffle_seed": 1281505947, "site": "draw_cards_state"}
+{"resulting_deck_order": [], "seed": 16, "shuffle_counter_after": 4, "shuffle_counter_before": 3, "shuffle_seed": 1668782864, "site": "draw_cards_state"}
+{"resulting_deck_order": [], "seed": 21, "shuffle_counter_after": 4, "shuffle_counter_before": 3, "shuffle_seed": 2056059781, "site": "draw_cards_state"}
+{"resulting_deck_order": ["608", "608", "608", "695", "695", "608", "695"], "seed": 26, "shuffle_counter_after": 4, "shuffle_counter_before": 3, "shuffle_seed": 295853050, "site": "draw_cards_state"}
+{"resulting_deck_order": ["608", "608", "608", "608", "608", "608"], "seed": 31, "shuffle_counter_after": 4, "shuffle_counter_before": 3, "shuffle_seed": 683129967, "site": "draw_cards_state"}
+{"resulting_deck_order": [], "seed": 41, "shuffle_counter_after": 4, "shuffle_counter_before": 3, "shuffle_seed": 1457683801, "site": "draw_cards_state"}
+{"resulting_deck_order": [], "seed": 46, "shuffle_counter_after": 4, "shuffle_counter_before": 3, "shuffle_seed": 1844960718, "site": "draw_cards_state"}
+{"resulting_deck_order": ["646", "608", "608", "695", "695", "608", "646"], "seed": 13, "shuffle_counter_after": 4, "shuffle_counter_before": 3, "shuffle_seed": 147926525, "site": "reshuffle_discard_into_deck"}
+{"resulting_deck_order": ["695", "608", "695", "608", "646", "608", "608"], "seed": 18, "shuffle_counter_after": 4, "shuffle_counter_before": 3, "shuffle_seed": 535203442, "site": "reshuffle_discard_into_deck"}
+{"resulting_deck_order": ["608", "608", "695", "646", "695", "608", "695"], "seed": 23, "shuffle_counter_after": 4, "shuffle_counter_before": 3, "shuffle_seed": 922480359, "site": "reshuffle_discard_into_deck"}
+{"resulting_deck_order": ["608", "608", "608", "695", "646", "608"], "seed": 28, "shuffle_counter_after": 4, "shuffle_counter_before": 3, "shuffle_seed": 1309757276, "site": "reshuffle_discard_into_deck"}
+{"resulting_deck_order": ["608", "695", "695", "646", "608", "608"], "seed": 33, "shuffle_counter_after": 5, "shuffle_counter_before": 4, "shuffle_seed": 1697034193, "site": "reshuffle_discard_into_deck"}
+{"resulting_deck_order": ["695", "695", "608", "646", "608", "608", "608"], "seed": 38, "shuffle_counter_after": 4, "shuffle_counter_before": 3, "shuffle_seed": 2084311110, "site": "reshuffle_discard_into_deck"}
+{"resulting_deck_order": ["608", "608", "695", "695", "608", "608", "608"], "seed": 43, "shuffle_counter_after": 5, "shuffle_counter_before": 4, "shuffle_seed": 324104379, "site": "reshuffle_discard_into_deck"}
+{"resulting_deck_order": ["608", "608", "608", "646", "608", "695"], "seed": 48, "shuffle_counter_after": 4, "shuffle_counter_before": 3, "shuffle_seed": 711381296, "site": "reshuffle_discard_into_deck"}
+{"p2_hand_count_after": 4, "seed": 1, "shuffle_counter_after": 4, "shuffle_counter_before": 3, "shuffle_seed": 1, "site": "apply_force_discard"}
+{"p2_hand_count_after": 4, "seed": 2, "shuffle_counter_after": 4, "shuffle_counter_before": 3, "shuffle_seed": 2, "site": "apply_force_discard"}
+{"p2_hand_count_after": 4, "seed": 3, "shuffle_counter_after": 4, "shuffle_counter_before": 3, "shuffle_seed": 3, "site": "apply_force_discard"}
+{"p2_hand_count_after": 4, "seed": 4, "shuffle_counter_after": 4, "shuffle_counter_before": 3, "shuffle_seed": 4, "site": "apply_force_discard"}
+{"p2_hand_count_after": 4, "seed": 5, "shuffle_counter_after": 4, "shuffle_counter_before": 3, "shuffle_seed": 5, "site": "apply_force_discard"}
+{"p2_hand_count_after": 4, "seed": 6, "shuffle_counter_after": 4, "shuffle_counter_before": 3, "shuffle_seed": 6, "site": "apply_force_discard"}
+{"p2_hand_count_after": 4, "seed": 7, "shuffle_counter_after": 4, "shuffle_counter_before": 3, "shuffle_seed": 7, "site": "apply_force_discard"}
+{"p2_hand_count_after": 4, "seed": 8, "shuffle_counter_after": 4, "shuffle_counter_before": 3, "shuffle_seed": 8, "site": "apply_force_discard"}
+{"F015_second_fire_p2_hand": 2, "F015_second_fire_shuffle_counter": 5, "note": "F-015: two discards fire for one neogi play; Part B M4 is expected to leave only the first.", "p2_hand_after_first_fire": 3, "seed": 1, "shuffle_counter_after_first_fire": 4, "shuffle_counter_before": 3, "shuffle_seed": 1, "site": "neogi_mass_discard"}
+{"seed": 1, "shuffle_counter_after": 5, "shuffle_counter_before": 4, "shuffle_seed": 1, "site": "chuul_local_discard"}
+{"seed": 1, "shuffle_counter_after": 5, "shuffle_counter_before": 4, "shuffle_seed": 1, "site": "nothic_mass_discard"}
+{"F015_second_fire_p2_hand": 2, "F015_second_fire_shuffle_counter": 5, "note": "F-015: two discards fire for one neogi play; Part B M4 is expected to leave only the first.", "p2_hand_after_first_fire": 3, "seed": 2, "shuffle_counter_after_first_fire": 4, "shuffle_counter_before": 3, "shuffle_seed": 2, "site": "neogi_mass_discard"}
+{"seed": 2, "shuffle_counter_after": 5, "shuffle_counter_before": 4, "shuffle_seed": 2, "site": "chuul_local_discard"}
+{"seed": 2, "shuffle_counter_after": 5, "shuffle_counter_before": 4, "shuffle_seed": 2, "site": "nothic_mass_discard"}
+{"F015_second_fire_p2_hand": 2, "F015_second_fire_shuffle_counter": 5, "note": "F-015: two discards fire for one neogi play; Part B M4 is expected to leave only the first.", "p2_hand_after_first_fire": 3, "seed": 3, "shuffle_counter_after_first_fire": 4, "shuffle_counter_before": 3, "shuffle_seed": 3, "site": "neogi_mass_discard"}
+{"seed": 3, "shuffle_counter_after": 5, "shuffle_counter_before": 4, "shuffle_seed": 3, "site": "chuul_local_discard"}
+{"seed": 3, "shuffle_counter_after": 5, "shuffle_counter_before": 4, "shuffle_seed": 3, "site": "nothic_mass_discard"}
+{"F015_second_fire_p2_hand": 2, "F015_second_fire_shuffle_counter": 5, "note": "F-015: two discards fire for one neogi play; Part B M4 is expected to leave only the first.", "p2_hand_after_first_fire": 3, "seed": 4, "shuffle_counter_after_first_fire": 4, "shuffle_counter_before": 3, "shuffle_seed": 4, "site": "neogi_mass_discard"}
+{"seed": 4, "shuffle_counter_after": 5, "shuffle_counter_before": 4, "shuffle_seed": 4, "site": "chuul_local_discard"}
+{"seed": 4, "shuffle_counter_after": 5, "shuffle_counter_before": 4, "shuffle_seed": 4, "site": "nothic_mass_discard"}
+{"F015_second_fire_p2_hand": 2, "F015_second_fire_shuffle_counter": 5, "note": "F-015: two discards fire for one neogi play; Part B M4 is expected to leave only the first.", "p2_hand_after_first_fire": 3, "seed": 5, "shuffle_counter_after_first_fire": 4, "shuffle_counter_before": 3, "shuffle_seed": 5, "site": "neogi_mass_discard"}
+{"seed": 5, "shuffle_counter_after": 5, "shuffle_counter_before": 4, "shuffle_seed": 5, "site": "chuul_local_discard"}
+{"seed": 5, "shuffle_counter_after": 5, "shuffle_counter_before": 4, "shuffle_seed": 5, "site": "nothic_mass_discard"}
+{"seed": "scenario_013", "shuffle_counter_after": 6, "shuffle_counter_before": 5, "shuffle_seed": 42, "site": "mindwitness_conditional_owner_discard"}
