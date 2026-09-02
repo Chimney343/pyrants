@@ -23,7 +23,7 @@ from engine_c.bindings.view import (
 from game_setup.board_package import BoardLayoutDefinition, BoardPackageDefinition, make_default_layout
 from game_setup.loaders import build_board_package_from_files
 from game_setup.market_setup import (
-    ABERRATIONS_DECK_ID,
+    DEMONS_DECK_ID,
     HOUSE_GUARD_RECRUIT_SLOT,
     INSANE_OUTCAST_RECRUIT_SLOT,
     PRIESTESS_RECRUIT_SLOT,
@@ -642,7 +642,7 @@ class GameViewerApp:
         self._map_hitboxes: list[tuple[int, int, int, int, int]] = []
         self._active_card_row: str | None = None
         self._compact_player_rows = False
-        self._aberrations_in_market = False
+        self._demons_in_market = False
         self._deck_a_label = ""
         self._deck_b_label = ""
         self._market_card_width = MARKET_CARD_WIDTH
@@ -986,8 +986,8 @@ class GameViewerApp:
         try:
             player_count = max(2, min(4, int(self.player_count_var.get())))
             seed = _resolve_seed_input(self.seed_var.get())
-            self._aberrations_in_market = (
-                deck_a.deck_id == ABERRATIONS_DECK_ID or deck_b.deck_id == ABERRATIONS_DECK_ID
+            self._demons_in_market = (
+                deck_a.deck_id == DEMONS_DECK_ID or deck_b.deck_id == DEMONS_DECK_ID
             )
             self._deck_a_label = deck_a.label
             self._deck_b_label = deck_b.label
@@ -1408,7 +1408,7 @@ class GameViewerApp:
         top_slot_to_market_slot: list[int | None] = [
             SPECIAL_TOP_SLOT_TO_MARKET_SLOT[0],
             SPECIAL_TOP_SLOT_TO_MARKET_SLOT[1],
-            SPECIAL_TOP_SLOT_TO_MARKET_SLOT[2] if self._aberrations_in_market else None,
+            SPECIAL_TOP_SLOT_TO_MARKET_SLOT[2] if self._demons_in_market else None,
             *list(range(len(view.market_row))),
         ]
         while len(top_slot_to_market_slot) < TOP_DECK_SLOT_COUNT:
@@ -1418,7 +1418,7 @@ class GameViewerApp:
         if self._selected_market_slot not in self._market_slot_indices:
             self._selected_market_slot = None
 
-        if not self._aberrations_in_market:
+        if not self._demons_in_market:
             top_cards[2] = CardView(
                 card_id="insane_outcast_disabled",
                 name="Insane Outcasts",
@@ -1426,7 +1426,7 @@ class GameViewerApp:
                 aspect="inactive",
                 deck_vp=0,
                 inner_circle_vp=0,
-                rules_text="Disabled (requires Aberrations in market deck)",
+                rules_text="Disabled (requires Demons in market deck)",
                 notes="",
             )
 

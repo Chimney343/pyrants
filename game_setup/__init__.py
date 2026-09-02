@@ -15,17 +15,18 @@ from game_setup.loaders import (
     save_board_package_to_files,
 )
 from game_setup.market_setup import (
-    ABERRATIONS_DECK_ID,
+    DEMONS_DECK_ID,
     HOUSE_GUARD_RECRUIT_SLOT,
     INSANE_OUTCAST_RECRUIT_SLOT,
     PRIESTESS_RECRUIT_SLOT,
     SPECIAL_RECRUIT_IDS,
     DeckProfile,
     MarketSetup,
+    SpecialStackSpec,
     combine_two_deck_market_setup,
     compute_special_stacks,
     discover_full_deck_profiles,
-    is_aberrations_in_market,
+    load_special_stack_counts,
     pick_pair_for_target,
     pick_random_pair,
 )
@@ -49,7 +50,6 @@ from game_setup.types import (
 )
 
 __all__ = [
-    "ABERRATIONS_DECK_ID",
     "BoardDefinition",
     "CardCatalog",
     "CardDefinition",
@@ -58,6 +58,7 @@ __all__ = [
     "DEFAULT_CARDS_DIR",
     "DEFAULT_ROSTERS_PATH",
     "DEFAULT_SETUP_PATH",
+    "DEMONS_DECK_ID",
     "DeckProfile",
     "FORCED_INJECTIONS_FILENAME",
     "GameDefinition",
@@ -68,6 +69,7 @@ __all__ = [
     "PRIESTESS_RECRUIT_SLOT",
     "SPECIAL_RECRUIT_IDS",
     "SetupDefinition",
+    "SpecialStackSpec",
     "StopConditions",
     "assemble_catalog_payload",
     "assemble_catalog_text",
@@ -80,9 +82,9 @@ __all__ = [
     "compute_special_stacks",
     "default_catalog_registry",
     "discover_full_deck_profiles",
-    "is_aberrations_in_market",
     "iter_roster_card_ids",
     "load_card_catalog",
+    "load_special_stack_counts",
     "pick_pair_for_target",
     "pick_random_pair",
     "resolve_catalog",

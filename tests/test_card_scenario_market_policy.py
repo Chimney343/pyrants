@@ -2,12 +2,16 @@
 
 from __future__ import annotations
 
-from game_setup.market_setup import SPECIAL_RECRUIT_IDS
+from game_setup.market_setup import SPECIAL_RECRUIT_IDS, compute_special_stacks
 from game_setup.scenario_generation.rosters import (
     DEFAULT_ROSTERS_PATH,
     _resolve_two_deck_pairing,
     iter_roster_card_ids,
 )
+
+
+def _present_cards(special_stacks) -> set[str]:
+    return {spec.card_id for spec in special_stacks}
 
 
 def test_two_deck_pairing_has_exactly_two_distinct_ids() -> None:
@@ -35,27 +39,28 @@ def test_roster_b_is_not_single_card_stack() -> None:
         assert roster_b_id not in SPECIAL_RECRUIT_IDS
 
 
-def test_aberrations_gates_insane_outcast_slot() -> None:
+def test_demons_gates_insane_outcast_slot() -> None:
     for card_id in ("aboleth", "noble", "soldier"):
         _roster_a_id, _roster_b_id, special_stacks = _resolve_two_deck_pairing(
             rosters_path=DEFAULT_ROSTERS_PATH,
             target_card_id=card_id,
             base_seed=0,
         )
-        assert "house_guard" in special_stacks
-        assert "priestess_of_lolth" in special_stacks
+        present = _present_cards(special_stacks)
+        assert "house_guard" in present
+        assert "priestess_of_lolth" in present
 
-    aberrations_ids = [cid for cid in iter_roster_card_ids(DEFAULT_ROSTERS_PATH)
-                       if cid not in SPECIAL_RECRUIT_IDS]
-    for card_id in ("aboleth", "beholder", "chuul", "neothelid", "otyugh"):
-        if card_id not in aberrations_ids:
-            continue
-        _roster_a_id, _roster_b_id, special_stacks = _resolve_two_deck_pairing(
-            rosters_path=DEFAULT_ROSTERS_PATH,
-            target_card_id=card_id,
-            base_seed=0,
-        )
-        assert "insane_outcast" in special_stacks, f"insane_outcast missing for aberrations card {card_id}"
+    # Demons in the market ⇒ the insane stack is present.
+    demons_present = _present_cards(
+        compute_special_stacks("demons", "elementals", decks_dir=DEFAULT_ROSTERS_PATH)
+    )
+    assert "insane_outcast" in demons_present
+
+    # Aberrations (non-demons) in the market ⇒ the insane stack is absent.
+    aberrations_present = _present_cards(
+        compute_special_stacks("aberrations", "drow", decks_dir=DEFAULT_ROSTERS_PATH)
+    )
+    assert "insane_outcast" not in aberrations_present
 
 
 def test_pairing_is_deterministic() -> None:

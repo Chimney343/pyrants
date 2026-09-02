@@ -423,6 +423,41 @@ static SetupDefinition parse_setup(const char *json_str, Arena *arena) {
         sd.market_deck.entries = parse_deck_entries(jents, &sd.market_deck.entry_count, arena);
     }
 
+    cJSON *jstacks = cJSON_GetObjectItem(root, "special_stacks");
+    if (!jstacks) {
+        /* Legacy fallback (D2): setups predating the JSON-driven stack table
+         * get the historical 15/15/30 defaults. This is the only place those
+         * literals remain. */
+        sd.special_stacks[0].card_id = intern("house_guard");
+        sd.special_stacks[0].market_slot = 100;
+        sd.special_stacks[0].stack_total = 15;
+        sd.special_stacks[1].card_id = intern("priestess_of_lolth");
+        sd.special_stacks[1].market_slot = 101;
+        sd.special_stacks[1].stack_total = 15;
+        sd.special_stacks[2].card_id = intern("insane_outcast");
+        sd.special_stacks[2].market_slot = 102;
+        sd.special_stacks[2].stack_total = 30;
+        sd.special_stack_count = 3;
+    } else if (cJSON_IsArray(jstacks)) {
+        int n = cJSON_GetArraySize(jstacks);
+        for (int i = 0; i < n && sd.special_stack_count < MAX_SPECIAL_STACKS; i++) {
+            cJSON *js = cJSON_GetArrayItem(jstacks, i);
+            Sym card_id = json_string_sym(js, "card_id", SYM_NULL);
+            int slot = json_int(js, "market_slot", 0);
+            int total = json_int(js, "stack_total", 0);
+            if (card_id == SYM_NULL || total <= 0) continue;
+            int dup = 0;
+            for (int k = 0; k < sd.special_stack_count; k++) {
+                if (sd.special_stacks[k].market_slot == slot) { dup = 1; break; }
+            }
+            if (dup) continue;
+            sd.special_stacks[sd.special_stack_count].card_id = card_id;
+            sd.special_stacks[sd.special_stack_count].market_slot = slot;
+            sd.special_stacks[sd.special_stack_count].stack_total = total;
+            sd.special_stack_count++;
+        }
+    }
+
     cJSON_Delete(root);
     return sd;
 }

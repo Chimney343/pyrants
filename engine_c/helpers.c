@@ -254,26 +254,36 @@ int count_runtime_cards_by_aspect(const GameState *state, Sym *card_ids, int cou
     return total;
 }
 
-int is_aberrations_enabled(const GameState *state) {
-    Sym ab = intern("aberrations");
-    return (state->definition->setup.setup_id == ab ||
-            state->definition->setup.market_deck.deck_id == ab);
-}
-
-int special_stack_config(int market_slot, Sym *card_id_out, int *stack_total) {
-    if (market_slot == 100) { *card_id_out = intern("house_guard"); *stack_total = 15; return 1; }
-    if (market_slot == 101) { *card_id_out = intern("priestess_of_lolth"); *stack_total = 15; return 1; }
-    if (market_slot == 102) { *card_id_out = intern("insane_outcast"); *stack_total = 30; return 1; }
+int special_stack_config(const GameState *state, int market_slot, Sym *card_id_out, int *stack_total) {
+    for (int i = 0; i < state->definition->setup.special_stack_count; i++) {
+        const SpecialStackDef *s = &state->definition->setup.special_stacks[i];
+        if (s->market_slot == market_slot) {
+            if (card_id_out) *card_id_out = s->card_id;
+            if (stack_total) *stack_total = s->stack_total;
+            return 1;
+        }
+    }
     return 0;
 }
 
-int remaining_special_stack_count(const GameState *state, Sym card_id, int stack_total) {
+int special_stack_total_for_card(const GameState *state, Sym card_id) {
+    for (int i = 0; i < state->definition->setup.special_stack_count; i++) {
+        const SpecialStackDef *s = &state->definition->setup.special_stacks[i];
+        if (s->card_id == card_id) return s->stack_total;
+    }
+    return -1;
+}
+
+int remaining_special_stack_count(const GameState *state, Sym card_id) {
     int available = 0;
     for (int i = 0; i < state->market.deck_count; i++)
         if (state->market.deck[i] == card_id) available++;
     for (int i = 0; i < state->market.row_count; i++)
         if (state->market.row[i] == card_id) available++;
     if (available > 0) return available;
+
+    int stack_total = special_stack_total_for_card(state, card_id);
+    if (stack_total < 0) return 0;
 
     int owned = 0;
     for (int p = 0; p < state->player_count; p++) {
@@ -494,10 +504,8 @@ int apply_return_spy(GameState *state, Sym player_id, Sym node_id, Sym spy_owner
 
 int apply_recruit(GameState *state, Sym player_id, int market_slot) {
     Sym special_id;
-    int stack_total;
-    if (special_stack_config(market_slot, &special_id, &stack_total)) {
-        if (market_slot == 102 && !is_aberrations_enabled(state)) return -1;
-        if (remaining_special_stack_count(state, special_id, stack_total) <= 0) return -1;
+    if (special_stack_config(state, market_slot, &special_id, NULL)) {
+        if (remaining_special_stack_count(state, special_id) <= 0) return -1;
         const CardDefinition *cd = card_by_id(state, special_id);
         if (!cd) return -1;
         ResourcePool *pool = cow_resource_pool(state);
@@ -536,10 +544,8 @@ int apply_recruit(GameState *state, Sym player_id, int market_slot) {
 
 int apply_recruit_free(GameState *state, Sym player_id, int market_slot) {
     Sym special_id;
-    int stack_total;
-    if (special_stack_config(market_slot, &special_id, &stack_total)) {
-        if (market_slot == 102 && !is_aberrations_enabled(state)) return -1;
-        if (remaining_special_stack_count(state, special_id, stack_total) <= 0) return -1;
+    if (special_stack_config(state, market_slot, &special_id, NULL)) {
+        if (remaining_special_stack_count(state, special_id) <= 0) return -1;
         PlayerState *ps = cow_player(state, player_id);
         if (ps && ps->discard_pile_count < MAX_ZONE_SIZE)
             ps->discard_pile[ps->discard_pile_count++] = special_id;

@@ -77,6 +77,7 @@ def assemble_catalog_text(cards_path: Path) -> str:
     return json.dumps(assemble_catalog_payload(cards_path), indent=2) + "\n"
 
 
+@lru_cache(maxsize=4)
 def load_deck_rosters(decks_dir: Path) -> list[dict[str, Any]]:
     """Load deck roster dicts from every JSON file in a directory.
 

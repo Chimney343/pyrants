@@ -17,12 +17,16 @@ from game_setup.loaders import load_deck_rosters
 
 logger = logging.getLogger(__name__)
 
-ABERRATIONS_DECK_ID = "aberrations"
 SPECIAL_RECRUIT_IDS: frozenset[str] = frozenset({"house_guard", "priestess_of_lolth", "insane_outcast"})
+
+DEMONS_DECK_ID = "demons"
 
 HOUSE_GUARD_RECRUIT_SLOT = 100
 PRIESTESS_RECRUIT_SLOT = 101
 INSANE_OUTCAST_RECRUIT_SLOT = 102
+
+_ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_DECKS_DIR = _ROOT / "data" / "decks"
 
 
 @dataclass(frozen=True)
@@ -36,6 +40,22 @@ class DeckProfile:
 
 
 @dataclass(frozen=True)
+class SpecialStackSpec:
+    """One special-recruit stack (slot → card, with a total count)."""
+
+    market_slot: int
+    card_id: str
+    stack_total: int
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "market_slot": self.market_slot,
+            "card_id": self.card_id,
+            "stack_total": self.stack_total,
+        }
+
+
+@dataclass(frozen=True)
 class MarketSetup:
     """Built two-deck combined market ready for game construction."""
 
@@ -44,7 +64,7 @@ class MarketSetup:
     starter_deck: dict[str, object]
     market_deck_entries: tuple[tuple[str, int], ...]
     market_row_size: int
-    special_stacks: tuple[str, ...]
+    special_stacks: tuple[SpecialStackSpec, ...]
 
     def to_setup_data(self) -> dict[str, object]:
         return {
@@ -58,6 +78,7 @@ class MarketSetup:
                 ],
             },
             "market_row_size": self.market_row_size,
+            "special_stacks": [spec.to_dict() for spec in self.special_stacks],
         }
 
 
@@ -106,15 +127,54 @@ def discover_full_deck_profiles(decks_dir: Path) -> tuple[DeckProfile, ...]:
     return tuple(profiles)
 
 
-def is_aberrations_in_market(deck_a_id: str, deck_b_id: str) -> bool:
-    return ABERRATIONS_DECK_ID in {deck_a_id, deck_b_id}
+def load_special_stack_counts(decks_dir: Path | None = None) -> dict[str, int]:
+    """Read each special-recruit stack's total from its single_card_stack roster."""
+    decks = load_deck_rosters(decks_dir or DEFAULT_DECKS_DIR)
+    counts: dict[str, int] = {}
+    for deck in decks:
+        deck_id = deck.get("deck_id")
+        if deck_id not in SPECIAL_RECRUIT_IDS:
+            continue
+        total = deck.get("total_cards")
+        if isinstance(total, int) and total > 0:
+            counts[str(deck_id)] = total
+    return counts
 
 
-def compute_special_stacks(deck_a_id: str, deck_b_id: str) -> tuple[str, ...]:
-    stacks = ["house_guard", "priestess_of_lolth"]
-    if is_aberrations_in_market(deck_a_id, deck_b_id):
-        stacks.append("insane_outcast")
-    return tuple(stacks)
+def compute_special_stacks(
+    deck_a_id: str,
+    deck_b_id: str,
+    decks_dir: Path | None = None,
+) -> tuple[SpecialStackSpec, ...]:
+    """Return the special-recruit stacks for a two-deck market.
+
+    House Guard and Priestess of Lolth are always present; Insane Outcast is
+    present iff the Demons half-deck is one of the two market decks (rulebook:
+    "If you're playing with the Demons half-deck, put the Insane Outcast cards
+    face up"). Totals are read from the roster files.
+    """
+    counts = load_special_stack_counts(decks_dir)
+    specs = [
+        SpecialStackSpec(
+            market_slot=HOUSE_GUARD_RECRUIT_SLOT,
+            card_id="house_guard",
+            stack_total=counts["house_guard"],
+        ),
+        SpecialStackSpec(
+            market_slot=PRIESTESS_RECRUIT_SLOT,
+            card_id="priestess_of_lolth",
+            stack_total=counts["priestess_of_lolth"],
+        ),
+    ]
+    if DEMONS_DECK_ID in {deck_a_id, deck_b_id}:
+        specs.append(
+            SpecialStackSpec(
+                market_slot=INSANE_OUTCAST_RECRUIT_SLOT,
+                card_id="insane_outcast",
+                stack_total=counts["insane_outcast"],
+            )
+        )
+    return tuple(specs)
 
 
 def combine_two_deck_market_setup(

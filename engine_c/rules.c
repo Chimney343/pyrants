@@ -184,14 +184,9 @@ static int legal_main_phase_actions(const GameState *state, Sym player_id,
             w++;
         }
     }
-    int special_slots[] = {100, 101, 102};
-    for (int si = 0; si < 3 && w < max_out; si++) {
-        int slot = special_slots[si];
-        Sym cid;
-        int st;
-        if (!special_stack_config(slot, &cid, &st)) continue;
-        if (slot == 102 && !is_aberrations_enabled(state)) continue;
-        if (remaining_special_stack_count(state, cid, st) <= 0) continue;
+    for (int si = 0; si < state->definition->setup.special_stack_count && w < max_out; si++) {
+        Sym cid = state->definition->setup.special_stacks[si].card_id;
+        if (remaining_special_stack_count(state, cid) <= 0) continue;
         const CardDefinition *cd = card_by_id_state(state, cid);
         if (!cd || state->resource_pool.influence < cd->cost) continue;
         out[w].type = MOVE_RECRUIT;
@@ -683,9 +678,11 @@ GameState *engine_apply(const GameState *src, const Move *move) {
             if (state->market.row[i] == move->data.recruit.card_id) { slot = i; break; }
         if (slot < 0) {
             Sym card_id = move->data.recruit.card_id;
-            for (int s = 100; s <= 102; s++) {
-                Sym scid; int st;
-                if (special_stack_config(s, &scid, &st) && scid == card_id) { slot = s; break; }
+            for (int s = 0; s < state->definition->setup.special_stack_count; s++) {
+                if (state->definition->setup.special_stacks[s].card_id == card_id) {
+                    slot = state->definition->setup.special_stacks[s].market_slot;
+                    break;
+                }
             }
             if (slot < 0) { engine_destroy(state); return NULL; }
         }

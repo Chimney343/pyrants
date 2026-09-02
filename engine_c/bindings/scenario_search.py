@@ -13,6 +13,7 @@ from random import Random
 
 from game_setup.market_setup import (
     SPECIAL_RECRUIT_IDS,
+    SpecialStackSpec,
     combine_two_deck_market_setup,
     discover_full_deck_profiles,
 )
@@ -136,7 +137,7 @@ def _search_card_scenario_c(
     max_steps_per_attempt: int,
     verbose: bool = False,
     conditions: StopConditions | None = None,
-) -> tuple[CState | None, CState, list[str], list[str]]:
+) -> tuple[CState | None, CState, list[str], list[SpecialStackSpec]]:
     roster_a_id, roster_b_id, special_stacks_present = _resolve_two_deck_pairing(
         rosters_path=rosters_path,
         target_card_id=target_card_id,
@@ -252,7 +253,7 @@ def ensure_card_scenario_c(
     max_steps_per_attempt: int = 1000,
     verbose: bool = False,
     conditions: StopConditions | None = None,
-) -> tuple[CState, dict[str, object] | None, list[str], list[str]]:
+) -> tuple[CState, dict[str, object] | None, list[str], list[SpecialStackSpec]]:
     players = player_ids or ["p1", "p2", "p3", "p4"]
     rp = rosters_path or Path("data/decks")
 
@@ -324,7 +325,7 @@ def save_c_scenario(
     tags: list[str],
     card_under_test: str,
     market_deck_ids: list[str],
-    special_stacks_present: list[str],
+    special_stacks_present: list[SpecialStackSpec],
     move_count: int = 0,
     is_terminal: bool = False,
     pretty: bool = False,
@@ -337,7 +338,7 @@ def save_c_scenario(
     meta["tags"] = tags
     meta["card_under_test"] = card_under_test
     meta["market_deck_ids"] = market_deck_ids
-    meta["special_stacks_present"] = special_stacks_present
+    meta["special_stacks_present"] = [s.to_dict() for s in special_stacks_present]
     if pretty:
         path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
     else:

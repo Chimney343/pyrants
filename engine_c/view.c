@@ -107,7 +107,7 @@ void engine_build_view(const GameState *state, CGameView *out) {
     out->current_player_control_vp = control_vp_sum;
     out->current_player_total_control_vp = total_control_vp_sum;
 
-    out->house_guard_remaining = remaining_special_stack_count(state, intern("house_guard"), 15);
-    out->priestess_remaining = remaining_special_stack_count(state, intern("priestess_of_lolth"), 15);
-    out->insane_outcast_remaining = remaining_special_stack_count(state, intern("insane_outcast"), 30);
+    out->house_guard_remaining = remaining_special_stack_count(state, intern("house_guard"));
+    out->priestess_remaining = remaining_special_stack_count(state, intern("priestess_of_lolth"));
+    out->insane_outcast_remaining = remaining_special_stack_count(state, intern("insane_outcast"));
 }

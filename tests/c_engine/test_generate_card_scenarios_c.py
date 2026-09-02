@@ -62,8 +62,9 @@ def test_ensure_card_scenario_c_force_injects_after_exhausted_search() -> None:
     assert state.phase == "main"
     assert len(market_deck_ids) == 2
     assert "aberrations" in market_deck_ids
-    assert "house_guard" in special_stacks_present
-    assert "priestess_of_lolth" in special_stacks_present
+    present_cards = {spec.card_id for spec in special_stacks_present}
+    assert "house_guard" in present_cards
+    assert "priestess_of_lolth" in present_cards
     state.destroy()
 
 
@@ -108,8 +109,9 @@ def test_generate_card_scenarios_c_small_subset() -> None:
             meta = scenario["metadata"]
             assert len(meta["market_deck_ids"]) == 2
             assert meta["market_deck_ids"][0] != meta["market_deck_ids"][1]
-            assert "house_guard" in meta["special_stacks_present"]
-            assert "priestess_of_lolth" in meta["special_stacks_present"]
+            present_cards = {spec["card_id"] for spec in meta["special_stacks_present"]}
+            assert "house_guard" in present_cards
+            assert "priestess_of_lolth" in present_cards
 
         notes_path = out / FORCED_INJECTIONS_FILENAME
         notes = json.loads(notes_path.read_text(encoding="utf-8")) if notes_path.exists() else []

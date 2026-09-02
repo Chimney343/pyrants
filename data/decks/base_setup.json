@@ -22,5 +22,22 @@
       }
     ]
   },
-  "market_row_size": 6
+  "market_row_size": 6,
+  "special_stacks": [
+    {
+      "market_slot": 100,
+      "card_id": "house_guard",
+      "stack_total": 15
+    },
+    {
+      "market_slot": 101,
+      "card_id": "priestess_of_lolth",
+      "stack_total": 15
+    },
+    {
+      "market_slot": 102,
+      "card_id": "insane_outcast",
+      "stack_total": 30
+    }
+  ]
 }

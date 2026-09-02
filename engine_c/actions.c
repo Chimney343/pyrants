@@ -527,10 +527,12 @@ static GameState *apply_recruit_card_gen(GameState *state, Sym player_id, const 
     for (int i = 0; i < state->market.row_count; i++)
         if (state->market.row[i] == target_card_id) { slot = i; break; }
     if (slot < 0) {
-        Sym scid; int st;
-        if (special_stack_config(100, &scid, &st) && scid == target_card_id) slot = 100;
-        if (slot < 0 && special_stack_config(101, &scid, &st) && scid == target_card_id) slot = 101;
-        if (slot < 0 && special_stack_config(102, &scid, &st) && scid == target_card_id) slot = 102;
+        for (int s = 0; s < state->definition->setup.special_stack_count; s++) {
+            if (state->definition->setup.special_stacks[s].card_id == target_card_id) {
+                slot = state->definition->setup.special_stacks[s].market_slot;
+                break;
+            }
+        }
     }
     if (slot < 0) return state;
     int free_recruit = 0;
@@ -697,10 +699,15 @@ static GameState *apply_play_card_nested(GameState *state, Sym player_id, const 
 
 static void give_insane_outcast(GameState *state, Sym player_id, Sym target_id, const CardAction *action) {
     int count = resolve_count(state, player_id, action);
+    Sym insane = intern("insane_outcast");
+    int total = special_stack_total_for_card(state, insane);
+    if (total < 0) return;
     PlayerState *ps = cow_player(state, target_id);
-    if (ps) {
-        for (int c = 0; c < count && ps->discard_pile_count < MAX_ZONE_SIZE; c++)
-            ps->discard_pile[ps->discard_pile_count++] = intern("insane_outcast");
+    if (!ps) return;
+    for (int c = 0; c < count; c++) {
+        if (ps->discard_pile_count >= MAX_ZONE_SIZE) break;
+        if (remaining_special_stack_count(state, insane) <= 0) break;
+        ps->discard_pile[ps->discard_pile_count++] = insane;
     }
 }
 
@@ -716,9 +723,12 @@ static GameState *apply_custom_effect(GameState *state, Sym player_id, const Car
     if (!ek) return state;
 
     if (strcmp(ek, "give_insane_outcast_to_each_opponent") == 0) {
-        for (int p = 0; p < state->player_count; p++) {
-            if (state->players[p].player_id == player_id) continue;
-            give_insane_outcast(state, player_id, state->players[p].player_id, action);
+        int cur = player_index_for_id(state, player_id);
+        if (cur >= 0) {
+            for (int off = 1; off < state->player_count; off++) {
+                int p = (cur + off) % state->player_count;
+                give_insane_outcast(state, player_id, state->players[p].player_id, action);
+            }
         }
     } else if (strcmp(ek, "give_insane_outcast_to_self") == 0) {
         give_insane_outcast(state, player_id, player_id, action);

@@ -23,6 +23,7 @@ extern "C" {
 #define MAX_METADATA        8
 #define MAX_DECK_ENTRIES    32
 #define MAX_ABILITY_DISCARD 8
+#define MAX_SPECIAL_STACKS  3
 
 typedef enum { NODE_SITE = 0, NODE_ROUTE = 1 } NodeKind;
 
@@ -180,10 +181,18 @@ typedef struct {
 } DeckDefinition;
 
 typedef struct {
+    Sym card_id;
+    int market_slot;
+    int stack_total;
+} SpecialStackDef;
+
+typedef struct {
     Sym            setup_id;
     DeckDefinition starter_deck;
     DeckDefinition market_deck;
     int            market_row_size;
+    SpecialStackDef special_stacks[MAX_SPECIAL_STACKS];
+    int             special_stack_count;
 } SetupDefinition;
 
 typedef struct {

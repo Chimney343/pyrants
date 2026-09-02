@@ -48,6 +48,7 @@ MAX_OPTIONS = 8
 MAX_FILTERS = 4
 MAX_METADATA = 8
 MAX_ABILITY_DISCARD = 8
+MAX_SPECIAL_STACKS = 3
 
 PHASE_SETUP = 0
 PHASE_DRAW = 1
@@ -175,11 +176,16 @@ class DeckDefinition(Structure):
         ("entries", POINTER(DeckEntry)), ("entry_count", c_int),
     ]
 
+class SpecialStackDef(Structure):
+    _fields_ = [("card_id", Sym), ("market_slot", c_int), ("stack_total", c_int)]
+
 class SetupDefinition(Structure):
     _fields_ = [
         ("setup_id", Sym),
         ("starter_deck", DeckDefinition), ("market_deck", DeckDefinition),
         ("market_row_size", c_int),
+        ("special_stacks", SpecialStackDef * MAX_SPECIAL_STACKS),
+        ("special_stack_count", c_int),
     ]
 
 class GameDefinition(Structure):

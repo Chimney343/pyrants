@@ -18,6 +18,7 @@ from typing import Any
 
 from game_setup.loaders import load_deck_rosters
 from game_setup.market_setup import (
+    SpecialStackSpec,
     compute_special_stacks,
     discover_full_deck_profiles,
     pick_pair_for_target,
@@ -71,7 +72,7 @@ def _resolve_two_deck_pairing(
     rosters_path: Path,
     target_card_id: str,
     base_seed: int,
-) -> tuple[str, str, list[str]]:
+) -> tuple[str, str, list[SpecialStackSpec]]:
     profiles = discover_full_deck_profiles(rosters_path)
     if not profiles:
         raise ValueError("No full_deck rosters found for market construction")
@@ -80,7 +81,7 @@ def _resolve_two_deck_pairing(
     deck_a, deck_b = pick_pair_for_target(profiles, target_card_id, pair_rng)
     roster_a_id = deck_a.deck_id
     roster_b_id = deck_b.deck_id
-    special_stacks = list(compute_special_stacks(roster_a_id, roster_b_id))
+    special_stacks = list(compute_special_stacks(roster_a_id, roster_b_id, decks_dir=rosters_path))
     return roster_a_id, roster_b_id, special_stacks
 
 

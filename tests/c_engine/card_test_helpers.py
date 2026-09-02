@@ -42,12 +42,14 @@ def _player_vp_tokens(session: CSession, pid: str) -> int:
 
 def _make_engine(catalog_path: str | None = None,
                  board_path: str | None = None,
-                 setup_path: str | None = None) -> CEngine:
+                 setup_path: str | None = None,
+                 setup_data_json: str = "") -> CEngine:
     eng = CEngine()
     eng.initialize(
         catalog_path=catalog_path or str(DATA_DIR / "cards"),
         board_path=board_path or str(DATA_DIR / "boards" / "tyrants_of_the_underdark.json"),
         setup_path=setup_path or str(DATA_DIR / "decks" / "base_setup.json"),
+        setup_data_json=setup_data_json,
     )
     return eng
 def make_card_test_session(

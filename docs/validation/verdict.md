@@ -294,6 +294,16 @@ labeled-practical bound, not a formal one. Random greedy play never approached i
 over N=200 games). Root cause is a C rules-correctness question in `engine_c/`, out of scope for
 the F-004 `GameInfo` metadata fix; tracked here per `docs/validation/f004-fix-plan.md` § 11.
 > Repro: `python -u docs/validation/harness/f004_utility.py` (section T6, "direct injection upper bound").
+>
+> **Resolution [2026-09-02]:** `give_insane_outcast` now enforces the shared-supply cap
+> (`special_stack_total_for_card` lookup, no-op on an undefined stack, per-copy
+> `min(count, remaining)`), so legal play cannot mint a 31st copy game-wide; the −30/−50/−80
+> direct-injection bounds are no longer reachable by legal play, making `min_utility=-50.0`
+> formally safe. Exhaustion allocates clockwise from the current player (rulebook :355). Stack
+> totals/slots are JSON-driven (`setup.special_stacks` + demons gating; legacy 15/15/30 fallback
+> when the field is absent), replacing the hardcoded 15/15/30 and the dead aberrations gate.
+> Falsification test T1 in `tests/c_engine/test_insane_outcast_supply.py`; full suites green
+> (3 pre-existing tolerated failures + 10 postponed F-003 Part B RED only).
 
 **F-013 — board projection costs ~388 µs/call; `private_view_json` regressed 9.66×. MITIGATED.**
 
