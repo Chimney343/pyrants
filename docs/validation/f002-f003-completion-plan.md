@@ -1,5 +1,14 @@
 # F-002 + F-003 Completion Plan
 
+> **Part B (F-003) is POSTPONED — see `docs/adr/0002-postpone-f003-chance-node-exposure.md`.**
+> Part A (F-002) is fully done (below). Part B's Phase 0/1 (frozen legacy baseline, 10 RED tests)
+> are done and stay in this repo as resumption groundwork, but Phase 2 (the GREEN engine change,
+> §§ 3-6 below) is **not scheduled** — read the ADR before picking this back up. It explains why:
+> the actual benefit is unmeasured (F-008 depends on F-003 landing first) and the cost is a
+> confirmed multi-session engine-architecture effort, against a gate (`verdict.md` § 5 condition
+> 3b) that does not block this project's current 2-player engine/performance work. Resume only
+> when there's a concrete need for an ISMCTS strength/policy-quality/agent-training claim.
+
 **Purpose:** `docs/validation/f002-f003-fix-plan.md` already specifies both parts to full
 test-first rigor (Part A: mechanical, fully speced; Part B: a genuine engine architecture change,
 design decisions recorded explicitly). That plan is **not superseded here** — this document does
@@ -385,17 +394,21 @@ verifiable, not asserted:
 Given Part B's own risk table already flags it as multi-milestone, do not attempt it in one
 sitting:
 
-1. **Session 1:** Step 1 (F-002 dedicated review). Cheap, unblocks nothing else but is the correct
-   next action per the plan's own sequencing rule.
-2. **Session 2:** Step 3 (Phase 0 remainder: legacy-path baseline script + capture) + Step 4
-   (Phase 1 RED tests, all five, confirmed failing).
-3. **Session 3:** M1 (`draw_cards_state` + `PHASE_DRAW` branch), full build/test/battery cycle.
-4. **Session 4:** M2 + M3 (`PHASE_MAIN` branch, shared plumbing already proven by M1).
-5. **Session 5:** M4 (`PHASE_END_OF_TURN` branch — the largest milestone per the revised estimate
-   in §2.1 — plus the `rules.c:530-538` duplicate resolution).
-6. **Session 6:** Phase 4 full re-run, F-008 measurement, Phase 5 review, Phase 6 audit-record
-   update (Steps 6–7).
-7. **Session 7:** Dedicated F-003 adversarial review (mirrors Step 1's format for F-002).
+1. **Session 1 — done.** Step 1 (F-002 dedicated review). `reviews/f002-review-01.md`, ACCEPTED.
+2. **Session 2 — done.** Step 3 (Phase 0 remainder: legacy-path baseline script + capture) + Step
+   4 (Phase 1 RED tests, 10 tests across T-B1/T-B2/T-B3/T-B5, all confirmed failing correctly).
+3. ~~**Session 3:** M1 (`draw_cards_state` + `PHASE_DRAW` branch), full build/test/battery
+   cycle.~~
+4. ~~**Session 4:** M2 + M3 (`PHASE_MAIN` branch, shared plumbing already proven by M1).~~
+5. ~~**Session 5:** M4 (`PHASE_END_OF_TURN` branch — the largest milestone per the revised
+   estimate in §2.1/§2.3 — plus the `rules.c:530-538`/F-015 resolution).~~
+6. ~~**Session 6:** Phase 4 full re-run, F-008 measurement, Phase 5 review, Phase 6 audit-record
+   update (Steps 6–7).~~
+7. ~~**Session 7:** Dedicated F-003 adversarial review (mirrors Step 1's format for F-002).~~
+
+**Sessions 3-7 are POSTPONED, not scheduled — see `docs/adr/0002-postpone-f003-chance-node-exposure.md`.**
+Struck through here to make clear this is a deliberate pause, not an oversight in tracking. Resume
+starting at Session 3 (M1) if that ADR's decision is ever revisited.
 
 Each session should end able to answer, concretely, which Definition-of-Done checkboxes moved —
 not "milestone M-whatever is mostly done."

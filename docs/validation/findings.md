@@ -107,7 +107,7 @@ All six required components exist; none had to be substituted.
 - Falsification test: Instrument a `just ismcts-quick` run to log `state->shuffle_counter` deltas per `apply_action` call alongside `state.is_chance_node()`'s value immediately before that call.
 - Expected if REAL: `shuffle_counter` advances during a transition where `is_chance_node()` was False.
 - Expected if FALSE POSITIVE: Every `shuffle_counter` advance is immediately preceded by an `is_chance_node()==True` state.
-- Status: **CONFIRMED**
+- Status: **CONFIRMED — POSTPONED (ADR-0002)**
 - Command: `.venv/Scripts/python.exe -u docs/validation/harness/findings.py` (section F-003)
 - N: 2,112 state transitions. Seeds: shuffle_seeds 1-39, uniform-random policy, up to 300 plies each
 - Observed:
@@ -116,6 +116,19 @@ All six required components exist; none had to be substituted.
   of those advances, preceded by is_chance_node()==True: 0
   ```
 - Verdict rationale: Matches "Expected if REAL" exactly - 134 mid-game randomization events (6.3% of all transitions) advanced `shuffle_counter` inside an `apply_action`, and not one of them was preceded by a state reporting `is_chance_node()==True`, so every mid-game random event resolves silently inside a player transition rather than as an OpenSpiel chance node.
+- Decision [2026-09-02], `docs/adr/0002-postpone-f003-chance-node-exposure.md`: **POSTPONED**, not
+  fixed, not dropped. `docs/validation/f002-f003-completion-plan.md` Phase 0/1 (frozen legacy
+  baseline across all 7 effective call sites, 10 RED tests in
+  `openspiel_pyrants/tests/test_chance_nodes.py`, all confirmed failing for the correct reason)
+  landed safely and stay in the tree; Phase 2 (the actual engine change) was scoped in detail and
+  found to require inventing a from-scratch C-level suspend/resume mechanism across ten call
+  sites — a genuine multi-session cost, sized by investigation. Deferred because: (1) F-008 (the
+  branching-factor measurement that would show F-003's actual impact on search quality) is itself
+  gated on F-003 landing, so the benefit of fixing F-003 now is unmeasured; (2) `verdict.md`'s own
+  § 5 GO conditions already scope F-003 to block only strength/policy-quality/agent-training
+  claims, not the 2-player engine/performance work this project is currently doing. See ADR-0002
+  for the full reasoning, alternatives considered, and resumption path. F-015 (found as a
+  byproduct of scoping this work) is tracked independently and is not postponed by this decision.
 
 ### F-004 `Returns()`/`UtilitySum`/`MinUtility`/`MaxUtility` contract violated for 3–4 player games
 - Class: ENGINE-OPENSPIEL

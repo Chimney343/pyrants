@@ -257,6 +257,17 @@ Part A (F-002) fixed the *shared-stream* half; this finding — exposing the eve
 OpenSpiel chance nodes — remains OPEN and is tracked as condition 3b below
 (`docs/validation/f002-f003-fix-plan.md` Part B).
 > Repro: `python -u docs/validation/harness/findings.py`
+>
+> **Decision** (`docs/adr/0002-postpone-f003-chance-node-exposure.md`, 2026-09-02):
+> **POSTPONED**, not fixed, not dropped. `f002-f003-completion-plan.md` Phase 0/1 (frozen legacy
+> baseline for all 7 effective call sites, 10 RED tests, all confirmed failing for the correct
+> reason) landed and stays in the tree; Phase 2 (the actual engine change) was scoped and found to
+> need a from-scratch C-level suspend/resume mechanism across ten call sites — a genuine
+> multi-session cost. Deferred because F-008 (the measurement that would show F-003's actual
+> impact on search quality) is itself gated on F-003 landing, so the benefit is unmeasured, and
+> because condition 3's own scope below already limits what F-003 blocks to strength/
+> policy-quality/agent-training claims — not the 2-player engine/performance work this project is
+> currently doing. See ADR-0002 for alternatives considered and the resumption path.
 
 ### MAJOR
 
@@ -348,7 +359,10 @@ carried by F-011, not by F-007.)
 
 **F-008 — chance-node branching exceeds the paper's design range. UNTESTABLE as written.**
 Its pre-registered test is explicitly conditional on F-003 being fixed first, and F-003 is
-confirmed unfixed, so there are no mid-game chance nodes to measure.
+confirmed unfixed, so there are no mid-game chance nodes to measure. F-003 is now formally
+**POSTPONED** (`docs/adr/0002-postpone-f003-chance-node-exposure.md`) rather than simply pending
+— F-008 stays `UNTESTABLE` for as long as that postponement stands, deliberately, since the
+measurement this needs cannot exist without F-003's own chance-node machinery.
 *Evidence that would settle it:* expose mid-game reshuffles / forced discards as chance nodes
 (the F-003 fix), then log `len(chance_outcomes())` at each. Current supporting signal points
 toward REAL — the single chance node that does exist carries 1,000 outcomes, 250× the paper's
@@ -413,11 +427,23 @@ Conditions that must clear before GO, in dependency order:
        `(shuffle_seed, shuffle_counter)` over N ≥ 100 pairs (0/100, was 141/141), independently
        re-run by Review 01 — `docs/validation/f002-f003-fix-plan.md` Part A. Zero out-of-scope
        hunks in the fixing commit.
-   3b. **F-003 (mid-game chance nodes). OPEN.** Expose the mid-game random events (discard-into-deck
-       reshuffles, forced random discards, card-effect mass-discards) as real OpenSpiel chance
-       nodes, then F-008 can be measured. **Gate:** every `shuffle_counter` advance is preceded by
-       an `is_chance_node()==True` state, over N ≥ 2,000 transitions
-       (`docs/validation/f002-f003-fix-plan.md` Part B).
+   3b. **F-003 (mid-game chance nodes). POSTPONED (ADR-0002), not resolved, not dropped.** Expose
+       the mid-game random events (discard-into-deck reshuffles, forced random discards,
+       card-effect mass-discards) as real OpenSpiel chance nodes, then F-008 can be measured.
+       **Gate (unmet, deliberately not pursued right now):** every `shuffle_counter` advance is
+       preceded by an `is_chance_node()==True` state, over N ≥ 2,000 transitions
+       (`docs/validation/f002-f003-fix-plan.md` Part B). `docs/validation/
+       f002-f003-completion-plan.md` Phase 0/1 landed (frozen legacy baseline, 10 RED tests, all
+       confirmed failing correctly) and stay in the tree as resumption groundwork; Phase 2 (the
+       engine change itself) was scoped in detail and found to need a from-scratch C-level
+       suspend/resume mechanism across ten call sites — a genuine multi-session cost against an
+       *unmeasured* benefit (F-008, the branching-factor measurement that would show F-003's
+       actual impact, is itself gated on F-003 landing). **Practical effect: this condition does
+       not block 2-player engine/performance work (per the "Conditional partial GO" paragraph
+       below, unchanged) — it blocks only strength/policy-quality/agent-training claims, which is
+       exactly the scope this postponement accepts.** See
+       `docs/adr/0002-postpone-f003-chance-node-exposure.md` for the full reasoning and the
+       resumption path if that scope changes.
 
 4. **F-006 (re-calibrate before trusting any strength number).** Run a `uct_c` sweep on this
    game's actual reward scale — the measured 6.4:1 exploitation ratio suggests the useful range
