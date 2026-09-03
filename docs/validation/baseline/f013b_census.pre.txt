@@ -1,0 +1,15 @@
+f013b_census num_sims=200
+reads=1952 distinct=876 repeats=1076
+read_multiplicity_histogram={2x:676, 3x:200}
+adapters_constructed=201 apply_generations=675
+board_projections=876 gen0=201 post_apply=675
+board_cache_hits=1076 hit_rate=55.1%
+json_dumps=1952 (served_without_serialization=0)
+micro board_nodes_json_share=74.1us
+micro board_nodes_view_cold=443.5us
+micro build_c_board_view=397.2us
+micro cgameview_alloc=1.3us
+micro engine_build_view_alone=2.6us
+micro json_dumps_full=83.5us
+micro json_dumps_without_board_nodes=9.4us
+micro private_view_json_warm=145.7us
