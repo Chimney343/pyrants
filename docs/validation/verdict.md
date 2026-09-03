@@ -422,6 +422,19 @@ throughput claim restriction is lifted.
 > to a pre-change run in the same environment (a temp-worktree check confirms the INV-5
 > mean 11.48/8-vs-11.11/7 drift is environmental, not this fix); G7 suites show only the 10
 > pre-existing postponed F-003 Part B RED failures + the 3 pre-existing repo failures.
+>
+> **Review 04** (`docs/validation/reviews/f013-review-04.md`, uncommitted working-tree diff on top
+> of `HEAD 63435fa`): **REJECTED-SCOPE**. Triggered by an uncommitted, undocumented change to
+> `engine_c/scoring.c`/`scoring.h`/`view.c` that reopens the narrower C-level accessor Part B § 9
+> explicitly withdrew, with no fix plan authorizing it and in direct violation of that plan's own
+> G0 gate ("zero diff in `engine_c/*.c`"). No RED test precedes the change. Independently verified
+> the refactor is behaviorally correct (byte-identical: G1's `test_board_projection.py` 12/12, the
+> pre-registered falsification test at 1.674× — still under the 2× gate, no regression against any
+> invariant, F-010/F-002 unchanged) — but correctness does not cure an unauthorized change to an
+> already-closed, ACCEPTED finding. F-013's status is unchanged: **CONFIRMED — FIXED**, nothing from
+> this diff merged. One unrelated, out-of-domain test failure noted (`tests/test_replay_player.py`,
+> untracked WIP sharing no code path with this diff) but not attributed to it and not filed as a
+> finding.
 
 
 **F-009 — `max_chance_outcomes` hardcoded at 1000.** At `shuffle_seed_count=5000` the state
