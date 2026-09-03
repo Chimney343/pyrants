@@ -1,0 +1,39 @@
+{
+ "0.7_vs_1.4": {
+  "tag": "uct_c=0.7 vs uct_c=1.4",
+  "N": 200,
+  "W": 91,
+  "L": 98,
+  "T": 11,
+  "p": 0.6626346634894795,
+  "mean_margin": -0.7
+ },
+ "1.4_vs_2.8": {
+  "tag": "uct_c=1.4 vs uct_c=2.8",
+  "N": 200,
+  "W": 98,
+  "L": 95,
+  "T": 7,
+  "p": 0.8855779994131153,
+  "mean_margin": 0.715
+ },
+ "2.8_vs_8.0": {
+  "tag": "uct_c=2.8 vs uct_c=8.0",
+  "N": 200,
+  "W": 144,
+  "L": 46,
+  "T": 10,
+  "p": 5.881921928091776e-13,
+  "mean_margin": 10.93
+ },
+ "1.4_vs_8.0": {
+  "tag": "uct_c=1.4 vs uct_c=8.0",
+  "N": 200,
+  "W": 149,
+  "L": 49,
+  "T": 2,
+  "p": 6.285389762335701e-13,
+  "mean_margin": 11.185
+ },
+ "_note": "Four seat-swapped pairwise sweeps, N=200 per arm, num_sims=200, seeds 1000-1099 (seed i//2, seat i%2), 16-way parallel. Runs: .venv/Scripts/python.exe -u docs/validation/harness/f006_sweep.py <candidates> 200 200. 1.4-vs-2.8 reproduced identically across two independent runs (W98/L95/T7, p=0.886), confirming F-010 determinism. See f006-fix-plan.md."
+}
