@@ -62,8 +62,29 @@ class CEngineAdapter:
         new_adapter = CEngineAdapter(
             CState(cloned_ptr), self._engine, self._player_ids, self._shuffle_seed
         )
+        self._inherit_projection(new_adapter)
         memo[id(self)] = new_adapter
         return new_adapter
+
+    def _inherit_projection(self, child) -> None:
+        """Hand a child clone/determinization the parent's board projection.
+
+        ``engine_clone`` is a byte copy and ``engine_determinize`` touches only
+        hand/deck/discard/market + shuffle scalars (never the board — see
+        ``engine_c/state.c:271-318``), so the child's board occupancy is
+        identical to the parent's and the parent's ``_board_cache`` /
+        ``_board_static`` can be shared by reference.
+
+        Sharing by reference is safe because (a) a projection is only ever
+        *replaced* wholesale (``apply()`` resets ``_board_cache`` to ``None``;
+        ``_project_board_nodes`` builds a fresh list), never mutated in place,
+        and (b) ``_board_nodes_view`` returns a deep copy, so an external caller
+        cannot mutate the shared structure through one family member. The L1
+        string cache is deliberately NOT inherited: determinize changes
+        hand/deck/discard, so a stale per-player string would be wrong.
+        """
+        child._board_cache = self._board_cache
+        child._board_static = self._board_static
 
     @property
     def state(self) -> CState:
@@ -90,10 +111,18 @@ class CEngineAdapter:
         new_state = self._engine.determinize(self._state, observing_player_id, seed)
         if new_state is None:
             return None
-        return CEngineAdapter(new_state, self._engine, self._player_ids, self._shuffle_seed)
+        new_adapter = CEngineAdapter(
+            new_state, self._engine, self._player_ids, self._shuffle_seed
+        )
+        self._inherit_projection(new_adapter)
+        return new_adapter
 
     def clone_via_replay(self, move_history: list[CMoveWrapper]) -> CEngineAdapter:
-        """Create a new adapter by replaying move_history from the same seed."""
+        """Create a new adapter by replaying move_history from the same seed.
+
+        No projection is inherited: ``create_game`` may build a different board
+        definition, and replay re-applies every move from scratch.
+        """
         new_state = self._engine.create_game(self._player_ids, self._shuffle_seed)
         new_adapter = CEngineAdapter(new_state, self._engine, self._player_ids, self._shuffle_seed)
         for move in move_history:
