@@ -74,6 +74,177 @@ class TestParseArgsDefaults:
         args = _parse_args()
         assert args.max_world_samples == -1
 
+    def test_num_sims_per_seat_default_absent(self, monkeypatch):
+        import sys
+
+        from scripts.run_ismcts import _parse_args
+
+        monkeypatch.setattr(sys, "argv", ["run_ismcts"])
+        args = _parse_args()
+        assert args.num_sims_per_seat is None
+        assert args.num_sims == 200
+
+    def test_num_sims_per_seat_parses(self, monkeypatch):
+        import sys
+
+        from scripts.run_ismcts import _parse_args
+
+        monkeypatch.setattr(
+            sys, "argv", ["run_ismcts", "--num-sims-per-seat", "50,100,200,400",
+                          "--num-players", "4"]
+        )
+        args = _parse_args()
+        assert args.num_sims_per_seat == [50, 100, 200, 400]
+
+    def test_num_sims_per_seat_length_mismatch(self, monkeypatch):
+        import sys
+
+        from scripts.run_ismcts import _parse_args
+
+        monkeypatch.setattr(
+            sys, "argv", ["run_ismcts", "--num-sims-per-seat", "50,100,200",
+                          "--num-players", "4"]
+        )
+        with pytest.raises(SystemExit):
+            _parse_args()
+
+    def test_num_sims_per_seat_mutually_exclusive_with_num_sims(self, monkeypatch):
+        import sys
+
+        from scripts.run_ismcts import _parse_args
+
+        monkeypatch.setattr(
+            sys, "argv", ["run_ismcts", "--num-sims-per-seat", "50,100,200,400",
+                          "--num-sims", "200", "--num-players", "4"]
+        )
+        with pytest.raises(SystemExit):
+            _parse_args()
+
+    def test_num_sims_per_seat_non_integer(self, monkeypatch):
+        import sys
+
+        from scripts.run_ismcts import _parse_args
+
+        monkeypatch.setattr(
+            sys, "argv", ["run_ismcts", "--num-sims-per-seat", "50,abc,200,400",
+                          "--num-players", "4"]
+        )
+        with pytest.raises(SystemExit):
+            _parse_args()
+
+
+class TestPerSeatBudgets:
+    def test_run_one_game_per_seat_budgets(self, requires_c_engine, tmp_path):
+        # Note: budgets are >= 2 because the stock ISMCTSBot leaves
+        # total_visits == 0 after a single simulation, which trips its
+        # NORMALIZED_VISITED_COUNT assertion (num_sims=1 is unsupported).
+        params = _build_quick_params("python_pyrants_c", 4)
+        params["num_sims"] = [2, 2, 3, 4]
+        params["out_dir"] = tmp_path
+        params["max_rounds"] = 5
+
+        summary = run_one_game(**params)
+
+        assert summary["num_sims_per_seat"] == [2, 2, 3, 4]
+        assert summary["num_sims_per_move"] == 2.75
+        assert summary["decision_count"] > 0
+        assert len(summary["returns"]) == 4
+
+        # decisions.jsonl must record the acting seat's budget, not a global value.
+        game_out = _game_dir(tmp_path, 0)
+        decisions = [
+            json.loads(line)
+            for line in (game_out / "decisions.jsonl").open(encoding="utf-8")
+        ]
+        requested = {d["sims_requested"] for d in decisions}
+        assert requested <= {2, 3, 4}
+
+    def test_run_one_game_scalar_backward_compat(self, requires_c_engine, tmp_path):
+        params = _build_quick_params("python_pyrants_c", 4)
+        params["out_dir"] = tmp_path
+        params["max_rounds"] = 5
+
+        summary = run_one_game(**params)
+
+        assert summary["num_sims_per_seat"] == [2, 2, 2, 2]
+        assert summary["num_sims_per_move"] == 2
+
+    def test_run_one_game_invalid_length_raises(self, requires_c_engine, tmp_path):
+        params = _build_quick_params("python_pyrants_c", 4)
+        params["num_sims"] = [1, 2, 2]
+        with pytest.raises(ValueError):
+            run_one_game(**params)
+
+
+class TestPerSeatUct:
+    def test_run_one_game_per_seat_uct(self, requires_c_engine, tmp_path):
+        params = _build_quick_params("python_pyrants_c", 4)
+        params["uct_c"] = [0.3, 0.8, 1.4, 2.5]
+        params["out_dir"] = tmp_path
+        params["max_rounds"] = 5
+
+        summary = run_one_game(**params)
+
+        assert summary["uct_c_per_seat"] == [0.3, 0.8, 1.4, 2.5]
+        assert summary["uct_c"] == pytest.approx(1.25)
+        assert summary["decision_count"] > 0
+
+        # Final-deck capture: final_decks.json written, final_vp_per_seat
+        # seat-ordered, final_deck_metrics present.
+        game_out = _game_dir(tmp_path, 0)
+        decks_path = game_out / "final_decks.json"
+        assert decks_path.exists(), "final_decks.json missing after a successful run"
+        final_decks = json.loads(decks_path.read_text(encoding="utf-8"))
+        assert len(final_decks["player_ids"]) == 4
+        assert len(final_decks["per_seat"]) == 4
+
+        # The captured deck is card zones only: trophy-hall entries store
+        # troop-owner tokens ("white" / player ids), never card ids, so they
+        # must not appear in the per-seat card-id lists.
+        token_ids = set(final_decks["player_ids"]) | {"white"}
+        for seat in final_decks["per_seat"]:
+            assert seat, "per-seat deck must not be empty"
+            for card_id in seat:
+                assert isinstance(card_id, str)
+                assert card_id not in token_ids, (
+                    f"non-card trophy token {card_id!r} leaked into the deck capture"
+                )
+
+        assert len(summary["player_ids"]) == 4
+        assert len(summary["final_vp_per_seat"]) == 4
+        assert all(isinstance(v, int) for v in summary["final_vp_per_seat"])
+        assert len(summary["final_deck_metrics"]) == 4
+        for dm in summary["final_deck_metrics"]:
+            assert "full" in dm
+            assert "recruited" in dm
+            assert "recruited_degraded" in dm
+            for metric_key in ("unique_count", "deck_size", "unique_ratio",
+                               "shannon_entropy", "normalized_entropy", "simpson"):
+                assert metric_key in dm["full"]
+                assert metric_key in dm["recruited"]
+
+    def test_run_one_game_scalar_uct_backward_compat(self, requires_c_engine, tmp_path):
+        params = _build_quick_params("python_pyrants_c", 4)
+        params["out_dir"] = tmp_path
+        params["max_rounds"] = 5
+
+        summary = run_one_game(**params)
+
+        assert summary["uct_c_per_seat"] == [1.4, 1.4, 1.4, 1.4]
+        assert summary["uct_c"] == pytest.approx(1.4)
+
+    def test_run_one_game_uct_wrong_length_raises(self, requires_c_engine, tmp_path):
+        params = _build_quick_params("python_pyrants_c", 4)
+        params["uct_c"] = [0.3, 0.8, 1.4]
+        with pytest.raises(ValueError):
+            run_one_game(**params)
+
+    def test_run_one_game_uct_nonpositive_raises(self, requires_c_engine, tmp_path):
+        params = _build_quick_params("python_pyrants_c", 4)
+        params["uct_c"] = [0.3, 0.0, 1.4, 2.5]
+        with pytest.raises(ValueError):
+            run_one_game(**params)
+
 
 class TestCMoveWrapperNormalization:
     def test_all_moves_normalized(self, requires_c_engine):

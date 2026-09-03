@@ -25,6 +25,7 @@ import os
 import sys
 import time
 import traceback
+from collections.abc import Sequence
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 from random import Random
@@ -57,6 +58,7 @@ from scripts._replay_payload import (  # noqa: E402
     compute_final_scores,
     resolve_winner_id,
 )
+from scripts._sims_vs_wins import parse_sims_spec  # noqa: E402
 from scripts._state_snapshot import (  # noqa: E402
     _is_board_mutating,
     _tier1_snapshot,
@@ -147,7 +149,21 @@ def _parse_args() -> argparse.Namespace:
         description="Run IS-MCTS against python_pyrants",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument("--num-sims", type=int, default=200)
+    parser.add_argument(
+        "--num-sims",
+        type=int,
+        default=argparse.SUPPRESS,
+        help="Simulations per move applied to every seat (default: 200). "
+        "Mutually exclusive with --num-sims-per-seat.",
+    )
+    parser.add_argument(
+        "--num-sims-per-seat",
+        type=str,
+        default=None,
+        help="Comma-separated per-seat simulations per move, e.g. "
+        "'50,100,200,400'. Length must equal --num-players. Mutually "
+        "exclusive with --num-sims.",
+    )
     parser.add_argument("--uct-c", type=float, default=1.4)
     parser.add_argument(
         "--max-world-samples",
@@ -194,8 +210,20 @@ def _parse_args() -> argparse.Namespace:
                              "When the cap is hit the game is recorded with "
                              "stopped_reason='round_cap'.")
     args = parser.parse_args()
+    num_sims_explicit = hasattr(args, "num_sims")
+    if not num_sims_explicit:
+        args.num_sims = 200
     if args.num_players < 2 or args.num_players > 4:
         parser.error(f"--num-players must be 2–4, got {args.num_players}")
+    if args.num_sims_per_seat is not None:
+        if num_sims_explicit:
+            parser.error("--num-sims-per-seat and --num-sims are mutually exclusive")
+        try:
+            args.num_sims_per_seat = parse_sims_spec(
+                args.num_sims_per_seat, args.num_players
+            )
+        except ValueError as exc:
+            parser.error(str(exc))
     return args
 
 
@@ -310,15 +338,25 @@ def _base_game_summary(
     deck_a_id: str,
     deck_b_id: str,
     num_players: int,
-    num_sims: int,
-    uct_c: float,
+    num_sims_per_seat: list[int],
+    uct_c_per_seat: list[float],
     rollout_count: int,
     rollout_max_length: int | None,
     final_policy_name: str,
     decision_count: int,
     wall_sec: float,
 ) -> dict:
-    """Shared base fields for both the success-path and partial game summaries."""
+    """Shared base fields for both the success-path and partial game summaries.
+
+    ``num_sims_per_move`` is kept as the mean of ``num_sims_per_seat`` and
+    ``uct_c`` as the mean of ``uct_c_per_seat`` for backward compatibility with
+    the CSV writer and the run-summary helpers.
+    """
+    mean_sims = sum(num_sims_per_seat) / len(num_sims_per_seat)
+    num_sims_per_move = (
+        int(mean_sims) if mean_sims == int(mean_sims) else round(mean_sims, 3)
+    )
+    uct_c = round(sum(uct_c_per_seat) / len(uct_c_per_seat), 6)
     return {
         "run_id": run_id,
         "game_index": game_index,
@@ -326,8 +364,10 @@ def _base_game_summary(
         "deck_a_id": deck_a_id,
         "deck_b_id": deck_b_id,
         "num_players": num_players,
-        "num_sims_per_move": num_sims,
+        "num_sims_per_move": num_sims_per_move,
+        "num_sims_per_seat": list(num_sims_per_seat),
         "uct_c": uct_c,
+        "uct_c_per_seat": list(uct_c_per_seat),
         "rollout_count": rollout_count,
         "rollout_max_length": rollout_max_length,
         "policy_type": final_policy_name,
@@ -336,11 +376,90 @@ def _base_game_summary(
     }
 
 
+def _normalize_sims_per_seat(num_sims: int | Sequence[int], num_players: int) -> list[int]:
+    """Normalize ``num_sims`` (scalar or per-seat sequence) to a budget list.
+
+    A scalar becomes ``[num_sims] * num_players``. A sequence must have length
+    ``num_players`` and every value >= 1, else ``ValueError`` is raised early.
+    """
+    if isinstance(num_sims, Sequence) and not isinstance(num_sims, (str, bytes)):
+        seats = list(num_sims)
+        if len(seats) != num_players:
+            raise ValueError(
+                f"num_sims sequence length {len(seats)} != num_players {num_players}"
+            )
+    else:
+        seats = [num_sims] * num_players
+    if any(s < 1 for s in seats):
+        raise ValueError(f"all per-seat num_sims must be >= 1, got {seats}")
+    return seats
+
+
+def _normalize_per_seat_uct(uct_c: float | Sequence[float], num_players: int) -> list[float]:
+    """Normalize ``uct_c`` (scalar or per-seat sequence) to a per-seat list.
+
+    A scalar becomes ``[uct_c] * num_players``. A sequence must have length
+    ``num_players`` and every value > 0, else ``ValueError`` is raised early.
+    """
+    if isinstance(uct_c, Sequence) and not isinstance(uct_c, (str, bytes)):
+        seats = [float(x) for x in uct_c]
+        if len(seats) != num_players:
+            raise ValueError(
+                f"uct_c sequence length {len(seats)} != num_players {num_players}"
+            )
+    else:
+        seats = [float(uct_c)] * num_players
+    if any(s <= 0 for s in seats):
+        raise ValueError(f"all per-seat uct_c must be > 0, got {seats}")
+    return seats
+
+
+def _final_deck_card_ids(state, num_players: int) -> list[list[str]]:
+    """Read every card id across a seat's card zones from the C PlayerState.
+
+    The full deck is the union of draw pile + hand + discard + played cards +
+    inner circle (cards can leave via the shared devour pile). The trophy hall
+    is deliberately excluded: it stores troop-owner tokens (``"white"`` /
+    player ids), not card ids. Zone counts are read — never the full
+    ``MAX_ZONE_SIZE`` fixed arrays.
+    """
+    s = state._adapter._state._s
+    decks: list[list[str]] = []
+    for i in range(num_players):
+        p = s.players[i]
+        ids: list[str] = []
+        ids.extend(_sym_str(p.deck[j]) for j in range(p.deck_count))
+        ids.extend(_sym_str(p.hand[j]) for j in range(p.hand_count))
+        ids.extend(_sym_str(p.discard_pile[j]) for j in range(p.discard_pile_count))
+        ids.extend(_sym_str(p.played_cards[j]) for j in range(p.played_cards_count))
+        ids.extend(_sym_str(p.inner_circle[j]) for j in range(p.inner_circle_count))
+        decks.append(ids)
+    return decks
+
+
+def _final_deck_metrics(per_seat_decks: list[list[str]]) -> list[dict]:
+    """Compute full + recruited deck-diversity metrics for each seat.
+
+    ``starter_counts`` is derived once from the cached ``_base_setup()`` starter
+    deck (7× noble + 3× soldier — invariant across players and under
+    ``combine_two_deck_market_setup``, which only varies the market).
+    """
+    from scripts._uct_sweep import deck_variety_metrics
+
+    starter_counts = {
+        e["card_id"]: e["count"] for e in _base_setup()["starter_deck"]["entries"]
+    }
+    return [
+        deck_variety_metrics(deck, starter_counts=starter_counts)
+        for deck in per_seat_decks
+    ]
+
+
 def run_one_game(
     game: pyspiel.Game,
     game_index: int,
-    num_sims: int,
-    uct_c: float,
+    num_sims: int | Sequence[int],
+    uct_c: float | Sequence[float],
     max_world_samples: int,
     final_policy_type,
     final_policy_name: str,
@@ -360,6 +479,8 @@ def run_one_game(
     num_players: int = 2,
     evaluator_name: str = "random-py",
 ) -> dict:
+    sims_per_seat = _normalize_sims_per_seat(num_sims, num_players)
+    uct_per_seat = _normalize_per_seat_uct(uct_c, num_players)
     logger = structlog.get_logger().bind(
         game_index=game_index,
         shuffle_seed=shuffle_seed,
@@ -391,8 +512,8 @@ def run_one_game(
             make_ismcts_bot(
                 game=game,
                 seed=seat_seed,
-                num_sims=num_sims,
-                uct_c=uct_c,
+                num_sims=sims_per_seat[i],
+                uct_c=uct_per_seat[i],
                 max_world_samples=max_world_samples,
                 final_policy_type=final_policy_type,
                 evaluator=_build_evaluator(rng_i),
@@ -409,6 +530,7 @@ def run_one_game(
     decisions: list[dict] = []
     replay_log: list[dict] = []
     move_latencies: list[float] = []
+    total_sims = 0
     wall_start = time.perf_counter()
     previous_round_number = state._engine.round_number
 
@@ -490,7 +612,7 @@ def run_one_game(
                 "chosen_action_id": int(chosen),
                 "chosen_move": chosen_move_str,
                 "wall_time_ms": round(wall_ms, 3),
-                "sims_requested": num_sims,
+                "sims_requested": sims_per_seat[cp],
             }
             decisions.append(decision)
             # Streamed unconditionally — the bot's decision is valid telemetry
@@ -540,8 +662,9 @@ def run_one_game(
                 "payload": move_payload,
             })
             decision_count += 1
+            total_sims += sims_per_seat[cp]
             if inner_bar is not None:
-                sims_per_sec_rate = num_sims / (wall_ms / 1000.0) if wall_ms > 0 else 0.0
+                sims_per_sec_rate = sims_per_seat[cp] / (wall_ms / 1000.0) if wall_ms > 0 else 0.0
                 inner_bar.set_postfix_str(
                     f"r{state._engine.round_number} {state._engine.phase.value} "
                     f"sims/s={sims_per_sec_rate:.0f}"
@@ -569,8 +692,8 @@ def run_one_game(
             deck_a_id=deck_a_id,
             deck_b_id=deck_b_id,
             num_players=num_players,
-            num_sims=num_sims,
-            uct_c=uct_c,
+            num_sims_per_seat=sims_per_seat,
+            uct_c_per_seat=uct_per_seat,
             rollout_count=rollout_count,
             rollout_max_length=rollout_max_length,
             final_policy_name=final_policy_name,
@@ -655,7 +778,7 @@ def run_one_game(
         if len(best_indices) == 1:
             winner = best_indices[0]
 
-    sims_per_sec = (num_sims * decision_count) / wall_sec if wall_sec > 0 else 0.0
+    sims_per_sec = total_sims / wall_sec if wall_sec > 0 else 0.0
 
     move_latency_ms: dict = {"count": 0, "mean": 0.0, "max": 0.0}
     if move_latencies:
@@ -717,6 +840,11 @@ def run_one_game(
     final_round_num = state._engine.round_number
     final_scores = compute_final_scores(state)
 
+    player_ids = list(state._game.get_player_ids())
+    final_vp_per_seat = [final_scores[pid] for pid in player_ids]
+    final_decks = _final_deck_card_ids(state, num_players)
+    final_deck_metrics = _final_deck_metrics(final_decks)
+
     if stopped_reason == "round_cap":
         outcome = "truncated"
     elif winner is None:
@@ -742,8 +870,8 @@ def run_one_game(
             deck_a_id=deck_a_id,
             deck_b_id=deck_b_id,
             num_players=num_players,
-            num_sims=num_sims,
-            uct_c=uct_c,
+            num_sims_per_seat=sims_per_seat,
+            uct_c_per_seat=uct_per_seat,
             rollout_count=rollout_count,
             rollout_max_length=rollout_max_length,
             final_policy_name=final_policy_name,
@@ -771,6 +899,9 @@ def run_one_game(
         "final_round": final_round_num,
         "final_phase": final_phase,
         "final_scores_per_player": final_scores,
+        "player_ids": player_ids,
+        "final_vp_per_seat": final_vp_per_seat,
+        "final_deck_metrics": final_deck_metrics,
         "setup_data_sha256": setup_data_sha256,
         "initial_state_sha256": initial_state_sha256,
         "_move_latencies": move_latencies,
@@ -787,7 +918,6 @@ def run_one_game(
     steps_fh.close()
     decisions_fh.close()
 
-    player_ids = list(state._game.get_player_ids())
     winner_id = resolve_winner_id(state, winner, num_players)
 
     replay_payload = build_replay_payload(
@@ -819,6 +949,10 @@ def run_one_game(
         json.dump(summary_out, f, indent=2)
         f.write("\n")
 
+    with (game_out / "final_decks.json").open("w", encoding="utf-8") as f:
+        json.dump({"player_ids": player_ids, "per_seat": final_decks}, f, indent=2)
+        f.write("\n")
+
     return game_summary
 
 
@@ -831,7 +965,8 @@ def write_summaries(out_dir: Path, summaries: list[dict], run_id: str) -> None:
     csv_path = _summary_csv_path(out_dir)
     fieldnames = [
         "run_id", "game_index", "shuffle_seed", "deck_a_id", "deck_b_id",
-        "num_sims_per_move", "uct_c", "rollout_count", "rollout_max_length",
+        "num_sims_per_move", "num_sims_per_seat", "uct_c", "uct_c_per_seat",
+        "rollout_count", "rollout_max_length",
         "decision_count", "wall_time_sec", "sims_per_sec_avg", "moves_per_sec_avg",
         "winner", "outcome", "stopped_reason", "max_rounds",
         "policy_entropy_mean", "chosen_action_prob_mean",
@@ -843,7 +978,12 @@ def write_summaries(out_dir: Path, summaries: list[dict], run_id: str) -> None:
         writer = csv.DictWriter(f, fieldnames=fieldnames, extrasaction="ignore", restval="")
         writer.writeheader()
         for s in summaries:
-            writer.writerow(s)
+            row = dict(s)
+            if isinstance(row.get("num_sims_per_seat"), list):
+                row["num_sims_per_seat"] = ",".join(str(x) for x in row["num_sims_per_seat"])
+            if isinstance(row.get("uct_c_per_seat"), list):
+                row["uct_c_per_seat"] = ",".join(str(x) for x in row["uct_c_per_seat"])
+            writer.writerow(row)
 
     md_path = _summary_md_path(out_dir)
     total_wall = sum(s["wall_time_sec"] for s in summaries)
@@ -905,8 +1045,8 @@ def _log_game_done(index: int, total: int, summary: dict, t0_start: float) -> No
 
 def _run_one_game_standalone(
     game_index: int,
-    num_sims: int,
-    uct_c: float,
+    num_sims: int | Sequence[int],
+    uct_c: float | Sequence[float],
     max_world_samples: int,
     final_policy_name: str,
     seed: int,
@@ -996,12 +1136,13 @@ def main() -> None:
     logger = structlog.get_logger()
 
     workers = args.workers if args.workers > 0 else os.cpu_count() or 1
+    num_sims = args.num_sims_per_seat if args.num_sims_per_seat is not None else args.num_sims
 
     logger.info(
         "run_start",
         game=args.game,
         num_players=args.num_players,
-        num_sims=args.num_sims,
+        num_sims=num_sims,
         uct_c=args.uct_c,
         policy=args.final_policy,
         num_games=args.num_games,
@@ -1037,7 +1178,7 @@ def main() -> None:
                 summary = run_one_game(
                     game=game,
                     game_index=gi,
-                    num_sims=args.num_sims,
+                    num_sims=num_sims,
                     uct_c=args.uct_c,
                     max_world_samples=args.max_world_samples,
                     final_policy_type=policy_type,
@@ -1092,7 +1233,7 @@ def main() -> None:
                     executor.submit(
                         _run_one_game_standalone,
                         game_index=gi,
-                        num_sims=args.num_sims,
+                        num_sims=num_sims,
                         uct_c=args.uct_c,
                         max_world_samples=args.max_world_samples,
                         final_policy_name=args.final_policy,
