@@ -18,6 +18,18 @@
       "skillPath": "skills/create-agentsmd/SKILL.md",
       "computedHash": "bfbdbb76b17cca970d1d624e36ce72b6847860d740581c8865da796c1fef8552"
     },
+    "documentation-writer": {
+      "source": "github/awesome-copilot",
+      "sourceType": "github",
+      "skillPath": "skills/documentation-writer/SKILL.md",
+      "computedHash": "ee53d65b163cd7eb953a930c95841cfe398cc2c0bd24c06508bbaa07c432be35"
+    },
+    "grug": {
+      "source": "replete/grug",
+      "sourceType": "github",
+      "skillPath": "grug/SKILL.md",
+      "computedHash": "61647e62d27e3d4eef3653e2bca4596a1dc15778e342142103d2355f6c2e9bcf"
+    },
     "grug-brain-development": {
       "source": "supersterling/grug-brain-dev",
       "sourceType": "github",
