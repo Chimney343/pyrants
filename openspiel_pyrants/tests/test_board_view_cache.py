@@ -12,11 +12,27 @@ invariants that must hold regardless of whether caching exists, and are written
 before the one genuinely red test (T2).
 
 See ``docs/validation/f013-fix-plan.md`` § 4 for the T1–T6 mapping.
+
+F-013 Part B (``docs/validation/f013-part-b-fix-plan.md``) supersedes two of
+the assertions below:
+
+- ``test_determinize_and_clone_get_independent_fresh_caches`` (T4) asserted
+  ``build_c_board_view`` is called exactly twice after a parent's cache is
+  warmed — one fresh projection per child. Part B Phase 4 (L2) propagates the
+  parent's projection to ``determinize()``/``deepcopy()`` children, making zero
+  fresh projections correct. The test is superseded by
+  ``test_board_projection.py::TestDeterminizeProjectionInvariant::test_clone_and_determinize_inherit_the_parent_projection``,
+  and inverting it is only safe because Part B's T9 (determinize does not
+  change board occupancy) and T10 (``engine_determinize`` is structurally
+  board-free) lock down the engine invariant the old test was hedging against.
+- ``test_repeated_calls_hit_the_cache`` (T2) spied on ``view.build_c_board_view``,
+  which the adapter stops calling in Part B Phase 2. It is re-pointed at the
+  new projection entry point ``_project_board_nodes`` so it cannot pass
+  vacuously at ``call_count == 0``.
 """
 
 from __future__ import annotations
 
-import copy
 import json
 import re
 from pathlib import Path
@@ -57,14 +73,6 @@ def _mid_game_state(game, shuffle_seed=42, n_moves=40):
 def _board_nodes(state, pid) -> list:
     """The ``public.board_nodes`` component of *pid*'s private view."""
     return json.loads(state._adapter.private_view_json(pid))["public"]["board_nodes"]
-
-
-def _board_view_spy():
-    """Patch ``view.build_c_board_view`` so calls can be counted without
-    touching production or simulation code (test-file-only instrumentation)."""
-    import engine_c.bindings.view as view_mod
-
-    return mock.patch.object(view_mod, "build_c_board_view", wraps=view_mod.build_c_board_view)
 
 
 class TestBoardViewCache:
@@ -121,7 +129,13 @@ class TestBoardViewCache:
 
     def test_repeated_calls_hit_the_cache(self, requires_c_engine):
         """T2 — the one red test (G3): N unmutated calls trigger exactly one
-        underlying board projection."""
+        underlying board projection.
+
+        F-013 Part B re-points the spy at ``_project_board_nodes``, the fast
+        projection entry point the adapter uses from Phase 2 onward. The old
+        spy target ``view.build_c_board_view`` would pass vacuously at
+        ``call_count == 0`` once the adapter stops calling it.
+        """
         game = _load_c_game(2)
         state = _mid_game_state(game)
         adapter = state._adapter
@@ -129,32 +143,20 @@ class TestBoardViewCache:
         cp = state.current_player()
         pid = pids[cp if cp >= 0 else 0]
 
-        with _board_view_spy() as spy:
+        with mock.patch.object(
+            type(adapter), "_project_board_nodes", wraps=adapter._project_board_nodes
+        ) as spy:
             for _ in range(10):
                 adapter.private_view_json(pid)
         assert spy.call_count == 1, f"expected 1 board build, got {spy.call_count}"
 
-    def test_determinize_and_clone_get_independent_fresh_caches(self, requires_c_engine):
-        """T4 — clones/determinizations must not inherit a parent's cached
-        object; each computes fresh on first view (identity, not just value)."""
-        game = _load_c_game(2)
-        state = _mid_game_state(game)
-        adapter = state._adapter
-        pids = state._game.get_player_ids()
-        cp = state.current_player()
-        pid = pids[cp if cp >= 0 else 0]
-
-        adapter.private_view_json(pid)  # warm the parent cache
-        d = adapter.determinize(pid, 12345)
-        c = copy.deepcopy(adapter)
-        assert d is not None
-
-        with _board_view_spy() as spy:
-            d.private_view_json(pid)
-            c.private_view_json(pid)
-        assert spy.call_count == 2, (
-            f"expected 2 fresh board builds (one per child), got {spy.call_count}"
-        )
+    # Superseded by Part B T11 (test_board_projection.py): once a parent's
+    # projection is warm, its determinize()/deepcopy() children inherit it and
+    # perform ZERO fresh projections on first view. That inversion is only safe
+    # because Part B T9/T10 pin the engine invariant this test used to hedge
+    # against (determinize never touches the board). The original body asserted
+    # ``spy.call_count == 2`` for two children — exactly the behaviour Part B
+    # Phase 4 removes. See the module docstring.
 
     def test_apply_is_still_the_only_state_reassignment_site(self, requires_c_engine):
         """T5 — structural trip-wire: ``self._state = `` must appear only in
