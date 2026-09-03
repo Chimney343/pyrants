@@ -1,0 +1,4 @@
+INV4b-DECISIVE same-move-type/different-site pairs with DIFFERENT board: N=400
+  private_view_json IDENTICAL (board invisible to observer): 0
+  private_view_json differs (board visible):                 400
+  information_state_string differs (any cause incl. history): 400

@@ -1,0 +1,19 @@
+state fp: b894fa18ffc8d311 legal: 2 player: 0
+
+=== B1: same fixed state, N identically-seeded fresh bots, compare chosen action ===
+  num_sims=20 N=10 seed=4242 -> distinct chosen=1 [1], distinct policies=1
+  num_sims=200 N=10 seed=4242 -> distinct chosen=1 [1], distinct policies=1
+
+=== B2: does the ROOT STATE mutate during search? ===
+  num_sims=20: root fp before=b894fa18ffc8d311 after=b894fa18ffc8d311 intact
+  num_sims=200: root fp before=b894fa18ffc8d311 after=b894fa18ffc8d311 intact
+
+=== B3: repeat B1 but with root passed as the SAME object each trial ===
+  chosen sequence over 10 trials on one shared root: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+
+=== B4: factory-built bot, same seed each trial (probe) ===
+  trial0: chosen=1 nodes=20
+  trial1: chosen=1 nodes=20
+  trial2: chosen=1 nodes=20
+  trial3: chosen=1 nodes=20
+  trial4: chosen=1 nodes=20

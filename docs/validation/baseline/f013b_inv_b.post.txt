@@ -1,0 +1,7 @@
+sampled 776 mid-game states
+INV4a leakage(hidden differs -> string must match): N=300 violations=0 []
+INV4b distinguishability via infostate-key collision: N=776 unique_keys=776 same-key-different-board=0
+INV4b board fields present in private_view_json: ['board_nodes']  (public keys: ['board_nodes', 'current_player_id', 'market_deck_size', 'market_discard_size', 'market_row', 'phase', 'public_player_summaries', 'resource_influence', 'resource_power', 'round_number', 'turn_order'])
+INV4b-2 board-mutating moves: N=62 board changed & private_view UNCHANGED=0, also changed=62
+INV5 determinisation: N=200 K=12 distinct_worlds mean=11.48 min=8 max=12 singleton_infosets=0
+INV5 conservation violations=0/2400, history mismatches=0/2400 []

@@ -1,0 +1,13 @@
+  seed3 steps40: identical(seed,counter,contents)->same deck order: True | counter+1 -> same: False | seed^const -> same: False
+  seed3 steps60: identical(seed,counter,contents)->same deck order: True | counter+1 -> same: False | seed^const -> same: False
+  seed11 steps40: identical(seed,counter,contents)->same deck order: True | counter+1 -> same: False | seed^const -> same: False
+  seed17 steps40: identical(seed,counter,contents)->same deck order: True | counter+1 -> same: False | seed^const -> same: False
+  seed17 steps60: identical(seed,counter,contents)->same deck order: True | counter+1 -> same: False | seed^const -> same: False
+  seed23 steps40: identical(seed,counter,contents)->same deck order: True | counter+1 -> same: False | seed^const -> same: False
+  seed23 steps60: identical(seed,counter,contents)->same deck order: True | counter+1 -> same: False | seed^const -> same: False
+  seed31 steps40: identical(seed,counter,contents)->same deck order: True | counter+1 -> same: False | seed^const -> same: False
+
+  N=8 controlled reshuffles
+  same (seed,counter,contents) -> identical permutation: 8/8
+  shuffle_counter+1 -> permutation CHANGED: 8/8
+  shuffle_seed^const -> permutation CHANGED: 8/8
