@@ -529,6 +529,20 @@ Q-value spread does not capture. The `uct_c` value is now reachable on all three
 (`ismcts`/`ismcts-quick` trailing parameter, `ismcts-perf` via `*args`) and the sweep harness is
 committed for re-checks.
 
+> **Review 01 [2026-09-03] — ACCEPTED-WITH-DEBT** (`docs/validation/reviews/f006-review-01.md`),
+> at `ca64991` (code) + `25c600b` (evidence), verified at head `c6a7ee8`. Independently re-ran the
+> pre-registered falsification test (PASS at head) and reproduced the headline `1.4`-vs-`2.8`
+> pairing **bit-identically** (N=200, seeds 1000-1099, `W98/L95/T7`, `p=0.8855779994131153`,
+> `mean_margin=0.715`) — a third independent computation, which also re-confirms F-010 determinism.
+> G1 live-verified on single- **and** multi-worker paths (`ismcts-perf` was previously only
+> dry-run-verified); the plan's G4 sanity check, never recorded by the fix author, was run here:
+> `inv_a.py` 4/4 PASS. Suite 923/928 pass, zero regressions attributable to F-006. Conformance
+> **CONFORMANT** — re-reading paper § IV-A at source strengthens the close, since the paper claims
+> *insensitivity within a band* rather than mandating `0.7`, which is the shape the sweep measured.
+> Debt: evidence was uncommitted at close (**F-016**); the sweep artifact is not regenerable and
+> self-destructs on re-run (**F-017**); condition 4's "beats" wording (see below); four carried
+> out-of-scope `justfile` hunks not authored by this fix. No newly STALE rows.
+
 Conditions that must clear before GO, in dependency order:
 
 1. ~~**F-011 (blocking).**~~ **RESOLVED — Review 01 ACCEPTED-WITH-DEBT** (`docs/validation/reviews/f011-review-01.md`,
@@ -571,6 +585,20 @@ Conditions that must clear before GO, in dependency order:
    column on the two game-running recipes; `ismcts-perf` passthrough dry-run-verified), default
    path byte-identical. Strength claims are now
    unblocked pending re-measurement of the STALE INV-7/8/9 win rates (§1 note below).
+
+   > **Correction appended by F-006 Review 01 [2026-09-03]** — prior text above is left intact per
+   > Hard Rule 7. This condition's own gate wording is *"Chosen value **beats** its immediate
+   > neighbours"*, and the paragraph above asserts *"Gate met: ... with the chosen value beating
+   > its neighbours"* while stating one clause later that `1.4` **ties** 0.7 (p=0.66) and 2.8
+   > (p=0.89). Those clauses contradict each other. **The gate as literally worded was not met:
+   > `1.4` ties its immediate neighbours and beats only 8.0, which is not an immediate neighbour
+   > in the sorted candidate set `[0.7, 1.4, 2.8, 8.0]`.** The close is nonetheless valid, but
+   > under `f006-fix-plan.md` § 0 constraint 4 (*"if it finds `1.4` already beats **or ties** its
+   > neighbours, that is a legitimate, honest close"*), which was pre-registered before the sweep
+   > ran and is therefore not post-hoc goalpost-moving — not under this condition's "beats"
+   > wording, which the plan presented itself as quoting verbatim while in fact relaxing. The
+   > measurement is sound and was reproduced bit-identically by Review 01; only the statement of
+   > gate satisfaction was wrong. Condition 4 remains **RESOLVED**.
 
 5. **F-003, F-005, F-008, F-009, F-013, F-014, F-015 (non-blocking).**
    **F-003 (mid-game chance nodes)** is CONFIRMED (134/2,112 transitions advance

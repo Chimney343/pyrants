@@ -39,6 +39,9 @@ All six required components exist; none had to be substituted.
 | F-013 | ENGINE-OPENSPIEL | MINOR | *(found by the F-011 fix)* routing `build_c_board_view` into `private_view_json` costs ~388 µs/call and regresses search wall-time 9.66×; fixed in two parts — Part A cached the board projection on `CEngineAdapter` (9.66× → ~6.4×), Part B made the projection cheap in pure Python (cheap direct projection + sym memo + static hoisting + per-player string cache + clone/determinize propagation) and closed the residual to ~1.6× vs. the pre-F-011 baseline |
 | F-014 | ENGINE | MAJOR | *(found by the F-004 fix's T6 stress probe)* `give_insane_outcast` mints fresh instances without consulting its 30-copy special-stack cap, so `min_utility=-50.0` is a practical, not formally tight, bound |
 | F-015 | ENGINE | MODERATE | *(found while mapping F-003 Part B's ten call sites)* `neogi`'s `timing:"end_of_turn"` force_discard fires twice — once inline during pending-generic resolution (which does not filter by `timing`), once again for real at end-of-turn — discarding 2 cards per opponent instead of the rulebook's 1 |
+| F-016 | VALIDATION-PROCESS | MAJOR | *(found by Review 01 of F-006)* The ledger's committed close text cites nine evidence artifacts — the F-006 sweep harness and results, two fix plans, five ACCEPTED review documents — that existed at no commit when the findings they close were closed |
+| F-017 | VALIDATION-PROCESS | MODERATE | *(found by Review 01 of F-006)* `f006_sweep_results.json` is a hand-merged composite no single invocation can produce, and the harness opens it `"w"`, so any documented re-run destroys two to three of its four pairings |
+| F-018 | ENGINE-OPENSPIEL | MODERATE | *(found by Review 01 of F-006's regression sweep)* `replay_player.decision_at` returns a decision whose `chosen_move` disagrees with the step label at the same index, so the replay viewer can attribute the wrong decision to a step |
 
 ## 3. Findings
 
@@ -224,6 +227,18 @@ All six required components exist; none had to be substituted.
   uct_c=1.4 vs uct_c=8.0: N=200 winrate=0.750 (W149/L49/T2) p=6.3e-13 mean_margin=+11.19
   ```
   Reading: the 6.4:1 exploitation-to-exploration ratio and the ~8-9 "equalising" estimate from the raw root-node probe do NOT translate into a strength preference for a high constant — `1.4` beats `8.0` overwhelmingly (p=6.3e-13) and `2.8` also beats `8.0` (p=5.9e-13). Within the low range {0.7, 1.4, 2.8} there is no significant separation (p=0.66, p=0.89); `1.4`-vs-`2.8` reproduced identically across two independent runs (W98/L95/T7 both), confirming F-010 determinism. The concern that exploration is "outweighed 6.4:1" by raw-VP rewards does not materialise as a strength defect at the budgets tested; the raw-VP scale is evidently compressed by the outcome function in a way the root-node spread does not capture. The `uct_c` value is now calibrated to this game and reachable from all three `just` recipes: trailing recipe parameter on `ismcts`/`ismcts-quick` (default `"1.4"`, forwarded as `--uct-c`; just 1.43 positional override syntax, e.g. `just ismcts-quick 1 2 0.7`), and via the existing `*args` passthrough on `ismcts-perf` (e.g. `just ismcts-perf 2 --uct-c 0.7`, signature otherwise untouched). Live-verified through the `summary.csv` `uct_c` column on `ismcts-quick` and `ismcts` (multi-worker); `ismcts-perf` passthrough dry-run-verified. The sweep harness is committed for any future re-check; omitted-argument defaults remain byte-identical (1.4).
+- Review 01 [2026-09-03] at `ca6499139619e32a6baf5511f5962fc108318457` (code) + `25c600b896e8131bcc00329fd2d1869435e6fba3` (evidence), verified at head `c6a7ee84684475489e03f991565c67109186c0a2`: **ACCEPTED-WITH-DEBT** — `docs/validation/reviews/f006-review-01.md`
+- Diff: `justfile` (2 recipes) + `docs/validation/harness/f006_sweep.py` + `f006_sweep_results.json` + `f006-fix-plan.md` | out-of-scope hunks: 4 (all *carried*, not authored by this fix — replay-viewer, sims-vs-wins, uct-sweep and docs-check recipes sharing the same `justfile`; inseparable without editing content, which a reviewer may not do) | test changes: 0 (nothing under `tests/` or `openspiel_pyrants/tests/` in either commit; the full Rule-4 gaming checklist was run against the whole commit range anyway and cleared item by item)
+- Conformance: **CONFORMANT** vs rulebook §[absent], paper § IV-A. Re-reading § IV-A at source rather than via the finding's paraphrase changes the picture in the fix's favour: the paper's actual claim is that "none of the algorithms are particularly sensitive to the coefficient value ... although performance does decrease outside the range" (`docs/ismcts-paper.md:316-322`), with 0.7 as its chosen point inside that band — not that 0.7 is uniquely correct. The sweep reproduced exactly that shape on this domain. Caveat recorded: this repo's copy of the paper is a lossy extraction with the numeric range bounds dropped at lines 314/318, so "is 1.4 inside the paper's band" cannot be settled by citation — which is why the empirical sweep is the right instrument.
+- Test: pre-registered falsification test (repo/commit-history search for tuning evidence). At head `c6a7ee8` → **PASS**, matches "Expected if FALSE POSITIVE": `f006-fix-plan.md` + `f006_sweep.py` + `f006_sweep_results.json` all present and document the empirical comparison. **At `0266851`, the fix author's own last commit, the same search returns *Expected if REAL*** — `git ls-tree -r 0266851 -- docs/validation/harness/` yields only `f006.py`, while `findings.md` at that SHA already asserted the sweep numbers. The evidence entered history only at `25c600b`, a commit created by this review under owner direction.
+- Independent reproduction: `.venv/Scripts/python.exe -u docs/validation/harness/f006_sweep.py "1.4,2.8" 200 200` N=200 (100 seeds × 2 seats) seeds=1000-1099 SHA=`c6a7ee8` → `W98/L95/T7 p=0.8855779994131153 mean_margin=0.715`, **bit-identical** to the committed artifact (third independent computation of this pairing). Confirms F-010 determinism holds.
+- G1 (flag reaches the bot): `just ismcts 2 1 42 <dir> 1 2 <uct_c>` N=4 runs seeds=42 → explicit `0.7` → `uct_c=0.7`/`uct_c_per_seat=0.7,0.7`; omitted → `1.4`; explicit `1.4` → identical game to omitted (same winner, 517 decisions, same `initial_state_sha256=619b25fd38d519f8`); multi-worker (`workers=2`) also `0.7`. Constraint 1 satisfied — and `ismcts-perf`'s passthrough is now live-verified rather than dry-run-verified.
+- G4 (plan Phase 4 step 3, never run or recorded by the fix author): `inv_a.py` at `c6a7ee8` → INV-1 PASS (N=100, seeds 1-100), INV-2 PASS (N=277 probes), INV-3 PASS (N=1,200, empty=0/dup=0/oor=0), INV-6 PASS (N=30). 4/4.
+- Regressions: **none attributable to F-006.** `pytest -q` at `c6a7ee8`: 928 collected, **923 passed, 4 failed, 1 skipped**. Three failures are the documented tolerated set (Zuggtmoy, Air Elemental, Neogi/F-015); the fourth, `tests/test_replay_player.py::test_decision_at_matches_step`, is new from the replay-viewer commit `2ce8f0e` and outside F-006's blast radius — raised as F-018.
+- Gate-wording defect (debt, not rework): the plan's G3 is presented as `verdict.md` § 5 condition 4 "verbatim" and requires the chosen value to **beat** its immediate neighbours. `1.4` **ties** them (vs 0.7 p=0.663; vs 2.8 p=0.886) and beats only 8.0, which is not an immediate neighbour in the sorted set. The close is legitimate under the plan's own pre-registered constraint 4 ("beats **or ties**"), which was written before the sweep ran and is therefore not post-hoc — but not under condition 4's "beats". `verdict.md` § 5 condition 4 asserts "Gate met: ... with the chosen value beating its neighbours" and then states "it ties 0.7 ... and 2.8" in the same paragraph. Per Hard Rule 7 that text is not edited; a correction is appended to `verdict.md` instead.
+- Invalidated: **no newly STALE rows (count: 0)** — `ca64991` touches the `justfile` and one standalone harness script only, changes no engine/binding/observation/utility/search code, and leaves the runtime default at `1.4`, so the STRENGTH-row cascade is not triggered. INV-7/8/9 remain STALE from F-010 Review 01, unchanged. Verified by derivation, not assumption: no script in `docs/validation/harness/` imports `run_ismcts` (only a docstring mention in `common.py`), so `a0ac02e`'s `run_ismcts.py` changes cannot move any invariant either.
+- Ledger drift observed (not edited, per Hard Rule 7): `verdict.md` § 1 records INV-2 as "235 clone probes" where the harness now reports **277**, and INV-3 as "seeds 1-22" where the harness reports **seeds 1..20**. Both pre-date this review; INV-2's probe count moved with the F-013 Part B clone/determinize work.
+- New findings raised: **F-016, F-017, F-018**
 
 ### F-007 Discard-pile visibility is a rulebook silence the code has resolved by treating discards as hidden
 - Class: SPEC-GAP
@@ -484,6 +499,83 @@ All six required components exist; none had to be substituted.
   after end_main_phase (PHASE_MAIN -> PHASE_END_OF_TURN): shuffle_counter=5, p2 hand=2
   ```
 - Verdict rationale: Matches "Expected if REAL" exactly — two independent discards, two independent `shuffle_counter` advances, for a card whose rules text specifies one. Folded into `docs/validation/f002-f003-completion-plan.md`'s F-003 Part B M4 milestone rather than fixed standalone, since M4 already has to touch both `generic_runtime.c`'s interceptor and (per the original fix plan's D5) resolve whether `rules.c:530-538` is a duplicate of one of the `generic_runtime.c` variants — the answer, now traced: not a duplicate, an unguarded double-fire of the same action, and M4's chance-node conversion of this site should produce exactly one discard per opponent, not two.
+
+### F-016 The ledger's committed close text cites evidence artifacts that exist at no commit
+- Class: VALIDATION-PROCESS
+- Severity: MAJOR (the evidentiary chain of the ledger itself; every number a reader tries to reproduce from a cited artifact fails)
+- Origin: **Found by Review 01 of F-006**, while establishing a SHA to anchor that review's numbers to per Hard Rule 5.
+- Code: `docs/validation/findings.md` F-006 `Command:` line cites `docs/validation/harness/f006_sweep.py` and its results artifact; `docs/validation/verdict.md:652-653` lists `harness/f006_sweep.py C,N,S` in the harness index; `verdict.md:521-530` and `:561-573` cite `docs/validation/f006-fix-plan.md` and `docs/validation/harness/f006_sweep_results.json` as the evidence closing a GO/NO-GO blocking condition. At `0266851` none of those three files existed in the git tree. The same pattern covers `docs/validation/f013-part-b-fix-plan.md` (the plan `f013-review-04.md` enforced its G0 gate against), the five `reviews/f00{2,4}-review-02.md` / `f01{0,1,3}-review-02.md` ACCEPTED verdicts, and `.kilo/plans/1788349243964-insane-outcast-supply-cap-plan.md` (cited by F-014's `Status:` line).
+- Rulebook: [absent]
+- Whitepaper: [absent] — pure validation-process concern.
+- Disagreement: the ledger is committed and presents itself as a reproducible record, but at `0266851` its citations resolve to nothing. A reader cloning the repo at that SHA can read the assertion "uct_c=0.7 vs uct_c=1.4: N=200 winrate=0.482 ... p=0.663" and has no harness to re-run, no results artifact to diff against, and no plan describing the protocol. This is the exact failure mode the ledger exists to prevent, and it applies to five ACCEPTED review verdicts as well as to F-006's close.
+- Steelman: the files were present in the author's working tree throughout, so the numbers were never fabricated — this is a `git add` omission, not a data-integrity failure. Review 01 of F-006 re-ran one pairing and reproduced it bit-identically, which is direct evidence the numbers themselves are sound. On that reading the defect is hygiene, not correctness.
+- Falsification test: `git ls-tree -r --name-only 0266851 -- docs/validation/` and check for `harness/f006_sweep.py`, `harness/f006_sweep_results.json`, `f006-fix-plan.md`; then `git show 0266851:docs/validation/findings.md | grep -c "uct_c=0.7 vs uct_c=1.4"`.
+- Expected if REAL: the three artifacts are absent from the tree listing while `findings.md` at the same commit already asserts the numbers (count ≥ 1).
+- Expected if FALSE POSITIVE: the artifacts are present at that commit and the citations resolve.
+- Status: **OPEN**
+- Command: `git ls-tree -r --name-only 0266851 -- docs/validation/harness/ | grep -i f006` ; `git ls-tree -r --name-only 0266851 -- docs/validation/ | grep -c f006-fix-plan` ; `git show 0266851:docs/validation/findings.md | grep -c "uct_c=0.7 vs uct_c=1.4"`
+- N: 9 cited artifacts checked at one commit (`0266851`)
+- Observed:
+  ```
+  git ls-tree -r 0266851 -- docs/validation/harness/ | grep -i f006  ->  docs/validation/harness/f006.py     (only)
+  git ls-tree -r 0266851 -- docs/validation/ | grep -c f006-fix-plan ->  0
+  git show 0266851:docs/validation/findings.md | grep -c "uct_c=0.7 vs uct_c=1.4" -> 1
+  untracked at 0266851: f006-fix-plan.md, f013-part-b-fix-plan.md, harness/f006_sweep.py,
+    harness/f006_sweep_results.json, reviews/f002-review-02.md, reviews/f004-review-02.md,
+    reviews/f010-review-02.md, reviews/f011-review-02.md, reviews/f013-review-02.md
+  ```
+- Verdict rationale: Matches "Expected if REAL" on both clauses. Partially remediated by `25c600b`, which committed all nine artifacts verbatim so F-006 Review 01 could anchor its numbers — but the underlying process defect (a finding being closed, and five reviews being recorded as ACCEPTED, against evidence that was never committed) is unaddressed and is what this finding tracks. Related: [F-017] — the same F-006 artifact is additionally not regenerable.
+
+### F-017 `f006_sweep_results.json` cannot be regenerated by any documented command, and any documented re-run destroys most of it
+- Class: VALIDATION-PROCESS
+- Severity: MODERATE (the artifact's numbers are correct and reproduce bit-identically; the defect is that the artifact is hand-assembled and self-destructing, so re-verification silently discards evidence)
+- Origin: **Found by Review 01 of F-006**, by reading `f006_sweep.py` before re-running it and then confirming the effect live.
+- Code: `docs/validation/harness/f006_sweep.py:73-78` builds `out` with keys `f"{a}_vs_{b}"` for **adjacent** pairs only (`for i in range(len(ordered) - 1)` over `ordered = sorted(candidates)`), then writes `open(path, "w")` — a full replace, never a merge. The module docstring claims "Reads/writes f006_sweep_results.json"; the script never reads it.
+- Rulebook: [absent]
+- Whitepaper: [absent]
+- Disagreement: the committed artifact holds four pairings (`0.7_vs_1.4`, `1.4_vs_2.8`, `2.8_vs_8.0`, `1.4_vs_8.0`) plus a `_note` string. Sorted `[0.7, 1.4, 2.8, 8.0]` yields only the first three as adjacent pairs — `1.4_vs_8.0` is not adjacent — and the script emits no `_note` key at all. No single invocation can produce this file; it is a manual union of three separate write-only runs plus a hand-added note. The three commands `findings.md` documents are individually honest, but the artifact they are said to have produced is a hand-merged composite, and running any one of them overwrites the other pairings.
+- Steelman: `findings.md` discloses all three commands explicitly, and the `_note` field itself discloses the two-run reproduction, so nothing is concealed — the author merged results by hand because the harness has no merge mode, which is a missing feature rather than a misrepresentation. The numbers are demonstrably correct: Review 01 reproduced `1.4_vs_2.8` bit-identically (`p=0.8855779994131153`, `mean_margin=0.715`).
+- Falsification test: back up `docs/validation/harness/f006_sweep_results.json`, run one of the documented commands (e.g. `.venv/Scripts/python.exe -u docs/validation/harness/f006_sweep.py "1.4,2.8" 200 200`), then `git diff --stat` the artifact.
+- Expected if REAL: the artifact is rewritten with only that invocation's pairing(s); `_note` and the non-recomputed pairings are gone.
+- Expected if FALSE POSITIVE: the script merges into the existing file and preserves the other pairings and `_note`.
+- Status: **OPEN**
+- Command: `.venv/Scripts/python.exe -u docs/validation/harness/f006_sweep.py "1.4,2.8" 200 200` ; `git diff --stat docs/validation/harness/f006_sweep_results.json`
+- N: 1 documented command executed at N=200 games, seeds 1000-1099, SHA `c6a7ee8`
+- Observed:
+  ```
+  before: keys = ['0.7_vs_1.4', '1.4_vs_2.8', '2.8_vs_8.0', '1.4_vs_8.0', '_note']
+  run   : uct_c=1.4 vs uct_c=2.8: N=200 winrate=0.507 (W98/L95/T7) p=0.8856 mean_margin=+0.71
+  after : keys = ['1.4_vs_2.8']
+  git diff --stat -> 1 file changed, 2 insertions(+), 30 deletions(-)
+  (committed artifact restored with `git checkout --`; all 5 keys verified intact)
+  ```
+- Verdict rationale: Matches "Expected if REAL" exactly — three of four pairings and the `_note` field were destroyed by a single documented command. Note the same run reproduced the surviving pairing's full-precision `p` and `mean_margin` bit-identically, so this finding is about artifact durability and provenance, not about the numbers. Related: [F-016].
+
+### F-018 `replay_player.decision_at` returns a decision whose `chosen_move` disagrees with the step at the same index
+- Class: ENGINE-OPENSPIEL (replay fidelity)
+- Severity: MODERATE (a failing committed test; the replay viewer can attribute the wrong decision to a step, which would silently mislead any manual review of IS-MCTS play)
+- Origin: **Found by Review 01 of F-006's regression sweep** — it is the only new failure in the suite and is outside F-006's blast radius, so it is filed rather than charged to that fix.
+- Code: `interface/replay_player.py` (`decision_at`), exercised by `tests/test_replay_player.py::test_decision_at_matches_step`. Introduced by commit `2ce8f0e` (IS-MCTS replay viewer).
+- Rulebook: [absent]
+- Whitepaper: [absent]
+- Disagreement: the test asserts `decision["chosen_move"] == entry["label"]` and fails: the decision reports `initial_placement(target_node_id='site_gauntlgrym')` where the step at that index is labelled `initial_placement(target_node_id='site_menzoberranzan')`. Either the decision index is offset relative to the step list, or the two are drawn from streams that are not aligned. This bears on `findings.md` § 5's own "Not Checked" entry for `History()` replay-from-initial-state reconstruction, which remains unperformed.
+- Steelman: the replay viewer is a read-only diagnostic UI, not part of the engine, the OpenSpiel adapter, or the search — no measured invariant, strength row, or ledger number depends on it, and the mismatch may be a test-fixture indexing error rather than a defect in `decision_at` itself.
+- Falsification test: `.venv/Scripts/python.exe -m pytest tests/test_replay_player.py::test_decision_at_matches_step -q`
+- Expected if REAL: AssertionError showing two `initial_placement` labels with different `target_node_id`s.
+- Expected if FALSE POSITIVE: the test passes.
+- Status: **OPEN**
+- Command: `.venv/Scripts/python.exe -m pytest -q --tb=no --no-header` (whole-suite context) and the single-test command above
+- N: 928 tests collected; 923 passed, 4 failed, 1 skipped at SHA `c6a7ee8`
+- Observed:
+  ```
+  FAILED tests/test_replay_player.py::test_decision_at_matches_step
+  >       assert decision["chosen_move"] == entry["label"]
+  E       assert "initial_plac...zoberranzan')" == "initial_plac..._gauntlgrym')"
+  E         - initial_placement(target_node_id='site_gauntlgrym')
+  E         + initial_placement(target_node_id='site_menzoberranzan')
+  ```
+  The other three failures are the documented tolerated set (Zuggtmoy, Air Elemental, Neogi = F-015).
+- Verdict rationale: Matches "Expected if REAL". Not investigated further and not fixed, per review protocol step 5. Filed as OPEN for the owner to schedule; it does not block any current GO condition.
 
 ## 4. Unanchored (suspicions that could not be fully anchored)
 
