@@ -1,5 +1,7 @@
 # OpenSpiel Integration
 
+See also: [openspiel-architecture.md](openspiel-architecture.md) for how the wrapper works internally (chance-mode/decision-mode lifecycle, action encoding, determinization). This doc is the quick-start and reference; that one is the explanation.
+
 pyrants is registered as `python_pyrants_c` in OpenSpiel via the
 `openspiel_pyrants/` package (C engine backend). Two-player base game with the base board
 (`tyrants_of_the_underdark.json`), no scenarios, no hidden-information observer

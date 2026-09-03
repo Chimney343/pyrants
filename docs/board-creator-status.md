@@ -19,7 +19,6 @@ Data and checks:
 - `data/layouts/base_game_layout.json`
 - `tests/test_board_creator_collaborators.py`
 - `tests/test_board_package.py`
-- `tests/test_board_renderer.py`
 
 ## Done
 
@@ -31,7 +30,7 @@ Data and checks:
 
 ## Awaiting
 
-- The board creator still has a pending UX-copy sweep. The replacement inventory (`docs/source/board_creator_copy_replacements.md`) exists, but it has not been applied to the live strings.
+- The board creator still has a pending UX-copy sweep. The replacement inventory (`docs/source/board-creator-copy-replacements.md`) exists, but it has not been applied to the live strings.
 - A tighter manual or automated check for user-facing messages would help once that copy pass lands.
 - Older phase notes still mention planned graphical-board and layout-editor work. Those notes are now historical, not the current status.
 

@@ -19,6 +19,8 @@ Python side: Python 3.12+, Pydantic-typed state, headless simulation, terminal U
 
 ## Architecture
 
+Condensed layout below; see [docs/repo-structure.md](docs/repo-structure.md) for the fuller reference (per-module file tables, entry points, conventions).
+
 ```
 /engine_c              C engine (source of truth): *.c/*.h, compile.bat, Makefile, engine_c.dll
 /engine_c/bindings     Python ctypes/CPython bindings to engine_c.dll
@@ -54,6 +56,7 @@ Python side: Python 3.12+, Pydantic-typed state, headless simulation, terminal U
 | File | Purpose | How to run |
 |------|---------|-----------|
 | `interface/game_viewer.py` | Interactive terminal game viewer (C engine) | `just game-viewer` |
+| `interface/replay_viewer.py` | Read-only IS-MCTS replay viewer (subclasses `GameViewerApp`; pure helpers in `interface/replay_loader.py` + `interface/replay_player.py`) | `just replay-viewer` |
 | `interface/board_creator.py` | Interactive board creator | `just board-creator` |
 | `scripts/run_ismcts.py` | IS-MCTS bot runner against OpenSpiel wrapper (C backend) | `just ismcts` |
 | `engine_c/bindings/` | C engine Python bindings | `just simulate-c` |
@@ -120,6 +123,7 @@ Python side: Python 3.12+, Pydantic-typed state, headless simulation, terminal U
 - Required pre-commit checks: `ruff check .`, `just test`, `just build-c` + `just test-c` / `just test-c-python` (when touching `/engine_c` or bindings).
 - Engine changes must add/extend C or Python tests covering the new behavior.
 - Keep commits focused; do not mix engine, UI, and data-format changes in one PR.
+- If a PR moves/renames/deletes a file or shifts line ranges that `docs/**/*.md` cites by path or `path:line`, update or re-verify those citations. Run `just docs-check` to catch broken ones mechanically.
 
 ## Debugging and Troubleshooting
 

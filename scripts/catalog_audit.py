@@ -6,6 +6,7 @@ import json
 import re
 import sys
 from dataclasses import dataclass
+from datetime import date
 from pathlib import Path
 from typing import Any, Literal
 
@@ -220,6 +221,7 @@ def render_markdown_report(entries: list[CardAuditEntry], *, card_path: Path, st
     lines = [
         "# Catalog Execution Audit",
         "",
+        f"Generated {date.today().isoformat()} by `python scripts/generate_catalog_execution_audit.py`.",
         f"Source catalog: {card_path.as_posix()}",
         f"Probe artifact: {stuck_report_path.as_posix() if stuck_report_path.exists() else 'not provided'}",
         "",

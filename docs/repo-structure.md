@@ -1,5 +1,7 @@
 # pyrants — Repository Structure & Purpose
 
+See also: [AGENTS.md](../AGENTS.md) carries a condensed version of this layout (Architecture/Directory Map sections) for agent-tool consumption. This doc is the fuller reference — if the two ever disagree, treat that as drift and reconcile them.
+
 **pyrants** is a turn-based board game engine for *Tyrants of the Underdark*. The engine is written in **C** (pure library, no I/O) and lives in `engine_c/`; a Python package (`engine_c/bindings/`) wraps the compiled DLL and provides the terminal UI, headless simulation, OpenSpiel integration, and tooling. The legacy Python `engine/` directory has been removed.
 
 ---
@@ -131,6 +133,7 @@ Terminal UI built on Tk:
 | `just generate-test-card-scenarios` | `scripts/generate_card_scenarios.py` | Test scenario generation |
 | `just openspiel-test` | `pytest openspiel_pyrants/tests/` | OpenSpiel wrapper tests |
 | `just openspiel-smoke` | — | Quick registration check |
+| `just docs-check` | `scripts/check_docs_freshness.py` | Check `docs/**/*.md` citations (paths, line ranges, `just` tasks) against the actual tree |
 
 ---
 

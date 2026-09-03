@@ -1,4 +1,4 @@
-> **Archived 2026-08-30** — every item below is now implemented and tested; `docs/openspiel_integration.md` is the live doc.
+> **Archived 2026-08-30** — every item below is now implemented and tested; `docs/openspiel-integration.md` is the live doc.
 
 Tyrants of the Underdark: OpenSpiel Integration Checklist (IS-MCTS Support)
 1. Core Forward Model & Actions

@@ -27,6 +27,8 @@ just test    # verify the install works
 |---------|-------------|
 | `just board-creator` | Build and edit board topology and layouts |
 | `just game-viewer` | Play interactively in the terminal |
+| `just replay-viewer` | Step through an IS-MCTS replay (`artifacts/ismcts/**/replay.json`) |
+| `just verify-replays` | Headless-check every replay still re-simulates from `artifacts/ismcts` |
 | `just simulate-c` | Run a headless simulation (auto-play) |
 | `just test` | Run the test suite |
 

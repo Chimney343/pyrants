@@ -1,5 +1,7 @@
 # How the OpenSpiel Wrapper Works
 
+See also: [openspiel-integration.md](openspiel-integration.md) for the quick-start, game-classification table, and coverage status. This doc explains the internal mechanism; that one is the reference/how-to entry point.
+
 ## Architecture
 
 The wrapper translates between two domains: OpenSpiel expects integer actions on a `pyspiel.State`; the C engine produces `CMoveWrapper` moves on a `CState`. The translation happens in the `_c` wrapper files.

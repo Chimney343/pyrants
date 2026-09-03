@@ -11,27 +11,16 @@
 > (documentation, ownership, history, decisions). **Always verify against
 > actual source files before making changes** — the index may be stale.
 
-Last indexed: 2026-09-01 (commit a6509b1). Confidence: 100%.
+Last indexed: 2026-09-03 (commit 0266851). Confidence: 100%.
 ### Architecture
-Repo is a card-game research and validation monorepo: it consumes board packages and game-rule configuration via game_setup loaders, simulates authoritative game state in the C engine engine_c (state.h, intern.h, rng.h, arena.h), bridges that engine to Python through an adapter/binding layer, wraps it as an OpenSpiel game under openspiel_pyrants to run IS-MCTS agents with C-backed rollout evaluators, and produces evaluation artifacts such as markdown findings and verdicts through the docs/validation harness. The repository spans 1046 files (~239k LOC), but the runtime core is small and layered: C and Python dominate the actual code (3.1% + 2.0% C/C++, 25.2% Python), while JSON (47.8%) supplies board/config data and Markdown (20.1%) carries validation reports and documentation. Two TypeScript tooling packages (.kilo, .kilocode) provide IDE/agent tooling and are peripheral to the engine pipeline. | Layer | Technology | Key modules |
-|---|---|---|
-| Core engine | C / C++ | engine_c/state.h, intern.h, rng.h, arena.h |
-| Python bridge | Python (ctypes adapter) | engine_c/bindings/engine_bindings.py, ce_api.py, session.py, view.py, c_adapter.py |
-| Game setup | Python | game_setup/loaders.py, board_package.py, types.py |
-| AI / research | Python + OpenSpiel | openspiel_pyrants/game_c.py, ismcts_factory.py, c_rollout_evaluator.py |
-| Configuration & data | JSON (47.8%) | Board packages, game definitions, test fixtures |
-| Docs & validation artifacts | Markdown (20.1%) | docs/validation/findings.md, docs/validation/verdict.md |
-| Testing | pytest | tests/conftest.py, tests/c_engine/card_test_helpers.py |
-| Tooling | TypeScript | .kilo, .kilocode |
-
-The stack is intentionally split: a fast, authoritative C simulator underneath a Python research/agent layer, with OpenSpiel as the interface to the wider game-theory and reinforcement-learning ecosystem.
+Repo is a research-grade game engine and AI evaluation platform for the deck-building board game *Tyrants of the Underdark*: it takes scenario definitions (card sets, board packages, market configurations in JSON) through the game_setup loaders, simulates rule-abiding game state in a compact C core (engine_c/), bridges that core to Python via FFI bindings and an OpenSpiel adapter (openspiel_pyrants/), runs ISMCTS and Monte-Carlo-rollout agents through head-to-head matches, and emits final scores, gameplay traces, and rule-verification reports consumed by its test/validation harness. In short, the repository converts a complex board-game rulebook into a reproducible benchmark for game-tree search and reinforcement-learning agents. The monorepo is **library-driven** rather than service-oriented: there is no standalone CLI or server; consumers import Python modules that load C-backed game state. Scale is moderate but documentation- and data-heavy — **1,092 files / 255,461 LOC**, dominated by JSON (45.9%, mostly configuration/expected-outcome data), Python (26.2%), and Markdown (21.3%, design and verification docs).
 ### Key Modules
 | Module | Purpose | Owner |
 |--------|---------|-------|
-| `community-1` | The tests/c_engine module is the integration and conformance layer for repowise' | — |
-| `community-0` | engine_c is the C-language simulation and lifecycle core of repowise's engine su | — |
+| `community-1` | The docs/validation module is the invariant-verification subsystem of the pyrant | — |
+| `community-0` | engine_c is the authoritative game-state and rules engine at the centre of this  | — |
 | `community-3` | The tests/c_engine module is the behavior-verification harness for repowise's C  | — |
-| `community-2` | The test module is the empirical validation layer of the pyrants/OpenSpiel toolc | — |
+| `community-2` | The tests/c_engine module is the conformance-testing layer of the engine_c C-eng | — |
 | `community-248` | The **tests** module is the verification subsystem of repowise — it consumes gen | — |
 | `community-4` | The scripts module is the execution and experiment orchestration layer of the ** | — |
 | `community-6` | The **scripts** module is the integration and validation layer of the Pyrants ga | — |
@@ -79,14 +68,14 @@ The stack is intentionally split: a fast, authoritative C simulator underneath a
 | File | Churn | 90d Commits | Owner |
 |------|-------|-------------|-------|
 | `data/cards/catalog.json` | 100.0th %ile | 58 | Chimney343 |
-| `interface/game_viewer.py` | 99.9th %ile | 21 | Chimney343 |
+| `interface/game_viewer.py` | 99.9th %ile | 19 | Chimney343 |
 | `engine_c/generic_runtime.c` | 99.9th %ile | 24 | Chimney343 |
 | `scripts/run_ismcts.py` | 99.8th %ile | 10 | Chimney343 |
 | `engine/rules.py` | 99.8th %ile | 9 | Chimney343 |
 
 ## Code health
-Hotspot health: 6.47/10 (stable) ·
-Average: 7.54/10 ·
+Hotspot health: 6.6/10 (stable) ·
+Average: 7.59/10 ·
 Worst: 1.0/10 (`engine/rules.py`)
 
 ### Critical biomarkers
@@ -94,7 +83,7 @@ Worst: 1.0/10 (`engine/rules.py`)
 - `engine/helpers.py` — untested hotspot — impact −2.0
 - `engine/state.py` — untested hotspot — impact −2.0
 - `engine_c/bindings/ce_api.py` — untested hotspot — impact −2.0
-- `engine_c/bindings/view.py` — untested hotspot — impact −2.0
+- `engine_c/bindings/engine_bindings.py` — untested hotspot — impact −2.0
 
 ### Repowise MCP Tools
 

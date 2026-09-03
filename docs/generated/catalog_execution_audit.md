@@ -1,5 +1,6 @@
 # Catalog Execution Audit
 
+Generated 2026-09-03 by `python scripts/generate_catalog_execution_audit.py`.
 Source catalog: C:/Users/mkkom/pyrants/data/cards
 Probe artifact: not provided
 
