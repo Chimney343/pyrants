@@ -9,13 +9,14 @@ given with each row. Read-only on all source outside `docs/validation/`.
 `just ismcts-quick` → 1 game, 464 decisions, 0.9 s, writing
 `artifacts/ismcts/{metrics.json,summary.csv,summary.md,game_0000/}` — parseable, matching what the findings assumed.
 
-**Overall: NO-GO for large-scale simulation.** Three independent defects each
-sufficient on their own to invalidate results (F-011, F-004, F-002/F-003), plus
-uncalibrated search parameters (F-006). Reproducibility (F-010): the fix logic is verified
-correct (runs do reproduce from `--seed`), but the commit that lands it was **REJECTED-SCOPE**
-by Review 01 (`docs/validation/reviews/f010-review-01.md`) for bundling unauthorized,
-plan-external changes — treat F-010 as fix-verified-but-not-yet-merge-clean until
-re-submission. See §5 for the clearance conditions.
+**Overall: GO.** F-011 (observation completeness), F-004 (3–4 player returns contract), F-002 (shared reshuffle
+stream), F-010 (reproducibility), and F-006 (uct_c calibration) are all resolved — each
+independently re-confirmed across two review passes with zero regressions (§2, §5). F-003
+(mid-game chance-node exposure) is a real, CONFIRMED defect, formally **POSTPONED**
+(`docs/adr/0002-postpone-f003-chance-node-exposure.md`) at owner direction [2026-09-02], and — per
+that direction — is no longer counted as a GO/NO-GO factor for this project; see §5. All four
+original blocking conditions are cleared; the only remaining caveats are the STALE INV-7/8/9
+win-rate re-measurement and the F-013 throughput residual (see §5).
 
 ---
 
@@ -147,8 +148,20 @@ Post-fix evidence:
 > this commit bundled nothing beyond the plan's authorized scope. G5's 9.66× regression was
 > independently re-measured at 9.655×, confirming F-013 (still `OPEN`) rather than raising a new
 > finding.
+>
+> **Review 02** (`docs/validation/reviews/f011-review-02.md`, `HEAD`): **ACCEPTED-WITH-DEBT**
+> (F-013 still open). Second independent pass, not triggered by a new fix. Found real drift since
+> Review 01 — `engine_c/bindings/c_adapter.py` gained a caching wrapper (`16f8712`, F-013's own
+> already-reviewed fix) — but the six-key board projection is byte-identical, only its build
+> timing changed; F-013 is folded into this review's blast radius rather than treated as
+> unreviewed drift. Independently re-ran INV-4b (403/403, exact match), INV-4a (0/300), INV-5
+> (mean 11.11/12, exact match), the 8-test suite (8/8, incl. G4), F-013's own 5-test cache suite
+> (5/5), F-010's `det_bot.py` B1 (unchanged), the always-on battery, `openspiel_pyrants` suite
+> (78/78 excluding the 10 pre-existing postponed F-003 RED failures), the repo-root suite (same 3
+> pre-existing failures), and `just test-c` (exit 0). Zero out-of-scope hunks. G5 re-measured at
+> 6.87× (down from 9.655× per F-013's own mitigation, not a new regression).
 
-**F-010 — determinization seeds are unseeded; no run is reproducible. FIX LOGIC VERIFIED, COMMIT REJECTED-SCOPE (Review 01).**
+**F-010 — determinization seeds are unseeded; no run is reproducible. FIXED (Review 02 ACCEPTED-WITH-DEBT).**
 Fixed by `openspiel_pyrants/ismcts_factory.py::make_ismcts_bot` (installs a seeded numpy
 resampler via the stock `ISMCTSBot.set_resampler` hook, with a dedicated
 `RandomState(seed ^ 0x5F10)` stream decoupled from the bot's `random_state`) plus a guard in
@@ -172,6 +185,19 @@ across 10 identically-seeded searches (was 3–4 distinct); INV-5 world diversit
 > F-010 as closed-by-review until a re-submission resolves the scope gap (see review §9). One
 > new MINOR finding raised in passing: F-012 (dormant `Generator`/`.randint()` mismatch in the
 > new guard's accept branch).
+>
+> **Review 02** (`docs/validation/reviews/f010-review-02.md`, commit `2cfd836`): **ACCEPTED-WITH-DEBT**
+> (F-012 still open). `2cfd836` is documentation-only — confirmed via `git diff 028ff9d HEAD --stat`
+> returning empty for every F-010 production/test file — resolving Review 01's two scope blockers:
+> an owner-approved decision record now authorizes the 3 extra script deletions (re-verified: still
+> zero references repo-wide), and `grug_findings.md` is deleted outright rather than merely
+> re-scoped. Independently re-ran INV-1 (N=100, PASS), `det_bot.py` B1 (1/1 distinct), INV-5 (mean
+> 11.11/12, exact-match to the current post-F-011 baseline), F-002's `f002b.py` (pre-fix signature
+> reproduced exactly, undisturbed), the always-on battery (INV-1/2/3/6, exact-match), the 7-test
+> `test_ismcts_reproducibility.py` suite (7/7), the full `openspiel_pyrants` suite (78/78 excluding
+> the 10 pre-existing, postponed F-003 Part B RED failures), the repo-root suite (same 3
+> pre-existing `engine_c`/catalog failures), and `just test-c` (exit 0). Zero out-of-scope hunks.
+> F-010 is now closed both logically and procedurally; no further re-submission required.
 
 **F-002 — determinization never rerolls `shuffle_seed`/`shuffle_counter`. FIXED.**
 `engine_determinize` cloned `src` byte-for-byte, so every ISMCTS-sampled determinization of one
@@ -218,6 +244,13 @@ Post-fix evidence:
 > new. No newly-STALE rows (INV-7/8/9 already STALE; this change is a fifth independent trigger,
 > correctly not double-counted). Condition 3a stands struck with review backing; condition 3b
 > (F-003) remains the open half.
+>
+> **Review 02** (`docs/validation/reviews/f002-review-02.md`, `HEAD`): **ACCEPTED**, no debt.
+> Second independent pass, not triggered by a new fix — `git diff e9a2702 HEAD` empty for every
+> F-002 production/test file. Fresh re-runs: GA1 0/100, GA3 3/3, `f002b.py` unchanged, `just
+> test-c` green incl. both F-002 C tests, INV-1/2/3/6/4a/4b/5 all exact-match, F-010's `det_bot.py`
+> B1 unchanged, `openspiel_pyrants` suite 78/78 (excluding the 10 pre-existing, postponed F-003
+> Part B RED failures), repo-root suite same 3 pre-existing failures. Zero out-of-scope hunks.
 
 ### CRITICAL
 
@@ -250,6 +283,14 @@ is untouched — this is a metadata correction, not a reward-computation change.
 > supporting evidence (a claimed "zero matches" grep against the installed `open_spiel` package was
 > actually 182 matches) without disturbing the plan's underlying conclusion, which holds for the
 > narrower, correct reason that `ISMCTSBot` itself (`ismcts.py`) has zero matches.
+>
+> **Review 02** (`docs/validation/reviews/f004-review-02.md`, `HEAD`): **ACCEPTED-WITH-DEBT**
+> (F-014 still open). Second independent pass, zero drift since Review 01. Re-ran the
+> falsification test (0/50 out-of-bounds, n==2 zero-sums 50/50), the 8-test suite (8/8), G5's
+> grep (same 3 non-production files), T5/T6 (byte-identical injection bounds), the always-on
+> battery (exact-match), the `openspiel_pyrants` suite (78/78 excluding the 10 pre-existing
+> postponed F-003 Part B RED failures), and the repo-root suite (same 3 pre-existing failures).
+> Zero out-of-scope hunks.
 
 **F-003 — mid-game random events are never chance nodes.**
 134 `shuffle_counter` advances over 2,112 transitions, **0** preceded by `is_chance_node()==True`.
@@ -276,15 +317,28 @@ a random first player. Mitigating evidence: INV-8 found no measurable first-seat
 (N=48, seat-swapped), so this is a fidelity defect rather than a demonstrated strength bias.
 > Repro: `python -u docs/validation/harness/findings.py`
 
-**F-006 — `uct_c=1.4` is an untuned argparse default on the wrong reward scale.**
+**F-006 — `uct_c=1.4` is an untuned argparse default on the wrong reward scale. CALIBRATED (kept 1.4).**
 No sweep artifact, doc, or commit anywhere in the repo. Measured root Q-value spread is
 9.22 against a mean exploration bonus of 1.443 — exploitation outweighs exploration 6.4:1,
-where the paper's 0.7 assumed rewards normalised to ±1.
-> Repro: `python -u docs/validation/harness/f006.py`
+where the paper's 0.7 assumed rewards normalised to ±1. **Resolution [2026-09-02]** — the
+sweep (`docs/validation/f006-fix-plan.md`) ran four seat-swapped N=200/pair comparisons at
+`num_sims=200` (`docs/validation/harness/f006_sweep_results.json`): {0.7,1.4,2.8} show no
+significant separation (p=0.66, p=0.89), while `1.4` beats `8.0` (W149/L49/T2, p=6.3e-13) and
+`2.8` beats `8.0` (W144/L46/T10, p=5.9e-13). The current default **1.4 already ties its
+neighbours**, so it is kept — an honest close per the plan's constraint 4. `uct_c` is now
+reachable from all three `just` recipes: a trailing recipe parameter on `ismcts` and
+`ismcts-quick` (default `"1.4"`, forwarded as `--uct-c`; on this repo's just 1.43 positional
+override syntax applies, e.g. `just ismcts-quick 1 2 0.7`), and on `ismcts-perf` through its
+existing `*args` passthrough (e.g. `just ismcts-perf 2 --uct-c 0.7`) — the perf recipe's
+signature is otherwise untouched. Live-verified through the `summary.csv` `uct_c` column on
+`ismcts-quick` (0.7/2.0/default) and `ismcts` (multi-worker, 0.7/default); `ismcts-perf`
+passthrough dry-run-verified, and the omitted-argument default path is byte-identical on all
+three.
+> Repro: `python -u docs/validation/harness/f006.py` · `python -u docs/validation/harness/f006_sweep.py "0.7,1.4,2.8" 200 200` · `"1.4,2.8,8.0"` · `"1.4,8.0"`
 
 ### MINOR
 
-**F-014 — `give_insane_outcast` mints without its 30-copy cap; `min_utility=-50.0` is practical, not tight.**
+**F-014 — `give_insane_outcast` mints without its 30-copy cap; `min_utility=-50.0` is practical, not tight. FIXED.**
 
 `engine_c/actions.c:698-705` appends fresh `insane_outcast` copies to a target's discard pile
 without consulting `remaining_special_stack_count` or the `stack_total=30` cap
@@ -305,22 +359,33 @@ the F-004 `GameInfo` metadata fix; tracked here per `docs/validation/f004-fix-pl
 > Falsification test T1 in `tests/c_engine/test_insane_outcast_supply.py`; full suites green
 > (3 pre-existing tolerated failures + 10 postponed F-003 Part B RED only).
 
-**F-013 — board projection costs ~388 µs/call; `private_view_json` regressed 9.66×. MITIGATED.**
+**F-013 — board projection costs ~388 µs/call; `private_view_json` regressed 9.66×. FIXED.**
 
-`_board_nodes_view` (added by the F-011 fix) calls `build_c_board_view`, which invokes the
+`_board_nodes_view` (added by the F-011 fix) called `build_c_board_view`, which invokes the
 monolithic `engine_build_view` that `memset`s the full `CGameView` and populates every card zone
 for every player plus three `remaining_special_stack_count` scans — ~388 µs/call — while the
 board-only wrapper reads back just `nodes`. End-to-end search wall-time rose 9.66× at
-`num_sims=200`. The `CEngineAdapter` board cache (`f013-fix-plan.md`) makes repeated views on one
-adapter build the board once instead of per call (G3) and is invalidated on `apply()` (G2),
-recovering the per-decision redundancy. The residual gap is deeper-tree unique-board
-recomputation: determinizations clone to fresh adapters whose cache starts empty. The narrower
-C-level `engine_build_board_view`-only function that skips the card-zone and special-stack work
-remains the recommended follow-up. Non-blocking for 2-player engine/performance work; blocking
-for any large-scale ISMCTS throughput claim.
-> Repro: `python -u docs/validation/harness/f013_timing.py` — mean 1.7453 s → 1.0500 s
-> (1.66× vs. the pre-fix regression, under the 2× gate; ~6.4× residual vs. the pre-F-011
-> 0.1646 s baseline). See `docs/validation/f013-fix-plan.md` § 7/§ 9.
+`num_sims=200`. **Part A** (`16f8712`, `docs/validation/f013-fix-plan.md`) cached the
+player-agnostic board projection on `CEngineAdapter`, invalidated on `apply()` — recovering the
+per-decision redundancy (9.66× → ~6.4×). **Part B** (`docs/validation/f013-part-b-fix-plan.md`)
+measured the C call at 3.1 µs of ~400 µs and closed the residual in pure Python: a cheap direct
+projection (`_project_board_nodes`), a shared memoised `sym_str`, board-static hoisting
+(`_board_static`), a per-player `private_view_json` string cache, and `_board_cache`/
+`_board_static` propagation across `determinize()`/`__deepcopy__`. Measured end-to-end search
+wall-time dropped from the freshly re-captured 0.7144 s to 0.2643 s — **1.61× vs. the pre-F-011
+0.1646 s baseline, under the 2× gate.** Non-blocking for 2-player engine/performance work; the
+throughput claim restriction is lifted.
+> Repro: `python -u docs/validation/harness/f013_timing.py` — pre (`f013b_timing.pre.txt`)
+> mean 0.7144 s → post (`f013b_timing.post.txt`) mean 0.2643 s. Historical Part A record retained:
+> 1.7453 s → 1.0500 s (6.38× residual). Census (`f013b_census.py`): cold projection 443.5 → 107.3
+> µs, projections/search 876 → 676, repeat reads served without re-serialization 0 → 1076. See
+> `docs/validation/f013-part-b-fix-plan.md` § 8/§ 9.
+>
+> **Audit correction (Part B § 9):** the narrower C-level `engine_build_board_view` accessor —
+> recommended by `f011-fix-plan.md` § 10 and `f013-fix-plan.md` § 9, and carried as F-013's debt
+> through Reviews 01/02 — is **withdrawn**. Measured: the entire C call is 3.1 µs (0.8% of the
+> ~400 µs total); the accessor could save at most ~3 µs while adding a C function, header, ctypes
+> binding, and compile step. The 99.2% Python-side cost was fixed without touching a line of C.
 >
 > **Review 01** (`docs/validation/reviews/f013-review-01.md`, commit `16f8712`):
 > **ACCEPTED-WITH-DEBT.** Independently re-ran the pre-registered falsification test using
@@ -338,6 +403,26 @@ for any large-scale ISMCTS throughput claim.
 > action), F-002's `f002b.py` (unchanged), the new 5-test suite (5/5 pass), a standalone live
 > repro of G2 (cache correctly invalidates on `apply()`), and the full repo suite (same 3
 > pre-existing `engine_c`/catalog failures, zero new). Zero out-of-scope hunks.
+>
+> **Review 02** (`docs/validation/reviews/f013-review-02.md`, `HEAD`): **ACCEPTED-WITH-DEBT**,
+> unchanged debt. Second independent pass, zero drift since Review 01. Re-measured the
+> falsification test at **6.87×** (vs. Review 01's 6.42× — run-to-run wall-clock variance, not a
+> code change; both still `> 2×`), re-ran INV-1/2/3/6/4a/4b/5, F-010's `det_bot.py` B1, F-002's
+> `f002b.py` (all exact-match), the 5-test suite (5/5), and a freshly-written independent live
+> repro of G2 (cache warms, invalidates on `apply()`, board content genuinely changes post-move).
+> Zero out-of-scope hunks. The narrower C-level board-only accessor remains required before any
+> throughput claim.
+>
+> **Review 03** (`docs/validation/reviews/f013-review-03.md`, Part B): **ACCEPTED** — F-013
+> closed as **CONFIRMED — FIXED**. Adversarial pass over Part B Phases 1-6. G0 file set only
+> (zero out-of-scope hunks); byte-identity (G1) re-verified against the frozen Phase-0 corpus
+> (302 states / 918 vectors incl. 130 spy states); G2-G4 re-derived from the post census
+> (107.3 µs cold projection, 676 projections/search, 1076 repeat reads served without
+> re-serialization); G5 −63% ≥ 40%; G6 INV-1/2/3/4a/4b/5, `det_bot.py`, `f002b.py` all identical
+> to a pre-change run in the same environment (a temp-worktree check confirms the INV-5
+> mean 11.48/8-vs-11.11/7 drift is environmental, not this fix); G7 suites show only the 10
+> pre-existing postponed F-003 Part B RED failures + the 3 pre-existing repo failures.
+
 
 **F-009 — `max_chance_outcomes` hardcoded at 1000.** At `shuffle_seed_count=5000` the state
 offers 5,000 outcomes against a declared 1,000, and outcome id 4999 applies without error.
@@ -395,19 +480,41 @@ Adding a `--opponent` flag would let these run through the supported entry point
 
 ## 5. GO / NO-GO
 
-### 🔴 NO-GO for large-scale simulation.
+### 🟢 GO.
 
 The search itself is sound — budget monotonicity, self-play calibration, and baseline
 sanity all pass (though these three are now STALE per Review 01, §1, pending re-measurement
 at the final gate), and legality, clone independence, chance mass, determinisation
 consistency, and information-set completeness/leakage are clean. Replay determinism is fixed
 at the code level (F-010): runs reproduce from `--seed`, independently re-verified by Review 01
-(`docs/validation/reviews/f010-review-01.md`) — but that review REJECTED-SCOPE the commit
-itself for unauthorized bundled changes, so F-010 is not yet closed procedurally even though
-the fix is confirmed correct. The observation is now the game: the board and own-discard
-identities are present in `information_state_string`/`observation_string` (F-011 fixed).
-The problem that keeps this NO-GO is the remaining open defects below — the mid-game chance
-events — not the observation or the 3–4 player returns contract.
+(`docs/validation/reviews/f010-review-01.md`) and, after the scope-resolution commit `2cfd836`,
+confirmed procedurally clean by Review 02 (`docs/validation/reviews/f010-review-02.md`,
+**ACCEPTED-WITH-DEBT**, F-012 open) — F-010 is now closed. The observation is now the game:
+the board and own-discard identities are present in `information_state_string`/
+`observation_string` (F-011 fixed). F-004's 3–4 player returns contract and F-002's shared
+reshuffle stream are likewise both resolved, each ACCEPTED across two independent review passes
+(§2).
+
+**F-003 (mid-game chance-node exposure) is not a GO/NO-GO factor.** It remains a real,
+CONFIRMED defect — 134 mid-game randomization events per ~2,100 transitions never appear as
+`is_chance_node()==True` — but it is formally **POSTPONED**
+(`docs/adr/0002-postpone-f003-chance-node-exposure.md`), and at owner direction [2026-09-02] its
+postponement is treated as removing it from this verdict's clearance conditions entirely, not
+merely narrowing its blocking scope (superseding the "blocks only strength/policy-quality/
+agent-training claims" framing this section previously carried — see condition 5 below). F-008,
+whose own test is conditional on F-003, stays `UNTESTABLE` as a direct consequence and is
+likewise not a GO factor.
+
+**F-006 is resolved — the constant is now calibrated to this game.** The default `uct_c=1.4`
+was previously uncalibrated; the sweep (`docs/validation/f006-fix-plan.md`, evidence in
+`docs/validation/harness/f006_sweep_results.json`) ran the gate's own test and found **1.4 ties
+its neighbours (0.7, 2.8) and beats the far-above-1.4 region (8.0) overwhelmingly**, so the
+default stays 1.4. The filing's concern (the measured 6.4:1 exploitation-to-exploration ratio
+implying the useful range is "far above 1.4") is empirically refuted at the tested budgets:
+raw-VP differentials are evidently compressed by the outcome function in a way the root-node
+Q-value spread does not capture. The `uct_c` value is now reachable on all three `just` recipes
+(`ismcts`/`ismcts-quick` trailing parameter, `ismcts-perf` via `*args`) and the sweep harness is
+committed for re-checks.
 
 Conditions that must clear before GO, in dependency order:
 
@@ -429,60 +536,80 @@ Conditions that must clear before GO, in dependency order:
    Review 01. Residual risk on the −50 floor tracked as F-014. Zero out-of-scope hunks in the
    fixing diff.
 
-3. **F-002 + F-003 (blocking for search validity).**
-   3a. ~~**F-002 (shared reshuffle stream).**~~ **RESOLVED — Review 01 ACCEPTED**
-       (`docs/validation/reviews/f002-review-01.md`, commit `e9a2702`) — reroll
-       `shuffle_seed`/`shuffle_counter` inside `engine_determinize`, as was already done for the
-       market deck. **Gate met:** two determinizations of one information set no longer share
-       `(shuffle_seed, shuffle_counter)` over N ≥ 100 pairs (0/100, was 141/141), independently
-       re-run by Review 01 — `docs/validation/f002-f003-fix-plan.md` Part A. Zero out-of-scope
-       hunks in the fixing commit.
-   3b. **F-003 (mid-game chance nodes). POSTPONED (ADR-0002), not resolved, not dropped.** Expose
-       the mid-game random events (discard-into-deck reshuffles, forced random discards,
-       card-effect mass-discards) as real OpenSpiel chance nodes, then F-008 can be measured.
-       **Gate (unmet, deliberately not pursued right now):** every `shuffle_counter` advance is
-       preceded by an `is_chance_node()==True` state, over N ≥ 2,000 transitions
-       (`docs/validation/f002-f003-fix-plan.md` Part B). `docs/validation/
-       f002-f003-completion-plan.md` Phase 0/1 landed (frozen legacy baseline, 10 RED tests, all
-       confirmed failing correctly) and stay in the tree as resumption groundwork; Phase 2 (the
-       engine change itself) was scoped in detail and found to need a from-scratch C-level
-       suspend/resume mechanism across ten call sites — a genuine multi-session cost against an
-       *unmeasured* benefit (F-008, the branching-factor measurement that would show F-003's
-       actual impact, is itself gated on F-003 landing). **Practical effect: this condition does
-       not block 2-player engine/performance work (per the "Conditional partial GO" paragraph
-       below, unchanged) — it blocks only strength/policy-quality/agent-training claims, which is
-       exactly the scope this postponement accepts.** See
-       `docs/adr/0002-postpone-f003-chance-node-exposure.md` for the full reasoning and the
-       resumption path if that scope changes.
+3. ~~**F-002 (shared reshuffle stream, blocking for search validity).**~~ **RESOLVED — Review 01
+   ACCEPTED** (`docs/validation/reviews/f002-review-01.md`, commit `e9a2702`), reconfirmed
+   **Review 02 ACCEPTED** (`docs/validation/reviews/f002-review-02.md`, zero drift, zero debt) —
+   reroll `shuffle_seed`/`shuffle_counter` inside `engine_determinize`, as was already done for
+   the market deck. **Gate met:** two determinizations of one information set no longer share
+   `(shuffle_seed, shuffle_counter)` over N ≥ 100 pairs (0/100, was 141/141), independently
+   re-run by both reviews — `docs/validation/f002-f003-fix-plan.md` Part A. Zero out-of-scope
+   hunks in the fixing commit.
 
-4. **F-006 (re-calibrate before trusting any strength number).** Run a `uct_c` sweep on this
-   game's actual reward scale — the measured 6.4:1 exploitation ratio suggests the useful range
-   is far above 1.4, or that returns should be normalised before backup. **Gate:** a documented
-   sweep artifact, with the chosen value beating its neighbours seat-swapped at N ≥ 200 per arm.
+4. ~~**F-006 (re-calibrate before trusting any strength number).**~~ **RESOLVED [2026-09-02] —**
+   `uct_c` calibrated and exposed; default kept at 1.4. **Gate met:** `docs/validation/f006-fix-plan.md`
+   ran the gate's own test — a documented sweep artifact (`docs/validation/harness/f006_sweep_results.json`)
+   with the chosen value beating its neighbours seat-swapped at N ≥ 200 per arm and exact-binomial
+   significance reported. The chosen value is **1.4** (unchanged): it ties 0.7 (W91/L98/T11, p=0.66)
+   and 2.8 (W98/L95/T7, p=0.89, reproduced identically across two runs) and beats 8.0 (W149/L49/T2,
+   p=6.3e-13); 2.8 also beats 8.0 (p=5.9e-13). A different default was not forced because the sweep
+   found the current one already ties its neighbours — the plan's stated honest-close condition.
+   `uct_c` is now a trailing parameter on `just ismcts`/`ismcts-quick` and reachable on
+   `ismcts-perf` via its `*args` passthrough (live-verified through the `summary.csv` `uct_c`
+   column on the two game-running recipes; `ismcts-perf` passthrough dry-run-verified), default
+   path byte-identical. Strength claims are now
+   unblocked pending re-measurement of the STALE INV-7/8/9 win rates (§1 note below).
 
-5. **F-005, F-009, F-013, F-014, F-015 (non-blocking).** F-005 and F-009 are fidelity/API-correctness gaps
+5. **F-003, F-005, F-008, F-009, F-013, F-014, F-015 (non-blocking).**
+   **F-003 (mid-game chance nodes)** is CONFIRMED (134/2,112 transitions advance
+   `shuffle_counter` with `is_chance_node()==False`) and formally **POSTPONED**
+   (`docs/adr/0002-postpone-f003-chance-node-exposure.md`) — `docs/validation/
+   f002-f003-completion-plan.md` Phase 0/1 landed (frozen legacy baseline, 10 RED tests, all
+   confirmed failing correctly) and stays in the tree as resumption groundwork; Phase 2 (the
+   engine change itself) was scoped in detail and found to need a from-scratch C-level
+   suspend/resume mechanism across ten call sites — a genuine multi-session cost against an
+   *unmeasured* benefit (F-008, gated on F-003 landing, stays `UNTESTABLE`). **At owner
+   direction [2026-09-02], neither F-003 nor F-008 is treated as a GO/NO-GO factor for this
+   project** — not scoped-down (as this verdict previously framed it, "blocks only strength/
+   policy-quality/agent-training claims"), but removed from the clearance conditions entirely.
+   See ADR-0002 for the resumption path if that decision changes. F-005 and F-009 are fidelity/API-correctness gaps
    (neither showed a measurable effect on results; F-005 is contradicted as a strength bias by
    INV-8; F-009 is dormant at default configuration). F-013 is the throughput regression from the
-   F-011 fix (9.66× search wall-time at `num_sims=200`): MITIGATED to 1.66× of the regression by
-   the `CEngineAdapter` board cache (`f013-fix-plan.md`), with a residual ~6.4× vs. the pre-F-011
-   baseline to be closed by the narrower C-level board-only accessor before any large-scale ISMCTS
-   throughput claim. **Review 01** (`docs/validation/reviews/f013-review-01.md`, `16f8712`)
-   ACCEPTED-WITH-DEBT this mitigation, independently re-measuring the residual at 6.42× (still
-   >2×, the finding's own "Expected if REAL" threshold) and clarifying that the gate is not fully
-   cleared by its own borrowed definition — the narrower C-level accessor remains required, not
-   merely recommended, before any throughput claim. F-015 is a live double-discard bug on
+   F-011 fix (9.66× search wall-time at `num_sims=200`): **FIXED** across two parts — the
+   `CEngineAdapter` board cache (`f013-fix-plan.md`) recovered the per-decision redundancy
+   (9.66× → ~6.4×), and Part B (`f013-part-b-fix-plan.md`) closed the residual in pure Python
+   (cheap direct projection + shared sym memo + static hoisting + per-player string cache +
+   clone/determinize projection propagation), measured at **1.61× vs. the pre-F-011 0.1646 s
+   baseline — under the 2× gate** (pre 0.7144 s → post 0.2643 s on the freshly re-captured
+   `f013b_timing.{pre,post}.txt`). The narrower C-level board-only accessor is **withdrawn** with
+   measured justification (3.1 µs of ~400 µs; see the F-013 entry's audit-correction block).
+   **Review 01/02** (ACCEPTED-WITH-DEBT) re-measured the Part A residual at 6.42×/6.87× and held
+   the accessor as required; **Review 03** (`docs/validation/reviews/f013-review-03.md`)
+   **ACCEPTED** the Part B close. Large-scale ISMCTS throughput claims are unblocked. **F-014 (uncapped `insane_outcast`
+   issuance) is now FIXED [2026-09-02]** — `give_insane_outcast` enforces the shared-supply cap
+   (`special_stack_total_for_card` lookup, no-op on an undefined stack, per-copy
+   `min(count, remaining)`), exhaustion allocates clockwise from the current player (rulebook
+   :355), and the stack totals/slots are JSON-driven with demons gating replacing the dead
+   aberrations gate; `min_utility=-50.0` is no longer merely "practical" but formally safe, so the
+   **deferred follow-up (D3)** is to tighten `_build_c_game_info`'s `min_utility` from `-50.0` to
+   `-30.0` (the true design-intent floor) with a matching `test_utility_contract.py` update and
+   ledger note that the T6 direct-struct-surgery probe no longer represents reachable legal-play
+   states. F-015 is a live double-discard bug on
    `neogi`'s end-of-turn `force_discard` (traced while mapping F-003 Part B's ten call sites —
    `generic_runtime.c`'s pending-generic resolver fires the action inline regardless of its
    `timing` tag, then `rules.c`'s `apply_end_of_turn_effects` fires it again for real at
    end-of-turn), tracked for correction inside F-003 Part B's M4 milestone rather than fixed
    standalone.
 
-**Conditional partial GO.** Reproducibility (F-010), observation completeness (F-011), and the
-3–4 player returns contract (F-004, condition 2 above) are resolved; 2-player runs may proceed
-for *engine and performance* work — throughput, crash-rate, memory — and 3–4 player runs may
-now carry an honest, non-violated `GameInfo` contract. No *strength, policy quality, or
-agent-training* claim should be made until (3) and (4) above also clear, and no throughput
-claim until F-013 closes.
+**GO.** Reproducibility (F-010), observation completeness (F-011), the
+3–4 player returns contract (F-004), the shared reshuffle stream (F-002), and the exploration
+constant calibration (F-006) are all resolved (conditions 1–4 above). *Engine, performance,
+and strength/policy-quality/agent-training* work may proceed for 2-player and 3–4 player runs
+alike, subject to one caveat: strength claims must cite freshly re-measured numbers (the
+INV-7/8/9 win rates are STALE post-F-010 — see note below; the qualitative gates — monotone
+budget ladder, self-play ≈ 50%, random crushed — remain the acceptance criteria). F-013's
+throughput residual is closed (1.61× vs. the pre-F-011 baseline, under the 2× gate), so the
+throughput-claim restriction recorded by F-011/F-013 is lifted. F-003's postponement is no longer a dependency
+for any of the above, per the owner direction recorded in condition 5.
 
 **Note on § 1 win-rate figures:** the INV-7/8/9 win rates (budget ladder, self-play
 calibration, baseline sanity) were measured *before* the F-010 RNG fix, so their specific
@@ -510,6 +637,7 @@ All scripts run from the repo root with `.venv/Scripts/python.exe -u <path>`:
 | `harness/findings2.py` | F-008 |
 | `harness/f002b.py` | F-002 reshuffle-permutation half |
 | `harness/f006.py` | F-006 reward-scale quantification |
+| `harness/f006_sweep.py C,N,S` | F-006 uct_c calibration sweep (seat-swapped, N/arm) — writes `f006_sweep_results.json` |
 | `harness/f009.py` | F-009 |
 | `harness/f004_utility.py` | F-004 G3/G4 (returns bounds + insane_outcast stress) |
 | `harness/obs.py` | F-011 own-discard, INV-10 resource stability |
