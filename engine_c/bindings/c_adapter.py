@@ -36,6 +36,7 @@ class CEngineAdapter:
         "_player_id_to_index",
         "_board_cache",
         "_board_static",
+        "_view_cache",
     )
 
     def __init__(
@@ -52,6 +53,7 @@ class CEngineAdapter:
         self._player_id_to_index = {pid: i for i, pid in enumerate(player_ids)}
         self._board_cache = None
         self._board_static = None
+        self._view_cache = {}
 
     def __deepcopy__(self, memo):
         cloned_ptr = _lib.engine_clone(self._state._ptr)
@@ -122,6 +124,7 @@ class CEngineAdapter:
         self._engine.destroy(self._state)
         self._state = new_state
         self._board_cache = None
+        self._view_cache.clear()
 
     def pending_generic_op(self) -> str | None:
         """Return the op of the currently active pending-generic action, if any.
@@ -211,7 +214,18 @@ class CEngineAdapter:
         }
 
     def private_view_json(self, player_id: str) -> str:
-        """Return a JSON string of the private view for *player_id*."""
+        """Return a JSON string of the private view for *player_id*.
+
+        The finished string is cached per player and cleared on ``apply()``/
+        ``destroy()`` — the only two sites that change (or end) the C state.
+        The inner ``_board_cache`` is kept as the layer that clone/determinize
+        propagate (Phase 4); this string cache cannot propagate because
+        determinize changes hand/deck/discard.
+        """
+        cached = self._view_cache.get(player_id)
+        if cached is not None:
+            return cached
+
         pub = self._build_public_dict()
         idx = self.player_index(player_id)
         p = self._state._s.players[idx]
@@ -234,7 +248,9 @@ class CEngineAdapter:
             "vp_tokens": p.vp_tokens,
             "score": p.score,
         }
-        return json.dumps(result, sort_keys=True)
+        view = json.dumps(result, sort_keys=True)
+        self._view_cache[player_id] = view
+        return view
 
     def _build_board_static(self, c_view) -> list[dict]:
         """Hoist the board-static node fields into a per-adapter template.
@@ -336,6 +352,10 @@ class CEngineAdapter:
         if self._state:
             self._engine.destroy(self._state)
             self._state = None
+        # A cached string must not outlive the state (T8): destroy() drops the
+        # whole view cache so a stale read can never be served after teardown.
+        self._view_cache.clear()
+        self._board_cache = None
 
 
 def _sym_str(sym) -> str | None:
