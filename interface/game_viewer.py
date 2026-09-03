@@ -531,11 +531,13 @@ class GameViewerApp:
         decks_dir: Path,
         initial_player_count: int,
         seed: int | None,
+        autostart: bool = True,
     ) -> None:
         self.root = root
         self.root.title("Tyrants Game Viewer")
 
         self._game_over_shown = False
+        self._suppress_score_dialog = False
 
         self.card_path = card_path
         self.base_setup_path = setup_path
@@ -655,7 +657,8 @@ class GameViewerApp:
 
         self._build_ui()
         self.root.bind("<Configure>", self._on_root_configure)
-        self._start_new_game()
+        if autostart:
+            self._start_new_game()
 
     def _build_ui(self) -> None:
         frame = ttk.Frame(self.root, padding=8)
@@ -664,61 +667,7 @@ class GameViewerApp:
         controls = ttk.Frame(frame)
         controls.pack(fill=tk.X)
 
-        setup_controls = ttk.Frame(controls)
-        setup_controls.pack(fill=tk.X)
-
-        ttk.Label(setup_controls, text="Map:").pack(side=tk.LEFT)
-        self.map_box = ttk.Combobox(
-            setup_controls,
-            state="readonly",
-            width=20,
-            height=256,
-            textvariable=self.map_var,
-            values=[profile.label for profile in self.map_profiles],
-        )
-        self.map_box.pack(side=tk.LEFT, padx=(4, 10))
-
-        ttk.Label(setup_controls, text="Players:").pack(side=tk.LEFT)
-        self.player_count_spin = ttk.Spinbox(setup_controls, from_=2, to=4, textvariable=self.player_count_var, width=4)
-        self.player_count_spin.pack(side=tk.LEFT, padx=(4, 10))
-
-        ttk.Label(setup_controls, text="Deck A:").pack(side=tk.LEFT)
-        self.deck_a_box = ttk.Combobox(
-            setup_controls,
-            state="readonly",
-            width=22,
-            height=256,
-            textvariable=self.deck_a_var,
-            values=[profile.label for profile in self.deck_profiles],
-        )
-        self.deck_a_box.pack(side=tk.LEFT, padx=(4, 10))
-
-        ttk.Label(setup_controls, text="Deck B:").pack(side=tk.LEFT)
-        self.deck_b_box = ttk.Combobox(
-            setup_controls,
-            state="readonly",
-            width=22,
-            height=256,
-            textvariable=self.deck_b_var,
-            values=[profile.label for profile in self.deck_profiles],
-        )
-        self.deck_b_box.pack(side=tk.LEFT, padx=(4, 10))
-
-        ttk.Label(setup_controls, text="Seed (optional):").pack(side=tk.LEFT)
-        self.seed_entry = ttk.Entry(setup_controls, textvariable=self.seed_var, width=14)
-        self.seed_entry.pack(side=tk.LEFT, padx=(4, 10))
-
-        action_controls = ttk.Frame(controls)
-        action_controls.pack(fill=tk.X, pady=(6, 0))
-        ttk.Button(action_controls, text="Start New Game", command=self._start_new_game).pack(side=tk.LEFT, padx=(0, 8))
-        ttk.Button(action_controls, text="Refresh", command=self._refresh_view).pack(side=tk.LEFT)
-        ttk.Button(action_controls, text="Clear Filters", command=self._clear_filters).pack(side=tk.LEFT, padx=6)
-        ttk.Button(action_controls, text="Apply Selected Move", command=self._apply_selected_legal_move).pack(side=tk.LEFT)
-        ttk.Button(action_controls, text="Apply First Legal Move", command=self._apply_first_legal_move).pack(side=tk.LEFT, padx=6)
-        ttk.Button(action_controls, text="Save Game", command=self._save_game).pack(side=tk.LEFT, padx=(12, 6))
-        ttk.Button(action_controls, text="Load Game", command=self._load_game).pack(side=tk.LEFT)
-
-        ttk.Label(action_controls, textvariable=self.status_var, font=("TkFixedFont", 9)).pack(side=tk.RIGHT, padx=6)
+        self._build_control_bar(controls)
 
         content = ttk.Frame(frame)
         content.pack(fill=tk.BOTH, expand=True, pady=(8, 0))
@@ -972,6 +921,64 @@ class GameViewerApp:
         self.legal_moves_listbox.configure(yscrollcommand=self.legal_moves_scrollbar.set)
         self.legal_moves_listbox.bind("<Double-Button-1>", self._on_legal_move_double_click)
 
+    def _build_control_bar(self, controls: ttk.Frame) -> None:
+        """Build the setup + action control rows. Overridable by subclasses."""
+        setup_controls = ttk.Frame(controls)
+        setup_controls.pack(fill=tk.X)
+
+        ttk.Label(setup_controls, text="Map:").pack(side=tk.LEFT)
+        self.map_box = ttk.Combobox(
+            setup_controls,
+            state="readonly",
+            width=20,
+            height=256,
+            textvariable=self.map_var,
+            values=[profile.label for profile in self.map_profiles],
+        )
+        self.map_box.pack(side=tk.LEFT, padx=(4, 10))
+
+        ttk.Label(setup_controls, text="Players:").pack(side=tk.LEFT)
+        self.player_count_spin = ttk.Spinbox(setup_controls, from_=2, to=4, textvariable=self.player_count_var, width=4)
+        self.player_count_spin.pack(side=tk.LEFT, padx=(4, 10))
+
+        ttk.Label(setup_controls, text="Deck A:").pack(side=tk.LEFT)
+        self.deck_a_box = ttk.Combobox(
+            setup_controls,
+            state="readonly",
+            width=22,
+            height=256,
+            textvariable=self.deck_a_var,
+            values=[profile.label for profile in self.deck_profiles],
+        )
+        self.deck_a_box.pack(side=tk.LEFT, padx=(4, 10))
+
+        ttk.Label(setup_controls, text="Deck B:").pack(side=tk.LEFT)
+        self.deck_b_box = ttk.Combobox(
+            setup_controls,
+            state="readonly",
+            width=22,
+            height=256,
+            textvariable=self.deck_b_var,
+            values=[profile.label for profile in self.deck_profiles],
+        )
+        self.deck_b_box.pack(side=tk.LEFT, padx=(4, 10))
+
+        ttk.Label(setup_controls, text="Seed (optional):").pack(side=tk.LEFT)
+        self.seed_entry = ttk.Entry(setup_controls, textvariable=self.seed_var, width=14)
+        self.seed_entry.pack(side=tk.LEFT, padx=(4, 10))
+
+        action_controls = ttk.Frame(controls)
+        action_controls.pack(fill=tk.X, pady=(6, 0))
+        ttk.Button(action_controls, text="Start New Game", command=self._start_new_game).pack(side=tk.LEFT, padx=(0, 8))
+        ttk.Button(action_controls, text="Refresh", command=self._refresh_view).pack(side=tk.LEFT)
+        ttk.Button(action_controls, text="Clear Filters", command=self._clear_filters).pack(side=tk.LEFT, padx=6)
+        ttk.Button(action_controls, text="Apply Selected Move", command=self._apply_selected_legal_move).pack(side=tk.LEFT)
+        ttk.Button(action_controls, text="Apply First Legal Move", command=self._apply_first_legal_move).pack(side=tk.LEFT, padx=6)
+        ttk.Button(action_controls, text="Save Game", command=self._save_game).pack(side=tk.LEFT, padx=(12, 6))
+        ttk.Button(action_controls, text="Load Game", command=self._load_game).pack(side=tk.LEFT)
+
+        ttk.Label(action_controls, textvariable=self.status_var, font=("TkFixedFont", 9)).pack(side=tk.RIGHT, padx=6)
+
     def _start_new_game(self) -> None:
         map_profile = self._map_profiles_by_label.get(self.map_var.get())
         deck_a = self._deck_profiles_by_label.get(self.deck_a_var.get())
@@ -1113,7 +1120,7 @@ class GameViewerApp:
             self._apply_responsive_layout()
             view = build_c_game_view(self.session, node_names=self._node_names)
 
-            if view.is_terminal and not self._game_over_shown:
+            if view.is_terminal and not self._game_over_shown and not self._suppress_score_dialog:
                 self._game_over_shown = True
                 breakdowns = _compute_vp_breakdowns(self.session)
                 winner_id = view.winner_id
