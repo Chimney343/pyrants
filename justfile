@@ -58,13 +58,41 @@ game-viewer players="p1,p2" board="data/boards/tyrants_of_the_underdark.json" la
 game-viewer-help:
     & {{python}} -m interface.game_viewer --help
 
+replay-viewer:
+    & {{python}} -m interface.replay_viewer
+
+replay-viewer-open game="artifacts/ismcts/game_0000":
+    & {{python}} -m interface.replay_viewer --game-dir {{game}}
+
+verify-replays:
+    & {{python}} scripts/verify_replays.py
+
 # ── IS-MCTS (C engine backend) ───────────────────────────────────────────────
 
-ismcts num_sims="200" num_games="4" seed="42" output_dir="artifacts/ismcts" workers="16" num_players="4":
-    & {{python}} -m scripts.run_ismcts --num-sims {{num_sims}} --num-games {{num_games}} --seed {{seed}} --output-dir {{output_dir}} --workers {{workers}} --num-players {{num_players}} --game python_pyrants_c
+ismcts num_sims="200" num_games="4" seed="42" output_dir="artifacts/ismcts" workers="16" num_players="4" uct_c="1.4":
+    & {{python}} -m scripts.run_ismcts --num-sims {{num_sims}} --num-games {{num_games}} --seed {{seed}} --output-dir {{output_dir}} --workers {{workers}} --num-players {{num_players}} --uct-c {{uct_c}} --game python_pyrants_c
 
-ismcts-quick workers="1" num_players="2":
-    & {{python}} -m scripts.run_ismcts --num-sims 2 --num-games 1 --seed 42 --workers {{workers}} --num-players {{num_players}} --game python_pyrants_c
+ismcts-quick workers="1" num_players="2" uct_c="1.4":
+    & {{python}} -m scripts.run_ismcts --num-sims 2 --num-games 1 --seed 42 --workers {{workers}} --num-players {{num_players}} --uct-c {{uct_c}} --game python_pyrants_c
+
+# Sims-vs-wins experiment: does a bigger IS-MCTS budget win more games?
+# Rotates a per-seat budget ladder (50/100/200/400) across seats each game.
+ismcts-sims-vs-wins-pilot workers="16":
+    & {{python}} -m scripts.run_ismcts_sims_vs_wins --num-games 8 --workers {{workers}}
+
+ismcts-sims-vs-wins num_games="120" workers="16" *args:
+    & {{python}} -m scripts.run_ismcts_sims_vs_wins --num-games {{num_games}} --workers {{workers}} {{args}}
+
+# UCT sweep experiment: does the UCB1 exploration constant (uct_c) affect
+# win rate, end-game VP share, and final deck variety? Rotates a per-seat
+# uct ladder (0.3/0.8/1.4/2.5) across seats each game. Run the 8-game
+# pilot first to calibrate wall-time and the decided fraction before the
+# 240-game main run (per-arm win-rate CI ~±5.4pp).
+ismcts-uct-pilot workers="16":
+    & {{python}} -m scripts.run_ismcts_uct_sweep --num-games 8 --workers {{workers}}
+
+ismcts-uct num_games="240" workers="16" *args:
+    & {{python}} -m scripts.run_ismcts_uct_sweep --num-games {{num_games}} --workers {{workers}} {{args}}
 
 bench-rollout engine="py" num_rollouts="200" seed="42" warmup_steps="10":
     & {{python}} -m scripts.bench_rollout --engine {{engine}} --num-rollouts {{num_rollouts}} --seed {{seed}} --warmup-steps {{warmup_steps}}
@@ -137,3 +165,6 @@ move-label-templates *args:
 
 card-complexity *args:
     & {{python}} -m scripts.card_complexity_review {{args}}
+
+docs-check *args:
+    & {{python}} scripts/check_docs_freshness.py {{args}}
