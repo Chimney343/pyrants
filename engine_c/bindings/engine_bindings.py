@@ -36,6 +36,57 @@ except OSError:
 # ── type aliases ──────────────────────────────────────────────────────────
 Sym = c_uint32
 
+# ── sym→str memo ────────────────────────────────────────────────────────────
+# F-013 Part B: intern_str is called ~1.2 M times per short run across the
+# view/c_adapter projection loops, each call a ctypes round trip plus a
+# bytes.decode. A Sym's string never changes for the life of the process —
+# intern.c's sym_strs table is append-only and only intern_destroy() tears it
+# down — so the memo is sound, and the Python intern_destroy() wrapper below
+# clears it on the one event that can invalidate it.
+_SYM_STR_CACHE: dict[int, str] = {}
+
+
+def sym_str(sym) -> str | None:
+    """Intern-table ``Sym`` -> ``str`` with a process-wide memo.
+
+    ``sym == 0`` (``SYM_NULL``) maps to ``None``, matching every local
+    ``_sym_str`` helper it replaces. Misses fall through to a single
+    ``_lib.intern_str`` ctypes call and are cached.
+    """
+    if sym == 0:
+        return None
+    s = _SYM_STR_CACHE.get(sym)
+    if s is not None:
+        return s
+    raw = _lib.intern_str(sym)
+    if not raw:
+        return None
+    out = raw.decode()
+    _SYM_STR_CACHE[sym] = out
+    return out
+
+
+def clear_sym_cache() -> None:
+    """Drop every memoised sym→str entry.
+
+    Only ``intern_destroy`` can make a cached mapping stale (syms are
+    reassigned from 1 after the table is rebuilt), so this is wired into the
+    ``intern_destroy`` wrapper below and otherwise never called.
+    """
+    _SYM_STR_CACHE.clear()
+
+
+def intern_destroy() -> None:
+    """Tear down the C intern table *and* the Python sym memo together.
+
+    Tests that exercise ``intern_init``/``intern_destroy`` directly must use
+    this wrapper: calling ``_lib.intern_destroy()`` alone would leave the memo
+    holding sym ids that a re-intern cycle reuses for different strings.
+    """
+    if _lib is not None:
+        _lib.intern_destroy()
+    clear_sym_cache()
+
 # ── constants ─────────────────────────────────────────────────────────────
 MAX_PLAYERS = 4
 MAX_NODES = 128

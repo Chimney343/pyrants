@@ -26,6 +26,7 @@ from .engine_bindings import (
     PHASE_SETUP,
     CGameView,
     _lib,
+    sym_str,
 )
 from .label_enrich import enrich_label
 
@@ -40,9 +41,8 @@ _PHASE_MAP = {
 
 
 def _sym_str(sym) -> str | None:
-    if sym == 0:
-        return None
-    return _lib.intern_str(sym).decode()
+    """Memoised sym→str (F-013 Part B); shared with ``c_adapter``."""
+    return sym_str(sym)
 
 
 @dataclass(frozen=True)

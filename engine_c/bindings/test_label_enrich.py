@@ -335,12 +335,12 @@ class TestCDescribeIntegration:
 
     @pytest.fixture(autouse=True)
     def _ensure_dll(self):
-        from engine_bindings import _lib
+        from engine_bindings import _lib, intern_destroy
         if _lib is None:
             pytest.skip("engine_c DLL not available")
         _lib.intern_init(4096)
         yield
-        _lib.intern_destroy()
+        intern_destroy()  # clears the Python sym memo too (F-013 Part B T6)
 
     def test_deploy_label_uses_friendly_node_name(self):
         import ctypes

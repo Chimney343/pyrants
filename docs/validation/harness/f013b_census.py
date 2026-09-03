@@ -25,7 +25,6 @@ their signatures across the phases.
 
 import json
 import os
-import statistics
 import sys
 import time
 
@@ -159,8 +158,11 @@ def _micro_timings(adapter):
     out["build_c_board_view"] = _timed(_build_c_board_view, 100)
 
     def _board_cold():
+        # True cold: drop the static template as well, so this measures a
+        # first-projection-on-a-fresh-adapter (what a clone would pay).
         adapter._board_cache = None
-        return adapter._board_nodes_view()
+        adapter._board_static = None
+        return adapter._ensure_board_nodes()
 
     out["board_nodes_view_cold"] = _timed(_board_cold, 100)
 
@@ -174,7 +176,6 @@ def _micro_timings(adapter):
     restore()  # dumps must not be double-counted during the micro-timing dumps
     try:
         payload = json.loads(adapter.private_view_json(adapter.player_ids[0]))
-        board_nodes = payload["public"]["board_nodes"]
         pub_no_board = dict(payload["public"])
         pub_no_board.pop("board_nodes")
 
