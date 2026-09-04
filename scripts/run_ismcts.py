@@ -40,6 +40,11 @@ sys.path.insert(0, str(ROOT))
 
 import openspiel_pyrants  # noqa: E402, F401 — registers python_pyrants
 from engine_c.bindings.ce_api import _sym_str  # noqa: E402
+from engine_c.bindings.label_enrich import enrich_label  # noqa: E402
+from engine_c.bindings.pending_context import (  # noqa: E402
+    read_pending_generic_context,
+)
+from engine_c.bindings.view import _describe_c_move  # noqa: E402
 from game_setup.market_setup import (  # noqa: E402
     combine_two_deck_market_setup,
     discover_full_deck_profiles,
@@ -272,6 +277,36 @@ def _legal_moves_strings(state, action_ids: list[int]) -> list[str]:
         except (IndexError, Exception):
             result.append(f"<action_{aid}>")
     return result
+
+
+def _enrich_resolve_generic(adapter, move_obj) -> dict:
+    """Build the additive ``chosen_label`` + ``generic`` fields for one decision.
+
+    Reads the pending-generic-choice context from the C state *before* the
+    move is applied (``apply_action`` advances/clears that state) and merges
+    the chosen move's own payload fields into a JSON-ready ``generic`` dict.
+    Returns ``{"chosen_label": ..., "generic": ...}`` when a generic choice is
+    actually pending; returns ``{}`` otherwise so the caller can attach
+    nothing for a non-``resolve_generic`` line. ``chosen_move`` is left raw.
+    """
+    ctx = read_pending_generic_context(adapter._state._ptr)
+    if ctx is None:
+        return {}
+    move_data = move_obj.data
+    generic = dict(ctx)
+    generic["move_action_id"] = move_data.get("action_id")
+    generic["move_target_id"] = move_data.get("target_id")
+    generic["selection_index"] = move_data.get("selection_index")
+    raw_label = _describe_c_move(adapter._state._ptr, move_obj)
+    chosen_label = enrich_label(
+        "resolve_generic", raw_label, move_data,
+        source_card_id=ctx["source_card_id"] or "",
+        card_action_id=ctx["card_action_id"] or "",
+        is_option_choice=bool(ctx["awaiting_option"]),
+        is_optional_action=bool(ctx["optional"]),
+        current_option_id=ctx["current_option_id"] or "",
+    )
+    return {"chosen_label": chosen_label, "generic": generic}
 
 
 def _diagnose_apply_failure(adapter) -> dict:
@@ -614,18 +649,21 @@ def run_one_game(
                 "wall_time_ms": round(wall_ms, 3),
                 "sims_requested": sims_per_seat[cp],
             }
+            # Must read before apply_action(): applying the move advances (or
+            # clears) the pending-generic-choice state this reflects.  The read
+            # doubles as the decision's generic context when the chosen move is
+            # a resolve_generic — additive fields only, chosen_move stays raw.
+            generic_context = (
+                _enrich_resolve_generic(state._adapter, chosen_move_obj)
+                if chosen_move_obj.move_type == "resolve_generic"
+                else {}
+            )
+            pending_op = (generic_context.get("generic") or {}).get("op")
+            decision.update(generic_context)
             decisions.append(decision)
             # Streamed unconditionally — the bot's decision is valid telemetry
             # even if applying it crashes.
             _write_jsonl_line(decisions_fh, decision)
-
-            # Must read before apply_action(): applying the move advances (or
-            # clears) the pending-generic-choice state this reflects.
-            pending_op = (
-                state._adapter.pending_generic_op()
-                if chosen_move_obj.move_type == "resolve_generic"
-                else None
-            )
 
             state.apply_action(int(chosen))
 

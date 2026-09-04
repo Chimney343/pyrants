@@ -31,6 +31,35 @@ from interface.replay_player import ReplayDesyncError, ReplayPlayer
 MAX_POLICY_ROWS = 5
 
 
+def _decision_display_label(decision: dict) -> str:
+    """Human-facing decision summary for the replay decision panel.
+
+    Prefers the enriched ``chosen_label`` written by the IS-MCTS runner for
+    ``resolve_generic`` lines, falls back to the raw ``chosen_move``, and
+    appends a compact second line from the structured ``generic`` context when
+    present.  Additive-only: unknown/malformed fields degrade to the raw
+    string or an empty footer, never an exception.
+    """
+    chosen_label = decision.get("chosen_label")
+    chosen_move = decision.get("chosen_move", "")
+    first = chosen_label if chosen_label else chosen_move
+
+    generic = decision.get("generic")
+    parts: list[str] = []
+    if isinstance(generic, dict):
+        source = generic.get("source_card_id")
+        if source:
+            parts.append(str(source))
+        op = generic.get("op")
+        if op:
+            parts.append(f"op={op}")
+        move_action_id = generic.get("move_action_id")
+        if move_action_id:
+            parts.append(f"target={move_action_id}")
+    footer = " · ".join(parts) if parts else ""
+    return f"{first}\n{footer}" if footer else first
+
+
 class ReplayViewerApp(GameViewerApp):
     """Replay-only viewer; transports, timeline, autoplay, decision inspector."""
 
@@ -342,10 +371,11 @@ class ReplayViewerApp(GameViewerApp):
             self._policy_listbox.delete(0, tk.END)
             return
 
-        chosen_move = decision.get("chosen_move", "")
         sims = decision.get("sims_requested", "-")
         wall = decision.get("wall_time_ms", "-")
-        self._decision_meta_var.set(f"{chosen_move}\nsims {sims} · {wall} ms")
+        self._decision_meta_var.set(
+            f"{_decision_display_label(decision)}\nsims {sims} · {wall} ms"
+        )
 
         legal = decision.get("legal_moves", []) or []
         policy = decision.get("policy", {}) or {}

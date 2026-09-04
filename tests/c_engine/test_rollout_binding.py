@@ -2,12 +2,11 @@
 Python binding for the C-accelerated whole-rollout loop (engine_random_rollout)
 that backs CRolloutEvaluator. See the IS-MCTS rollout speedup plan for context.
 
-Note: player.score is a final-tally field written only at genuine terminal
-(distinct from vp_tokens, which tracks running progress) — see the file-level
-note in engine_c/tests/test_rollout.c. A fresh game does not reach terminal
-within any practical rollout step budget, so short/`max_length`-capped
-rollouts from a fresh session always report score 0 for every player; tests
-below assert accordingly rather than expecting a nonzero signal.
+Note on scoring: random_rollout always reports compute_final_scores(), whether
+it reached terminal or was cut off by ``max_length`` — see the file-level note
+in engine_c/tests/test_rollout.c. It used to fall back to the raw
+players[i].score field on a cut-off, which stays 0 through most of a game and
+so handed IS-MCTS the same constant for every truncated playout.
 """
 
 from __future__ import annotations
@@ -56,11 +55,20 @@ def test_random_rollout_does_not_mutate_input_state():
     session.destroy()
 
 
-def test_random_rollout_short_cutoff_scores_current_state():
+def test_random_rollout_short_cutoff_scores_as_if_ended_now():
+    """A cut-off rollout reports the tally, not the raw score field.
+
+    One step in, this fixture has p1 up 3 VP while players[i].score is still
+    [0, 0] for both seats — so the two scoring rules are directly
+    distinguishable here, and the old branch would have reported zeros.
+    """
     session = _new_session()
+    raw = [session.state.player_score(i) for i in range(2)]
+    assert raw == [0, 0]
+
     terminal, scores = session._engine.random_rollout(session.state, seed=5, max_length=1)
     assert terminal is False
-    assert scores == {"p1": 0, "p2": 0}
+    assert scores == {"p1": 3, "p2": 0}
     session.destroy()
 
 

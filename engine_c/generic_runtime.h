@@ -8,6 +8,10 @@ GameState *resolve_generic_execution(GameState *state, Sym player_id,
 GameState *auto_resolve_pending_generic(GameState *state, Sym player_id);
 GameState *apply_resolve_generic_choice(GameState *state, const Move *move);
 int        legal_pending_generic_choice_moves(GameState *state, Sym player_id, Move *out, int max_out);
+/* True for the UI-only placeholder moves legal_pending_generic_choice_moves
+ * emits for non-viable modal options.  engine_apply refuses them, so any code
+ * that applies a move drawn from engine_legal_moves() must skip these. */
+int        move_is_unavailable_placeholder(const Move *move);
 
 const CardAction *pending_generic_active_action(const PendingGenericChoiceState *p);
 int action_requires_selection(const CardAction *action);

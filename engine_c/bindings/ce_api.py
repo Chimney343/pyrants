@@ -433,9 +433,10 @@ class CEngine:
     def random_rollout(self, state: CState, seed: int, max_length: int) -> tuple[bool, dict]:
         """Run a whole random rollout to terminal (or max_length cutoff) in C.
 
-        Mirrors PyrantsCState.returns()'s terminal/non-terminal branching:
-        the returned scores are compute_final_scores() if the rollout reached
-        a real terminal state, otherwise each player's current score.
+        Mirrors PyrantsCState.returns(): the returned scores are always
+        compute_final_scores(), the real tally at a terminal state and a
+        score-the-game-as-if-it-ended-here estimate at a cut-off one.  The
+        bool says which of the two it is; both are usable leaf values.
         """
         scores_arr = (ctypes.c_int * MAX_PLAYERS)()
         terminal = _lib.engine_random_rollout(

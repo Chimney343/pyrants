@@ -14,6 +14,7 @@ import pytest
 
 from interface.game_viewer import DEFAULT_BOARD_PATH, DEFAULT_CARD_PATH, DEFAULT_SETUP_PATH
 from interface.replay_loader import discover_replays, engine_seed, load_replay
+from interface.replay_viewer import _decision_display_label
 
 ROOT = Path(__file__).resolve().parents[1]
 GAME0000 = ROOT / "artifacts" / "ismcts" / "game_0000"
@@ -29,6 +30,50 @@ def test_engine_seed_matches_openspiel(n: int) -> None:
 
 def test_engine_seed_known_value() -> None:
     assert engine_seed(42) == 1964635914
+
+
+# ── _decision_display_label (imported pure helper from replay_viewer) ────────
+
+
+def test_decision_display_label_prefers_chosen_label() -> None:
+    decision = {
+        "chosen_move": "resolve_generic(action_id='option_1', target_id=None, selection_index=0)",
+        "chosen_label": "Gauth: Gain 2 influence",
+        "generic": {
+            "source_card_id": "gauth",
+            "op": None,
+            "awaiting_option": True,
+            "move_action_id": "option_1",
+        },
+    }
+    label = _decision_display_label(decision)
+    assert label.startswith("Gauth: Gain 2 influence\n")
+    assert "gauth" in label
+    assert "target=option_1" in label
+    assert "op=" not in label, "null op should be omitted"
+
+
+def test_decision_display_label_falls_back_to_chosen_move() -> None:
+    decision = {"chosen_move": "deploy(target_node_id='route_6', troop_count=1)"}
+    assert _decision_display_label(decision) == decision["chosen_move"]
+
+
+def test_decision_display_label_generic_footer_omits_missing_fields() -> None:
+    decision = {
+        "chosen_move": "resolve_generic(...)",
+        "chosen_label": "",
+        "generic": {"source_card_id": "gauth", "move_action_id": None},
+    }
+    label = _decision_display_label(decision)
+    # chosen_label empty → fall back to chosen_move; source-only footer shown.
+    assert label == "resolve_generic(...)\ngauth"
+
+
+def test_decision_display_label_ignores_malformed_generic() -> None:
+    decision = {"chosen_move": "resolve_generic(...)", "generic": "not-a-dict"}
+    assert _decision_display_label(decision) == "resolve_generic(...)"
+
+    assert _decision_display_label({}) == ""
 
 
 def _write_replay(

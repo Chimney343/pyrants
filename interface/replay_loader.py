@@ -8,7 +8,16 @@ Artifact layout (``artifacts/ismcts/**/game_XXXX/``):
 - ``replay.json``    required; ``replay_context`` + ``replay_log`` + top-level
                      ``step_count`` / ``winner_id`` / ``final_scores``
 - ``summary.json``   optional; labels + ``setup_data_sha256`` + ``outcome``
-- ``decisions.jsonl`` optional; per-decision telemetry, line N <-> replay_log[N]
+- ``decisions.jsonl`` optional; per-decision telemetry, line N <-> replay_log[N].
+
+``decisions.jsonl`` lines carry additive fields: ``resolve_generic`` lines
+(identified by the raw ``chosen_move``/``move_type``) additionally include a
+human-readable ``chosen_label`` and a structured ``generic`` object
+(``source_card_id``, ``op``, ``card_action_id``, ``current_option_id``,
+``awaiting_option``, ``optional``, plus the move's own ``move_action_id`` /
+``move_target_id`` / ``selection_index``).  ``chosen_move`` stays raw, and
+non-generic lines never gain these fields; unknown/malformed fields and lines
+are tolerated.
 """
 
 from __future__ import annotations

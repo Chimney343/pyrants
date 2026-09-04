@@ -116,7 +116,7 @@ The `scripts/run_ismcts.py` runner drives the stock
 | `engine_c/bindings/c_adapter.py` | `CEngineAdapter.determinize` — reshuffles opponent hidden zones for IS-MCTS determinization |
 | `openspiel_pyrants/state_c.py` | `PyrantsCState` — `information_state_string`, `observation_string`, `resample_from_infostate` |
 | `openspiel_pyrants/game_c.py` | `PyrantsCGame` — declares `GameType`/`GameInfo`; returns `PyrantsCObserver` |
-| `scripts/run_ismcts.py` | Headless IS-MCTS runner with CLI control, per-game `replay.json` + `decisions.jsonl` + `summary.json`, and cross-run `summary.csv` / `summary.md` |
+| `scripts/run_ismcts.py` | Headless IS-MCTS runner with CLI control, per-game `replay.json` + `decisions.jsonl` + `summary.json`, and cross-run `summary.csv` / `summary.md`. `decisions.jsonl` `resolve_generic` lines additively carry `chosen_label` (human string) + a structured `generic` context (`source_card_id`, `op`, `card_action_id`, `current_option_id`, `awaiting_option`, `optional`, `move_action_id`/`move_target_id`/`selection_index`); `chosen_move` stays raw and non-generic lines are unchanged |
 
 ### How information-state strings work
 

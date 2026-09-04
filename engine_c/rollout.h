@@ -17,15 +17,22 @@ extern "C" {
  * `max_length <= 0` means unbounded, but is still capped internally by a
  * runaway-loop safety limit — a defensive bound, not a tuning knob.
  *
- * Writes exactly MAX_PLAYERS ints to `scores_out`: `compute_final_scores()`
- * if the rollout reached a real terminal state, otherwise each player's
- * current `score` field (unused player slots past `player_count` are
- * zeroed). This mirrors PyrantsCState.returns()'s terminal/non-terminal
- * branching on the Python side, so results are comparable regardless of
- * which rollout implementation produced them.
+ * Moves are sampled only from those the engine will actually accept: the
+ * UI-only placeholders engine_legal_moves() reports for non-viable modal
+ * options (see move_is_unavailable_placeholder) are filtered out first.
+ * Without that filter a uniform pick landed on a placeholder — which
+ * engine_apply refuses — at most mid-game positions, cutting the rollout
+ * short after a handful of steps.
+ *
+ * Writes exactly MAX_PLAYERS ints to `scores_out`: always
+ * `compute_final_scores()`, which is the real tally at a terminal state and
+ * a score-the-game-as-if-it-ended-here estimate at a cut-off one (unused
+ * player slots past `player_count` are zeroed). A cut-off rollout therefore
+ * still yields a usable leaf value rather than a near-constant zero.
  *
  * Returns 1 if the rollout ended at a terminal state, 0 if it was cut off
- * by max_length (or the hard safety cap).
+ * by max_length (or the hard safety cap) — the score is meaningful either
+ * way, so the flag is a diagnostic, not a validity bit.
  */
 int engine_random_rollout(const GameState *state, uint64_t seed, int max_length, int *scores_out);
 

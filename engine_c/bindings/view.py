@@ -29,6 +29,7 @@ from .engine_bindings import (
     sym_str,
 )
 from .label_enrich import enrich_label
+from .pending_context import read_pending_generic_context
 
 _PHASE_MAP = {
     PHASE_SETUP: "setup",
@@ -246,23 +247,13 @@ def _build_c_legal_moves(session, state_ptr, *, node_names=None, player_spy_coun
         is_optional_action = False
         current_option_id = ""
         if mw.move_type == "resolve_generic":
-            try:
-                pg_ptr = state_ptr.contents.pending_generic
-                if pg_ptr:
-                    pg = pg_ptr.contents
-                    source_card_id = _elib.intern_str(pg.source_card_id).decode()
-                    is_option_choice = bool(pg.awaiting_option)
-                    if pg.current_option_id and not is_option_choice:
-                        current_option_id = _elib.intern_str(pg.current_option_id).decode()
-                    if not is_option_choice:
-                        idx = pg.next_action_index
-                        if 0 <= idx < pg.current_action_count:
-                            current_action = pg.current_actions[idx]
-                            is_optional_action = bool(current_action.optional)
-                            if current_action.action_id:
-                                card_action_id = _elib.intern_str(current_action.action_id).decode()
-            except Exception:
-                pass
+            pg_ctx = read_pending_generic_context(state_ptr)
+            if pg_ctx is not None:
+                source_card_id = pg_ctx["source_card_id"] or ""
+                card_action_id = pg_ctx["card_action_id"] or ""
+                is_option_choice = bool(pg_ctx["awaiting_option"])
+                is_optional_action = bool(pg_ctx["optional"])
+                current_option_id = pg_ctx["current_option_id"] or ""
         promotion_source_card_id = ""
         promotion_aspect = ""
         promotion_focus_aspect = ""

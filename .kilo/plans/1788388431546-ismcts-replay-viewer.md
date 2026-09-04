@@ -123,7 +123,7 @@ for entry in replay["replay_log"]:
 |---|---|
 | `replay.json` | **Required.** `replay_context` (board/card/setup paths, `player_ids`, `seed`, `deck_a_id`, `deck_b_id`) + `replay_log` (one entry per decision, plus a trailing `__terminal__` sentinel) + `step_count`, `winner_id`, `final_scores` |
 | `summary.json` | Optional. Labels + `setup_data_sha256` + `outcome`/`winner`/`decision_count` |
-| `decisions.jsonl` | Optional. Per-decision telemetry; line N ↔ `replay_log[N]` (`node` == `step_index`). Fields: `legal_moves`, `policy`, `visit_counts`, `chosen_action_id`, `chosen_move`, `wall_time_ms`, `sims_requested` |
+| `decisions.jsonl` | Optional. Per-decision telemetry; line N ↔ `replay_log[N]` (`node` == `step_index`). Fields: `legal_moves`, `policy`, `visit_counts`, `chosen_action_id`, `chosen_move`, `wall_time_ms`, `sims_requested`. `resolve_generic` lines additively carry `chosen_label` + a structured `generic` context (`source_card_id`, `op`, `card_action_id`, `current_option_id`, `awaiting_option`, `optional`, `move_action_id`/`move_target_id`/`selection_index`); `chosen_move` stays raw and non-generic lines are unchanged |
 | `steps.jsonl` | **Do not load** (2–4 MB, and some are stale/mixed-run). Offline verifier only |
 
 `replay_log[]` entry: `{step_index, player_id, round_number, phase, move_type, label, payload}`.

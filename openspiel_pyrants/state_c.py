@@ -173,13 +173,16 @@ class PyrantsCState(pyspiel.State):
         n = len(player_ids)
         if self._adapter is None:
             return [0.0] * n
-        if self._adapter.is_terminal():
-            scores = self._adapter.final_scores()
-        else:
-            scores = {}
-            for pid in player_ids:
-                idx = self._player_index(pid)
-                scores[pid] = self._adapter.player_score(idx)
+        # compute_final_scores() whether or not the game actually ended: it is
+        # the real tally at terminal and a score-the-game-as-if-it-ended-here
+        # estimate before that.  The raw players[i].score field this used to
+        # fall back to at a non-terminal state leaves out site-control VP,
+        # trophies, VP tokens and every card's printed VP, so it reads 0 for
+        # most of a game — which made a max_length-truncated
+        # RandomRolloutEvaluator playout worth a constant to UCT.  Keeping the
+        # two branches identical is also what lets CRolloutEvaluator and
+        # RandomRolloutEvaluator produce values on the same scale.
+        scores = self._adapter.final_scores()
         if n == 2:
             s0 = scores.get(player_ids[0], 0)
             s1 = scores.get(player_ids[1], 0)

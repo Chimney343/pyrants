@@ -161,6 +161,50 @@ Post-fix evidence:
 > pre-existing failures), and `just test-c` (exit 0). Zero out-of-scope hunks. G5 re-measured at
 > 6.87× (down from 9.655× per F-013's own mitigation, not a new regression).
 
+**F-019 — `engine_random_rollout` samples unfiltered UI placeholder moves, aborting 85-93% of rollouts onto a constant zero leaf value. FIXED (Review 01 ACCEPTED-WITH-DEBT).**
+
+`engine_legal_moves()` mixes UI-only `unavailable`-tagged placeholder moves (emitted so the Tkinter
+viewer can grey out non-viable modal options) into the same array as real moves; pre-fix,
+`engine_random_rollout` sampled uniformly over that unfiltered array, so on the runner's real
+74-card two-half-deck market the large majority of rollouts hit a placeholder, got `NULL` back from
+`engine_apply`, and broke out early — reporting the pre-fix non-terminal fallback score
+(`players[i].score`), which omits site-control VP, trophies, VP tokens, and card VP and so reads
+`0` for most of a game. Fixed by compacting placeholder moves out of `engine_legal_moves()`'s
+output before sampling (`engine_c/rollout.c::engine_random_rollout`) and always calling
+`compute_final_scores` for the leaf value regardless of whether the rollout reached genuine
+terminal (`engine_c/rollout.c`, mirrored in `openspiel_pyrants/state_c.py::PyrantsCState.returns()`
+for the non-C-rollout code path). `ROLLOUT_HARD_STEP_CAP` raised 2000 → 4000 to match the now much
+longer (~4.7×) filtered rollout.
+
+> **This finding was registered retroactively.** The fix already existed, uncommitted, in the
+> working tree when Review 01 began, with no ledger entry, no fix plan, and no pre-registered
+> falsification test — a clean violation of this ledger's Hard Rule 3, disclosed rather than
+> silently absorbed. At owner direction, F-019 was written into `findings.md` from the diff plus a
+> prior working session's own measurements, and only then reviewed. Treat "CONFIRMED — FIXED" here
+> as carrying that debt permanently, not as an ordinary pre-registered finding.
+>
+> **Review 01** (`docs/validation/reviews/f019-review-01.md`, working tree at HEAD `2f6a0e7`):
+> **ACCEPTED-WITH-DEBT** (F-020/F-021/F-022 open; the Hard-Rule-3 registration debt above). The
+> falsification test — `openspiel_pyrants/tests/test_rollout_reaches_terminal.py`, built on the
+> runner's real market — passed (30/30 terminal at both 2p and 4p from a 40-ply position). Zero
+> regressions found in the always-on battery (INV-1/2/3/6, N=100/277/1200/30, exact match),
+> F-010's determinism re-check (`det_bot.py`/`det_isolate.py`, 1 distinct result throughout,
+> unchanged), F-013's timing gate (`f011_timing.py`, 0.2735s vs. prior 0.2643-0.2755s, still
+> ~1.66× under the 2× gate), and F-002's shuffle-permutation invariant (`f002b.py`, 8/8 unchanged).
+> One out-of-scope hunk (`.claude/CLAUDE.md`, a Repowise auto-index metadata refresh untouched by
+> and unrelated to the fix) treated as carried noise, not scope creep, per the F-006 Review 01
+> precedent. Three additional full-suite failures (`test_replay_player.py`×2,
+> `test_replay_loader.py`×1) were investigated and proven **not** attributable to this diff via a
+> clean `git worktree` comparison at the same SHA (see F-022) — they stem from a gitignored, locally
+> regenerated artifact, not from anything git-tracked. **However**, all of the above blast-radius
+> reruns except the falsification test itself were run on `common.py::load()`'s default
+> `base_setup.json` market, which this review independently confirmed (F-021) never exercises the
+> placeholder/modal code path F-019 touches — so the *correctness* claim is validated on the real
+> market, but the *zero-regression* claim for search wall-time and determinism is only validated on
+> a fixture proven blind to this fix's cost. The fix's own comments record a ~3.1× search wall-time
+> slowdown on the real 4-player market as an accepted, unavoidable cost of correct leaf values; this
+> review did not independently re-measure that number.
+
 **F-010 — determinization seeds are unseeded; no run is reproducible. FIXED (Review 02 ACCEPTED-WITH-DEBT).**
 Fixed by `openspiel_pyrants/ismcts_factory.py::make_ismcts_bot` (installs a seeded numpy
 resampler via the stock `ISMCTSBot.set_resampler` hook, with a dedicated
@@ -442,6 +486,25 @@ offers 5,000 outcomes against a declared 1,000, and outcome id 4999 applies with
 Dormant only because no in-repo caller overrides the default.
 > Repro: `python -u docs/validation/harness/f009.py`
 
+### DECLINED — evaluated, not pursued
+
+**F-023 — in-game rollout/leaf parallelism blocked by `engine_c/intern.c`'s unsynchronized global symbol table. DECLINED, not to be pursued.**
+
+The C rollout call drops the GIL (ctypes), so within-game leaf parallelism across the 15
+otherwise-idle cores looked like the single biggest remaining IS-MCTS speed lever — flagged as
+"unverified, needs the global intern table checked for thread-safety first" by both
+`docs/validation/reviews/f019-review-01.md` and the project's own performance-levers notes.
+Direct source reading of `engine_c/intern.c` (112 lines, in full) confirms the precondition
+fails: zero mutex/atomic/thread-local anywhere in the file, with three concrete
+unsynchronized-access sites — bucket-list insertion (`:72-73`), the plain `next_sym++` counter
+(`:53`, which could hand two different strings the same `Sym`), and a `realloc`-based growth
+path (`:54-66`) that can free/move memory a concurrent reader is still touching. No runtime
+falsification test was executed (the lever was declined outright); status rests on code
+inspection only, disclosed as such rather than presented as an empirical CONFIRMED.
+> Owner decision [2026-09-04]: **DECLINED.** Not a live defect — nothing today calls the engine
+> from more than one thread — but the lever it would gate is now formally closed. Do not re-raise
+> in-game rollout/leaf parallelism as an available optimization without first addressing this.
+
 ---
 
 ## 3. Refuted findings — do not re-raise
@@ -492,6 +555,18 @@ Adding a `--opponent` flag would let these run through the supported entry point
 ---
 
 ## 5. GO / NO-GO
+
+> **Post-hoc caveat, added by F-019 Review 01, not a re-declaration of this section.** The 🟢 GO
+> below predates F-019 (CRITICAL, now ACCEPTED-WITH-DEBT — see §2) and its three derivative
+> findings F-020/F-021/F-022 (§2/§3 as applicable), none of which existed when GO was declared.
+> Most consequentially, F-021 (MAJOR, OPEN) establishes that the entire `docs/validation/harness/`
+> battery this GO rests on — INV-1/2/3/6 and every blast-radius rerun in every review above —
+> defaults to a market fixture proven to never exercise pending-generic/modal-choice code paths,
+> so none of that evidence bears on behavior under the runner's real multi-deck market for that
+> class of defect. This section's GO conclusion is not withdrawn here — that is the Final GO Gate's
+> call, not a per-fix review's — but it should not be relied upon without accounting for F-019's
+> fix (a real, ~3.1×, unmeasured-by-any-gate search-time cost on the real market) and F-021 (a gap
+> in what the battery can see) first.
 
 ### 🟢 GO.
 

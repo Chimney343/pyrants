@@ -723,6 +723,21 @@ GameState *auto_resolve_pending_generic(GameState *state, Sym player_id) {
     return state;
 }
 
+/* legal_pending_generic_choice_moves emits a placeholder resolve_generic move
+ * tagged with this target_id for every non-viable modal option, so the Tkinter
+ * viewer can render the option greyed out instead of hiding it.  Those moves
+ * are deliberately not applicable — apply_resolve_generic_choice below refuses
+ * them — so every consumer that actually *applies* moves has to filter them out
+ * of engine_legal_moves()'s output first.  Callers: the C rollout loop
+ * (rollout.c) and, on the Python side, compute_c_action_map(). */
+int move_is_unavailable_placeholder(const Move *move) {
+    if (!move || move->type != MOVE_RESOLVE_GENERIC) return 0;
+    Sym tid = move->data.resolve_generic.target_id;
+    if (tid == SYM_NULL) return 0;
+    const char *s = intern_str(tid);
+    return s && strcmp(s, "unavailable") == 0;
+}
+
 GameState *apply_resolve_generic_choice(GameState *src, const Move *move) {
     GameState *state = engine_clone_cow(src);
     if (!state) return NULL;
@@ -734,12 +749,9 @@ GameState *apply_resolve_generic_choice(GameState *src, const Move *move) {
     if (!pending_generic_card_definition(state, p, &card)) { engine_destroy(state); return NULL; }
 
     /* Reject moves tagged as unavailable (generated for UI greying-out). */
-    if (move->data.resolve_generic.target_id != SYM_NULL) {
-        const char *tid = intern_str(move->data.resolve_generic.target_id);
-        if (tid && strcmp(tid, "unavailable") == 0) {
-            engine_destroy(state);
-            return NULL;
-        }
+    if (move_is_unavailable_placeholder(move)) {
+        engine_destroy(state);
+        return NULL;
     }
 
     if (p->awaiting_option) {
