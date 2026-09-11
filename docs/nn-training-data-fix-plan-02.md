@@ -2,7 +2,7 @@
 
 Scope: the four findings from the 2026-09-11 review of `nn-training-data-fix-plan.md`'s
 implementation, plus six minor cleanups. Base: working tree at `ea25b68` with Phases 0-5 of
-Fix Plan 01 applied but uncommitted. Status: **implemented** (2026-09-11).
+Fix Plan 01 applied but uncommitted. Status: **implemented** (2026-09-11); Phase 5 closed the same evening on a fresh corpus after the review (`nn-training-data-fix-plan-02-review.md`) found the commit had bundled a rule change — see F-034.
 
 Fix Plan 01 is confirmed done. Re-verified in this review, not taken on trust:
 | gate | result |

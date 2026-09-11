@@ -739,17 +739,9 @@ _CHOICE_BRANCHES = frozenset({
 })
 
 _UNCOVERED_BY_CENSUS = {
-    ("custom_effect", "self_purge_to_supply"): (
+    ("custom_effect", "steal_white_trophy_to_board"): (
         "tests/nn/test_actions_live_custom_effects.py::"
-        "test_self_purge_to_supply_on_live_engine"
-    ),
-    ("custom_effect", "give_insane_outcast_to_selected_player"): (
-        "tests/nn/test_actions_live_custom_effects.py::"
-        "test_give_insane_outcast_to_selected_player_on_live_engine"
-    ),
-    ("custom_effect", "give_insane_outcast_to_player_with_presence_on_last_selected_node"): (
-        "tests/nn/test_actions_live_custom_effects.py::"
-        "test_give_insane_outcast_presence_on_last_selected_on_live_engine"
+        "test_steal_white_trophy_to_board_on_live_engine"
     ),
     ("custom_effect", "deploy_from_trophy_hall"): (
         "tests/nn/test_actions_live_custom_effects.py::"
@@ -771,38 +763,42 @@ _UNCOVERED_BY_CENSUS = {
 
 # Checked-in expected coverage of the full (PYRANTS_NN_CENSUS=1) walk. The
 # corpus is every replayable game dir under `artifacts/ismcts/`, so it grows when
-# a new run (e.g. `just ismcts-quick`) is written and the counts must be re-baked
-# deliberately. Games that desync on the unreleased `insane_outcast`
-# non-recruitable rule change are reported as CENSUS_SKIPPED_DESYNC and excluded;
-# every choice branch left uncovered is named in _UNCOVERED_BY_CENSUS.
+# a new run is written and the counts must be re-baked deliberately. Baked
+# 2026-09-11 on the post-wipe corpus: 34 dirs = the 32-game 200-sim run
+# `runs/20260911T193759Z_58e54c44a5f5` + the 2-game `just ismcts-quick` run,
+# all under the insane_outcast non-recruitable rule, 0 desync. Every choice
+# branch the corpus never reaches is named in _UNCOVERED_BY_CENSUS; the three
+# insane_outcast branches are reached again through demon-deck give effects.
 _EXPECTED_BRANCH_COVERAGE: dict = {
-    ("assassinate_troop", None): 1011,
-    ("custom_effect", "steal_white_trophy_to_board"): 6,
-    ("deploy_troops", None): 1447,
-    ("devour_cost", None): 401,
-    ("force_discard", None): 153,
-    ("move_troop", None): 40,
-    ("place_spy", None): 996,
-    ("promote_card", None): 2,
-    ("recruit_card", None): 7,
-    ("return_spy", None): 273,
-    ("return_unit", None): 264,
-    ("supplant_troop", None): 258,
+    ("assassinate_troop", None): 650,
+    ("custom_effect", "give_insane_outcast_to_player_with_presence_on_last_selected_node"): 14,
+    ("custom_effect", "give_insane_outcast_to_selected_player"): 47,
+    ("custom_effect", "self_purge_to_supply"): 70,
+    ("deploy_troops", None): 740,
+    ("devour_cost", None): 214,
+    ("force_discard", None): 97,
+    ("move_troop", None): 21,
+    ("place_spy", None): 347,
+    ("play_card", None): 1,
+    ("recruit_card", None): 9,
+    ("return_spy", None): 141,
+    ("return_unit", None): 104,
+    ("supplant_troop", None): 128,
 }
 _EXPECTED_SUB_BLOCK_COVERAGE: dict = {
-    "assassinate": 2568,
-    "deploy": 16546,
-    "fixed": 87226,
-    "initial_placement": 376,
-    "play_card": 56907,
-    "promote": 728,
-    "recruit": 12751,
-    "resolve_generic.card": 407,
-    "resolve_generic.decline": 556,
-    "resolve_generic.node": 2707,
-    "resolve_generic.option": 1668,
-    "resolve_generic.player": 156,
-    "return_spy": 771,
+    "assassinate": 1661,
+    "deploy": 7568,
+    "fixed": 35074,
+    "initial_placement": 136,
+    "play_card": 23231,
+    "promote": 244,
+    "recruit": 4921,
+    "resolve_generic.card": 293,
+    "resolve_generic.decline": 291,
+    "resolve_generic.node": 1216,
+    "resolve_generic.option": 780,
+    "resolve_generic.player": 158,
+    "return_spy": 421,
 }
 
 
@@ -988,6 +984,7 @@ def test_every_legal_move_in_stored_replays_maps(requires_c_engine) -> None:
         for block, count in game_sub.items():
             sub_block_counts[block] = sub_block_counts.get(block, 0) + count
 
+    print("CENSUS_CORPUS", f"dirs={len(dirs)} walked={len(dirs) - len(skipped_desync)} skipped={len(skipped_desync)}")
     print("CENSUS_SKIPPED_DESYNC", len(skipped_desync), repr(skipped_desync[:3]))
     print("CENSUS_BRANCH_COVERAGE", repr(dict(sorted(branch_counts.items()))))
     print("CENSUS_SUB_BLOCK_COVERAGE", repr(dict(sorted(sub_block_counts.items()))))

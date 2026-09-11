@@ -28,6 +28,7 @@ Use these files for current project status:
 - If you are implementing that layout, follow `nn-training-data-tdd-plan.md` (tests first, phase by phase).
 - If you are fixing what the first verification of that layout found, follow `nn-training-data-fix-plan.md` (each finding reviewed against `tyrants-rulebook.md`).
 - If you are fixing what the review of *that* plan's implementation found, follow `nn-training-data-fix-plan-02.md` (seat perspective, trophy-hall action merge, census coverage).
+- If you want to know whether Fix Plan 02 actually landed as written, read `nn-training-data-fix-plan-02-review.md` (short grug-voice version: `nn-training-data-fix-plan-02-review-grug.md`).
 
 ## Keeping This Folder Honest
 

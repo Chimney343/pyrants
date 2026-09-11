@@ -1,6 +1,6 @@
 # Saving IS-MCTS Games for Neural-Network Training
 
-Status: proposal, audited against the artifacts on disk. As of 2026-09-09 (commit `ea25b68`).
+Status: implemented and gated on a fresh v3 corpus. Written 2026-09-09 (commit `ea25b68`); fitness audit last updated 2026-09-11 (`23196b7` + working tree, see § v3 teacher run).
 Short version in grug voice: `nn-training-data-grug.md`.
 
 ## The answer
@@ -149,12 +149,54 @@ run under the current engine; the manifest records `encoder_version = 3`,
 - `pair_move_merge_frac = 0.00242` (0.242 % of non-forced samples); `n_legal_raw_mean = 6.91`.
 - `manifest.json` now also records `op_index_sha` and `effect_index_sha` (m2 of Fix Plan 02).
 
-The 120-game `sims_vs_wins_v2` was **not** rebuilt to v3. The working tree adds
-`recruitable` to `data/decks/base_setup.json`, which changes the setup SHA, so the
-builder rejects all 120 legacy games with `setup sha mismatch`; 46 of them also
-desync on `recruit insane_outcast` (the same unreleased rule change the census
-reports as skipped). The v2 numbers above stand as the last build of that corpus;
-rebuild it only from a fresh run under the current setup.
+The 120-game `sims_vs_wins_v2` was **not** rebuilt to v3: `23196b7` also made
+`insane_outcast` non-recruitable (`data/decks/base_setup.json` `recruitable: false` +
+engine), which changed the setup SHA so the builder rejected all 120 legacy games, and
+46 of them desynced at `recruit insane_outcast`. On 2026-09-11 the owner wiped
+`artifacts/ismcts/` (every game played under the old rule) and `datasets/sims_vs_wins_v2`
+was deleted. The v2 numbers above are history; the corpus below replaces them.
+
+### v3 teacher run (2026-09-11, `23196b7` + working tree)
+
+First corpus played entirely under the current rule set, at the uniform teacher budget
+§ How many games asks for:
+
+```
+python -m scripts.run_ismcts --num-sims 200 --num-games 32 --seed 42 --workers 16 \
+  --num-players 4 --uct-c 1.4 --game python_pyrants_c --no-steps \
+  --output-dir artifacts/ismcts/runs            # -> runs/20260911T193759Z_58e54c44a5f5
+python scripts/verify_replays.py                # 34/34 OK (32 + the 2-game quick run)
+python -m scripts.build_nn_dataset --runs artifacts/ismcts/runs/20260911T193759Z_58e54c44a5f5 \
+  --out datasets/teacher_v3_32 --strict --leak-check 200 --shard-size 20000
+python -m scripts.build_nn_dataset --report datasets/teacher_v3_32
+```
+
+- Run: 32 × 4-player games, engine `3410ef6`, DLL sha recorded, `steps.jsonl` off.
+  **50 min wall** on an 8-core / 16-thread Ryzen 7 7800X3D with 16 workers; per game
+  828-1,719 s (mean 1,264 s), 183 sims/s per worker. A 4-worker pilot of the same seed
+  produced byte-identical move sequences for games 0-3 (search is deterministic per
+  seed), so it was discarded rather than double-counted.
+- Decks: 12 of the 15 half-deck pairs appeared; **8 of 32 games** carry the demons
+  half-deck and therefore the `insane_outcast` special stack.
+- Replays: 36,478 moves, 853-1,447 per game (mean 1,140). 72 % non-forced.
+- Build (`--strict`, no legacy flag): **32 accepted, 0 rejected, 26,306 samples, 2 shards**
+  (`encoder_version = 3`, `action_space_version = 3`, all four index SHAs in the manifest).
+  Alignment held on every node.
+- `leak_check = {nodes: 4611, mismatches: 0}`.
+- Value-target mean per seat: **+0.022, +0.002, −0.008, +0.006** (flatter than the
+  mixed-budget v2 run, as a uniform budget should be).
+- `policy argmax == chosen`: **0.844** — every sample is at `sims_requested = 200`, so the
+  overall and the `≥ 200` figures coincide. Measured, not the plan's 0.95, for the sampling
+  reason given under the first acceptance run.
+- `pair_move_merge_frac = 0.0016` (0.16 %); `n_legal_raw_mean = 6.74`.
+- Census over the new corpus (`PYRANTS_NN_CENSUS=1 pytest tests/nn/test_actions.py`):
+  34 dirs, 34 walked, 0 skipped, **0 semantic collisions**. The three `insane_outcast`
+  branches are back in the live census (70 / 47 / 14 states, via demon-deck give effects);
+  `steal_white_trophy_to_board` (Mummy Lord) dropped out (6 → 0 states) and gained a
+  live-engine test. `_EXPECTED_BRANCH_COVERAGE` was re-baked on this corpus.
+- Test trees after the run: `tests/` 3 failed (all F-015; the two artifact-bound tests now
+  skip); `openspiel_pyrants/tests/` 11 failed (10× F-003 by design, 1× F-013's G1
+  byte-identity gate whose frozen reference recruits `insane_outcast` — open, see F-034).
 
 ## Proposed layout
 
@@ -210,7 +252,7 @@ For each complete game the builder validates first: same `run_id` in replay, dec
 4. `value_target` = normalized final-score vector from `summary.json`, rotated so the acting player is seat 0.
 5. Skip forced nodes, or keep them with weight 0 if the value head should see them.
 
-Write `.npz` shards of about 50k samples plus a manifest. numpy is installed; torch and pyarrow are not, and npz is enough to start. Store the compact structured form (card ids and counts, not one-hots) and expand at load time, so a switch to learned card embeddings does not touch the shards.
+Write `.npz` shards of about 50k samples plus a manifest. numpy is installed; torch and pyarrow are not, and npz is enough to start. Store the compact structured form (card ids and counts, not one-hots) and expand at load time, so a switch to learned card embeddings does not touch the shards. *As built*, `write_shards` stores the dense `int16` observation (`OBS_SIZE` per row), not a sparse id/count list; each 126-wide card block is a count vector, so card ids are recoverable from its non-zero entries and an embedding switch reads the same shards — but the stored form is the expanded one, not the compact one this paragraph describes.
 
 ## Observation encoding v3
 
@@ -247,7 +289,7 @@ Total about 4.8k floats. Board adjacency is static, so an MLP over the flat vect
 
 v3 keys every structured trophy *placement* on the deployed troop's colour: a target `sp:idx:node:slot` routes to `assassinate[node × owner_slot(colour)]`, colour read from `ctx.trophy_halls`. v2 sent `deploy_from_trophy_hall` and `steal_from_selected_trophy` to `node[destination]`, so 23 of 23 gids on a live Lich state merged two differently-coloured deploys (F-031); the live test now measures 46 gids. A trophy colour that is not a current seat or `white` (e.g. `p3` in a 2-player game) is illegal and raises. The `index` sub-block holds allow-listed positional keys: `select_trophy_hall` is keyed as source seat (4) × trophy colour (5). `steal_white_trophy_to_board` step 1 routes to the `player` sub-block by source player (every offered trophy is white, so no distinct choice folds); its structured step-2 target keys on the trophy colour (always white).
 
-The census semantic key is `(op, effect_kind, destination_node, trophy_colour)`, derived from the live trophy halls rather than the encoder's routing, so it can disagree with the encoder and fail. It reports branch and routing sub-block coverage, and every choice-producing branch the stored games never reach is named in `_UNCOVERED_BY_CENSUS` with the live-engine test that covers it. On the current corpus (`PYRANTS_NN_CENSUS=1 pytest tests/nn/test_actions.py`) it walks 139 stored game dirs, replays 93, skips 46 that desync on an unreleased `insane_outcast` non-recruitable rule change, and reports 0 rulebook-distinct collisions.
+The census semantic key is `(op, effect_kind, destination_node, trophy_colour)`, derived from the live trophy halls rather than the encoder's routing, so it can disagree with the encoder and fail. It reports branch and routing sub-block coverage, and every choice-producing branch the stored games never reach is named in `_UNCOVERED_BY_CENSUS` with the live-engine test that covers it. On the current corpus (`PYRANTS_NN_CENSUS=1 pytest tests/nn/test_actions.py`) it walks 34 stored game dirs (the 32-game 200-sim run plus the 2-game `ismcts-quick` run, all under the `insane_outcast` non-recruitable rule), replays all 34, skips 0, and reports 0 rulebook-distinct collisions; the test prints `CENSUS_CORPUS dirs= walked= skipped=` so the number can be cited from the run rather than from this sentence. Five trophy-related branches the corpus never reaches are named in `_UNCOVERED_BY_CENSUS`, each with a live-engine test in `tests/nn/test_actions_live_custom_effects.py`.
 
 v2 alternative: a per-move scoring head that embeds each legal move's payload and softmaxes over the legal set. It handles the 658-move states without a large sparse head and needs exactly the same stored data. This is why layer 1 stores payloads and per-move visits, never v1's slot ids.
 
@@ -275,21 +317,24 @@ Roughly 10 to 15M parameters. Loss = cross-entropy against the visit distributio
 
 About 840 non-forced samples per 4-player game. 1,000 games give about 0.8M samples, enough to prove the pipeline and get a weak policy. Expect 5k to 20k games before a distilled policy is worth plugging back into the search as a prior or evaluator. For teacher runs use a uniform budget of at least 200 sims per seat; the 50-sim seats in the existing experiment produce the noisiest targets. Do not deduplicate on `info_state_sha256`: it includes the history prefix and is unique per node.
 
+Measured cost (2026-09-11, § v3 teacher run): 32 four-player games at 200 sims took 50 min on 8 cores with 16 workers, i.e. **about 40 games per hour**, 822 non-forced samples per game. 1,000 games is roughly a day of compute on that box; 5k-20k games is a week to a month, or a bigger machine.
+
 ## Concrete next steps
 
 1. Runner (`scripts/run_ismcts.py`): run-scoped output dir and manifest; real `visit_counts`, `q_values`, `root_value`, `legal_moves_payload`, `pending_context`; `schema_version`; write `summary.json` last. Register the mixed-run directories as a finding next to F-018 and F-022.
 2. Encoders (new module, suggested path openspiel_pyrants/nn/encoders.py): `encode_observation(adapter, player_id, pending_ctx)` returning a numpy array, and `move_to_global_action(payload, ctx)` returning an int. Round-trip tests over the 120 replays: every legal move maps, no collisions.
-3. Builder (`scripts/build_nn_dataset.py`, wrappers in `openspiel_pyrants/nn/dataset.py` + `scripts/_nn_dataset.py`): validation, replay, encode, shard, manifest. Run it on the 120-game experiment:
+3. Builder (`scripts/build_nn_dataset.py`, wrappers in `openspiel_pyrants/nn/dataset.py` + `scripts/_nn_dataset.py`): validation, replay, encode, shard, manifest. Run it on the current teacher corpus (the 120-game experiment was wiped on 2026-09-11 — it was played under the pre-`recruitable` rule; see § v3 teacher run):
    ```
-   just build-nn-dataset runs="artifacts/ismcts/experiments/sims_vs_wins/*" out="datasets/sims_vs_wins_v2" args="--allow-legacy-schema --leak-check 200"
-   just report-nn-dataset dataset="datasets/sims_vs_wins_v2"
+   just build-nn-dataset artifacts/ismcts/runs/20260911T193759Z_58e54c44a5f5 datasets/teacher_v3_32 --strict --leak-check 200 --shard-size 20000
+   just report-nn-dataset datasets/teacher_v3_32
    ```
+   (`just` here takes positional arguments; `name=value` is passed through as a literal.)
 4. Acceptance gate before any training: all games verify; the alignment assert holds on every node; leak test passes (encoder output identical before and after `CEngineAdapter.determinize`, which reshuffles exactly the hidden zones); label sanity (value target mean about 0 across seats; policy argmax equals the chosen move on at least 95% of nodes with sims ≥ 200).
 
-   Status: **run** (see § Fitness audit → Acceptance run, v2 acceptance run and v3 acceptance run above). All gates hold except the argmax threshold (v2 0.883 at sims ≥ 200 vs 0.95), which is explained there by `step_with_policy` sampling from the visit distribution. F-025 and F-026..F-029 are fixed by `nn-training-data-fix-plan.md`; F-030..F-033 are fixed by `nn-training-data-fix-plan-02.md`.
+   Status: **run** (see § Fitness audit → Acceptance run, v2 acceptance run, v3 acceptance run and v3 teacher run above). All gates hold except the argmax threshold (v2 0.883 at sims ≥ 200; v3 teacher run 0.844 at uniform 200 vs 0.95), which is explained there by `step_with_policy` sampling from the visit distribution. F-025 and F-026..F-029 are fixed by `nn-training-data-fix-plan.md`; F-030..F-033 are fixed by `nn-training-data-fix-plan-02.md`; the rule-change stowaway that invalidated the first corpus is F-034. The only training-size v3 dataset is `datasets/teacher_v3_32` (32 games); training has not started.
 
 ## Not decided here
 
-- Whether training runs keep `steps.jsonl` at all. Recommend a flag, default off.
+- Whether training runs keep `steps.jsonl` at all. `--no-steps` exists and `just ismcts-quick` passes it; the runner's default is still **on** and `just ismcts` leaves it on. Measured 2026-09-11 on a 200-sim game: 5.9 of 8.2 MB (73 %) is `steps.jsonl`. Flip the default or add the flag to `ismcts` before the 1,000-game run.
 - Whether opponents' discard contents count as observable. The engine says no, and the owned bag is observable regardless.
 - Card embeddings versus one-hots, and a graph layer over the board. Neither changes the stored format.

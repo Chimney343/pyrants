@@ -57,6 +57,7 @@ All six required components exist; none had to be substituted.
 | F-031 | NN-DATA | MAJOR | `custom_effect` structured placement drops the trophy index, merging differently-coloured trophy deploys (23 of 23 gids on a live Lich state); the census's semantic key restates the encoder's routing so it cannot see it — R-2, R-2b |
 | F-032 | ENGINE-OPENSPIEL | MINOR | `read_pending_generic_context_full` returns `None` — "no generic choice pending" — when only the extended read fails, contradicting its own docstring — R-3 |
 | F-033 | VALIDATION-PROCESS | MINOR | `just test-all` aborts on the first failing tree, so with today's four tolerated `tests/` failures it never runs `openspiel_pyrants/tests/` — the very regression it was added to prevent — R-4 |
+| F-034 | VALIDATION-PROCESS | MAJOR | *(found by the review of Fix Plan 02's implementation)* commit `23196b7` bundled an unrelated rule change (`insane_outcast` not recruitable: setup + engine) with the encoder fixes, breaking the plan's premise that no run needs repeating: 46/141 stored games desynced, the 120-game corpus could not be rebuilt at v3, and one new test went red in each tree unrecorded — N-1 of `nn-training-data-fix-plan-02-review.md` |
 
 Baseline recorded 2026-09-10 against the working tree at `ea25b68` with Phases 0-4 of
 `nn-training-data-tdd-plan.md` applied but uncommitted: `tests/` 1001 passed / 4 failed
@@ -69,6 +70,17 @@ suite was re-run as two trees (per F-033), and `PYRANTS_NN_CENSUS=1 pytest
 tests/nn/test_actions.py` passes with 0 semantic collisions over the 93 stored
 games that replay under the current engine (46 are reported as skipped because
 they desync on an unreleased `insane_outcast` non-recruitable rule change).
+
+Post-review baseline (2026-09-11 evening, `23196b7` + working tree, after the
+`artifacts/ismcts/` wipe and the 32-game v3 teacher run — see F-034 and
+`nn-training-data.md` § v3 teacher run): `tests/` 3 failed (all F-015; the two
+artifact-bound tests in `test_replay_loader.py` / `test_replay_player.py` now
+skip, so the F-022 local-artifact failure is gone with the artifact);
+`openspiel_pyrants/tests/` 11 failed (10× F-003 by design, 1× F-013 G1
+`test_private_view_json_byte_identical_to_reference` — open under F-034);
+`PYRANTS_NN_CENSUS=1 pytest tests/nn/test_actions.py` 49 passed, `CENSUS_CORPUS
+dirs=34 walked=34 skipped=0`, 0 semantic collisions; the targeted NN suite 116
+passed.
 
 ## 3. Findings
 
@@ -791,7 +803,7 @@ they desync on an unreleased `insane_outcast` non-recruitable rule change).
 - Expected if FALSE POSITIVE: every shared-id pair is duplicate-equivalent and every catalog op maps to its own slot
 - Status: **FIXED** (Phases 2-3 of `nn-training-data-fix-plan.md`)
 - Resolution [`ea25b68` + working tree, 2026-09-11]: `actions.py` v2 (`ACTION_SPACE_VERSION = 2`) routes `assassinate_troop` / `supplant_troop` / `return_unit troop:N` to `assassinate[site × owner]` and `return_unit spy:<owner>` to `return_spy[site × owner]`; `resolve_generic` rebuilt to 240 slots (option 8, decline 1, node 81, card 126, player 4, index 20), 1,516 of 2,048 used. `index.py` derives `OP_IDS` (17) and `EFFECT_KINDS` (13) from `data/cards/*.json` with pinned SHAs; `observation.py` encodes `__option__` / `__unknown__` and the custom-effect one-hot. Census `PYRANTS_NN_CENSUS=1`: **0 semantic collisions**; 227 destination-only pair merges of 112,339 non-forced states = 0.202 % on the then-current corpus. `pair_move_merge_frac = 0.00213` in `datasets/sims_vs_wins_v2/manifest.json`. Post-review fix: `select_trophy_hall` is keyed by (source seat × trophy colour) in the `index` block; `steal_white_trophy_to_board` **step 1** routes to the `player` sub-block keyed by **source player** (step-1 candidates are all white, so no rulebook-distinct choice folds). Structured placement targets are handled by F-031 (v3), not here. The census semantic key now includes the trophy colour so the former collapse cannot recur silently.
-- Corpus note: the census walks the stored game dirs under `artifacts/ismcts/` with a `decisions.jsonl` (`PYRANTS_NN_CENSUS=1 pytest tests/nn/test_actions.py`). Earlier counts of 134 (fix plan § 1) and 137 (first draft of this entry) were pre-rebuild snapshots; the directory holds 139. Fix Plan 02 re-measured at 139 dirs: 93 replay under the current engine and 46 desync on the unreleased `insane_outcast` non-recruitable rule change, so the census now skips and reports desynced replays (`tests/nn/test_actions.py`).
+- Corpus note: the census walks the stored game dirs under `artifacts/ismcts/` with a `decisions.jsonl` (`PYRANTS_NN_CENSUS=1 pytest tests/nn/test_actions.py`). Earlier counts of 134 (fix plan § 1) and 137 (first draft of this entry) were pre-rebuild snapshots; the directory holds 139. Fix Plan 02 re-measured at 139 dirs: 93 replay under the current engine and 46 desync on the unreleased `insane_outcast` non-recruitable rule change, so the census now skips and reports desynced replays (`tests/nn/test_actions.py`). That corpus was wiped on 2026-09-11 (F-034); the census now prints `CENSUS_CORPUS dirs= walked= skipped=` and the current corpus is 34 dirs / 34 walked / 0 skipped (`nn-training-data.md` § v3 teacher run).
 
 ### F-027 Observation board features contradict the rulebook
 - Class: NN-DATA / RULE-ENGINE (feature semantics)
@@ -873,6 +885,19 @@ they desync on an unreleased `insane_outcast` non-recruitable rule change).
 - Expected if FALSE POSITIVE: both run
 - Status: **FIXED** (Phase 1 of `docs/nn-training-data-fix-plan-02.md`)
 - Resolution: `test-all` is a single recipe line that captures both `$LASTEXITCODE`s and exits 1 if either is non-zero. `just test-all` now reports both trees.
+
+### F-034 An unrelated rule change rode in with Fix Plan 02 and invalidated its corpus
+- Class: VALIDATION-PROCESS (change isolation / artifact provenance)
+- Severity: MAJOR (the plan's central premise — "nothing here changes what the runner writes, so no run needs repeating" — was true of the plan and false of the commit; the project was left with no training-size v3 dataset and two unrecorded red tests)
+- Origin: Found by the 2026-09-11 review of `nn-training-data-fix-plan-02.md`'s implementation (`docs/nn-training-data-fix-plan-02-review.md` § 3 N-1)
+- Code: `23196b7` — `data/decks/base_setup.json` (`"recruitable": false` for `insane_outcast`), `engine_c/loader.c` (parses the key, legacy fallback sets 0 for slot 102), `engine_c/rules.c:188` (recruit gate), `engine_c/helpers.c` (`special_stack_slot_recruitable`); commit message: "concurrent working-tree work: insane_outcast not directly recruitable (setup+engine)"
+- Rulebook: not applicable — the rule change itself is not in question here; its packaging is
+- Disagreement: (1) 46 of 141 stored games desynced at `recruit insane_outcast` and were skipped *whole* by the census, taking every `self_purge_to_supply` (5,122) and `give_insane_outcast_*` (121) live state with them, so 7 of 8 `custom_effect` branches fell to `_UNCOVERED_BY_CENSUS`; (2) the new key changed the setup SHA, so the builder rejected all 120 legacy games and `datasets/sims_vs_wins_v2` could not be rebuilt at v3 — the only v3 dataset was `datasets/quick` (2 games); (3) `tests/test_replay_loader.py::test_load_replay_real_artifact_setup_sha_matches` and F-013's G1 gate `openspiel_pyrants/tests/test_board_projection.py::test_private_view_json_byte_identical_to_reference` went red, neither recorded, and Fix Plan 02's Phase 5 step 2 (`just test-all`, no new failures) was never written down
+- Mechanism (verified): the engine *can* replay the old games — `engine_c/loader.c:461` defaults a missing `recruitable` to true — but the `sims_vs_wins` run had no `manifest.json`, so `interface/replay_loader.py::_manifest_setup` fell back to recomposing the setup from the *current* `base_setup.json`, handing the engine today's rule for a 2026-09-02 game
+- Falsification test: replay one of the 46 desynced games with `recruitable: true` substituted into the recomposed setup; if it verifies, the loss was in the loader, not the engine
+- Expected if REAL: it verifies (the games were recoverable); Expected if FALSE POSITIVE: it still desyncs
+- Status: **MITIGATED, one item open** (2026-09-11)
+- Resolution: the owner chose the second of the review's two options — rather than patch the recomposer, wipe `artifacts/ismcts/` (every game was played under the old rule) and play a fresh corpus under one rule set. `datasets/sims_vs_wins_v2` deleted. 32 × 4-player games at a uniform 200 sims (`artifacts/ismcts/runs/20260911T193759Z_58e54c44a5f5`, 50 min on 16 workers): 34/34 replays verify, strict build accepts 32/32 → `datasets/teacher_v3_32` (26,306 samples, leak 0/4611, value means ≈ 0, argmax 0.844 at 200 sims, pair merges 0.16 %). Census re-baked on the new corpus: 34 walked / 0 skipped / 0 collisions, `CENSUS_CORPUS` line added so the corpus size is printed, the three `insane_outcast` branches are live again (70 / 47 / 14 states via demon-deck give effects), and `steal_white_trophy_to_board` — which the new corpus never reaches — got its live-engine test (`tests/nn/test_actions_live_custom_effects.py::test_steal_white_trophy_to_board_on_live_engine`, both steps). The two artifact-bound `tests/` failures skip now that the artifact is gone. **Open:** F-013's G1 reference vectors (`docs/validation/harness/f013b_gen_vectors.py`) were frozen under the old rule and still fail; re-capture them under the current rule or pin the old rule for that corpus, and record which. Process rule going forward: a rule change and an encoder change do not share a commit, and every run manifest already records the setup SHA — the builder's strict mode is the gate that refuses to mix them.
 
 ## 4. Unanchored (suspicions that could not be fully anchored)
 

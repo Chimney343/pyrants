@@ -112,3 +112,17 @@ use same sims for all seats, 200 or more. 50-sim seats make mushy targets. entro
 4. then train small net. not before.
 
 grug done. club back on wall.
+
+### as of 2026-09-11, evening
+
+everything in "grug order of work" 1 to 3 is built. tests pass. gate hold.
+
+but one stowaway. same commit that fix encoders also make insane_outcast not recruitable. old 134 games all played under old rule. third of them break on replay. so owner burn the cave and start clean.
+
+new corpus: 32 games, 4 player, 200 sims every seat like grug say. 50 minutes on 16 workers. 26 thousand bites in `datasets/teacher_v3_32`. leak zero. value mean near zero. census walk all 34, zero collision.
+
+cost now known: about 40 games per hour on this box. 1000 games is one day. 5000 is a week. plan for that.
+
+step 4, train small net, still not started. that is the next thing. not before the 1000-game run though, 26k bites is a taste not a meal.
+
+one red test left from stowaway, F-013 byte-identity, frozen reference has old rule in it. written down as F-034. not grug's to fix tonight.

@@ -389,3 +389,99 @@ def test_steal_from_selected_trophy_on_live_engine(requires_c_engine) -> None:
         assert all(len(slots) >= 1 for slots in grouped.values())
     finally:
         session.destroy()
+
+
+# ── steal_white_trophy_to_board (Mummy Lord), both steps ───────────────────
+
+
+def test_steal_white_trophy_to_board_on_live_engine(requires_c_engine) -> None:
+    """Live coverage for ``steal_white_trophy_to_board`` (Mummy Lord option 2).
+
+    Step 1 offers ``(source_player, trophy_idx)`` for every enemy white trophy
+    and routes to the ``player`` sub-block keyed by source: two white indices
+    in one hall merge, distinct sources stay apart, the ``index`` block is not
+    touched. Step 2 is a structured placement and routes every destination to
+    ``assassinate[node x white]``. The first 139-game census reached this
+    branch 6 times; the fresh 200-sim corpus reaches it 0 times, so this test
+    is its only live coverage until a stored game plays the card.
+    """
+    from tests.c_engine.test_card_mummy_lord import (
+        _pick_option,
+        _pick_trophy_from_player,
+    )
+    from tests.c_engine.test_card_mummy_lord import (
+        _play_card as _play_mummy,
+    )
+    from tests.c_engine.test_card_mummy_lord import (
+        _set_trophy_hall as _set_hall,
+    )
+
+    session = make_card_test_session(
+        _make_engine(),
+        ["p1", "p2", "p3"],
+        hand={"p1": ["mummy_lord"]},
+        troops={"p2": {_SITE_A: ["p2", None, None, None]}},
+        current_player="p1",
+    )
+    _set_hall(session, "p2", ["white", "white", "p1"])
+    _set_hall(session, "p3", ["white"])
+    _play_mummy(session)
+    _pick_option(session, "option_2")
+
+    adapter = _adapter(session)
+    try:
+        # ── step 1: pick a white trophy from an enemy hall ──
+        pending, ctx = _pending_ctx(adapter)
+        assert pending["op"] == "custom_effect"
+        assert pending["effect_kind"] == "steal_white_trophy_to_board"
+
+        base = _start("resolve_generic")
+        player_start, player_end = RESOLVE_GENERIC_LAYOUT["player"]
+        index_start, index_end = RESOLVE_GENERIC_LAYOUT["index"]
+        by_gid: dict[int, set[tuple[str, str]]] = {}
+        for move in _moves(adapter):
+            payload = move.to_payload()
+            source, idx = payload["action_id"], payload["target_id"]
+            if source is None and idx is None:
+                continue  # decline
+            gid = move_to_global_action(payload, ctx)
+            assert player_start <= gid < player_end, (gid, payload)
+            assert not (index_start <= gid < index_end)
+            assert gid == base + (player_start - base) + owner_slot(
+                source, ctx.seat_order, allow_white=False
+            ), (source, gid)
+            assert ctx.trophy_halls[source][int(idx)] == "white"
+            by_gid.setdefault(gid, set()).add((source, idx))
+        # p2's two white trophies merge into one slot; p3 gets its own.
+        assert len(by_gid) == 2, by_gid
+        sources = {next(iter(group))[0] for group in by_gid.values()}
+        assert sources == {"p2", "p3"}
+        p2_group = next(g for g in by_gid.values() if next(iter(g))[0] == "p2")
+        assert p2_group == {("p2", "0"), ("p2", "1")}
+
+        # ── step 2: place the stolen white trophy anywhere ──
+        # The adapter shares the session's state pointer; advance through the
+        # session and re-wrap (the adapter's caches are only cleared by its own
+        # ``apply``). Only the session is destroyed, once, at the end.
+        _pick_trophy_from_player(session, "p2")
+        adapter = _adapter(session)
+        pending, ctx = _pending_ctx(adapter)
+        assert pending["effect_kind"] == "steal_white_trophy_to_board"
+
+        grouped: dict[int, set[int]] = {}
+        nodes: set[str] = set()
+        for move in _moves(adapter):
+            payload = move.to_payload()
+            gid = move_to_global_action(payload, ctx)
+            source, idx, node, slot = _split_structured(payload["target_id"])
+            assert ctx.trophy_halls[source][idx] == "white"
+            expected = _start("assassinate") + NODE_ID_TO_INDEX[node] * 5 + 4
+            assert gid == expected, (node, gid, expected)
+            grouped.setdefault(gid, set()).add(slot)
+            nodes.add(node)
+        assert nodes, "expected at least one placement target"
+        # One slot per destination node; empty slots at one node merge.
+        assert len(grouped) == len(nodes)
+        assert any(len(slots) > 1 for slots in grouped.values()), grouped
+    finally:
+        session.destroy()
