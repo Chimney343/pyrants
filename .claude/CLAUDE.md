@@ -11,16 +11,18 @@
 > (documentation, ownership, history, decisions). **Always verify against
 > actual source files before making changes** — the index may be stale.
 
-Last indexed: 2026-09-04 (commit 2f6a0e7). Confidence: 100%.
+Last indexed: 2026-09-04 (commit ea25b68). Confidence: 100%.
 ### Architecture
-This repository is an end-to-end game-AI research stack for **Pyrants**, a card-and-board game with a market economy: it ingests JSON scenario data (cards, board packages, market setup) through the game_setup loading layer, simulates the rules in a C/C++ core (engine_c) bridged to Python via an FFI binding layer, runs information-set MCTS and rollout-based agents through an OpenSpiel adapter (openspiel_pyrants), and emits simulation results, rule-validation reports, and interactive game views. The codebase is a young monorepo (~1,092 files, ~255k LOC) whose volume is dominated by data and documentation rather than code — JSON (~46%) and Markdown (~21%) far outweigh Python (~26%) and C/C++ (~5%). Everything is in active, early-stage development: the oldest file is only ~95 days old and no file has yet gone 90 days without modification. The project's centre of gravity is a custom C game engine wrapped for Python and plugged into OpenSpiel, making this primarily an experimentation platform for studying AI decision-making in a custom board/card game.
+This monorepo is a card-game research platform built around the *Pyrants* game environment: it consumes declarative game content (JSON/TOML card, board-package, and market definitions), parses that content into typed Python game state via the game_setup package, delegates rule enforcement, stochastic events, and simulation to a C engine core (engine_c) exposed to Python through a hand-written binding layer, and outputs an OpenSpiel-compatible game wrapper plus Information-Set MCTS agents and C-accelerated rollout evaluators for reinforcement-learning experiments, alongside Markdown validation artifacts (docs/validation/findings.md, docs/validation/verdict.md). The repository is young (~3 months old, oldest tracked file at 96 days) yet substantial: 1,099 files and roughly 259k LOC. The language distribution reflects the architecture: JSON dominates at 45.6% (data-heavy game content/fixtures loaded by game_setup), followed by Python at 26.4% (bindings, setup logic, OpenSpiel glue, tests), Markdown at 21.5% (documentation and validation reports), and a small but critical C/C++ slice (~5%) holding the performance-sensitive engine logic. Three pillars make up the codebase:
+
+1.
 ### Key Modules
 | Module | Purpose | Owner |
 |--------|---------|-------|
 | `community-1` | The docs/validation module is the invariant-verification subsystem of the pyrant | — |
 | `community-0` | engine_c is the authoritative game-state and rules engine at the centre of this  | — |
 | `community-3` | The tests/c_engine module is the behavior-verification harness for repowise's C  | — |
-| `community-2` | The tests/c_engine module is the conformance-testing layer of the engine_c C-eng | — |
+| `community-2` | tests/c_engine is the C-engine conformance and FFI-adapter layer of the Pyrants  | — |
 | `community-248` | The **tests** module is the verification subsystem of repowise — it consumes gen | — |
 | `community-4` | The scripts module is the execution and experiment orchestration layer of the ** | — |
 | `community-6` | The **scripts** module is the integration and validation layer of the Pyrants ga | — |
@@ -69,21 +71,21 @@ This repository is an end-to-end game-AI research stack for **Pyrants**, a card-
 |------|-------|-------------|-------|
 | `data/cards/catalog.json` | 100.0th %ile | 58 | Chimney343 |
 | `interface/game_viewer.py` | 99.9th %ile | 19 | Chimney343 |
-| `scripts/run_ismcts.py` | 99.9th %ile | 11 | Chimney343 |
-| `engine_c/generic_runtime.c` | 99.8th %ile | 24 | Chimney343 |
+| `scripts/run_ismcts.py` | 99.9th %ile | 12 | Chimney343 |
+| `engine_c/generic_runtime.c` | 99.8th %ile | 25 | Chimney343 |
 | `engine/rules.py` | 99.8th %ile | 9 | Chimney343 |
 
 ## Code health
-Hotspot health: 6.7/10 (stable) ·
-Average: 7.62/10 ·
+Hotspot health: 6.67/10 (stable) ·
+Average: 7.61/10 ·
 Worst: 1.0/10 (`engine/rules.py`)
 
 ### Critical biomarkers
 - `engine/rules.py` — untested hotspot — impact −2.0
 - `engine/helpers.py` — untested hotspot — impact −2.0
 - `engine/state.py` — untested hotspot — impact −2.0
-- `engine_c/bindings/ce_api.py` — untested hotspot — impact −2.0
 - `engine_c/bindings/engine_bindings.py` — untested hotspot — impact −2.0
+- `engine_c/bindings/ce_api.py` — untested hotspot — impact −2.0
 
 ### Repowise MCP Tools
 

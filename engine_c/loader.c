@@ -431,12 +431,15 @@ static SetupDefinition parse_setup(const char *json_str, Arena *arena) {
         sd.special_stacks[0].card_id = intern("house_guard");
         sd.special_stacks[0].market_slot = 100;
         sd.special_stacks[0].stack_total = 15;
+        sd.special_stacks[0].recruitable = 1;
         sd.special_stacks[1].card_id = intern("priestess_of_lolth");
         sd.special_stacks[1].market_slot = 101;
         sd.special_stacks[1].stack_total = 15;
+        sd.special_stacks[1].recruitable = 1;
         sd.special_stacks[2].card_id = intern("insane_outcast");
         sd.special_stacks[2].market_slot = 102;
         sd.special_stacks[2].stack_total = 30;
+        sd.special_stacks[2].recruitable = 0;
         sd.special_stack_count = 3;
     } else if (cJSON_IsArray(jstacks)) {
         int n = cJSON_GetArraySize(jstacks);
@@ -454,6 +457,8 @@ static SetupDefinition parse_setup(const char *json_str, Arena *arena) {
             sd.special_stacks[sd.special_stack_count].card_id = card_id;
             sd.special_stacks[sd.special_stack_count].market_slot = slot;
             sd.special_stacks[sd.special_stack_count].stack_total = total;
+            sd.special_stacks[sd.special_stack_count].recruitable =
+                json_bool(js, "recruitable", true) ? 1 : 0;
             sd.special_stack_count++;
         }
     }

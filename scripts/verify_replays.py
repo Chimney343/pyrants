@@ -19,7 +19,11 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from interface.replay_loader import discover_replays, load_replay  # noqa: E402
+from interface.replay_loader import (  # noqa: E402
+    discover_replays,
+    is_complete_game,
+    load_replay,
+)
 from interface.replay_player import ReplayDesyncError, ReplayPlayer  # noqa: E402
 
 
@@ -72,6 +76,10 @@ def main() -> int:
         line = f"{status:<18} {meta.step_count:>6}  {meta.game_dir.relative_to(args.root)}"
         if detail:
             line += f"  {detail}"
+        # Trail an explicit marker for dirs that replay cleanly but lack a
+        # terminal summary.json (no status change for complete dirs).
+        if not is_complete_game(meta.game_dir):
+            line += "  INCOMPLETE"
         print(line)
         if status != "OK":
             failures += 1

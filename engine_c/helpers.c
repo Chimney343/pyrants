@@ -266,6 +266,14 @@ int special_stack_config(const GameState *state, int market_slot, Sym *card_id_o
     return 0;
 }
 
+int special_stack_slot_recruitable(const GameState *state, int market_slot) {
+    for (int i = 0; i < state->definition->setup.special_stack_count; i++) {
+        const SpecialStackDef *s = &state->definition->setup.special_stacks[i];
+        if (s->market_slot == market_slot) return s->recruitable;
+    }
+    return 1;  /* not a special stack: normal market recruits stay allowed */
+}
+
 int special_stack_total_for_card(const GameState *state, Sym card_id) {
     for (int i = 0; i < state->definition->setup.special_stack_count; i++) {
         const SpecialStackDef *s = &state->definition->setup.special_stacks[i];
@@ -505,6 +513,7 @@ int apply_return_spy(GameState *state, Sym player_id, Sym node_id, Sym spy_owner
 int apply_recruit(GameState *state, Sym player_id, int market_slot) {
     Sym special_id;
     if (special_stack_config(state, market_slot, &special_id, NULL)) {
+        if (!special_stack_slot_recruitable(state, market_slot)) return -1;
         if (remaining_special_stack_count(state, special_id) <= 0) return -1;
         const CardDefinition *cd = card_by_id(state, special_id);
         if (!cd) return -1;

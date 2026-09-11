@@ -21,6 +21,7 @@ int  count_total_controlled_sites(const GameState *state, Sym player_id);
 int  count_runtime_cards_by_aspect(const GameState *state, Sym *card_ids, int count,
                                     Sym required_aspect, Sym required_secondary_aspect);
 int  special_stack_config(const GameState *state, int market_slot, Sym *card_id_out, int *stack_total);
+int  special_stack_slot_recruitable(const GameState *state, int market_slot);
 int  special_stack_total_for_card(const GameState *state, Sym card_id);
 int  remaining_special_stack_count(const GameState *state, Sym card_id);
 int  player_index_for_id(const GameState *state, Sym player_id);

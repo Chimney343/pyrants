@@ -184,6 +184,7 @@ typedef struct {
     Sym card_id;
     int market_slot;
     int stack_total;
+    int recruitable;  /* 0 = face-up supply only, never a step-1 recruit target */
 } SpecialStackDef;
 
 typedef struct {

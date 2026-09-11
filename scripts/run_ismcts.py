@@ -50,6 +50,7 @@ from game_setup.market_setup import (  # noqa: E402
     discover_full_deck_profiles,
     pick_random_pair,
 )
+from scripts._decision_telemetry import extract_root_stats  # noqa: E402
 from scripts._obs import (  # noqa: E402
     RunMetrics,
     bind_worker_context,
@@ -63,6 +64,14 @@ from scripts._replay_payload import (  # noqa: E402
     compute_final_scores,
     resolve_winner_id,
 )
+from scripts._run_layout import (  # noqa: E402
+    SCHEMA_VERSION,
+    GameDirCollisionError,
+    build_manifest,
+    collect_engine_provenance,
+    run_dir_name,
+    write_json_atomic,
+)
 from scripts._sims_vs_wins import parse_sims_spec  # noqa: E402
 from scripts._state_snapshot import (  # noqa: E402
     _is_board_mutating,
@@ -70,7 +79,7 @@ from scripts._state_snapshot import (  # noqa: E402
     _tier2_snapshot,
 )
 
-DEFAULT_OUTPUT_DIR = ROOT / "artifacts" / "ismcts"
+DEFAULT_OUTPUT_DIR = ROOT / "artifacts" / "ismcts" / "runs"
 _BASE_SETUP_PATH = ROOT / "data" / "decks" / "base_setup.json"
 _DECKS_DIR = ROOT / "data" / "decks"
 
@@ -214,6 +223,9 @@ def _parse_args() -> argparse.Namespace:
                         help="Cap engine round_number; 0 = unlimited. "
                              "When the cap is hit the game is recorded with "
                              "stopped_reason='round_cap'.")
+    parser.add_argument("--no-steps", action="store_true",
+                        help="Do not write per-game steps.jsonl (training runs). "
+                             "The manifest records steps_enabled=false.")
     args = parser.parse_args()
     num_sims_explicit = hasattr(args, "num_sims")
     if not num_sims_explicit:
@@ -268,6 +280,44 @@ def _sha256(text: str) -> str:
     return hashlib.sha256(text.encode()).hexdigest()[:16]
 
 
+def _existing_run_id(path: Path) -> str | None:
+    """Read the ``run_id`` from a ``replay.json`` or the first decisions line."""
+    try:
+        if path.name == "replay.json":
+            return json.loads(path.read_text(encoding="utf-8")).get("run_id")
+        with path.open("r", encoding="utf-8") as fh:
+            for line in fh:
+                line = line.strip()
+                if line:
+                    return json.loads(line).get("run_id")
+    except Exception:
+        return None
+    return None
+
+
+def _check_game_dir_collision(game_dir: Path, run_id: str) -> None:
+    """Refuse to overwrite a ``game_XXXX/`` written by a different run (D2/F-025).
+
+    Called before any output file is opened so a colliding run cannot leave a
+    directory mixing two runs' ``decisions.jsonl``/``replay.json``.
+    """
+    for name in ("replay.json", "decisions.jsonl"):
+        path = game_dir / name
+        if not path.exists():
+            continue
+        existing = _existing_run_id(path)
+        if existing is None:
+            raise GameDirCollisionError(
+                f"{path} exists but has no readable run_id; refusing to "
+                f"overwrite it with run_id {run_id!r}"
+            )
+        if existing != run_id:
+            raise GameDirCollisionError(
+                f"{path} belongs to run_id {existing!r}; refusing to overwrite "
+                f"with run_id {run_id!r}"
+            )
+
+
 def _legal_moves_strings(state, action_ids: list[int]) -> list[str]:
     result: list[str] = []
     for aid in action_ids:
@@ -279,7 +329,12 @@ def _legal_moves_strings(state, action_ids: list[int]) -> list[str]:
     return result
 
 
-def _enrich_resolve_generic(adapter, move_obj) -> dict:
+def _legal_moves_payloads(state, action_ids: list[int]) -> list[dict]:
+    """Structured ``to_payload()`` for every legal id, same order as *action_ids*."""
+    return [state.decode_action(aid).to_payload() for aid in action_ids]
+
+
+def _enrich_resolve_generic(adapter, move_obj, ctx: dict | None = None) -> dict:
     """Build the additive ``chosen_label`` + ``generic`` fields for one decision.
 
     Reads the pending-generic-choice context from the C state *before* the
@@ -288,8 +343,13 @@ def _enrich_resolve_generic(adapter, move_obj) -> dict:
     Returns ``{"chosen_label": ..., "generic": ...}`` when a generic choice is
     actually pending; returns ``{}`` otherwise so the caller can attach
     nothing for a non-``resolve_generic`` line. ``chosen_move`` is left raw.
+
+    *ctx* may be supplied by the caller (the runner reads it once and reuses it
+    for both the ``generic`` enrichment and the decision's ``pending_context``
+    field); when ``None`` it is read here.
     """
-    ctx = read_pending_generic_context(adapter._state._ptr)
+    if ctx is None:
+        ctx = read_pending_generic_context(adapter._state._ptr)
     if ctx is None:
         return {}
     move_data = move_obj.data
@@ -393,6 +453,7 @@ def _base_game_summary(
     )
     uct_c = round(sum(uct_c_per_seat) / len(uct_c_per_seat), 6)
     return {
+        "schema_version": SCHEMA_VERSION,
         "run_id": run_id,
         "game_index": game_index,
         "shuffle_seed": shuffle_seed,
@@ -513,6 +574,7 @@ def run_one_game(
     setup_data_json: str = "",
     num_players: int = 2,
     evaluator_name: str = "random-py",
+    write_steps: bool = True,
 ) -> dict:
     sims_per_seat = _normalize_sims_per_seat(num_sims, num_players)
     uct_per_seat = _normalize_per_seat_uct(uct_c, num_players)
@@ -521,13 +583,15 @@ def run_one_game(
         shuffle_seed=shuffle_seed,
     )
     game_out = _game_dir(out_dir, game_index)
+    _check_game_dir_collision(game_out, run_id)
     game_out.mkdir(parents=True, exist_ok=True)
 
     # Streaming per-game logs: one JSON object per line, flushed immediately
     # after every event (see _write_jsonl_line's durability note).  These are
     # kept open for the whole game so a mid-loop crash still leaves every
-    # step that happened before the crash on disk.
-    steps_fh = (game_out / "steps.jsonl").open("w", encoding="utf-8")
+    # step that happened before the crash on disk.  steps.jsonl is optional
+    # (--no-steps) to keep training runs small.
+    steps_fh = (game_out / "steps.jsonl").open("w", encoding="utf-8") if write_steps else None
     decisions_fh = (game_out / "decisions.jsonl").open("w", encoding="utf-8")
 
     from openspiel_pyrants.ismcts_factory import make_ismcts_bot
@@ -597,6 +661,7 @@ def run_one_game(
             bot = bots[cp]
             legal_ids = state.legal_actions()
             legal_moves = _legal_moves_strings(state, legal_ids)
+            legal_moves_payload = _legal_moves_payloads(state, legal_ids)
 
             if inner_bar is not None:
                 inner_bar.set_postfix_str("simulating...")
@@ -605,6 +670,10 @@ def run_one_game(
             t0 = time.perf_counter()
             policy, chosen = bot.step_with_policy(state)
             wall_ms = (time.perf_counter() - t0) * 1000.0
+
+            # Read the search root stats while the root node is still on the
+            # bot (before apply_action / the next decision overwrite it).
+            root_stats = extract_root_stats(bot, legal_ids)
 
             chosen_move_obj = state.decode_action(int(chosen))
             chosen_move_str = state.move_to_str(chosen_move_obj)
@@ -642,8 +711,12 @@ def run_one_game(
                 "info_state_sha256": _sha256(state.information_state_string(cp)),
                 "legal_action_ids": [int(a) for a in legal_ids],
                 "legal_moves": legal_moves,
+                "legal_moves_payload": legal_moves_payload,
                 "policy": action_probs,
-                "visit_counts": {int(chosen): 1},
+                "visit_counts": root_stats["visit_counts"],
+                "q_values": root_stats["q_values"],
+                "root_value": root_stats["root_value"],
+                "total_visits": root_stats["total_visits"],
                 "chosen_action_id": int(chosen),
                 "chosen_move": chosen_move_str,
                 "wall_time_ms": round(wall_ms, 3),
@@ -652,9 +725,14 @@ def run_one_game(
             # Must read before apply_action(): applying the move advances (or
             # clears) the pending-generic-choice state this reflects.  The read
             # doubles as the decision's generic context when the chosen move is
-            # a resolve_generic — additive fields only, chosen_move stays raw.
+            # a resolve_generic (additive fields only, chosen_move stays raw)
+            # and as the node's ``pending_context`` when a generic choice is
+            # pending for every legal move at this node.
+            pending_ctx = read_pending_generic_context(state._adapter._state._ptr)
+            if pending_ctx is not None:
+                decision["pending_context"] = pending_ctx
             generic_context = (
-                _enrich_resolve_generic(state._adapter, chosen_move_obj)
+                _enrich_resolve_generic(state._adapter, chosen_move_obj, pending_ctx)
                 if chosen_move_obj.move_type == "resolve_generic"
                 else {}
             )
@@ -675,18 +753,19 @@ def run_one_game(
             if round_changed or _is_board_mutating(move_payload.get("move_type", chosen_move_obj.move_type), pending_op):
                 state_snapshot["board"] = _tier2_snapshot(state._adapter)
 
-            _write_jsonl_line(steps_fh, {
-                "event": "step",
-                "node": decision_count,
-                "round": round_number,
-                "phase": phase,
-                "player_id": player_id,
-                "move_type": chosen_move_obj.move_type,
-                "chosen_move": chosen_move_str,
-                "wall_time_ms": round(wall_ms, 3),
-                "run_id": run_id,
-                "state": state_snapshot,
-            })
+            if steps_fh is not None:
+                _write_jsonl_line(steps_fh, {
+                    "event": "step",
+                    "node": decision_count,
+                    "round": round_number,
+                    "phase": phase,
+                    "player_id": player_id,
+                    "move_type": chosen_move_obj.move_type,
+                    "chosen_move": chosen_move_str,
+                    "wall_time_ms": round(wall_ms, 3),
+                    "run_id": run_id,
+                    "state": state_snapshot,
+                })
 
             replay_log.append({
                 "run_id": run_id,
@@ -712,7 +791,8 @@ def run_one_game(
         if inner_bar is not None:
             inner_bar.set_postfix_str("")
             inner_bar.close()
-        steps_fh.close()
+        if steps_fh is not None:
+            steps_fh.close()
         decisions_fh.close()
         wall_sec = time.perf_counter() - wall_start
         crash_record = _build_crash_record(
@@ -763,26 +843,23 @@ def run_one_game(
                 setup_path=str(ROOT / "data" / "decks" / "base_setup.json"),
                 player_ids=player_ids,
             )
-            with (game_out / "replay.json").open("w", encoding="utf-8") as f:
-                json.dump(salvage_payload, f, indent=2)
-                f.write("\n")
+            write_json_atomic(game_out / "replay.json", salvage_payload)
 
-            with (game_out / "summary.json").open("w", encoding="utf-8") as f:
-                summary_out = {
-                    k: v for k, v in partial_summary.items() if not k.startswith("_")
-                }
-                json.dump(summary_out, f, indent=2)
-                f.write("\n")
+            summary_out = {
+                k: v for k, v in partial_summary.items() if not k.startswith("_")
+            }
+            write_json_atomic(game_out / "summary.json", summary_out)
         except Exception:
             logger.exception("artifact_salvage_failed", game_index=game_index)
 
-        with (game_out / "steps.jsonl").open("a", encoding="utf-8") as f:
-            _write_jsonl_line(f, {
-                "event": "game_crashed",
-                "node": decision_count,
-                "run_id": run_id,
-                **crash_record,
-            })
+        if write_steps:
+            with (game_out / "steps.jsonl").open("a", encoding="utf-8") as f:
+                _write_jsonl_line(f, {
+                    "event": "game_crashed",
+                    "node": decision_count,
+                    "run_id": run_id,
+                    **crash_record,
+                })
 
         logger.error(
             "game_crashed",
@@ -945,15 +1022,16 @@ def run_one_game(
         "_move_latencies": move_latencies,
     }
 
-    _write_jsonl_line(steps_fh, {
-        "event": "game_end",
-        "node": decision_count,
-        "round": final_round_num,
-        "phase": final_phase,
-        "stopped_reason": stopped_reason,
-        "run_id": run_id,
-    })
-    steps_fh.close()
+    if steps_fh is not None:
+        _write_jsonl_line(steps_fh, {
+            "event": "game_end",
+            "node": decision_count,
+            "round": final_round_num,
+            "phase": final_phase,
+            "stopped_reason": stopped_reason,
+            "run_id": run_id,
+        })
+        steps_fh.close()
     decisions_fh.close()
 
     winner_id = resolve_winner_id(state, winner, num_players)
@@ -978,18 +1056,15 @@ def run_one_game(
         final_phase=final_phase,
     )
 
-    with (game_out / "replay.json").open("w", encoding="utf-8") as f:
-        json.dump(replay_payload, f, indent=2)
-        f.write("\n")
-
-    with (game_out / "summary.json").open("w", encoding="utf-8") as f:
-        summary_out = {k: v for k, v in game_summary.items() if not k.startswith("_")}
-        json.dump(summary_out, f, indent=2)
-        f.write("\n")
-
-    with (game_out / "final_decks.json").open("w", encoding="utf-8") as f:
-        json.dump({"player_ids": player_ids, "per_seat": final_decks}, f, indent=2)
-        f.write("\n")
+    # Write order (D7): replay.json -> final_decks.json -> summary.json.  The
+    # summary is the completion marker, so it is written last and atomically.
+    write_json_atomic(game_out / "replay.json", replay_payload)
+    write_json_atomic(
+        game_out / "final_decks.json",
+        {"player_ids": player_ids, "per_seat": final_decks},
+    )
+    summary_out = {k: v for k, v in game_summary.items() if not k.startswith("_")}
+    write_json_atomic(game_out / "summary.json", summary_out)
 
     return game_summary
 
@@ -1103,6 +1178,7 @@ def _run_one_game_standalone(
     rollout_max_length: int | None = None,
     max_rounds: int = 0,
     evaluator_name: str = "random-py",
+    write_steps: bool = True,
 ) -> dict:
     """Load game and run one game in a worker process.
 
@@ -1140,6 +1216,7 @@ def _run_one_game_standalone(
             setup_data_json=setup_data_json,
             num_players=num_players,
             evaluator_name=evaluator_name,
+            write_steps=write_steps,
         )
     except GameRunFailedError as exc:
         logger = structlog.get_logger()
@@ -1176,6 +1253,38 @@ def main() -> None:
     workers = args.workers if args.workers > 0 else os.cpu_count() or 1
     num_sims = args.num_sims_per_seat if args.num_sims_per_seat is not None else args.num_sims
 
+    # D1: the run owns a nested <output_dir>/<ts>_<run_id>/ directory.  Every
+    # artifact that used to land under args.output_dir moves under run_dir.
+    run_dir = args.output_dir / run_dir_name(run_id)
+    run_dir.mkdir(parents=True, exist_ok=True)
+
+    # D3: compute each game's setup up front so the manifest can carry the
+    # per-game inline setup_data_json before the first game starts.
+    game_specs: list[dict] = []
+    for gi in range(args.num_games):
+        setup_json, deck_a_id, deck_b_id = _build_ismcts_setup_json(
+            base_seed=args.seed,
+            game_index=gi,
+        )
+        game_specs.append({
+            "game_index": gi,
+            "shuffle_seed": args.shuffle_seed if args.shuffle_seed != 0 else args.seed + gi,
+            "deck_a_id": deck_a_id,
+            "deck_b_id": deck_b_id,
+            "setup_data_sha256": _sha256(setup_json) if setup_json else "",
+            "setup_data_json": setup_json,
+        })
+
+    steps_enabled = not args.no_steps
+    manifest = build_manifest(
+        run_id=run_id,
+        args=args,
+        games=game_specs,
+        provenance=collect_engine_provenance(ROOT),
+        steps_enabled=steps_enabled,
+    )
+    write_json_atomic(run_dir / "manifest.json", manifest)
+
     logger.info(
         "run_start",
         game=args.game,
@@ -1186,10 +1295,11 @@ def main() -> None:
         num_games=args.num_games,
         seed=args.seed,
         workers=workers,
-        output_dir=str(args.output_dir),
+        output_dir=str(run_dir),
         log_level=args.log_level,
         rollout_count=args.rollout_count,
         rollout_max_length=args.rollout_max_length,
+        steps_enabled=steps_enabled,
     )
 
     summaries: list[dict] = []
@@ -1200,11 +1310,8 @@ def main() -> None:
         policy_type = _resolve_policy(args.final_policy)
 
         for gi in tqdm(range(args.num_games), desc="Games", unit="game"):
-            setup_json, deck_a_id, deck_b_id = _build_ismcts_setup_json(
-                base_seed=args.seed,
-                game_index=gi,
-            )
-            shuffle_seed = args.shuffle_seed if args.shuffle_seed != 0 else args.seed + gi
+            spec = game_specs[gi]
+            setup_json = spec["setup_data_json"]
 
             load_params: dict[str, str] = {"num_players": str(args.num_players)}
             if setup_json:
@@ -1222,10 +1329,10 @@ def main() -> None:
                     final_policy_type=policy_type,
                     final_policy_name=args.final_policy,
                     seed=args.seed,
-                    shuffle_seed=shuffle_seed,
-                    out_dir=args.output_dir,
-                    deck_a_id=deck_a_id,
-                    deck_b_id=deck_b_id,
+                    shuffle_seed=spec["shuffle_seed"],
+                    out_dir=run_dir,
+                    deck_a_id=spec["deck_a_id"],
+                    deck_b_id=spec["deck_b_id"],
                     show_progress=True,
                     run_id=run_id,
                     metrics=metrics,
@@ -1235,6 +1342,7 @@ def main() -> None:
                     setup_data_json=setup_json,
                     num_players=args.num_players,
                     evaluator_name=args.evaluator,
+                    write_steps=steps_enabled,
                 )
             except GameRunFailedError as exc:
                 logger.exception(
@@ -1243,7 +1351,7 @@ def main() -> None:
                     decision_count=exc.game_summary.get("decision_count"),
                 )
                 record_game_failure(
-                    args.output_dir,
+                    run_dir,
                     run_id,
                     gi,
                     exc,
@@ -1263,10 +1371,7 @@ def main() -> None:
         with ProcessPoolExecutor(max_workers=workers) as executor:
             futures = {}
             for gi in range(args.num_games):
-                setup_json, deck_a_id, deck_b_id = _build_ismcts_setup_json(
-                    base_seed=args.seed,
-                    game_index=gi,
-                )
+                spec = game_specs[gi]
                 futures[
                     executor.submit(
                         _run_one_game_standalone,
@@ -1276,11 +1381,11 @@ def main() -> None:
                         max_world_samples=args.max_world_samples,
                         final_policy_name=args.final_policy,
                         seed=args.seed,
-                        shuffle_seed=args.shuffle_seed if args.shuffle_seed != 0 else args.seed + gi,
-                        output_dir=str(args.output_dir),
-                        setup_data_json=setup_json,
-                        deck_a_id=deck_a_id,
-                        deck_b_id=deck_b_id,
+                        shuffle_seed=spec["shuffle_seed"],
+                        output_dir=str(run_dir),
+                        setup_data_json=spec["setup_data_json"],
+                        deck_a_id=spec["deck_a_id"],
+                        deck_b_id=spec["deck_b_id"],
                         run_id=run_id,
                         log_level=args.worker_log_level,
                         json_logs=args.json_logs,
@@ -1290,6 +1395,7 @@ def main() -> None:
                         rollout_max_length=rollout_max_len,
                         max_rounds=args.max_rounds,
                         evaluator_name=args.evaluator,
+                        write_steps=steps_enabled,
                     )
                 ] = gi
 
@@ -1329,14 +1435,11 @@ def main() -> None:
         sims_per_sec_avg_overall=metrics_doc["latency"]["sims_per_sec_avg_overall"],
     )
 
-    metrics_path = args.output_dir / "metrics.json"
-    args.output_dir.mkdir(parents=True, exist_ok=True)
-    with metrics_path.open("w", encoding="utf-8") as f:
-        json.dump(metrics_doc, f, indent=2)
-        f.write("\n")
+    metrics_path = run_dir / "metrics.json"
+    write_json_atomic(metrics_path, metrics_doc)
     print(f"Wrote {metrics_path}")
 
-    write_summaries(args.output_dir, summaries, run_id)
+    write_summaries(run_dir, summaries, run_id)
 
 
 if __name__ == "__main__":

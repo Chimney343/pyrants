@@ -61,3 +61,45 @@ def read_pending_generic_context(state_ptr) -> dict | None:
         }
     except Exception:
         return None
+
+
+def read_pending_generic_context_full(state_ptr) -> dict | None:
+    """Additive reader: the 6 base keys plus encoder-facing fields.
+
+    Adds ``option_ids`` (the pending card's own option list), ``remaining_repeats``
+    and ``allow_repeat`` from ``PendingGenericChoiceState``, and ``effect_kind``
+    (the active ``CardAction``'s ``effect_kind`` metadata, only meaningful for
+    ``op == "custom_effect"``). Returns ``None`` exactly when the base reader
+    does. ``read_pending_generic_context`` itself is unchanged.
+    """
+    base = read_pending_generic_context(state_ptr)
+    if base is None:
+        return None
+    try:
+        pg = state_ptr.contents.pending_generic.contents
+        option_ids = [sym_str(pg.option_ids[i]) for i in range(pg.option_count)]
+
+        effect_kind = None
+        if base.get("op") == "custom_effect" and not pg.awaiting_option:
+            idx = pg.next_action_index
+            if 0 <= idx < pg.current_action_count:
+                action = pg.current_actions[idx]
+                for i in range(action.metadata_count):
+                    if sym_str(action.metadata[i].key) == "effect_kind":
+                        effect_kind = sym_str(action.metadata[i].value)
+                        break
+
+        full = dict(base)
+        full.update({
+            "option_ids": option_ids,
+            "remaining_repeats": int(pg.remaining_repeats),
+            "allow_repeat": bool(pg.allow_repeat),
+            "effect_kind": effect_kind,
+        })
+        return full
+    except Exception:
+        # The base read already succeeded: a failure in the *extended* read is
+        # a degraded answer, not "no generic choice is pending". Returning the
+        # 6-key base dict keeps `action_context` on the resolve_generic path
+        # instead of silently dropping into the option-offset fallback (R-3).
+        return base

@@ -185,6 +185,7 @@ static int legal_main_phase_actions(const GameState *state, Sym player_id,
         }
     }
     for (int si = 0; si < state->definition->setup.special_stack_count && w < max_out; si++) {
+        if (!state->definition->setup.special_stacks[si].recruitable) continue;
         Sym cid = state->definition->setup.special_stacks[si].card_id;
         if (remaining_special_stack_count(state, cid) <= 0) continue;
         const CardDefinition *cd = card_by_id_state(state, cid);

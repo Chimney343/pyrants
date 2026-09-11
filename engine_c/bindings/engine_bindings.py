@@ -228,7 +228,10 @@ class DeckDefinition(Structure):
     ]
 
 class SpecialStackDef(Structure):
-    _fields_ = [("card_id", Sym), ("market_slot", c_int), ("stack_total", c_int)]
+    _fields_ = [
+        ("card_id", Sym), ("market_slot", c_int), ("stack_total", c_int),
+        ("recruitable", c_int),
+    ]
 
 class SetupDefinition(Structure):
     _fields_ = [

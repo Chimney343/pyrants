@@ -3,12 +3,19 @@
 Tk-free and pyspiel-free by construction: the viewer keeps its startup free of
 the OpenSpiel import, and these helpers stay unit-testable headless.
 
-Artifact layout (``artifacts/ismcts/**/game_XXXX/``):
+Artifact layout (``artifacts/ismcts/runs/<ts>_<run_id>/game_XXXX/``):
 
+- ``manifest.json``  run-scoped; ``schema_version`` + engine provenance + the
+                     per-game inline ``setup_data_json`` (sibling of the game
+                     dirs, not inside them)
 - ``replay.json``    required; ``replay_context`` + ``replay_log`` + top-level
                      ``step_count`` / ``winner_id`` / ``final_scores``
-- ``summary.json``   optional; labels + ``setup_data_sha256`` + ``outcome``
+- ``summary.json``   optional; labels + ``setup_data_sha256`` + ``outcome``;
+                     written LAST, doubles as the completion marker
 - ``decisions.jsonl`` optional; per-decision telemetry, line N <-> replay_log[N].
+
+A game counts as complete only when ``summary.json`` exists and its
+``stopped_reason == "terminal"`` (see :func:`is_complete_game`).
 
 ``decisions.jsonl`` lines carry additive fields: ``resolve_generic`` lines
 (identified by the raw ``chosen_move``/``move_type``) additionally include a
@@ -78,6 +85,8 @@ class ReplayBundle:
     card_path: Path
     setup_path: Path
     substituted_paths: tuple[str, ...] = field(default_factory=tuple)
+    schema_version: int | None = None     # replay.json ``schema_version``; None = legacy
+    manifest: dict | None = None          # sibling run manifest.json, if present
 
 
 def _sha256(text: str) -> str:
@@ -87,9 +96,69 @@ def _sha256(text: str) -> str:
 def _load_summary(game_dir: Path) -> dict | None:
     path = game_dir / "summary.json"
     try:
-        return json.loads(path.read_text(encoding="utf-8"))
+        data = json.loads(path.read_text(encoding="utf-8"))
     except Exception:
         return None
+    return data if isinstance(data, dict) else None
+
+
+def is_complete_game(game_dir: Path) -> bool:
+    """True only when ``summary.json`` exists, parses, and is terminal.
+
+    A missing/malformed summary, ``"error"`` or ``"round_cap"`` all count as
+    incomplete. This is the single completeness predicate shared by the replay
+    viewer, ``scripts/verify_replays.py`` and the dataset builder.
+    """
+    summary = _load_summary(Path(game_dir))
+    if summary is None:
+        return False
+    return summary.get("stopped_reason") == "terminal"
+
+
+def _load_manifest(game_dir: Path) -> dict | None:
+    path = game_dir.parent / "manifest.json"
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+    return data if isinstance(data, dict) else None
+
+
+def _manifest_setup(
+    game_dir: Path,
+    manifest: dict | None,
+    recomposed: str,
+    summary: dict | None,
+) -> str:
+    """Prefer the manifest's inline ``setup_data_json`` when its sha matches.
+
+    Falls back to *recomposed* (the historical deck-id rebuild, G18) when the
+    manifest is absent, has no entry for this game, or the inline JSON does not
+    hash to the recorded/`summary` sha.
+    """
+    if not manifest:
+        return recomposed
+    for entry in manifest.get("games", []) or []:
+        try:
+            name = f"game_{int(entry.get('game_index')):04d}"
+        except (TypeError, ValueError):
+            continue
+        if name != game_dir.name:
+            continue
+        inline = entry.get("setup_data_json")
+        if not isinstance(inline, str) or not inline:
+            return recomposed
+        expected = entry.get("setup_data_sha256")
+        if expected is not None and _sha256(inline) != expected:
+            return recomposed
+        if (
+            summary
+            and summary.get("setup_data_sha256")
+            and _sha256(inline) != summary["setup_data_sha256"]
+        ):
+            return recomposed
+        return inline
+    return recomposed
 
 
 def _load_decisions(game_dir: Path) -> list[dict]:
@@ -224,11 +293,18 @@ def load_replay(game_dir: Path) -> ReplayBundle:
         if flag
     )
 
-    setup_json = _build_setup_json(setup_path, ctx)
+    manifest = _load_manifest(game_dir)
+    setup_json = _manifest_setup(
+        game_dir, manifest, _build_setup_json(setup_path, ctx), summary
+    )
 
     setup_sha_matches = None
     if summary and summary.get("setup_data_sha256"):
         setup_sha_matches = _sha256(setup_json) == summary["setup_data_sha256"]
+
+    schema_version = replay.get("schema_version")
+    if not isinstance(schema_version, int):
+        schema_version = None
 
     return ReplayBundle(
         meta=meta,
@@ -241,4 +317,6 @@ def load_replay(game_dir: Path) -> ReplayBundle:
         card_path=card_path,
         setup_path=setup_path,
         substituted_paths=substituted,
+        schema_version=schema_version,
+        manifest=manifest,
     )

@@ -1412,10 +1412,13 @@ class GameViewerApp:
 
         top_cards = [house_guard_card, priestess_card, outcast_card, *market_cards]
         self._hover_market_cards = top_cards
+        # Insane Outcast is a face-up supply, never a step-1 recruit target
+        # (rulebook: recruits are House Guard, Priestess of Lolth, or a market
+        # card). It stays visible for its remaining count but is not selectable.
         top_slot_to_market_slot: list[int | None] = [
             SPECIAL_TOP_SLOT_TO_MARKET_SLOT[0],
             SPECIAL_TOP_SLOT_TO_MARKET_SLOT[1],
-            SPECIAL_TOP_SLOT_TO_MARKET_SLOT[2] if self._demons_in_market else None,
+            None,
             *list(range(len(view.market_row))),
         ]
         while len(top_slot_to_market_slot) < TOP_DECK_SLOT_COUNT:

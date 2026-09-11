@@ -90,6 +90,58 @@ def _resolve_generic(session: CSession, action_id: str) -> bool:
     return False
 
 
+def _find_recruit(session: CSession, card_id: str):
+    for m in session.legal_moves():
+        if m.move_type == "recruit" and m.data.get("card_id") == card_id:
+            return m
+    return None
+
+
+def test_insane_outcast_not_directly_recruitable():
+    """Insane Outcasts enter decks only through card effects, not the recruit action.
+
+    Rulebook step 1 lets a player recruit a House Guard, a Priestess of Lolth, or a
+    market card — never an Insane Outcast. The Insane Outcast stack is a face-up
+    supply that card effects grant from.
+    """
+    eng = CEngine()
+    eng.initialize(
+        catalog_path=str(DATA_DIR / "cards"),
+        board_path=str(DATA_DIR / "boards" / "tyrants_of_the_underdark.json"),
+        setup_path=str(DATA_DIR / "decks" / "base_setup.json"),
+    )
+    session = make_card_test_session(
+        eng,
+        ["p1", "p2"],
+        current_player="p1",
+    )
+    session._state._ptr.contents.resource_pool.influence = 100
+
+    assert _find_recruit(session, "insane_outcast") is None, (
+        "insane_outcast must not be a direct recruit target"
+    )
+    # House Guard and Priestess of Lolth special stacks stay recruitable.
+    assert _find_recruit(session, "house_guard") is not None
+    assert _find_recruit(session, "priestess_of_lolth") is not None
+
+    session.destroy()
+
+
+def test_insane_outcast_scenario_102_has_no_direct_recruit():
+    """Scenario 102 regression: the shipped setup offers no direct outcast recruit."""
+    engine = CEngine()
+    engine.initialize()
+    session = CSession.load(
+        "data/scenarios/batch_card_generation/102_seed_4_insane_outcast.json", engine
+    )
+    session._state._ptr.contents.resource_pool.influence = 100
+    assert _find_recruit(session, "insane_outcast") is None, (
+        "Insane Outcast must not be recruitable directly; only card effects add it"
+    )
+    assert _find_recruit(session, "house_guard") is not None
+    session.destroy()
+
+
 def test_insane_outcast_discard_another_card_and_return_to_supply():
     eng = CEngine()
     eng.initialize(

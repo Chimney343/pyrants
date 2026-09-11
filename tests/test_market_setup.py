@@ -44,10 +44,15 @@ def test_compute_special_stacks_demons_gating() -> None:
     assert set(by_card) == {"house_guard", "priestess_of_lolth", "insane_outcast"}
     assert by_card["house_guard"].market_slot == HOUSE_GUARD_RECRUIT_SLOT
     assert by_card["house_guard"].stack_total == 15
+    assert by_card["house_guard"].recruitable is True
     assert by_card["priestess_of_lolth"].market_slot == PRIESTESS_RECRUIT_SLOT
     assert by_card["priestess_of_lolth"].stack_total == 15
+    assert by_card["priestess_of_lolth"].recruitable is True
     assert by_card["insane_outcast"].market_slot == INSANE_OUTCAST_RECRUIT_SLOT
     assert by_card["insane_outcast"].stack_total == 30
+    # Insane Outcasts are a face-up supply only; card effects add them, never
+    # the step-1 recruit action.
+    assert by_card["insane_outcast"].recruitable is False
 
     aberrations_specs = compute_special_stacks("aberrations", "drow", decks_dir=DEFAULT_ROSTERS_PATH)
     by_card = _specs_by_card(aberrations_specs)
@@ -63,9 +68,9 @@ def test_to_setup_data_emits_special_stacks() -> None:
     data = market_setup.to_setup_data()
     assert "special_stacks" in data
     assert data["special_stacks"] == [
-        {"market_slot": 100, "card_id": "house_guard", "stack_total": 15},
-        {"market_slot": 101, "card_id": "priestess_of_lolth", "stack_total": 15},
-        {"market_slot": 102, "card_id": "insane_outcast", "stack_total": 30},
+        {"market_slot": 100, "card_id": "house_guard", "stack_total": 15, "recruitable": True},
+        {"market_slot": 101, "card_id": "priestess_of_lolth", "stack_total": 15, "recruitable": True},
+        {"market_slot": 102, "card_id": "insane_outcast", "stack_total": 30, "recruitable": False},
     ]
 
     non_demons = combine_two_deck_market_setup(base, by_id["aberrations"], by_id["drow"])
@@ -82,13 +87,13 @@ def test_base_setup_declares_all_three_stacks_matching_rosters() -> None:
 
     by_slot = {spec["market_slot"]: spec for spec in stacks}
     assert by_slot[HOUSE_GUARD_RECRUIT_SLOT] == {
-        "market_slot": 100, "card_id": "house_guard", "stack_total": 15,
+        "market_slot": 100, "card_id": "house_guard", "stack_total": 15, "recruitable": True,
     }
     assert by_slot[PRIESTESS_RECRUIT_SLOT] == {
-        "market_slot": 101, "card_id": "priestess_of_lolth", "stack_total": 15,
+        "market_slot": 101, "card_id": "priestess_of_lolth", "stack_total": 15, "recruitable": True,
     }
     assert by_slot[INSANE_OUTCAST_RECRUIT_SLOT] == {
-        "market_slot": 102, "card_id": "insane_outcast", "stack_total": 30,
+        "market_slot": 102, "card_id": "insane_outcast", "stack_total": 30, "recruitable": False,
     }
 
     roster_counts = load_special_stack_counts(DEFAULT_ROSTERS_PATH)

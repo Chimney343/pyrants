@@ -24,6 +24,10 @@ Use these files for current project status:
 - If you need generated audits or coverage reports, use `generated/`.
 - If you need old planning context, use `archive/`.
 - If you want the IS-MCTS/OpenSpiel correctness and performance record, use `validation/` (start with `validation/verdict.md`).
+- If you want to know how IS-MCTS games should be saved so a neural network can train on them, read `nn-training-data.md` (short grug-voice version: `nn-training-data-grug.md`).
+- If you are implementing that layout, follow `nn-training-data-tdd-plan.md` (tests first, phase by phase).
+- If you are fixing what the first verification of that layout found, follow `nn-training-data-fix-plan.md` (each finding reviewed against `tyrants-rulebook.md`).
+- If you are fixing what the review of *that* plan's implementation found, follow `nn-training-data-fix-plan-02.md` (seat perspective, trophy-hall action merge, census coverage).
 
 ## Keeping This Folder Honest
 

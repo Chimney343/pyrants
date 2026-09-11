@@ -46,12 +46,14 @@ class SpecialStackSpec:
     market_slot: int
     card_id: str
     stack_total: int
+    recruitable: bool = True
 
     def to_dict(self) -> dict[str, object]:
         return {
             "market_slot": self.market_slot,
             "card_id": self.card_id,
             "stack_total": self.stack_total,
+            "recruitable": self.recruitable,
         }
 
 
@@ -148,10 +150,12 @@ def compute_special_stacks(
 ) -> tuple[SpecialStackSpec, ...]:
     """Return the special-recruit stacks for a two-deck market.
 
-    House Guard and Priestess of Lolth are always present; Insane Outcast is
-    present iff the Demons half-deck is one of the two market decks (rulebook:
-    "If you're playing with the Demons half-deck, put the Insane Outcast cards
-    face up"). Totals are read from the roster files.
+    House Guard and Priestess of Lolth are always present and recruitable;
+    Insane Outcast is present iff the Demons half-deck is one of the two market
+    decks (rulebook: "If you're playing with the Demons half-deck, put the
+    Insane Outcast cards face up"). Insane Outcasts are a face-up supply only:
+    they are never a step-1 recruit target and only enter a deck via card
+    effects. Totals are read from the roster files.
     """
     counts = load_special_stack_counts(decks_dir)
     specs = [
@@ -172,6 +176,7 @@ def compute_special_stacks(
                 market_slot=INSANE_OUTCAST_RECRUIT_SLOT,
                 card_id="insane_outcast",
                 stack_total=counts["insane_outcast"],
+                recruitable=False,
             )
         )
     return tuple(specs)

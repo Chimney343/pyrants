@@ -360,9 +360,12 @@ def _custom_setup(house_guard_total: int = 3) -> str:
         },
         "market_row_size": 6,
         "special_stacks": [
-            {"market_slot": 100, "card_id": "house_guard", "stack_total": house_guard_total},
-            {"market_slot": 101, "card_id": "priestess_of_lolth", "stack_total": 15},
-            {"market_slot": 102, "card_id": "insane_outcast", "stack_total": 30},
+            {"market_slot": 100, "card_id": "house_guard", "stack_total": house_guard_total,
+             "recruitable": True},
+            {"market_slot": 101, "card_id": "priestess_of_lolth", "stack_total": 15,
+             "recruitable": True},
+            {"market_slot": 102, "card_id": "insane_outcast", "stack_total": 30,
+             "recruitable": False},
         ],
     })
 
@@ -439,17 +442,20 @@ def test_legacy_setup_without_special_stacks_falls_back() -> None:
 
 
 # ---------------------------------------------------------------------------
-# T6 — insane stack is defined (demons market) ⇒ slot-102 recruit reachable;
-#      undefined (non-demons market) ⇒ not offered and grants are no-ops
+# T6 — insane stack defined (demons market) ⇒ face-up supply for card-effect
+#      grants only, never a step-1 recruit; undefined (non-demons market) ⇒
+#      grants are no-ops
 # ---------------------------------------------------------------------------
 
 def _demons_setup(include_insane: bool) -> str:
     stacks = [
-        {"market_slot": 100, "card_id": "house_guard", "stack_total": 15},
-        {"market_slot": 101, "card_id": "priestess_of_lolth", "stack_total": 15},
+        {"market_slot": 100, "card_id": "house_guard", "stack_total": 15, "recruitable": True},
+        {"market_slot": 101, "card_id": "priestess_of_lolth", "stack_total": 15,
+         "recruitable": True},
     ]
     if include_insane:
-        stacks.append({"market_slot": 102, "card_id": "insane_outcast", "stack_total": 30})
+        stacks.append({"market_slot": 102, "card_id": "insane_outcast", "stack_total": 30,
+                       "recruitable": False})
     return json.dumps({
         "setup_id": "demons_market",
         "starter_deck": {
@@ -483,14 +489,21 @@ def _make_session(setup_data_json: str, hand: dict[str, list[str]] | None = None
     return make_card_test_session(eng, ["p1", "p2"], hand=hand, current_player="p1")
 
 
-def test_insane_stack_gated_on_demons_market() -> None:
+def test_insane_stack_defined_but_never_directly_recruitable() -> None:
+    # Demons market: the stack is defined, so the 30-card supply backs
+    # card-effect grants and is shown in the view...
     session = _make_session(_demons_setup(include_insane=True))
     s = session._state._ptr.contents
     s.resource_pool.influence = 100
-    recruit = _find_recruit(session, INSANE)
-    assert recruit is not None, "slot-102 insane_outcast recruit must be offered when the stack is defined"
-    assert session.submit_move(recruit) is not None
-    assert _discard_count(session, "p1", INSANE) == 1
+    assert _remaining_outcasts(session) == 30
+    # ...but Insane Outcasts are never a step-1 recruit target (rulebook:
+    # step-1 recruits are House Guard, Priestess of Lolth, or a market card).
+    assert _find_recruit(session, INSANE) is None, (
+        "insane_outcast must never be a direct recruit target, even with the stack defined"
+    )
+    # The genuinely recruitable special stacks are unaffected.
+    assert _find_recruit(session, "house_guard") is not None
+    assert _find_recruit(session, "priestess_of_lolth") is not None
     session.destroy()
 
     session = _make_session(_demons_setup(include_insane=False))
@@ -499,6 +512,17 @@ def test_insane_stack_gated_on_demons_market() -> None:
     assert _find_recruit(session, INSANE) is None, (
         "insane_outcast recruit must NOT be offered when the stack is undefined"
     )
+    session.destroy()
+
+
+def test_legacy_insane_stack_is_non_recruitable() -> None:
+    """The legacy no-special_stacks fallback must also mark insane non-recruitable."""
+    session = _make_session(_legacy_setup())
+    s = session._state._ptr.contents
+    s.resource_pool.influence = 100
+    assert _remaining_outcasts(session) == 30
+    assert _find_recruit(session, INSANE) is None
+    assert _find_recruit(session, "house_guard") is not None
     session.destroy()
 
 

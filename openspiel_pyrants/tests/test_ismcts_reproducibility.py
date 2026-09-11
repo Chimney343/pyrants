@@ -273,12 +273,15 @@ class TestISMCTSReproducibility:
                 text=True,
                 timeout=1800,
             )
-            decisions_path = out_dir / "game_0000" / "decisions.jsonl"
+            from scripts._run_layout import only_run_dir
+
+            run_dir = only_run_dir(out_dir)
+            decisions_path = run_dir / "game_0000" / "decisions.jsonl"
             chosen = [
                 json.loads(line)["chosen_action_id"]
                 for line in decisions_path.open(encoding="utf-8")
             ]
-            with (out_dir / "summary.csv").open(encoding="utf-8") as f:
+            with (run_dir / "summary.csv").open(encoding="utf-8") as f:
                 rows = list(csv.DictReader(f))
             outcome = [row["outcome"] for row in rows]
             return chosen, outcome

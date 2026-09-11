@@ -204,6 +204,23 @@ longer (~4.7×) filtered rollout.
 > a fixture proven blind to this fix's cost. The fix's own comments record a ~3.1× search wall-time
 > slowdown on the real 4-player market as an accepted, unavoidable cost of correct leaf values; this
 > review did not independently re-measure that number.
+>
+> **Review 02** (`docs/validation/reviews/f019-review-02.md`, committed SHA `ea25b68`):
+> **REJECTED-SCOPE**. Review 01 was written against the *uncommitted* working tree and audited only
+> the 9-file F-019 portion; the commit under review (`ea25b68`, `2f6a0e7..ea25b68`) carries **12
+> out-of-scope files** implementing an unrelated `decisions.jsonl` generic-context feature (with its
+> own plan and tests) plus 1 Repowise metadata hunk. No F-019 fix plan exists to authorize the
+> bundle, so Hard Rule 8's "zero out-of-scope hunks" fails on its face. The F-019 code itself is
+> independently re-verified: the pre-registered falsification test passes (4/4, 0 skips, 30/30
+> terminal at 2p and 4p on the real market), conformance is CONFORMANT (paper § III-A), and the
+> always-on battery / F-010 / F-013 (1.509×) / F-002 / F-004 all pass unchanged. **One previously-
+> passing committed check now fails**: `tests/test_replay_player.py::test_decision_at_matches_step`
+> (Review 01 recorded it PASS) fails because the gitignored golden artifact
+> `artifacts/ismcts/game_0000` is internally inconsistent (`replay.json` 517 steps vs
+> `decisions.jsonl` 257 lines from a different run) — most plausibly written by the bundled feature's
+> own documented validation step (`just ismcts-quick` → default output dir). Not attributable to a
+> tracked source line, but the commit did not restore the artifact it mutated. New finding: F-024
+> (Tk re-coupling of `tests/test_replay_loader.py`). 0 newly-STALE rows.
 
 **F-010 — determinization seeds are unseeded; no run is reproducible. FIXED (Review 02 ACCEPTED-WITH-DEBT).**
 Fixed by `openspiel_pyrants/ismcts_factory.py::make_ismcts_bot` (installs a seeded numpy
@@ -567,6 +584,15 @@ Adding a `--opponent` flag would let these run through the supported entry point
 > call, not a per-fix review's — but it should not be relied upon without accounting for F-019's
 > fix (a real, ~3.1×, unmeasured-by-any-gate search-time cost on the real market) and F-021 (a gap
 > in what the battery can see) first.
+
+> **Caveat appended by F-019 Review 02 [2026-09-10], not a re-declaration of this section.** The
+> F-019 fix as committed (`ea25b68`) is **REJECTED-SCOPE** (see §2). The 🟢 GO below predates that
+> commit and rests on the same `docs/validation/harness/` battery F-021 flags as blind to the real
+> multi-deck market. Until the F-019 fix is re-landed without its bundled `decisions.jsonl` feature
+> and the failing golden-artifact test (`test_replay_player.py::test_decision_at_matches_step`) is
+> restored to green, this section's GO conclusion should not be relied upon as a statement about the
+> current HEAD. This is a per-fix reviewer's caveat only; the GO/NO-GO decision itself remains the
+> Final GO Gate's call.
 
 ### 🟢 GO.
 

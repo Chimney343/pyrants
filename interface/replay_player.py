@@ -13,6 +13,15 @@ from engine_c.bindings.session import CSession
 from .replay_loader import ReplayBundle, engine_seed
 
 
+def find_matching_move(moves, payload: dict):
+    """Return the legal move whose ``to_payload()`` equals *payload*, or None.
+
+    Shared by the replay viewer's ``ReplayPlayer`` and the NN dataset builder
+    so both align a logged payload against live legal moves identically (G17).
+    """
+    return next((m for m in moves if m.to_payload() == payload), None)
+
+
 class ReplayDesyncError(RuntimeError):
     """A logged move does not match any live legal move at a replayed step."""
 
@@ -93,7 +102,7 @@ class ReplayPlayer:
     def _apply_entry(self, entry: dict) -> None:
         expected = entry["payload"]
         moves = self._session.legal_moves()
-        match = next((m for m in moves if m.to_payload() == expected), None)
+        match = find_matching_move(moves, expected)
         if match is None or self._session.submit_move(match) is None:
             raise ReplayDesyncError(
                 entry["step_index"],

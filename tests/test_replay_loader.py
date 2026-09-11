@@ -204,3 +204,83 @@ def test_load_replay_real_artifact_setup_sha_matches() -> None:
     assert bundle.meta.player_ids == ("p1", "p2")
     assert bundle.meta.deck_a_id == "undead"
     assert bundle.meta.deck_b_id == "aberrations"
+
+
+# ── T1.10 schema_version + manifest on the bundle ──────────────────────────
+
+
+def _sha16(text: str) -> str:
+    import hashlib
+
+    return hashlib.sha256(text.encode()).hexdigest()[:16]
+
+
+def test_replay_bundle_exposes_schema_version_and_manifest(tmp_path: Path) -> None:
+    run_dir = tmp_path / "20260910T120000Z_abc"
+    game_dir = run_dir / "game_0000"
+    game_dir.mkdir(parents=True)
+
+    setup_json = json.dumps({"setup": "inline-from-manifest"})
+    replay = {
+        "run_id": "abc",
+        "schema_version": 2,
+        "stopped_reason": "terminal",
+        "step_count": 0,
+        "is_terminal": True,
+        "winner_id": None,
+        "final_scores": {},
+        "replay_log": [],
+        "replay_context": {
+            "player_ids": ["p1", "p2"],
+            "seed": 42,
+            "deck_a_id": "drow",
+            "deck_b_id": "dragon",
+        },
+    }
+    (game_dir / "replay.json").write_text(json.dumps(replay), encoding="utf-8")
+    (game_dir / "summary.json").write_text(
+        json.dumps({"stopped_reason": "terminal", "setup_data_sha256": _sha16(setup_json)}),
+        encoding="utf-8",
+    )
+    (run_dir / "manifest.json").write_text(
+        json.dumps(
+            {
+                "schema_version": 2,
+                "run_id": "abc",
+                "games": [
+                    {
+                        "game_index": 0,
+                        "setup_data_json": setup_json,
+                        "setup_data_sha256": _sha16(setup_json),
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    bundle = load_replay(game_dir)
+
+    assert bundle.schema_version == 2
+    assert bundle.manifest is not None
+    assert bundle.manifest["run_id"] == "abc"
+    assert bundle.setup_json == setup_json
+
+    # Legacy dir: no schema_version, no sibling manifest.
+    legacy = tmp_path / "legacy" / "game_0000"
+    _write_replay(legacy, seed=7, players=["p1", "p2"])
+    legacy_bundle = load_replay(legacy)
+    assert legacy_bundle.schema_version is None
+    assert legacy_bundle.manifest is None
+
+
+# ── T1.11 nested run-dir discovery ─────────────────────────────────────────
+
+
+def test_discover_replays_finds_nested_run_dirs(tmp_path: Path) -> None:
+    _write_replay(tmp_path / "20260910T120000Z_abc" / "game_0000", seed=42, players=["p1", "p2"])
+
+    metas = discover_replays(tmp_path)
+
+    assert [meta.game_dir.name for meta in metas] == ["game_0000"]
+    assert metas[0].game_dir.parent.name == "20260910T120000Z_abc"

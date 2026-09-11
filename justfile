@@ -25,6 +25,12 @@ simulate-c players="p1,p2" seed="42" max_steps="200":
 test:
     & {{python}} -m pytest -q
 
+# Both test trees. `just test` collects tests/ only; openspiel_pyrants/tests/
+# runs separately. Use this in every "done when" so a regression in the
+# OpenSpiel layer cannot slip past again (F-029).
+test-all:
+    $a = 0; $b = 0; & {{python}} -m pytest -q; $a = $LASTEXITCODE; & {{python}} -m pytest openspiel_pyrants/tests/ -q; $b = $LASTEXITCODE; if ($a -ne 0 -or $b -ne 0) { exit 1 }
+
 test-c:
     & .\engine_c\test_engine.exe
     & .\engine_c\test_view.exe
@@ -67,13 +73,30 @@ replay-viewer-open game="artifacts/ismcts/game_0000":
 verify-replays:
     & {{python}} scripts/verify_replays.py
 
+# ── NN training data (layers 0-2) ────────────────────────────────────────────
+
+# Build sharded NN training data from replay runs. `runs` may be a single run
+# directory or a base containing nested runs; pass extra flags via *args
+# (e.g. --allow-legacy-schema --leak-check 200 --shard-size 20000).
+build-nn-dataset runs="artifacts/ismcts/runs" out="datasets/latest" *args:
+    & {{python}} -m scripts.build_nn_dataset --runs {{runs}} --out {{out}} {{args}}
+
+report-nn-dataset dataset="datasets/latest":
+    & {{python}} -m scripts.build_nn_dataset --report {{dataset}}
+
 # ── IS-MCTS (C engine backend) ───────────────────────────────────────────────
 
-ismcts num_sims="200" num_games="4" seed="42" output_dir="artifacts/ismcts" workers="16" num_players="4" uct_c="1.4":
+ismcts num_sims="200" num_games="4" seed="42" output_dir="artifacts/ismcts/runs" workers="16" num_players="4" uct_c="1.4":
     & {{python}} -m scripts.run_ismcts --num-sims {{num_sims}} --num-games {{num_games}} --seed {{seed}} --output-dir {{output_dir}} --workers {{workers}} --num-players {{num_players}} --uct-c {{uct_c}} --game python_pyrants_c
 
-ismcts-quick workers="1" num_players="2" uct_c="1.4":
-    & {{python}} -m scripts.run_ismcts --num-sims 2 --num-games 1 --seed 42 --workers {{workers}} --num-players {{num_players}} --uct-c {{uct_c}} --game python_pyrants_c
+# Verification run for the NN training-data layout (docs/nn-training-data-tdd-plan.md).
+# Plays a few complete games at a small but real search budget, then replay-verifies
+# the run, builds a strict, leak-checked dataset from it, and prints the label-sanity
+# report. Defaults: 2 x 4-player games at 16 sims/move with steps.jsonl off (the
+# training profile). Pass steps="yes" to keep steps.jsonl for the replay viewer.
+# Inspect: <out>/<ts>_<run_id>/manifest.json, game_XXXX/decisions.jsonl, <dataset>/manifest.json.
+ismcts-quick num_sims="16" num_games="2" num_players="4" workers="2" seed="42" uct_c="1.4" steps="no" out="artifacts/ismcts/quick" dataset="datasets/quick":
+    $stepsFlag = @(); if ('{{steps}}' -eq 'no') { $stepsFlag = @('--no-steps') }; & {{python}} -m scripts.run_ismcts --num-sims {{num_sims}} --num-games {{num_games}} --seed {{seed}} --workers {{workers}} --num-players {{num_players}} --uct-c {{uct_c}} --output-dir {{out}} --game python_pyrants_c @stepsFlag; if (-not $?) { exit 1 }; $run = (Get-ChildItem '{{out}}' -Directory | Sort-Object Name | Select-Object -Last 1).FullName; Write-Host ''; Write-Host "Run dir: $run"; & {{python}} scripts/verify_replays.py --root $run; if (-not $?) { exit 1 }; & {{python}} -m scripts.build_nn_dataset --runs $run --out {{dataset}} --strict --leak-check 50 --shard-size 1000; if (-not $?) { exit 1 }; & {{python}} -m scripts.build_nn_dataset --report {{dataset}}
 
 # Sims-vs-wins experiment: does a bigger IS-MCTS budget win more games?
 # Rotates a per-seat budget ladder (50/100/200/400) across seats each game.

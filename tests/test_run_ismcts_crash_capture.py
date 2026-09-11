@@ -21,6 +21,7 @@ import pytest
 
 import openspiel_pyrants  # noqa: F401
 from scripts._obs import new_run_id
+from scripts._run_layout import only_run_dir
 from scripts.run_ismcts import (
     GameRunFailedError,
     _game_dir,
@@ -332,15 +333,18 @@ class TestSingleWorkerContinue:
         import sys
 
         crash_at_game = 1
-        counters = {"game_index": 0}
+        load_count = {"n": 0}
 
         # Patch _load_game_or_die to return a state that crashes on the Nth
-        # apply_action call for game 1 only.
+        # apply_action call for game 1 only.  Keyed off the load order (not
+        # _build_ismcts_setup_json, which main() now calls up front for the
+        # manifest before the first game starts).
         original_load = _load_game_or_die
 
         def patched_load(name, params):
+            gi = load_count["n"]
+            load_count["n"] += 1
             game = original_load(name, params)
-            gi = counters["game_index"]
             if gi == crash_at_game:
                 state = game.new_initial_state()
                 fail_on_call = _CHANCE_AND_FIRST_MOVE_CALLS  # first move apply raises
@@ -391,43 +395,31 @@ class TestSingleWorkerContinue:
 
         monkeypatch.setattr(sys, "argv", argv)
 
-        # Override the per-game counters so the crash lands on game 1.
-        import scripts.run_ismcts as runner
-
-        orig_build = runner._build_ismcts_setup_json
-        call_count = {"n": 0}
-
-        def counting_build(*a, **kw):
-            result = orig_build(*a, **kw)
-            counters["game_index"] = call_count["n"]
-            call_count["n"] += 1
-            return result
-
-        monkeypatch.setattr(runner, "_build_ismcts_setup_json", counting_build)
-
         main()
 
-        summaries = _read_summaries(tmp_path)
+        run_dir = only_run_dir(tmp_path)
+
+        summaries = _read_summaries(run_dir)
         assert len(summaries) == 3
         by_index = {s["game_index"]: s for s in summaries}
         assert by_index[1]["stopped_reason"] == "error"
         assert by_index[0]["stopped_reason"] in ("terminal", "round_cap")
         assert by_index[2]["stopped_reason"] in ("terminal", "round_cap")
 
-        metrics = json.loads((tmp_path / "metrics.json").read_text(encoding="utf-8"))
+        metrics = json.loads((run_dir / "metrics.json").read_text(encoding="utf-8"))
         assert metrics["counters"]["games_failed"] == 1
         assert metrics["counters"]["games_completed"] == 2
 
-        assert (tmp_path / "summary.csv").exists()
-        assert (tmp_path / "summary.md").exists()
+        assert (run_dir / "summary.csv").exists()
+        assert (run_dir / "summary.md").exists()
 
         # The crashed game's steps.jsonl must show step + game_crashed.
-        crashed_steps = _steps_lines(_game_dir(tmp_path, 1))
+        crashed_steps = _steps_lines(_game_dir(run_dir, 1))
         assert crashed_steps[-1]["event"] == "game_crashed"
 
         # The single-worker path must write the same structured failures.jsonl
         # line the multi-worker path writes (phase 3).
-        failures = _read_failures(tmp_path)
+        failures = _read_failures(run_dir)
         assert len(failures) == 1
         failure = failures[0]
         assert failure["game_index"] == crash_at_game

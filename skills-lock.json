@@ -1,6 +1,12 @@
 {
   "version": 1,
   "skills": {
+    "Neural Network Design": {
+      "source": "aj-geddes/useful-ai-prompts",
+      "sourceType": "github",
+      "skillPath": "skills/neural-network-design/SKILL.md",
+      "computedHash": "2502bcc523963d1c18fa2eb7649e21ff12cc4ee4f9d925f5ad77da187831376f"
+    },
     "async-python-patterns": {
       "source": "wshobson/agents",
       "sourceType": "github",

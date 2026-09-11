@@ -233,3 +233,6 @@ __marimo__/
 
 # Run outputs (profiler dumps, simulation results, reports)
 artifacts/
+
+# Generated NN training datasets (rebuilt from artifacts/; not shipped)
+datasets/

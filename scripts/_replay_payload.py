@@ -8,6 +8,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from scripts._run_layout import SCHEMA_VERSION
+
 
 def compute_final_scores(state) -> dict:
     """Return final scores via the C-engine adapter.
@@ -74,6 +76,7 @@ def build_replay_payload(
         })
 
     return {
+        "schema_version": SCHEMA_VERSION,
         "run_id": run_id,
         "stopped_reason": stopped_reason,
         "max_rounds": max_rounds,

@@ -47,6 +47,28 @@ All six required components exist; none had to be substituted.
 | F-021 | VALIDATION-PROCESS | MAJOR | *(found by Review 01 of F-019's blast-radius re-run)* `docs/validation/harness/common.py::load()` defaults to `data/decks/base_setup.json`'s 10-card single-card market, which never offers a placeholder/modal move (0/1239 sampled states) — the entire harness battery (INV-1/2/3/6 and most F-*-blast-radius reruns) is provably blind to F-019's defect class and cannot validate behavior on the runner's real multi-deck market |
 | F-022 | VALIDATION-PROCESS | MODERATE | *(found by Review 01 of F-019 while triaging non-baseline full-suite failures)* `tests/test_replay_player.py`/`test_replay_loader.py` hardcode exact values against the gitignored, locally-mutable `artifacts/ismcts/game_0000`; a locally-regenerated recording (1,308 steps vs. the hardcoded 517) fails all three tests with no git-diff-visible cause |
 | F-023 | ENGINE | MINOR | *(found during a live performance-optimization session, 2026-09-04)* `engine_c/intern.c`'s global symbol table has zero synchronization — the one remaining big IS-MCTS speed lever (in-game leaf/rollout parallelism, since the C rollout call drops the GIL) is unsafe to pursue without fixing it first; evaluated by code inspection and **declined at owner direction**, not to be attempted |
+| F-024 | VALIDATION-PROCESS | MINOR | *(found by Review 02 of F-019, auditing the bundled `decisions.jsonl` feature's tests)* `tests/test_replay_loader.py` now imports the pure helper `_decision_display_label` from `interface/replay_viewer.py`, which imports `tkinter` at module level — silently re-coupling a previously Tk-free test module (17 tests) to the GUI toolkit |
+| F-025 | ENGINE-OPENSPIEL | MODERATE | `scripts/run_ismcts.py` writes `game_XXXX/` straight into `--output-dir` and overwrites file by file, so two runs into one directory leave decisions/steps from one run beside replay/summary from another; the top-level `artifacts/ismcts/game_0000..0003` are in that state today |
+| F-026 | NN-DATA | MAJOR | v1 `resolve_generic` action slots merge rulebook-distinct moves (2.9 % of chosen moves in a 23-game census) and the pending-op one-hot uses invented names (30.9 % of generic moves encoded as "unknown") — NN-1, NN-4 of `nn-training-data-fix-plan.md` |
+| F-027 | NN-DATA / RULE-ENGINE | MODERATE | observation board features `controller`, `total_control`, `my_presence` contradict `tyrants-rulebook.md:248-283` (ties, enemy spies, spies/adjacency) — NN-9 |
+| F-028 | VALIDATION-PROCESS | MODERATE | the dataset manifest stores `"sources": list(sources)` where `sources` is a dict, so both built datasets record only `["runs", "accepted", "rejected"]` and lose every run dir, run id, engine sha and rejection reason — NN-3 |
+| F-029 | VALIDATION-PROCESS | MINOR | `just test` does not run `openspiel_pyrants/tests/`; the layer-1 change broke a committed ordering test (`test_failed_move_not_in_replay_log`) unnoticed — NN-2 |
+| F-030 | NN-DATA | MODERATE | `seat_features` / `seat_is_current` are absolute-seat while every other observation block and the value target are perspective-relative, so three of four players get an own-stats block belonging to another seat — R-1 of `nn-training-data-fix-plan-02.md` |
+| F-031 | NN-DATA | MAJOR | `custom_effect` structured placement drops the trophy index, merging differently-coloured trophy deploys (23 of 23 gids on a live Lich state); the census's semantic key restates the encoder's routing so it cannot see it — R-2, R-2b |
+| F-032 | ENGINE-OPENSPIEL | MINOR | `read_pending_generic_context_full` returns `None` — "no generic choice pending" — when only the extended read fails, contradicting its own docstring — R-3 |
+| F-033 | VALIDATION-PROCESS | MINOR | `just test-all` aborts on the first failing tree, so with today's four tolerated `tests/` failures it never runs `openspiel_pyrants/tests/` — the very regression it was added to prevent — R-4 |
+
+Baseline recorded 2026-09-10 against the working tree at `ea25b68` with Phases 0-4 of
+`nn-training-data-tdd-plan.md` applied but uncommitted: `tests/` 1001 passed / 4 failed
+(3× F-015, 1× F-022 local artifact); `openspiel_pyrants/tests/` 104 passed / 11 failed
+(10× F-003 by design, 1× F-029).
+
+Fix Plan 02 baseline (2026-09-11, the same working tree with
+`nn-training-data-fix-plan-02.md` applied): F-030..F-033 fixed; the targeted
+suite was re-run as two trees (per F-033), and `PYRANTS_NN_CENSUS=1 pytest
+tests/nn/test_actions.py` passes with 0 semantic collisions over the 93 stored
+games that replay under the current engine (46 are reported as skipped because
+they desync on an unreleased `insane_outcast` non-recruitable rule change).
 
 ## 3. Findings
 
@@ -615,6 +637,12 @@ All six required components exist; none had to be substituted.
 - Test: `pytest openspiel_pyrants/tests/test_rollout_reaches_terminal.py` N=30 rollouts × {2p,4p} on the real two-half-deck market result=4/4 PASS, 30/30 terminal both player counts (was 15/300 at 2p, 6/40 at 4p pre-fix); `engine_c/tests/test_rollout.c` and `tests/c_engine/test_rollout_binding.py` both green with strengthened, non-tautological assertions
 - Regressions: none attributable to this diff — INV-1/2/3/6 exact match (N=100/277/1200/30), F-010 `det_bot.py`/`det_isolate.py` unchanged, F-013 `f011_timing.py` unchanged (1.662×, still under 2× gate, though see F-021 caveat), F-002 `f002b.py` unchanged (8/8+8/8+8/8); 3 additional full-suite failures (`test_replay_player.py`×2, `test_replay_loader.py`×1) investigated and proven pre-existing/environment-local via a clean `git worktree` comparison at the same SHA, not caused by this diff — filed as F-022
 - Invalidated: STALE rows [none newly STALE — INV-7/8/9 already STALE from prior reviews, this fix is a further independent trigger but was already correctly excluded from citation] | New findings raised: **F-020, F-021, F-022**
+- Review 02 [2026-09-10] at `ea25b68d0a8a0ed21d36627eddeddf9c184e451d`: **REJECTED-SCOPE** — `docs/validation/reviews/f019-review-02.md`
+- Diff: full commit `2f6a0e7..ea25b68` = 24 files. F-019 portion (9 files) unchanged from what Review 01 audited and independently re-verified; **12 OUT-OF-SCOPE files** implement an unrelated `decisions.jsonl` generic-context feature (its own plan `.kilo/plans/1788543394202-decisions-jsonl-generic-context.md`, its own tests), plus 1 carried Repowise `.claude/CLAUDE.md` metadata hunk. No F-019 fix plan exists to authorize the bundle. | out-of-scope hunks: 12 (+1 carried) | test changes: 7 hunks, all cleared against the Hard Rule 4 gaming checklist (3 F-019, 4 feature)
+- Conformance: **CONFORMANT** vs rulebook §[absent], paper § III-A (filtering engine-rejected placeholder moves restores "random actions"; always scoring restores a state-dependent reward). F-019 code independently re-derived, not carried.
+- Test: `pytest openspiel_pyrants/tests/test_rollout_reaches_terminal.py -v -rs` N=30 rollouts × {2p,4p} seeds=42/1000+i/2000+i result=**4/4 PASS, 0 skips, 30/30 terminal both counts** (matches post-fix "Expected if FALSE POSITIVE"). Battery at `ea25b68`: INV-1/2/3/6 PASS (0/277/1200/30); INV-4a/4b/5 PASS (0/300, 776 unique, mean 11.48/12); INV-4b pair 400/400 differs (ledger's 403 drifting); F-002 8/8×3; F-010 `det_bot.py`/`det_isolate.py` unchanged; F-013 `f011_timing.py` mean 0.2484s = **1.509×** (under 2×); F-004 `f004_utility.py` 0 out-of-bounds all counts. `just build-c` green (7 suites).
+- Regressions: **one previously-passing committed check now FAILS** — `tests/test_replay_player.py::test_decision_at_matches_step` (recorded PASS by Review 01) fails at `ea25b68`. Investigated, not assumed: attributable to a locally-mutated gitignored golden artifact (`artifacts/ismcts/game_0000`: `replay.json` 517 steps mtime 21:29 vs `decisions.jsonl`/`steps.jsonl` 257 lines mtime 23:17, different `run_id`), most plausibly written by the bundled feature's own documented validation step (`just ismcts-quick` → default output dir). Not attributable to any tracked source line of the diff; new evidence for the already-OPEN F-022. Also re-observed but unchanged: F-020 (`terminal=0`), INV-4b/`inv_b2`/INV-5 N drift already noted as environmental.
+- Invalidated: STALE rows [none newly STALE — INV-7/8/9 already STALE from prior reviews; this commit is a further independent trigger but was already excluded] | New findings raised: **F-024**
 
 ### F-020 `test_rollout.c`'s file-header comment claims post-fix unbounded rollouts reach genuine terminal; its own test shows they hit the step cap
 - Class: ENGINE
@@ -703,6 +731,148 @@ All six required components exist; none had to be substituted.
 - Observed: n/a — see Code above for the citations standing in place of a runtime observation.
 - Verdict rationale: The steelman (no live bug today) is accepted at face value; this finding exists to record that the specific optimization this ledger's own performance notes flagged as the biggest remaining IS-MCTS speed lever has a real, identified, unmitigated precondition, and that the precondition has been evaluated and rejected rather than left as a silent, unverified TODO.
 - Decision [2026-09-04]: **DECLINED.** Owner directive, verbatim: "We're not doing that... not something we'd like to touch at all." In-game leaf/rollout parallelism is closed as a lever for this project — do not re-raise it. If ever revisited, two directions were identified but neither designed nor built: (a) a mutex around `intern_len`'s bucket-insert/counter/growth path (simplest, but serializes exactly the new-name lookups the parallelism targets, so its cost needs measuring before it's assumed to be a net win), or (b) a lock-free alternative — per-thread scratch tables reconciled after each rollout, or freezing/pre-warming the shared table before spawning threads so the parallel section only ever calls the read-only `intern_str` path. Neither is scoped, planned, or endorsed; this entry exists to prevent this lever from being silently re-suggested, not to authorize pursuing it later.
+
+### F-024 New replay-helper test re-couples a previously Tk-free test module to `tkinter`
+- Class: VALIDATION-PROCESS (test design)
+- Severity: MINOR (latent — passes on any machine with Tk, turns into a collection error without it)
+- Origin: **Found by Review 02 of F-019 while auditing the tests bundled into commit `ea25b68`**, the `decisions.jsonl` generic-context feature that commit carried alongside the F-019 fix.
+- Code: `tests/test_replay_loader.py:17` adds `from interface.replay_viewer import _decision_display_label`; `interface/replay_viewer.py:14` is `import tkinter as tk` (also `:16 from tkinter import filedialog, messagebox, ttk`). `_decision_display_label` (`interface/replay_viewer.py:34-61`) is a pure `dict -> str` function that needs nothing from Tk. `interface/replay_loader.py` itself remains Tk-free.
+- Rulebook: [absent]
+- Whitepaper: [absent] — pure test-design concern.
+- Disagreement: the feature's own plan § Task 3 chose `tests/test_replay_loader.py` because it was "already Tk-free", but the implementation put the helper in a module that imports Tk at module scope, so the test module now pulls Tk in transitively. On a headless interpreter without `tkinter`, `pytest tests/test_replay_loader.py` errors at collection (all 17 tests lost) instead of running the 4 new helper tests in isolation.
+- Steelman: `_decision_display_label` genuinely belongs next to the viewer code that calls it, and in this repo's actual environment (Windows, Tk installed, all GUI scripts runnable) the coupling is harmless — no CI without Tk exists in-repo.
+- Falsification test: on an interpreter where `import tkinter` raises `ModuleNotFoundError`, run `python -m pytest tests/test_replay_loader.py -q`; or statically check `rg -n "^import tkinter" interface/replay_viewer.py` against the test module's import graph.
+- Expected if REAL: the test module fails at import/collection on a Tk-less interpreter (or the static check shows the transitive Tk import).
+- Expected if FALSE POSITIVE: `tests/test_replay_loader.py` imports no Tk, directly or transitively, so a Tk-less environment still runs it.
+- Status: **OPEN** (not investigated further, per review protocol)
+- Command: static import-graph reading in this review; not executed on a Tk-less interpreter
+- N: 1 import edge (`tests/test_replay_loader.py` → `interface/replay_viewer`), 17 tests in the affected module
+- Observed:
+  ```
+  interface/replay_viewer.py:14: import tkinter as tk
+  tests/test_replay_loader.py:17: from interface.replay_viewer import _decision_display_label
+  (on this machine tkinter is present; the module's 17 tests pass)
+  ```
+- Verdict rationale: the transitive Tk dependency is directly visible in the committed import graph and contradicts the plan's stated reason for placing the test where it did; the failure only manifests when Tk is absent, which is why it is latent here. Filed rather than fixed, per protocol step 5.
+
+### F-025 `run_ismcts.py` writes every game straight into `--output-dir` and overwrites file by file, mixing runs
+- Class: ENGINE-OPENSPIEL (artifact provenance / run scoping)
+- Severity: MODERATE (a re-run into an existing directory silently leaves `decisions.jsonl`/`steps.jsonl` from one run beside `replay.json`/`summary.json` from another; the replay viewer and any future dataset builder assume decisions line N pairs with replay step N, so the mixture is a correctness hazard, not just tidiness)
+- Origin: **Found by the fitness audit of the on-disk IS-MCTS artifacts (2026-09-09, commit `ea25b68`) while writing `docs/nn-training-data.md`.** The audit's "decisions.jsonl and summary.json come from the same run" check failed on 4 of 150 dirs; the top-level `artifacts/ismcts/game_0000..0003` hold decisions and steps from a 4-player run beside replay and summary from an earlier 2-player run. Cross-referenced with [F-018] (same `decisions.jsonl`/`replay_log` alignment family) and [F-022] (this artifact directory is gitignored and locally mutable, so no git diff can show the drift).
+- Code: `scripts/run_ismcts.py:263` (`_game_dir` returns `out_dir / f"game_{game_index:04d}"` with no run scoping) and `:1169` (`main` passes `args.output_dir` through unchanged); `:530-531` opens `steps.jsonl`/`decisions.jsonl` with `"w"` before the game loop, and `:981-993` / `:766-775` write `replay.json` / `summary.json` / `final_decks.json` with plain `open("w")` — nothing is atomic, so a second run into the same directory overwrites file by file and leaves whatever the second run did not reach. The experiment scripts (`scripts/run_ismcts_sims_vs_wins.py:56-59`, `scripts/run_ismcts_uct_sweep.py:58-61`) already nest `<UTC ts>_<run_id>/` themselves, which is why the top-level dirs are the visible casualties.
+- Rulebook: [absent]
+- Whitepaper: [absent] — artifact-provenance concern, not a game-mechanics question.
+- Disagreement: `interface/replay_loader.py` and the replay viewer pair `decisions.jsonl` line N with `replay_log[N]` (line N ↔ step N), and `docs/nn-training-data.md` plans a builder that asserts the same pairing. The runner offers no guarantee that the two files came from the same run, no run manifest recording which run wrote a directory, and no completion marker; a directory can be a valid-looking mixture of two runs' outputs.
+- Steelman: the runner is normally invoked by `just ismcts`, whose recipe (`justfile:72-73`) already creates its own `run-<ts>-<id>` wrapper directory, so the intended workflow does not collide; the top-level `game_000x` dirs are the product of ad-hoc `--output-dir artifacts/ismcts` invocations (including the documented `just ismcts-quick` default), which the recipe does not control. On this reading the defect is a missing guard for an out-of-recipe invocation, not a flaw in the documented path.
+- Falsification test: `pytest tests/test_run_ismcts_layer0.py::test_second_run_into_same_dir_is_refused`
+- Expected if REAL: `run_one_game(run_id="A", ...)` then `run_one_game(run_id="B", ...)` into the same directory raises `GameDirCollisionError`; without the fix, no exception is raised and afterwards `decisions.jsonl` carries `run_id == "B"` while `replay.json` carries `run_id == "A"`.
+- Expected if FALSE POSITIVE: the second run is refused (the guard fires) and both files still say `"A"`.
+- Status: **CONFIRMED — FIXED**
+- Command: `.venv/Scripts/python.exe -m pytest tests/test_run_ismcts_layer0.py::test_second_run_into_same_dir_is_refused -q`
+- N: 4 mixed top-level dirs (`game_0000..0003`) of 150 inspected; one pre-registered regression test
+- Observed:
+  ```
+  artifacts/ismcts/game_0000: replay.json run_id != decisions.jsonl run_id
+    replay.json    -> 2-player run (517 steps)
+    decisions.jsonl-> 4-player run (different run_id, mtime ~2h later)
+  (same pattern for game_0001..0003)
+  ```
+- Verdict rationale: the audit's census (4/150 mixed dirs) plus the direct code citations establish that the runner cannot detect or refuse a colliding run. This entry's implementation (Phase 1 of `docs/nn-training-data-tdd-plan.md`) makes the collision a hard `GameDirCollisionError` at the source, protecting the experiment scripts and tests as well as the top-level invocation.
+- Resolution [`ea25b68` + working tree]: `scripts/_run_layout.py` adds `run_dir_name`/`SCHEMA_VERSION`/`write_json_atomic`/`collect_engine_provenance`/`build_manifest`/`GameDirCollisionError`; `run_one_game` calls `_check_game_dir_collision` before opening any output file, and `main()` writes every run under `<output-dir>/<ts>_<run_id>/` with a manifest written before the first game. `tests/test_run_ismcts_layer0.py` (T1.1-T1.12) covers the layout, manifest, atomic writes, schema versioning, and the F-025 collision refusal. Verified: `test_second_run_into_same_dir_is_refused` passes; a full 130-game build over `artifacts/ismcts` now rejects all four mixed top-level dirs with `["run_id mismatch", "decision count mismatch"]` and `artifacts/ismcts/performance_testing/game_0000` with `["stopped_reason='round_cap'"]` (`datasets/sims_vs_wins_v1/rejected.jsonl`).
+
+### F-026 v1 `resolve_generic` slots merge rulebook-distinct moves and the op vocabulary is invented
+- Class: NN-DATA (action-space design)
+- Severity: MAJOR (the policy label for the chosen move is summed with a different move's visits in 2.9 % of non-forced states in a 23-game census; 30.9 % of generic moves are encoded under an "unknown" op one-hot)
+- Origin: Found by the 2026-09-10 verification of `nn-training-data-tdd-plan.md` (fix plan § 1, NN-1 and NN-4), auditing run `20260910T191204Z_80fae3a64f6e`
+- Code: `openspiel_pyrants/nn/actions.py:186-251` (`_resolve_generic_offset` positional `index` fallback); `openspiel_pyrants/nn/observation.py:43-74` (`OP_IDS` hand-typed names the engine never emits). The shipped census `tests/nn/test_actions.py:234-296` builds a `mapped` dict and never inspects it
+- Rulebook: assassinate `tyrants-rulebook.md:308`, supplant `:376`/`:380`, return `:363`/`:368`, move `:330`, place spy `:337-338`, optional ability costs `:228`/`:582`, modal option ids (card-specific), promote `:345`
+- Falsification test: `tests/nn/test_actions.py::test_every_legal_move_in_stored_replays_maps` (v2 semantic-key census) plus `test_op_vocabulary_is_the_catalog`
+- Expected if REAL: two legal moves sharing a global id have different semantic keys `(op, site, owner)` / `(op, card_id)` / `(op, destination)`; a catalog op maps to the `__unknown__` slot
+- Expected if FALSE POSITIVE: every shared-id pair is duplicate-equivalent and every catalog op maps to its own slot
+- Status: **FIXED** (Phases 2-3 of `nn-training-data-fix-plan.md`)
+- Resolution [`ea25b68` + working tree, 2026-09-11]: `actions.py` v2 (`ACTION_SPACE_VERSION = 2`) routes `assassinate_troop` / `supplant_troop` / `return_unit troop:N` to `assassinate[site × owner]` and `return_unit spy:<owner>` to `return_spy[site × owner]`; `resolve_generic` rebuilt to 240 slots (option 8, decline 1, node 81, card 126, player 4, index 20), 1,516 of 2,048 used. `index.py` derives `OP_IDS` (17) and `EFFECT_KINDS` (13) from `data/cards/*.json` with pinned SHAs; `observation.py` encodes `__option__` / `__unknown__` and the custom-effect one-hot. Census `PYRANTS_NN_CENSUS=1`: **0 semantic collisions**; 227 destination-only pair merges of 112,339 non-forced states = 0.202 % on the then-current corpus. `pair_move_merge_frac = 0.00213` in `datasets/sims_vs_wins_v2/manifest.json`. Post-review fix: `select_trophy_hall` is keyed by (source seat × trophy colour) in the `index` block; `steal_white_trophy_to_board` **step 1** routes to the `player` sub-block keyed by **source player** (step-1 candidates are all white, so no rulebook-distinct choice folds). Structured placement targets are handled by F-031 (v3), not here. The census semantic key now includes the trophy colour so the former collapse cannot recur silently.
+- Corpus note: the census walks the stored game dirs under `artifacts/ismcts/` with a `decisions.jsonl` (`PYRANTS_NN_CENSUS=1 pytest tests/nn/test_actions.py`). Earlier counts of 134 (fix plan § 1) and 137 (first draft of this entry) were pre-rebuild snapshots; the directory holds 139. Fix Plan 02 re-measured at 139 dirs: 93 replay under the current engine and 46 desync on the unreleased `insane_outcast` non-recruitable rule change, so the census now skips and reports desynced replays (`tests/nn/test_actions.py`).
+
+### F-027 Observation board features contradict the rulebook
+- Class: NN-DATA / RULE-ENGINE (feature semantics)
+- Severity: MODERATE (the network is shown control/presence flags that disagree with the engine's own legal-move mask)
+- Origin: Found by the 2026-09-10 verification of `nn-training-data-tdd-plan.md` (fix plan § 1, NN-9)
+- Code: `openspiel_pyrants/nn/observation.py:163-199` (`controller` flags every colour tied for most troops; `total_control` ignores enemy spies; `my_presence` is `my troops > 0`)
+- Rulebook: control `tyrants-rulebook.md:267`, ties `:279`/`:283`, total control `:281`, presence `:248-252`; presence gates deploy `:318`, assassinate `:308`, return `:363`, supplant `:376`
+- Falsification test: `tests/nn/test_observation.py::test_controller_is_strict_majority`, `test_total_control_requires_no_enemy_spies`, `test_presence_follows_rulebook`, `test_presence_agrees_with_engine_deploy_targets`
+- Expected if REAL: a tie flags no controller; all-my-spaces with an enemy spy is not total control; presence is set for an adjacent troop or own spy
+- Expected if FALSE POSITIVE: the v1 features already match the rulebook on all four probes
+- Status: **FIXED** (Phase 4 of `nn-training-data-fix-plan.md`)
+- Resolution: `observation.py::node_features` implements controller as a strict majority (ties flag no one), total control as all-my-spaces with no enemy spies, and presence per rulebook `:248-252` (own troop or spy here, or own troop adjacent); `NODE_ADJACENT` derived from the board JSON's `adjacent_to`. T4.1-T4.4 pass; `test_presence_agrees_with_engine_deploy_targets` checked 2,292 engine deploy targets across 3 stored games with no disagreement.
+
+### F-028 Dataset manifest drops its sources
+- Class: VALIDATION-PROCESS (artifact provenance)
+- Severity: MODERATE (both datasets built so far record only the three key names, so a shard cannot be traced to its run, engine sha or rejection reasons)
+- Origin: Found by the 2026-09-10 verification of `nn-training-data-tdd-plan.md` (fix plan § 1, NN-3)
+- Code: `openspiel_pyrants/nn/dataset.py:182` (`"sources": list(sources)` with `sources` a dict); `tests/test_build_nn_dataset.py` passes `sources={}` / `{"runs": []}` and never reads the field back
+- Falsification test: `tests/test_build_nn_dataset.py::test_write_shards_records_sources`
+- Expected if REAL: `manifest["sources"]` is `["runs", "accepted", "rejected"]`
+- Expected if FALSE POSITIVE: `manifest["sources"]["runs"][0]["run_id"]` round-trips
+- Status: **FIXED** (Phase 1 of `nn-training-data-fix-plan.md`)
+- Resolution: `dataset.py` stores `sources` as the dict itself; `test_write_shards_records_sources` and the extended `test_cli_smoke` assert `runs` / `accepted` / `rejected` round-trip with run ids and 40-hex engine shas. `collect_engine_provenance` additionally records `repo_git_dirty` (whole tree), distinct from `engine_git_dirty`.
+
+### F-029 `just test` does not run `openspiel_pyrants/tests/`
+- Class: VALIDATION-PROCESS (test coverage)
+- Severity: MINOR (a committed ordering test broke unnoticed when layer-1 telemetry changed the runner's call pattern)
+- Origin: Found by the 2026-09-10 verification of `nn-training-data-tdd-plan.md` (fix plan § 1, NN-2)
+- Code: `justfile` `test:` recipe runs `pytest -q` (which collects `tests/` only); `openspiel_pyrants/tests/test_run_ismcts_step_ordering.py:100` counts `state.move_to_payload` calls, and `scripts/run_ismcts.py:332` now calls it once per legal move per decision, inflating the count (48 vs. 1)
+- Falsification test: `just test-all` exists and runs both test trees
+- Expected if REAL: `just test` passes while `pytest openspiel_pyrants/tests/ -q` fails `test_failed_move_not_in_replay_log`
+- Expected if FALSE POSITIVE: the ordering test passes under both invocations
+- Status: **FIXED** (Phase 1 of `nn-training-data-fix-plan.md`)
+- Resolution: `justfile` gains `test-all` (both test trees); `scripts/run_ismcts.py::_legal_moves_payloads` now uses `decode_action(aid).to_payload()` instead of `move_to_payload(...)`, so `test_failed_move_not_in_replay_log` passes again. `pytest openspiel_pyrants/tests/ -q` is 10 failures (all F-003 by design), down from the baseline 11.
+- Note: the runner's own behaviour is correct — the replay entry is still built only after `apply_action` succeeds; only the counter's subject changed.
+
+### F-030 `seat_features` / `seat_is_current` are absolute-seat, not perspective-relative
+- Class: NN-DATA (observation encoding)
+- Severity: MODERATE (the value target and every other block rotate so slot 0 is the acting player; these two did not, so three of four players saw another seat's stats)
+- Origin: Found by the 2026-09-11 review of `nn-training-data-fix-plan.md`'s implementation (R-1)
+- Code: `openspiel_pyrants/nn/observation.py` (v2 indexed both blocks with `player_ids[i]`); the module docstring states the contract the blocks broke
+- Rulebook: [absent] — internal encoding contract, not a rule
+- Falsification test: `tests/nn/test_observation.py::test_seat_features_are_perspective_relative`, `::test_seat_is_current_is_seat_zero`, `::test_observation_is_perspective_relative`; `tests/test_build_nn_dataset.py::test_value_target_and_seat_features_agree_on_seat_zero`
+- Expected if REAL: the block reads identically from every perspective and `seat_is_current` is `[0,0,1,0]` for the current player at absolute seat 2
+- Expected if FALSE POSITIVE: slot `k` equals `summaries[order[k]]` and `seat_is_current == [1,0,0,0]`
+- Status: **FIXED** (Phase 2 of `docs/nn-training-data-fix-plan-02.md`)
+- Resolution [`ea25b68` + working tree, 2026-09-11]: both blocks rotate through `order`; `ENCODER_VERSION = 3`, `OBS_LAYOUT`/`OBS_SIZE` unchanged. `seat_is_current` is now the constant `[1,0,0,0]` for every training sample and is pinned by T2.2; the absolute seat remains available as `Sample.acting_seat`. T2.1-T2.5 pass.
+
+### F-031 `custom_effect` structured placement drops the trophy index and merges colours
+- Class: NN-DATA (action-space encoding)
+- Severity: MAJOR when reached (the entire `deploy_from_trophy_hall` action space collapsed 2:1 on a live Lich state; the two halves place differently-coloured troops), 0 impact on the stored data (the branch never occurs in the corpus)
+- Origin: Found by the 2026-09-11 review of `nn-training-data-fix-plan.md`'s implementation (R-2); the census key could not see it (R-2b)
+- Code: `openspiel_pyrants/nn/actions.py` (v2 structured branch routed `deploy_from_trophy_hall` / `steal_from_selected_trophy` to `node[destination]`, dropping `<trophy_idx>`); `tests/nn/test_actions.py` keyed a structured target as `("node", action_id)` — the encoder's own key
+- Rulebook: Lich `data/cards/lich.json` — "take 2 troops from that same player's trophy hall and deploy them anywhere"; colour decides control (`tyrants-rulebook.md:267`), white belongs to no player (`:271`, `:300`)
+- Falsification test: `tests/nn/test_actions.py::test_structured_placement_keys_on_trophy_colour`, `::test_structured_placement_unmapped_raises`, `tests/nn/test_actions_live_custom_effects.py` (T3.3-T3.6)
+- Expected if REAL: two structured targets that differ only in trophy colour share a global id
+- Expected if FALSE POSITIVE: the two differ; a live Lich state's 23 collapsed gids double to 46
+- Status: **FIXED** (Phase 3 of `docs/nn-training-data-fix-plan-02.md`)
+- Resolution [`ea25b68` + working tree, 2026-09-11]: v3 (`ACTION_SPACE_VERSION = 3`) routes a structured target `sp:idx:node:slot` to `assassinate[node × owner_slot(trophy_colour)]`, parsing the colour from `ctx.trophy_halls`; malformed / out-of-range / out-of-game colours raise. The live Lich test with hall `("white","p1")` measures 46 gids (23 deployable sites × 2 colours), no gid merging two colours. The census semantic key is now `(op, effect_kind, destination_node, trophy_colour)` derived from the live halls, not the routing, and reports branch/sub-block coverage with `_UNCOVERED_BY_CENSUS` pointers for branches the stored games never reach.
+
+### F-032 `read_pending_generic_context_full` turns an extended-read failure into "no pending choice"
+- Class: ENGINE-OPENSPIEL (bindings)
+- Severity: MINOR (a degraded read becomes the wrong answer: `action_context(get op=None)` mis-routes every generic move; the builder rejects the game for a misleading reason, or a decline-only state encodes an all-zero pending block)
+- Origin: Found by the 2026-09-11 review of `nn-training-data-fix-plan.md`'s implementation (R-3)
+- Code: `engine_c/bindings/pending_context.py` (extended `except` returned `None` after `base` had already succeeded, contradicting its docstring)
+- Falsification test: `tests/c_engine/test_pending_context_full.py::test_full_reader_degrades_to_base_on_extended_failure`
+- Expected if REAL: an extended-read failure returns `None`
+- Expected if FALSE POSITIVE: it returns the 6-key base dict
+- Status: **FIXED** (Phase 1 of `docs/nn-training-data-fix-plan-02.md`)
+- Resolution: the extended `except` returns `base`; T1.2 (monkeypatched `sym_str` failing on option decode) asserts the 6-key dict, and the existing full-reader test is unchanged.
+
+### F-033 `just test-all` aborts on the first failing tree
+- Class: VALIDATION-PROCESS (test coverage)
+- Severity: MINOR (with the four tolerated `tests/` failures, the recipe never reached `openspiel_pyrants/tests/` — the exact regression it was added to catch)
+- Origin: Found by the 2026-09-11 review of `nn-training-data-fix-plan.md`'s implementation (R-4)
+- Code: `justfile` `test-all` (two recipe lines; `just` aborts a recipe on the first non-zero line under the configured PowerShell shell)
+- Falsification test: `just test-all` runs both trees and exits non-zero when either fails
+- Expected if REAL: only the first tree runs
+- Expected if FALSE POSITIVE: both run
+- Status: **FIXED** (Phase 1 of `docs/nn-training-data-fix-plan-02.md`)
+- Resolution: `test-all` is a single recipe line that captures both `$LASTEXITCODE`s and exits 1 if either is non-zero. `just test-all` now reports both trees.
 
 ## 4. Unanchored (suspicions that could not be fully anchored)
 
