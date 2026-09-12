@@ -158,6 +158,39 @@ def _build_ismcts_setup_json(
     return setup_json, deck_a.deck_id, deck_b.deck_id
 
 
+def _build_game_specs(
+    *,
+    seed: int,
+    shuffle_seed: int,
+    num_games: int,
+    game_index_offset: int = 0,
+) -> list[dict]:
+    """Return one spec per game, keyed by the *absolute* index in the seed stream.
+
+    ``game_index_offset`` shifts the local ``[0, num_games)`` loop into the
+    absolute ``[offset, offset + num_games)`` range (A2). Every seed derived
+    from ``game_index`` — the deck pair, the default shuffle seed, and the
+    per-seat bot seeds inside ``run_one_game`` — therefore matches the same
+    absolute index of an un-offset run with ``num_games >= offset + num_games``.
+    """
+    specs: list[dict] = []
+    for li in range(num_games):
+        gi = game_index_offset + li
+        setup_json, deck_a_id, deck_b_id = _build_ismcts_setup_json(
+            base_seed=seed,
+            game_index=gi,
+        )
+        specs.append({
+            "game_index": gi,
+            "shuffle_seed": shuffle_seed if shuffle_seed != 0 else seed + gi,
+            "deck_a_id": deck_a_id,
+            "deck_b_id": deck_b_id,
+            "setup_data_sha256": _sha256(setup_json) if setup_json else "",
+            "setup_data_json": setup_json,
+        })
+    return specs
+
+
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Run IS-MCTS against python_pyrants",
@@ -196,6 +229,16 @@ def _parse_args() -> argparse.Namespace:
              "num_sims=200 — see docs for the measured comparison)",
     )
     parser.add_argument("--num-games", type=int, default=4)
+    parser.add_argument(
+        "--game-index-offset",
+        type=int,
+        default=0,
+        help="Absolute index of the first game in this run. The run plays game "
+        "indices [offset, offset + num_games) of the seed stream, deriving every "
+        "per-game seed (deck pair, shuffle seed, seat seeds) from the absolute "
+        "index so offset-sharded runs never collide and re-play exactly the games "
+        "of an un-offset run over the same indices.",
+    )
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--num-players", type=int, default=2,
                         help="Number of players (2–4, default: 2)")
@@ -429,6 +472,7 @@ def _base_game_summary(
     *,
     run_id: str,
     game_index: int,
+    game_index_offset: int,
     shuffle_seed: int,
     deck_a_id: str,
     deck_b_id: str,
@@ -456,6 +500,7 @@ def _base_game_summary(
         "schema_version": SCHEMA_VERSION,
         "run_id": run_id,
         "game_index": game_index,
+        "game_index_offset": game_index_offset,
         "shuffle_seed": shuffle_seed,
         "deck_a_id": deck_a_id,
         "deck_b_id": deck_b_id,
@@ -568,6 +613,7 @@ def run_one_game(
     run_id: str = "",
     metrics: RunMetrics | None = None,
     *,
+    game_index_offset: int = 0,
     rollout_count: int = 1,
     rollout_max_length: int | None = None,
     max_rounds: int = 0,
@@ -806,6 +852,7 @@ def run_one_game(
         partial_summary = _base_game_summary(
             run_id=run_id,
             game_index=game_index,
+            game_index_offset=game_index_offset,
             shuffle_seed=shuffle_seed,
             deck_a_id=deck_a_id,
             deck_b_id=deck_b_id,
@@ -981,6 +1028,7 @@ def run_one_game(
         **_base_game_summary(
             run_id=run_id,
             game_index=game_index,
+            game_index_offset=game_index_offset,
             shuffle_seed=shuffle_seed,
             deck_a_id=deck_a_id,
             deck_b_id=deck_b_id,
@@ -1179,6 +1227,7 @@ def _run_one_game_standalone(
     max_rounds: int = 0,
     evaluator_name: str = "random-py",
     write_steps: bool = True,
+    game_index_offset: int = 0,
 ) -> dict:
     """Load game and run one game in a worker process.
 
@@ -1217,6 +1266,7 @@ def _run_one_game_standalone(
             num_players=num_players,
             evaluator_name=evaluator_name,
             write_steps=write_steps,
+            game_index_offset=game_index_offset,
         )
     except GameRunFailedError as exc:
         logger = structlog.get_logger()
@@ -1260,20 +1310,12 @@ def main() -> None:
 
     # D3: compute each game's setup up front so the manifest can carry the
     # per-game inline setup_data_json before the first game starts.
-    game_specs: list[dict] = []
-    for gi in range(args.num_games):
-        setup_json, deck_a_id, deck_b_id = _build_ismcts_setup_json(
-            base_seed=args.seed,
-            game_index=gi,
-        )
-        game_specs.append({
-            "game_index": gi,
-            "shuffle_seed": args.shuffle_seed if args.shuffle_seed != 0 else args.seed + gi,
-            "deck_a_id": deck_a_id,
-            "deck_b_id": deck_b_id,
-            "setup_data_sha256": _sha256(setup_json) if setup_json else "",
-            "setup_data_json": setup_json,
-        })
+    game_specs: list[dict] = _build_game_specs(
+        seed=args.seed,
+        shuffle_seed=args.shuffle_seed,
+        num_games=args.num_games,
+        game_index_offset=args.game_index_offset,
+    )
 
     steps_enabled = not args.no_steps
     manifest = build_manifest(
@@ -1309,8 +1351,8 @@ def main() -> None:
     if workers == 1:
         policy_type = _resolve_policy(args.final_policy)
 
-        for gi in tqdm(range(args.num_games), desc="Games", unit="game"):
-            spec = game_specs[gi]
+        for li in tqdm(range(args.num_games), desc="Games", unit="game"):
+            spec = game_specs[li]
             setup_json = spec["setup_data_json"]
 
             load_params: dict[str, str] = {"num_players": str(args.num_players)}
@@ -1322,7 +1364,7 @@ def main() -> None:
             try:
                 summary = run_one_game(
                     game=game,
-                    game_index=gi,
+                    game_index=spec["game_index"],
                     num_sims=num_sims,
                     uct_c=args.uct_c,
                     max_world_samples=args.max_world_samples,
@@ -1336,6 +1378,7 @@ def main() -> None:
                     show_progress=True,
                     run_id=run_id,
                     metrics=metrics,
+                    game_index_offset=args.game_index_offset,
                     rollout_count=args.rollout_count,
                     rollout_max_length=rollout_max_len,
                     max_rounds=args.max_rounds,
@@ -1347,35 +1390,35 @@ def main() -> None:
             except GameRunFailedError as exc:
                 logger.exception(
                     "game_failed",
-                    game_index=gi,
+                    game_index=spec["game_index"],
                     decision_count=exc.game_summary.get("decision_count"),
                 )
                 record_game_failure(
                     run_dir,
                     run_id,
-                    gi,
+                    spec["game_index"],
                     exc,
                     crash_record=exc.crash_record,
                 )
                 summaries.append(exc.game_summary)
                 metrics.games_failed += 1
-                _log_game_done(gi + 1, args.num_games, exc.game_summary, t0)
+                _log_game_done(li + 1, args.num_games, exc.game_summary, t0)
                 continue
             summaries.append(summary)
             metrics.games_completed += 1
             if summary.get("stopped_reason") == "round_cap":
                 metrics.record_game_truncated()
             metrics.record_game_wall(summary["wall_time_sec"])
-            _log_game_done(gi + 1, args.num_games, summary, t0)
+            _log_game_done(li + 1, args.num_games, summary, t0)
     else:
         with ProcessPoolExecutor(max_workers=workers) as executor:
             futures = {}
-            for gi in range(args.num_games):
-                spec = game_specs[gi]
+            for li in range(args.num_games):
+                spec = game_specs[li]
                 futures[
                     executor.submit(
                         _run_one_game_standalone,
-                        game_index=gi,
+                        game_index=spec["game_index"],
                         num_sims=num_sims,
                         uct_c=args.uct_c,
                         max_world_samples=args.max_world_samples,
@@ -1396,8 +1439,9 @@ def main() -> None:
                         max_rounds=args.max_rounds,
                         evaluator_name=args.evaluator,
                         write_steps=steps_enabled,
+                        game_index_offset=args.game_index_offset,
                     )
-                ] = gi
+                ] = spec["game_index"]
 
             with tqdm(total=args.num_games, desc="Games", unit="game") as pbar:
                 for future in as_completed(futures):

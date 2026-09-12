@@ -4,7 +4,8 @@ Scope: shorten the wall time of the teacher runs that `docs/nn-training-data.md`
 (§ *How many games*, § *v3 teacher run*). Base: `5e1b14b` + working tree, 2026-09-11.
 Status: **partially landed** — A1 landed 2026-09-11 and its G4 games/h was measured
 2026-09-12 (**38.5 → 65.8 games/h**, see `docs/validation/a1-infostate-hash-landing.md`);
-A2–A5, B1–B2, C1 proposed.
+A2 landed 2026-09-12, diagnostic projects **×1.164** games/h at the 1,000-game target
+(see `docs/validation/a2-game-index-offset-landing.md`); A3–A5, B1–B2, C1 proposed.
 
 Every option below (A1–A5, B1–B2, C1) is a **separate, independently adoptable choice**.
 None depends on another landing first; each has its own change set, its own gate and its own
@@ -169,7 +170,16 @@ by ≥ 1.2 ms; (iv) G0–G4.
 that includes hidden fields splits them (IS-MCTS degrades toward per-determinization PIMC).
 Gate (i) catches both. 128 bits makes accidental collision a non-issue at 200 nodes per search.
 
-### A2 — Run the corpus as one seed stream; add `--game-index-offset`  · byte-identical · **≈ ×1.1–1.15**
+### A2 — Run the corpus as one seed stream; add `--game-index-offset`  · byte-identical · **≈ ×1.1–1.15**  · LANDED 2026-09-12
+
+> **Landed.** `--game-index-offset N` plays absolute indices `[N, N + num_games)` of the seed
+> stream; every derived seed (deck pair, shuffle seed, seat seeds) uses the absolute index, so an
+> offset shard reproduces exactly what an un-offset run would have played over the same range.
+> G0–G3 green (unit tests + full `run_ismcts`-adjacent suite + a real-engine offset run pinning
+> `game_0003` naming and manifest/summary fields). Diagnostic (below): a scheduling simulation
+> calibrated to **-0.0 %** error against the real A1 run projects **×1.164** games/h at the
+> 1,000-game teacher-corpus target (batch-size 32 vs. one stream) — at the top of the ×1.1–1.15
+> estimate. See `docs/validation/a2-game-index-offset-landing.md`.
 
 **Change.** `scripts/run_ismcts.py` iterates `range(args.num_games)` (`:1263`) and derives every
 game's setup and shuffle seed from `args.seed + gi`. Add `--game-index-offset N` so a run plays
@@ -194,6 +204,30 @@ the flag; G0–G3.
 
 **Risk.** None to the search. Directory naming (`game_XXXX`) must use the absolute index so two
 shards never collide (see F-025's mixed-run history).
+
+**Diagnostic (landed with A2): calibrated scheduling simulation, not a corpus-scale re-run.**
+A2's gain is purely a scheduling effect — `run_ismcts.py` submits every game to a
+`ProcessPoolExecutor` up front, so total wall is the greedy-scheduling makespan of the per-game
+durations over `--workers` machines, plus a fixed per-invocation overhead (measured ~0.6–0.7 s via
+a minimal `--num-games 1 --workers 1` run — negligible next to real game durations). Rather than
+re-playing the corpus at scale (hours), `scripts/simulate_batch_scheduling.py` (new) replays the
+already-measured per-game `wall_time_sec` list from the A1 landing run
+(`artifacts/ismcts/runs/20260912T092122Z_9d7e5da4a661`, 32 games) through the identical
+earliest-free-worker greedy assignment the real executor performs:
+
+```
+python scripts/simulate_batch_scheduling.py --run-dir artifacts/ismcts/runs/20260912T092122Z_9d7e5da4a661 \
+    --workers 16 --batch-size 32 --target-games 1000
+```
+
+Calibration — simulating the source run's own size/workers against its own measured wall — comes
+back at **-0.0 % error** (simulated 1749.0 s vs. measured 1749.8 s), so the makespan model is
+exact for this scheduler and its extrapolation is trustworthy. Projected at the 1,000-game target:
+**65.2 games/h** for today's practice (32 × 32-game invocations) vs. **75.9 games/h** streamed as
+one invocation — **×1.164**. Sweeping `--batch-size` gives the practical operating point: four
+250-game offset-sharded invocations (crash-resumable, unlike one literal 1,000-game run) already
+capture 97 % of the gain (73.9 games/h, ×1.027 off streamed). Full table and methodology in
+`docs/validation/a2-game-index-offset-landing.md`.
 
 ### A3 — Stop mallocing a 512 KB arena per rollout step  · byte-identical · **≈ ×1.1–1.15**
 
@@ -343,7 +377,7 @@ Per option alone, against the measured 40 games/h (ranges from the § 1 mid/late
 |---|---|---|---|---|---|
 | baseline | — | 6.6 / 4.7 | 40 | 25 h | 21 d |
 | A1 hash key | identical | 5.1 / 3.25 (measured 4.4 / 3.3) | ~54 (**measured 65.8**) | 18.5 h (measured 15.2 h) | 15 d (measured 12.7 d) |
-| A2 single stream + offset | identical | — | ~45 | 22 h | 18.5 d |
+| A2 single stream + offset | identical | — | ~45 (**projected 75.9 vs. 65.2 batched, ×1.164**) | 22 h (projected 13.2 h streamed) | 18.5 d |
 | A3 arena | identical | 5.9 / 4.2 | ~45 | 22 h | 18.5 d |
 | A4 bot subclass | identical | 6.2 / 4.4 | ~43 | 23 h | 19.5 d |
 | A5 view-cache | identical | 6.5 / 4.6 | ~41 | 24.5 h | 20.5 d |
