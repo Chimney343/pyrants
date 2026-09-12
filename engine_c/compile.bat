@@ -91,6 +91,14 @@ echo Running rollout tests...
 .\test_rollout.exe
 if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 
+echo Building test_infostate_hash.exe...
+cl %CFLAGS% /I. /Fe:test_infostate_hash.exe tests\test_infostate_hash.c libengine.lib
+if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
+
+echo Running infostate hash tests...
+.\test_infostate_hash.exe
+if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
+
 echo Building test_catalog_assembly.exe...
 cl %CFLAGS% /I. /Fe:test_catalog_assembly.exe tests\test_catalog_assembly.c libengine.lib
 if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
@@ -101,7 +109,7 @@ if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 
 echo Building engine_c.dll...
 REM Remove test object files so DLL only links library objects
-del /Q test_engine.obj test_intern_c.obj test_view.obj test_describe.obj test_generic_actions.obj test_saveload.obj test_catalog_assembly.obj test_rollout.obj 2>nul
+del /Q test_engine.obj test_intern_c.obj test_view.obj test_describe.obj test_generic_actions.obj test_saveload.obj test_catalog_assembly.obj test_rollout.obj test_infostate_hash.obj 2>nul
 REM Delete old DLL first — link fails with LNK1104 if the file is in use
 del /Q engine_c.dll 2>nul
 link /DLL /DEF:engine_c.def /OUT:engine_c.dll *.obj

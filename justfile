@@ -39,6 +39,7 @@ test-c:
     & .\engine_c\test_saveload.exe
     & .\engine_c\test_catalog_assembly.exe
     & .\engine_c\test_rollout.exe
+    & .\engine_c\test_infostate_hash.exe
 
 test-c-python: generate-test-card-scenarios
     & {{python}} -m pytest tests/c_engine -v

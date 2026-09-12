@@ -475,6 +475,11 @@ def _setup():
     _lib.engine_private_view.argtypes = [POINTER(GameStateStruct), Sym, POINTER(PrivateView)]
     _lib.engine_private_view.restype = None
 
+    _lib.engine_infostate_hash.argtypes = [
+        POINTER(GameStateStruct), Sym, POINTER(c_uint64),
+    ]
+    _lib.engine_infostate_hash.restype = None
+
     _lib.register_default_effects.argtypes = []
     _lib.register_default_effects.restype = None
 

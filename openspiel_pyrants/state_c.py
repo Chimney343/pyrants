@@ -229,6 +229,26 @@ class PyrantsCState(pyspiel.State):
             return f"{history}||{pv_json}"
         return pv_json
 
+    def information_state_key(self, player=None):
+        """Hashable tree key for *player*'s information state (A1).
+
+        Replaces ``information_state_string`` as the IS-MCTS node key: same
+        equivalence classes (``engine_infostate_hash`` fingerprints exactly the
+        fields ``private_view_json`` serialises) plus the action history, but
+        no 13 KB ``json.dumps`` per lookup.  See
+        ``docs/ismcts-walltime-plan.md`` A1.
+        """
+        if player is None:
+            player = self.current_player()
+        history_hash = hash(tuple(self._history_actions))
+        if self._adapter is None:
+            return (player, history_hash, 0, 0)
+        pids = self._game.get_player_ids()
+        if player < 0 or player >= len(pids):
+            return (player, history_hash, 0, 0)
+        h0, h1 = self._adapter.infostate_hash(pids[player])
+        return (player, history_hash, h0, h1)
+
     def observation_string(self, player=None):
         if player is None:
             player = self.current_player()

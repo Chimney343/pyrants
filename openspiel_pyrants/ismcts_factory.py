@@ -20,6 +20,23 @@ from open_spiel.python.algorithms.ismcts import ISMCTSBot
 _RESAMPLE_SEED_XOR = 0x5F10
 
 
+class _InfostateKeyISMCTSBot(ISMCTSBot):
+    """ISMCTSBot whose tree nodes are keyed by a 128-bit info-state fingerprint.
+
+    The stock ``get_state_key`` returns ``information_state_string()`` — a
+    13 KB ``json.dumps`` on every cold lookup (~24-32 % of a simulation, A1).
+    ``PyrantsCState.information_state_key`` returns the same equivalence class
+    as a cheap hash. States without that method (e.g. non-Pyrants pyspiel
+    states) fall back to the stock behaviour.
+    """
+
+    def get_state_key(self, state):
+        key_fn = getattr(state, "information_state_key", None)
+        if key_fn is None or self._use_observation_string:
+            return super().get_state_key(state)
+        return key_fn(state.current_player())
+
+
 def make_ismcts_bot(
     game,
     *,
@@ -50,7 +67,7 @@ def make_ismcts_bot(
         reproducible from ``seed``.
     """
     rng = np.random.RandomState(seed)
-    bot = ISMCTSBot(
+    bot = _InfostateKeyISMCTSBot(
         game=game,
         evaluator=evaluator,
         uct_c=uct_c,

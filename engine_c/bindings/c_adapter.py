@@ -200,6 +200,18 @@ class CEngineAdapter:
     def random_rollout(self, seed: int, max_length: int) -> tuple[bool, dict[str, int]]:
         return self._engine.random_rollout(self._state, seed, max_length)
 
+    def infostate_hash(self, player_id: str) -> tuple[int, int]:
+        """128-bit C fingerprint of *player_id*'s information state (A1).
+
+        Equal to the F-011 observation contract ``private_view_json``
+        serialises, but computed in C without a JSON dump. Used as the IS-MCTS
+        tree key; see ``engine_infostate_hash`` in ``engine_c/player_view.c``.
+        """
+        out = (ctypes.c_uint64 * 2)()
+        player_sym = _lib.intern(player_id.encode())
+        _lib.engine_infostate_hash(self._state._ptr, player_sym, out)
+        return int(out[0]), int(out[1])
+
     def _build_public_dict(self) -> dict:
         """Build a JSON-serialisable public-view dict from CState properties."""
         s = self._state._s
