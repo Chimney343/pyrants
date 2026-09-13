@@ -219,6 +219,107 @@ static void test_unavailable_placeholder_predicate(void) {
     printf("PASS: move_is_unavailable_placeholder tags only UI placeholder moves\n");
 }
 
+/* ---- A3(a): arena recycling ----------------------------------------------
+ * The rollout hot path clones a GameState (engine_apply -> engine_clone ->
+ * arena_create(512 KiB)) once per step and destroys the previous clone, so it
+ * pays one 512 KiB malloc/free pair per step. Arena recycling keeps a small
+ * per-process pool of destroyed hot-path arenas and hands them straight back
+ * on the next arena_create. It is a byte-identical optimization: only the
+ * allocator traffic changes, never a rollout score. These tests pin the pool
+ * contract; gate (iii)'s before/after score dump pins the byte-identity.
+ */
+
+static void test_arena_pool_reuses_destroyed_arena(void) {
+    arena_pool_clear();
+    assert(arena_pool_count() == 0);
+
+    Arena *a = arena_create(ARENA_POOL_BLOCK_SIZE);
+    assert(a);
+    arena_destroy(a);
+    assert(arena_pool_count() == 1);
+
+    Arena *b = arena_create(ARENA_POOL_BLOCK_SIZE);
+    assert(b == a);                         /* reused, not reallocated */
+    assert(arena_pool_count() == 0);         /* popped off the pool */
+    assert(b->head && b->head->used == 0);   /* bump pointer restarted */
+
+    arena_destroy(b);
+    arena_pool_clear();
+    printf("PASS: arena pool reuses a destroyed hot-path arena\n");
+}
+
+static void test_arena_pool_resets_reused_block(void) {
+    arena_pool_clear();
+    Arena *a = arena_create(ARENA_POOL_BLOCK_SIZE);
+    char *p = arena_alloc(a, 16);
+    memset(p, 0xAB, 16);
+    arena_destroy(a);
+
+    Arena *b = arena_create(ARENA_POOL_BLOCK_SIZE);
+    assert(b == a);
+    assert(b->head->used == 0);
+    char *q = arena_alloc(b, 16);
+    assert(q == p);              /* allocation restarts at the block base */
+    assert(b->head->used >= 16); /* and tracks the new live extent */
+
+    arena_destroy(b);
+    arena_pool_clear();
+    printf("PASS: arena pool resets a reused block's bump pointer\n");
+}
+
+static void test_arena_pool_is_bounded(void) {
+    arena_pool_clear();
+    Arena *kept[2 * ARENA_POOL_CAP];
+    for (int i = 0; i < 2 * ARENA_POOL_CAP; i++) {
+        kept[i] = arena_create(ARENA_POOL_BLOCK_SIZE);
+        assert(kept[i]);
+    }
+    for (int i = 0; i < 2 * ARENA_POOL_CAP; i++) arena_destroy(kept[i]);
+    assert(arena_pool_count() == ARENA_POOL_CAP);
+    arena_pool_clear();
+    assert(arena_pool_count() == 0);
+    printf("PASS: arena pool stays bounded and can be cleared\n");
+}
+
+static void test_arena_pool_does_not_retain_large_arenas(void) {
+    arena_pool_clear();
+    Arena *big = arena_create(2 * 1024 * 1024);
+    assert(big);
+    arena_destroy(big);
+    assert(arena_pool_count() == 0);
+    arena_pool_clear();
+    printf("PASS: arena pool does not retain non-hot-path arenas\n");
+}
+
+/* Recycling must not change what a rollout reports. Run the same (state, seed)
+ * with an empty pool and with the pool churned so the next clone reuses a
+ * recycled block instead of fresh memory; the scores must match. */
+static void test_rollout_scores_independent_of_pool_state(void) {
+    Arena *arena = arena_create(2 * 1024 * 1024);
+    GameDefinition *def = test_load_definition(arena);
+    assert(def);
+    GameState *gs = engine_create_game_definition(def, PLAYER_IDS, 2, 42);
+    assert(gs);
+
+    int ref[MAX_PLAYERS];
+    engine_random_rollout(gs, 24680ULL, 0, ref);
+
+    arena_pool_clear();
+    for (int i = 0; i < 8; i++) {
+        Arena *t = arena_create(ARENA_POOL_BLOCK_SIZE);
+        arena_destroy(t);
+    }
+
+    int again[MAX_PLAYERS];
+    engine_random_rollout(gs, 24680ULL, 0, again);
+    assert(memcmp(ref, again, sizeof(ref)) == 0);
+    arena_pool_clear();
+    printf("PASS: rollout scores are independent of arena pool state\n");
+
+    engine_destroy(gs);
+    arena_destroy(arena);
+}
+
 int main(void) {
     intern_init(65536);
 
@@ -229,6 +330,11 @@ int main(void) {
     test_rollout_unbounded_completes_within_time_bound();
     test_rollout_short_cutoff_scores_as_if_ended_now();
     test_unavailable_placeholder_predicate();
+    test_arena_pool_reuses_destroyed_arena();
+    test_arena_pool_resets_reused_block();
+    test_arena_pool_is_bounded();
+    test_arena_pool_does_not_retain_large_arenas();
+    test_rollout_scores_independent_of_pool_state();
 
     printf("\nAll rollout tests passed.\n");
     return 0;

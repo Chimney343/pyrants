@@ -5,7 +5,9 @@ Scope: shorten the wall time of the teacher runs that `docs/nn-training-data.md`
 Status: **partially landed** — A1 landed 2026-09-11 and its G4 games/h was measured
 2026-09-12 (**38.5 → 65.8 games/h**, see `docs/validation/a1-infostate-hash-landing.md`);
 A2 landed 2026-09-12, diagnostic projects **×1.164** games/h at the 1,000-game target
-(see `docs/validation/a2-game-index-offset-landing.md`); A3–A5, B1–B2, C1 proposed.
+(see `docs/validation/a2-game-index-offset-landing.md`); A3 option (a) landed 2026-09-12,
+32-game paired re-run content-identical and **65.8 → 72.7 games/h** (see
+`docs/validation/a3-arena-recycling-landing.md`); A3(b), A4, A5, B1–B2, C1 proposed.
 
 Every option below (A1–A5, B1–B2, C1) is a **separate, independently adoptable choice**.
 None depends on another landing first; each has its own change set, its own gate and its own
@@ -230,6 +232,14 @@ capture 97 % of the gain (73.9 games/h, ×1.027 off streamed). Full table and me
 `docs/validation/a2-game-index-offset-landing.md`.
 
 ### A3 — Stop mallocing a 512 KB arena per rollout step  · byte-identical · **≈ ×1.1–1.15**
+
+> **Option (a) landed 2026-09-12.** Thread-local pool of ≤ 64 destroyed 512 KiB
+> single-block arenas in `arena.c`; `engine_clone` reuses one instead of
+> `malloc`ing. 1000-rollout (state, seed) dump byte-identical; ASan clean;
+> 32-game paired re-run content-identical on all games at 200 sims (G-I), run
+> wall 1749.8 → 1584.8 s, **65.8 → 72.7 games/h** (×1.105 run wall, ×1.139
+> ideal), per-rollout 5.50 → 4.14 ms (×1.33). See
+> `docs/validation/a3-arena-recycling-landing.md`.
 
 **Change.** Pick one of two substitutes for the same cost:
 
