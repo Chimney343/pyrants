@@ -64,12 +64,10 @@ def build_replay_payload(
     """
     if stopped_reason == "terminal" and is_terminal:
         replay_log.append({
-            "run_id": run_id,
             "step_index": step_count,
             "player_id": None,
             "round_number": final_round_num,
             "phase": final_phase,
-            "prompts": [],
             "move_type": "__terminal__",
             "label": "game_over",
             "payload": {"move_type": "__terminal__"},

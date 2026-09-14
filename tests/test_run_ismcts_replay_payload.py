@@ -136,12 +136,10 @@ def test_existing_replay_fixture_final_scores_is_empty():
 def test_terminal_marker_structure():
     """A terminal marker entry should have the right shape for consumers."""
     marker = {
-        "run_id": "test_run",
         "step_index": 99,
         "player_id": None,
         "round_number": 12,
         "phase": "game_over",
-        "prompts": [],
         "move_type": "__terminal__",
         "label": "game_over",
         "payload": {"move_type": "__terminal__"},

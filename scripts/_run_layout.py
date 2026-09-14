@@ -98,7 +98,7 @@ def write_json_atomic(path: str | Path, obj) -> None:
     tmp = path.parent / (path.name + ".tmp")
     try:
         with tmp.open("w", encoding="utf-8") as fh:
-            json.dump(obj, fh, indent=2)
+            json.dump(obj, fh, separators=(",", ":"))
             fh.write("\n")
         os.replace(tmp, path)
     except BaseException:

@@ -814,12 +814,10 @@ def run_one_game(
                 })
 
             replay_log.append({
-                "run_id": run_id,
                 "step_index": decision_count,
                 "player_id": player_id,
                 "round_number": round_number,
                 "phase": phase,
-                "prompts": [],
                 "move_type": chosen_move_obj.move_type,
                 "label": chosen_move_str,
                 "payload": move_payload,
