@@ -121,3 +121,6 @@ contract:
 3. Every opponent's hidden zones preserve the same multiset of cards but
     are reshuffled using the bot's RNG, and the market deck order is
     reshuffled too (only its size is public).
+
+See [determinization.md](determinization.md) for the full code-aligned walkthrough
+of the resampler and the tests that lock its invariants.
