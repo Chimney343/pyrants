@@ -211,7 +211,7 @@ def _parse_args() -> argparse.Namespace:
         "'50,100,200,400'. Length must equal --num-players. Mutually "
         "exclusive with --num-sims.",
     )
-    parser.add_argument("--uct-c", type=float, default=1.4)
+    parser.add_argument("--uct-c", type=float, default=5.0, help="UCB1 exploration constant (default: 5.0).")
     parser.add_argument(
         "--max-world-samples",
         type=int,

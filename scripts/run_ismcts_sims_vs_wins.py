@@ -97,7 +97,7 @@ def _parse_args() -> argparse.Namespace:
         default="random-c",
         help="Rollout evaluator backend (default: random-c, ~19x faster)",
     )
-    parser.add_argument("--uct-c", type=float, default=1.4)
+    parser.add_argument("--uct-c", type=float, default=5.0, help="UCB1 exploration constant (default: 5.0).")
     parser.add_argument(
         "--max-world-samples",
         type=int,

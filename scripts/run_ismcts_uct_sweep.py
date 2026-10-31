@@ -1,7 +1,7 @@
 """IS-MCTS UCT-sweep experiment: does the UCB1 constant (uct_c) shape outcomes?
 
 Seats get a rotating ladder of UCB1 exploration constants (default
-0.3/0.8/1.4/2.5; 1.4 is the engine default, 0.3/2.5 the extreme arms). The
+0.3/0.8/1.4/2.5; 5.0 is the engine default, 0.3/2.5 the extreme arms). The
 ladder rotates across seats between games so seat order (seat 0 always moves
 first) is deconfounded from uct strength. Every seat uses the same simulation
 budget (``--num-sims``, default 200) with the ``random-c`` evaluator, so uct_c

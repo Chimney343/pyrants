@@ -96,7 +96,7 @@ train-nn-smoke runs *args:
 
 # ── IS-MCTS (C engine backend) ───────────────────────────────────────────────
 
-ismcts num_sims="200" num_games="4" seed="42" output_dir="artifacts/ismcts/runs" workers="16" num_players="4" uct_c="1.4":
+ismcts num_sims="200" num_games="4" seed="42" output_dir="artifacts/ismcts/runs" workers="16" num_players="4" uct_c="5.0":
     & {{python}} -m scripts.run_ismcts --num-sims {{num_sims}} --num-games {{num_games}} --seed {{seed}} --output-dir {{output_dir}} --workers {{workers}} --num-players {{num_players}} --uct-c {{uct_c}} --game python_pyrants_c
 
 # Verification run for the NN training-data layout (docs/nn-training-data-tdd-plan.md).
@@ -105,7 +105,7 @@ ismcts num_sims="200" num_games="4" seed="42" output_dir="artifacts/ismcts/runs"
 # report. Defaults: 2 x 4-player games at 16 sims/move with steps.jsonl off (the
 # training profile). Pass steps="yes" to keep steps.jsonl for the replay viewer.
 # Inspect: <out>/<ts>_<run_id>/manifest.json, game_XXXX/decisions.jsonl, <dataset>/manifest.json.
-ismcts-quick num_sims="16" num_games="2" num_players="4" workers="2" seed="42" uct_c="1.4" steps="no" out="artifacts/ismcts/quick" dataset="datasets/quick":
+ismcts-quick num_sims="16" num_games="2" num_players="4" workers="2" seed="42" uct_c="5.0" steps="no" out="artifacts/ismcts/quick" dataset="datasets/quick":
     $stepsFlag = @(); if ('{{steps}}' -eq 'no') { $stepsFlag = @('--no-steps') }; & {{python}} -m scripts.run_ismcts --num-sims {{num_sims}} --num-games {{num_games}} --seed {{seed}} --workers {{workers}} --num-players {{num_players}} --uct-c {{uct_c}} --output-dir {{out}} --game python_pyrants_c @stepsFlag; if (-not $?) { exit 1 }; $run = (Get-ChildItem '{{out}}' -Directory | Sort-Object Name | Select-Object -Last 1).FullName; Write-Host ''; Write-Host "Run dir: $run"; & {{python}} scripts/verify_replays.py --root $run; if (-not $?) { exit 1 }; & {{python}} -m scripts.build_nn_dataset --runs $run --out {{dataset}} --strict --leak-check 50 --shard-size 1000; if (-not $?) { exit 1 }; & {{python}} -m scripts.build_nn_dataset --report {{dataset}}
 
 # Sims-vs-wins experiment: does a bigger IS-MCTS budget win more games?
@@ -118,14 +118,16 @@ ismcts-sims-vs-wins num_games="120" workers="16" *args:
 
 # UCT sweep experiment: does the UCB1 exploration constant (uct_c) affect
 # win rate, end-game VP share, and final deck variety? Rotates a per-seat
-# uct ladder (0.3/0.8/1.4/2.5) across seats each game. Run the 8-game
-# pilot first to calibrate wall-time and the decided fraction before the
-# 240-game main run (per-arm win-rate CI ~±5.4pp).
+# uct ladder across seats each game (default 0.3/0.8/1.4/2.5; pass a
+# comma-separated list of --num-players values to test a different ladder,
+# e.g. uct_per_seat="0.3,0.8,1.4,5.0"). Run the 8-game pilot first to
+# calibrate wall-time and the decided fraction before the 240-game main run
+# (per-arm win-rate CI ~±5.4pp).
 ismcts-uct-pilot workers="16":
     & {{python}} -m scripts.run_ismcts_uct_sweep --num-games 8 --workers {{workers}}
 
-ismcts-uct num_games="240" workers="16" *args:
-    & {{python}} -m scripts.run_ismcts_uct_sweep --num-games {{num_games}} --workers {{workers}} {{args}}
+ismcts-uct num_games="240" workers="16" uct_per_seat="0.3,0.8,1.4,2.5" *args:
+    & {{python}} -m scripts.run_ismcts_uct_sweep --num-games {{num_games}} --workers {{workers}} --uct-per-seat {{uct_per_seat}} {{args}}
 
 bench-rollout engine="py" num_rollouts="200" seed="42" warmup_steps="10":
     & {{python}} -m scripts.bench_rollout --engine {{engine}} --num-rollouts {{num_rollouts}} --seed {{seed}} --warmup-steps {{warmup_steps}}

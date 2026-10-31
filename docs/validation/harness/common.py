@@ -34,7 +34,7 @@ def fingerprint(state):
 def fp_hash(state):
     return hashlib.sha256(fingerprint(state).encode()).hexdigest()[:16]
 
-def make_bot(game, num_sims, seed, uct_c=1.4, evaluator="random-c"):
+def make_bot(game, num_sims, seed, uct_c=5.0, evaluator="random-c"):
     from open_spiel.python.algorithms.ismcts import ISMCTSFinalPolicyType
     from openspiel_pyrants.ismcts_factory import make_ismcts_bot
     rng = np.random.RandomState(seed)

@@ -1,0 +1,227 @@
+{
+  "meta": {
+    "num_sims": 200,
+    "runs": [
+      {
+        "dir": "20260913T084708Z_c9a0b0521267",
+        "label": "ladder 0.3\u20132.5",
+        "arms": [
+          0.3,
+          0.8,
+          1.4,
+          2.5
+        ],
+        "n_games": 240,
+        "n_decided": 237,
+        "decided_frac": 0.9875
+      },
+      {
+        "dir": "20260913T225614Z_f6e033e4c40b",
+        "label": "ladder 0.8\u201310",
+        "arms": [
+          0.8,
+          2.5,
+          5.0,
+          10.0
+        ],
+        "n_games": 960,
+        "n_decided": 936,
+        "decided_frac": 0.975
+      },
+      {
+        "dir": "20260914T225504Z_ef6e0c8a5896",
+        "label": "ladder 4\u20137",
+        "arms": [
+          4.0,
+          5.0,
+          6.0,
+          7.0
+        ],
+        "n_games": 960,
+        "n_decided": 944,
+        "decided_frac": 0.9833
+      },
+      {
+        "dir": "20260915T101726Z_75d0659a0c52",
+        "label": "2v2  4 vs 7",
+        "arms": [
+          4.0,
+          7.0
+        ],
+        "n_games": 240,
+        "n_decided": 233,
+        "decided_frac": 0.9708
+      }
+    ]
+  },
+  "records": [
+    {
+      "run": "20260913T084708Z_c9a0b0521267",
+      "uct": 0.3,
+      "win_rate": 0.211,
+      "ci_low": 0.1638,
+      "ci_high": 0.2673,
+      "mean_vp": 106.175,
+      "mean_rank": 2.704,
+      "entropy_mean": 0.741103,
+      "entropy_sd": 0.0896,
+      "n_decided": 237
+    },
+    {
+      "run": "20260913T084708Z_c9a0b0521267",
+      "uct": 0.8,
+      "win_rate": 0.2025,
+      "ci_low": 0.1563,
+      "ci_high": 0.2583,
+      "mean_vp": 107.833,
+      "mean_rank": 2.592,
+      "entropy_mean": 0.734621,
+      "entropy_sd": 0.083968,
+      "n_decided": 237
+    },
+    {
+      "run": "20260913T084708Z_c9a0b0521267",
+      "uct": 1.4,
+      "win_rate": 0.2447,
+      "ci_low": 0.1943,
+      "ci_high": 0.3032,
+      "mean_vp": 111.696,
+      "mean_rank": 2.419,
+      "entropy_mean": 0.722002,
+      "entropy_sd": 0.086856,
+      "n_decided": 237
+    },
+    {
+      "run": "20260913T084708Z_c9a0b0521267",
+      "uct": 2.5,
+      "win_rate": 0.3418,
+      "ci_low": 0.2843,
+      "ci_high": 0.4043,
+      "mean_vp": 112.862,
+      "mean_rank": 2.285,
+      "entropy_mean": 0.730388,
+      "entropy_sd": 0.089111,
+      "n_decided": 237
+    },
+    {
+      "run": "20260913T225614Z_f6e033e4c40b",
+      "uct": 0.8,
+      "win_rate": 0.2147,
+      "ci_low": 0.1896,
+      "ci_high": 0.2422,
+      "mean_vp": 105.147,
+      "mean_rank": 2.63,
+      "entropy_mean": 0.746634,
+      "entropy_sd": 0.085151,
+      "n_decided": 936
+    },
+    {
+      "run": "20260913T225614Z_f6e033e4c40b",
+      "uct": 2.5,
+      "win_rate": 0.2532,
+      "ci_low": 0.2264,
+      "ci_high": 0.282,
+      "mean_vp": 110.336,
+      "mean_rank": 2.428,
+      "entropy_mean": 0.742532,
+      "entropy_sd": 0.084854,
+      "n_decided": 936
+    },
+    {
+      "run": "20260913T225614Z_f6e033e4c40b",
+      "uct": 5.0,
+      "win_rate": 0.328,
+      "ci_low": 0.2987,
+      "ci_high": 0.3587,
+      "mean_vp": 111.733,
+      "mean_rank": 2.328,
+      "entropy_mean": 0.725186,
+      "entropy_sd": 0.088131,
+      "n_decided": 936
+    },
+    {
+      "run": "20260913T225614Z_f6e033e4c40b",
+      "uct": 10.0,
+      "win_rate": 0.2041,
+      "ci_low": 0.1795,
+      "ci_high": 0.2311,
+      "mean_vp": 105.743,
+      "mean_rank": 2.615,
+      "entropy_mean": 0.702477,
+      "entropy_sd": 0.092776,
+      "n_decided": 936
+    },
+    {
+      "run": "20260914T225504Z_ef6e0c8a5896",
+      "uct": 4.0,
+      "win_rate": 0.232,
+      "ci_low": 0.2062,
+      "ci_high": 0.26,
+      "mean_vp": 109.104,
+      "mean_rank": 2.465,
+      "entropy_mean": 0.740227,
+      "entropy_sd": 0.083867,
+      "n_decided": 944
+    },
+    {
+      "run": "20260914T225504Z_ef6e0c8a5896",
+      "uct": 5.0,
+      "win_rate": 0.2648,
+      "ci_low": 0.2377,
+      "ci_high": 0.2939,
+      "mean_vp": 109.205,
+      "mean_rank": 2.471,
+      "entropy_mean": 0.730736,
+      "entropy_sd": 0.090013,
+      "n_decided": 944
+    },
+    {
+      "run": "20260914T225504Z_ef6e0c8a5896",
+      "uct": 6.0,
+      "win_rate": 0.2373,
+      "ci_low": 0.2112,
+      "ci_high": 0.2655,
+      "mean_vp": 108.307,
+      "mean_rank": 2.51,
+      "entropy_mean": 0.72751,
+      "entropy_sd": 0.087087,
+      "n_decided": 944
+    },
+    {
+      "run": "20260914T225504Z_ef6e0c8a5896",
+      "uct": 7.0,
+      "win_rate": 0.2659,
+      "ci_low": 0.2387,
+      "ci_high": 0.295,
+      "mean_vp": 107.129,
+      "mean_rank": 2.554,
+      "entropy_mean": 0.7227,
+      "entropy_sd": 0.088589,
+      "n_decided": 944
+    },
+    {
+      "run": "20260915T101726Z_75d0659a0c52",
+      "uct": 4.0,
+      "win_rate": 0.5107,
+      "ci_low": 0.4469,
+      "ci_high": 0.5742,
+      "mean_vp": 109.412,
+      "mean_rank": 2.484,
+      "entropy_mean": 0.743035,
+      "entropy_sd": 0.08783,
+      "n_decided": 233
+    },
+    {
+      "run": "20260915T101726Z_75d0659a0c52",
+      "uct": 7.0,
+      "win_rate": 0.4893,
+      "ci_low": 0.4258,
+      "ci_high": 0.5531,
+      "mean_vp": 108.171,
+      "mean_rank": 2.516,
+      "entropy_mean": 0.717655,
+      "entropy_sd": 0.094116,
+      "n_decided": 233
+    }
+  ]
+}
