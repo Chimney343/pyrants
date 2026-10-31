@@ -11,25 +11,37 @@
 > (documentation, ownership, history, decisions). **Always verify against
 > actual source files before making changes** — the index may be stale.
 
-Last indexed: 2026-09-04 (commit ea25b68). Confidence: 100%.
+Last indexed: 2026-10-31 (commit 646ca07). Confidence: 100%.
 ### Architecture
-This monorepo is a card-game research platform built around the *Pyrants* game environment: it consumes declarative game content (JSON/TOML card, board-package, and market definitions), parses that content into typed Python game state via the game_setup package, delegates rule enforcement, stochastic events, and simulation to a C engine core (engine_c) exposed to Python through a hand-written binding layer, and outputs an OpenSpiel-compatible game wrapper plus Information-Set MCTS agents and C-accelerated rollout evaluators for reinforcement-learning experiments, alongside Markdown validation artifacts (docs/validation/findings.md, docs/validation/verdict.md). The repository is young (~3 months old, oldest tracked file at 96 days) yet substantial: 1,099 files and roughly 259k LOC. The language distribution reflects the architecture: JSON dominates at 45.6% (data-heavy game content/fixtures loaded by game_setup), followed by Python at 26.4% (bindings, setup logic, OpenSpiel glue, tests), Markdown at 21.5% (documentation and validation reports), and a small but critical C/C++ slice (~5%) holding the performance-sensitive engine logic. Three pillars make up the codebase:
+This repository is a game-engine and reinforcement-learning workbench for the card game **Rants**: it ingests declarative JSON card packages (board, market, deck definitions), loads them into typed Python game-setup structures, drives a compiled C rules engine through Python bindings to execute legal moves and state transitions, wraps that engine as an OpenSpiel-compatible game, and emits information-set MCTS policies, rollout evaluations, and replayable game logs used by a validation harness and neural-network policy indexing. In short: **JSON card definitions + a C rules core + Python bindings → OpenSpiel game + search/evaluation → policies, replays, and validation reports.**
 
-1.
+The repository is a monorepo of roughly 1,167 files and ~278k LOC, dominated by JSON data (43%), Markdown documentation (22%), and Python (29%), with a compact but performance-critical C/C++ core (~4.6%) that owns the actual game state machine. | Layer | Technology | Notes |
+|---|---|---|
+| Rules core | **C / C++** | engine_c/ — state.h, intern.h, rng.h; deterministic state machine with its own RNG |
+| Binding layer | **Python + ctypes/cffi-style FFI** | engine_c/bindings/ — ce_api.py, engine_bindings.py, session.py, view.py |
+| Game definition | **JSON** | Board packages and market definitions consumed by game_setup/loaders.py |
+| RL / search | **OpenSpiel** | openspiel_pyrants/ — game_c.py (game wrapper), ismcts_factory.py (information-set MCTS), c_rollout_evaluator.py |
+| Policy / NN | **Python** | openspiel_pyrants/nn/ — policy indexing and inference plumbing |
+| Replays | **Python** | interface/replay_loader.py — parse and re-simulate recorded games |
+| Testing / validation | **pytest** + custom harness | tests/, tests/c_engine/, docs/validation/harness/ |
+| Tooling / env | **uv + pyproject.toml**, Makefile | pyproject.toml is the oldest and most-churned file; uv.lock pins the environment |
+
+The C engine is built via the Makefile and loaded as a shared library; the Python side never manipulates game state directly, it only holds opaque handles plus lightweight views. > Note: .kilo/ and .kilocode/ are agent/tooling configuration directories, not part of the product's runtime surface.
 ### Key Modules
 | Module | Purpose | Owner |
 |--------|---------|-------|
-| `community-1` | The docs/validation module is the invariant-verification subsystem of the pyrant | — |
-| `community-0` | engine_c is the authoritative game-state and rules engine at the centre of this  | — |
+| `community-1` | The tests/c_engine module is the **verification and native-binding surface** of  | — |
+| `community-0` | engine_c is the native C implementation of the game rules engine — a self-contai | — |
 | `community-3` | The tests/c_engine module is the behavior-verification harness for repowise's C  | — |
-| `community-2` | tests/c_engine is the C-engine conformance and FFI-adapter layer of the Pyrants  | — |
+| `community-2` | The tests/openspiel_pyrants module is the **verification layer** for repowise's  | — |
 | `community-248` | The **tests** module is the verification subsystem of repowise — it consumes gen | — |
 | `community-4` | The scripts module is the execution and experiment orchestration layer of the ** | — |
-| `community-6` | The **scripts** module is the integration and validation layer of the Pyrants ga | — |
+| `community-6` | The scripts module is the **experiment-orchestration and CLI entry layer** of th | — |
 | `community-5` | The scripts module is the experiment orchestration and analysis layer of repowis | — |
 | `community-7` | The **skill-creator** module is the iterative optimisation pipeline for repowise | — |
 | `community-400` | The data/scenarios module is the **validation and test harness** for the scenari | — |
 ### Entry Points
+- `openspiel_pyrants/nn/index.py`
 - `.augment/skills/impeccable/scripts/cleanup-deprecated.mjs`
 - `.augment/skills/impeccable/scripts/design-parser.mjs`
 - `.augment/skills/impeccable/scripts/detect-csp.mjs`
@@ -39,10 +51,9 @@ This monorepo is a card-game research platform built around the *Pyrants* game e
 - `.augment/skills/impeccable/scripts/live-inject.mjs`
 - `.augment/skills/impeccable/scripts/live-poll.mjs`
 - `.augment/skills/impeccable/scripts/live-server.mjs`
-- `.augment/skills/impeccable/scripts/live-wrap.mjs`
 ### Tech Stack
 **Languages:** Python
-**Frameworks:** Pydantic
+**Frameworks:** PyTorch, Pydantic
 
 ### Architectural Layers
 | Layer | Files | Purpose |
@@ -70,22 +81,22 @@ This monorepo is a card-game research platform built around the *Pyrants* game e
 | File | Churn | 90d Commits | Owner |
 |------|-------|-------------|-------|
 | `data/cards/catalog.json` | 100.0th %ile | 58 | Chimney343 |
-| `interface/game_viewer.py` | 99.9th %ile | 19 | Chimney343 |
-| `scripts/run_ismcts.py` | 99.9th %ile | 12 | Chimney343 |
+| `interface/game_viewer.py` | 99.9th %ile | 17 | Chimney343 |
+| `scripts/run_ismcts.py` | 99.9th %ile | 14 | Chimney343 |
 | `engine_c/generic_runtime.c` | 99.8th %ile | 25 | Chimney343 |
 | `engine/rules.py` | 99.8th %ile | 9 | Chimney343 |
 
 ## Code health
-Hotspot health: 6.67/10 (stable) ·
-Average: 7.61/10 ·
+Hotspot health: 6.73/10 (stable) ·
+Average: 7.63/10 ·
 Worst: 1.0/10 (`engine/rules.py`)
 
 ### Critical biomarkers
 - `engine/rules.py` — untested hotspot — impact −2.0
 - `engine/helpers.py` — untested hotspot — impact −2.0
 - `engine/state.py` — untested hotspot — impact −2.0
-- `engine_c/bindings/engine_bindings.py` — untested hotspot — impact −2.0
 - `engine_c/bindings/ce_api.py` — untested hotspot — impact −2.0
+- `engine_c/bindings/view.py` — untested hotspot — impact −2.0
 
 ### Repowise MCP Tools
 
@@ -116,5 +127,6 @@ This repo has the Repowise MCP server configured. The tools below answer questio
 **Commands:**
 - Test: `pytest`
 - Lint: `ruff check .`
+- Format: `ruff format .`
 
 <!-- REPOWISE:END -->
