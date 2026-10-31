@@ -8,6 +8,7 @@ is unit-testable without argparse. Implements Phase 4 of
 from __future__ import annotations
 
 import json
+import random
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -379,3 +380,96 @@ def iter_samples(
             adapter.apply(match)
     finally:
         adapter.destroy()
+
+
+@dataclass
+class BuildResult:
+    samples: list[Sample]
+    accepted: list[dict]
+    rejected: list[dict]
+    game_dirs: list[Path]
+
+
+def game_dirs_for_run(run_path) -> list[Path]:
+    """Every ``game_*`` directory under *run_path*.
+
+    *run_path* is either a specific run directory (has its own
+    ``manifest.json``, with ``game_*`` subdirectories directly inside) or a
+    base directory containing several run directories (falls back to
+    scanning for ``replay.json`` anywhere underneath).
+    """
+    run_path = Path(run_path)
+    if not run_path.exists():
+        return []
+    if (run_path / "manifest.json").exists():
+        return sorted(p for p in run_path.glob("game_*") if p.is_dir())
+    return sorted(p.parent for p in run_path.rglob("replay.json"))
+
+
+def build_dataset_from_runs(
+    runs,
+    *,
+    allow_legacy_schema: bool = False,
+    keep_forced: bool = False,
+    leak_check: int = 0,
+    strict: bool = False,
+    seed: int = 42,
+) -> BuildResult:
+    """Replay every accepted game under *runs* into a flat ``Sample`` list.
+
+    *runs* is a list of run directories (or bases containing several — see
+    :func:`game_dirs_for_run`). Shared by the CLI dataset builder
+    (``scripts/build_nn_dataset.py``) and any other caller (e.g. the
+    trainability smoke test) that wants ``Sample`` objects without going
+    through argparse or persisting shards. ``game_idx`` is assigned by a
+    single ``enumerate()`` over every game directory across all of *runs*,
+    not reset per run, so samples stay groupable by game regardless of how
+    many run folders were combined.
+    """
+    game_dirs: list[Path] = []
+    for run in runs:
+        game_dirs.extend(game_dirs_for_run(run))
+
+    rng = random.Random(seed) if leak_check > 0 else None
+    samples: list[Sample] = []
+    accepted: list[dict] = []
+    rejected: list[dict] = []
+
+    for game_idx, game_dir in enumerate(game_dirs):
+        check = validate_game_dir(game_dir, allow_legacy=allow_legacy_schema)
+        if not check.ok:
+            rejected.append({
+                "game_dir": str(game_dir),
+                "run_id": check.run_id,
+                "schema_version": check.schema_version,
+                "reasons": check.reasons,
+            })
+            continue
+        bundle = load_replay(game_dir)
+        try:
+            game_samples = list(iter_samples(
+                bundle,
+                allow_legacy=allow_legacy_schema,
+                keep_forced=keep_forced,
+                leak_check_rng=rng,
+                leak_check_limit=leak_check,
+                game_idx=game_idx,
+            ))
+        except (ReplayDesyncError, AlignmentError, ValueError) as exc:
+            if strict:
+                raise
+            rejected.append({
+                "game_dir": str(game_dir),
+                "run_id": check.run_id,
+                "schema_version": check.schema_version,
+                "reasons": [f"{type(exc).__name__}: {exc}"],
+            })
+            continue
+        accepted.append({
+            "game_dir": str(game_dir),
+            "run_id": check.run_id,
+            "samples": len(game_samples),
+        })
+        samples.extend(game_samples)
+
+    return BuildResult(samples=samples, accepted=accepted, rejected=rejected, game_dirs=game_dirs)

@@ -13,7 +13,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import random
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
@@ -21,15 +20,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from interface.replay_loader import load_replay  # noqa: E402
-from interface.replay_player import ReplayDesyncError  # noqa: E402
 from openspiel_pyrants.nn.dataset import write_shards  # noqa: E402
-from scripts._nn_dataset import (  # noqa: E402
-    AlignmentError,
-    iter_samples,
-    report_metrics,
-    validate_game_dir,
-)
+from scripts._nn_dataset import build_dataset_from_runs, report_metrics  # noqa: E402
 
 
 def _parse_args() -> argparse.Namespace:
@@ -52,15 +44,6 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--report", type=Path, default=None,
                         help="Print label-sanity metrics for an existing dataset and exit.")
     return parser.parse_args()
-
-
-def _game_dirs(run_path: Path) -> list[Path]:
-    run_path = Path(run_path)
-    if not run_path.exists():
-        return []
-    if (run_path / "manifest.json").exists():
-        return sorted(p for p in run_path.glob("game_*") if p.is_dir())
-    return sorted(p.parent for p in run_path.rglob("replay.json"))
 
 
 def _run_source(run_path: Path) -> dict:
@@ -92,76 +75,40 @@ def main() -> int:
         print("--out is required", file=sys.stderr)
         return 2
 
-    game_dirs: list[Path] = []
-    for run in args.runs:
-        game_dirs.extend(_game_dirs(run))
-
-    rng = random.Random(args.seed) if args.leak_check > 0 else None
-    samples = []
-    accepted: list[dict] = []
-    rejected: list[dict] = []
-
-    for game_idx, game_dir in enumerate(game_dirs):
-        check = validate_game_dir(game_dir, allow_legacy=args.allow_legacy_schema)
-        if not check.ok:
-            rejected.append({
-                "game_dir": str(game_dir),
-                "run_id": check.run_id,
-                "schema_version": check.schema_version,
-                "reasons": check.reasons,
-            })
-            continue
-        bundle = load_replay(game_dir)
-        try:
-            game_samples = list(iter_samples(
-                bundle,
-                allow_legacy=args.allow_legacy_schema,
-                keep_forced=args.keep_forced,
-                leak_check_rng=rng,
-                leak_check_limit=args.leak_check,
-                game_idx=game_idx,
-            ))
-        except (ReplayDesyncError, AlignmentError, ValueError) as exc:
-            if args.strict:
-                raise
-            rejected.append({
-                "game_dir": str(game_dir),
-                "run_id": check.run_id,
-                "schema_version": check.schema_version,
-                "reasons": [f"{type(exc).__name__}: {exc}"],
-            })
-            continue
-        accepted.append({
-            "game_dir": str(game_dir),
-            "run_id": check.run_id,
-            "samples": len(game_samples),
-        })
-        samples.extend(game_samples)
+    result = build_dataset_from_runs(
+        args.runs,
+        allow_legacy_schema=args.allow_legacy_schema,
+        keep_forced=args.keep_forced,
+        leak_check=args.leak_check,
+        strict=args.strict,
+        seed=args.seed,
+    )
 
     dataset_id = args.dataset_id or args.out.name or datetime.now(UTC).strftime(
         "%Y%m%dT%H%M%SZ"
     )
     manifest = write_shards(
-        samples,
+        result.samples,
         args.out,
         dataset_id=dataset_id,
         shard_size=args.shard_size,
         sources={
             "runs": [_run_source(run) for run in args.runs],
-            "accepted": accepted,
-            "rejected": rejected,
+            "accepted": result.accepted,
+            "rejected": result.rejected,
         },
     )
 
-    if rejected:
+    if result.rejected:
         rejected_path = Path(args.out) / "rejected.jsonl"
         with rejected_path.open("w", encoding="utf-8") as fh:
-            for row in rejected:
+            for row in result.rejected:
                 fh.write(json.dumps(row) + "\n")
 
     print(
-        f"dataset {dataset_id}: games accepted={len(accepted)} rejected={len(rejected)} "
-        f"samples={manifest['counts']['samples']} shards={len(manifest['shards'])}",
+        f"dataset {dataset_id}: games accepted={len(result.accepted)} "
+        f"rejected={len(result.rejected)} samples={manifest['counts']['samples']} "
+        f"shards={len(manifest['shards'])}",
         file=sys.stderr,
     )
     return 0

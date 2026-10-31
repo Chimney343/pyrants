@@ -85,6 +85,15 @@ build-nn-dataset runs="artifacts/ismcts/runs" out="datasets/latest" *args:
 report-nn-dataset dataset="datasets/latest":
     & {{python}} -m scripts.build_nn_dataset --report {{dataset}}
 
+# Trainability smoke test: train a tiny network directly on sim run(s) (no
+# separate build-nn-dataset step) and report whether the policy/value losses
+# beat closed-form baselines. `runs` is one sim run directory (or a base
+# containing several); pass extra flags via *args (e.g. --epochs 5
+# --val-frac 0.2). For more than one folder, call
+# `scripts.train_nn_smoke --runs <a> <b> ...` directly.
+train-nn-smoke runs *args:
+    & {{python}} -m scripts.train_nn_smoke --runs {{runs}} {{args}}
+
 # ── IS-MCTS (C engine backend) ───────────────────────────────────────────────
 
 ismcts num_sims="200" num_games="4" seed="42" output_dir="artifacts/ismcts/runs" workers="16" num_players="4" uct_c="1.4":

@@ -16,7 +16,7 @@ import openspiel_pyrants  # noqa: F401
 from interface.replay_loader import load_replay
 from interface.replay_player import ReplayDesyncError
 from openspiel_pyrants.nn.actions import NUM_GLOBAL_ACTIONS
-from openspiel_pyrants.nn.dataset import Sample, load_shard, write_shards
+from openspiel_pyrants.nn.dataset import Sample, arrays_from_samples, load_shard, write_shards
 from openspiel_pyrants.nn.observation import OBS_SIZE
 from openspiel_pyrants.nn.targets import value_targets
 from scripts._nn_dataset import (
@@ -382,6 +382,30 @@ def test_shards_round_trip(tmp_path) -> None:
             assert data["weight"][i] == pytest.approx(1.0)
             row += 1
     assert row == 5
+
+
+def test_arrays_from_samples_matches_load_shard(tmp_path) -> None:
+    """The in-memory path (``arrays_from_samples``) and the persisted path
+    (``write_shards`` + ``load_shard``) must compute identical targets from
+    the same samples — they share ``_compute_arrays`` for exactly this
+    reason (D11)."""
+    samples = _synthetic_samples(5)
+    write_shards(samples, tmp_path, dataset_id="ds", shard_size=1000, sources={})
+    from_shard = load_shard(tmp_path / "shard_0000.npz")
+    from_memory = arrays_from_samples(samples)
+
+    assert np.array_equal(from_memory["obs"], from_shard["obs"])
+    assert np.array_equal(from_memory["legal_mask"], from_shard["legal_mask"])
+    assert np.array_equal(from_memory["policy"], from_shard["policy"])
+    assert np.array_equal(from_memory["value"], from_shard["value"])
+    assert np.array_equal(from_memory["weight"], from_shard["weight"])
+    for key in from_shard["meta"]:
+        mem_val = from_memory["meta"][key]
+        shard_val = from_shard["meta"][key]
+        if isinstance(shard_val, list):
+            assert mem_val == shard_val
+        else:
+            assert np.array_equal(mem_val, shard_val)
 
 
 def test_manifest_records_index_shas(tmp_path) -> None:

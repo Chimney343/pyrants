@@ -72,7 +72,13 @@ class Sample:
     leak_mismatch: bool = False
 
 
-def _write_one_shard(path: Path, samples: list[Sample]) -> None:
+def _sample_fields(samples: list[Sample]) -> dict[str, np.ndarray]:
+    """Raw per-sample arrays (no computed targets) — the shard's on-disk shape.
+
+    Shared by :func:`_write_one_shard` (persists these via ``np.savez_compressed``)
+    and :func:`arrays_from_samples` (feeds them straight into :func:`_compute_arrays`
+    without a disk round trip), so both paths build the exact same raw fields.
+    """
     n = len(samples)
     nnz = sum(len(s.legal_ids) for s in samples)
 
@@ -124,31 +130,35 @@ def _write_one_shard(path: Path, samples: list[Sample]) -> None:
         n_legal_raw[i] = s.n_legal_raw
         pair_merge[i] = s.pair_merge
 
+    return {
+        "obs": obs,
+        "legal_row_ptr": legal_row_ptr,
+        "legal_ids": legal_ids,
+        "legal_visits": legal_visits,
+        "legal_q": legal_q,
+        "chosen_gid": chosen_gid,
+        "root_value": root_value,
+        "total_visits": total_visits,
+        "forced": forced,
+        "final_scores": final_scores,
+        "seat_mask": seat_mask,
+        "acting_seat": acting_seat,
+        "num_players": num_players,
+        "sims_requested": sims_requested,
+        "uct_c": uct_c,
+        "game_idx": game_idx,
+        "node": node,
+        "phase": phase,
+        "move_type": move_type,
+        "n_legal_raw": n_legal_raw,
+        "pair_merge": pair_merge,
+    }
+
+
+def _write_one_shard(path: Path, samples: list[Sample]) -> None:
+    fields = _sample_fields(samples)
     path.parent.mkdir(parents=True, exist_ok=True)
-    np.savez_compressed(
-        path,
-        obs=obs,
-        legal_row_ptr=legal_row_ptr,
-        legal_ids=legal_ids,
-        legal_visits=legal_visits,
-        legal_q=legal_q,
-        chosen_gid=chosen_gid,
-        root_value=root_value,
-        total_visits=total_visits,
-        forced=forced,
-        final_scores=final_scores,
-        seat_mask=seat_mask,
-        acting_seat=acting_seat,
-        num_players=num_players,
-        sims_requested=sims_requested,
-        uct_c=uct_c,
-        game_idx=game_idx,
-        node=node,
-        phase=phase,
-        move_type=move_type,
-        n_legal_raw=n_legal_raw,
-        pair_merge=pair_merge,
-    )
+    np.savez_compressed(path, **fields)
 
 
 def write_shards(
@@ -213,52 +223,57 @@ def write_shards(
     return manifest
 
 
-def load_shard(path) -> dict:
-    """Load one shard and compute float targets at load time."""
-    with np.load(Path(path)) as data:
-        obs = data["obs"].astype(np.float32)
-        row_ptr = data["legal_row_ptr"]
-        legal_ids = data["legal_ids"]
-        legal_visits = data["legal_visits"]
-        chosen = data["chosen_gid"]
-        final_scores = data["final_scores"]
-        players = data["num_players"]
-        sims = data["sims_requested"]
+def _compute_arrays(fields: dict[str, np.ndarray]) -> dict:
+    """Compute policy/value/weight targets from raw per-sample fields.
 
-        n = obs.shape[0]
-        legal_mask = np.zeros((n, NUM_GLOBAL_ACTIONS), dtype=bool)
-        policy = np.zeros((n, NUM_GLOBAL_ACTIONS), dtype=np.float32)
-        value = np.zeros((n, 4), dtype=np.float32)
-        weight = np.zeros(n, dtype=np.float32)
-        for i in range(n):
-            ids = legal_ids[row_ptr[i]:row_ptr[i + 1]]
-            visits = legal_visits[row_ptr[i]:row_ptr[i + 1]]
-            legal_mask[i, ids] = True
-            policy[i] = policy_target(ids, visits, NUM_GLOBAL_ACTIONS)
-            value[i] = value_targets(final_scores[i], int(players[i]))
-            weight[i] = sample_weight(int(sims[i]))
+    Shared by :func:`load_shard` (fields read from an ``.npz`` shard) and
+    :func:`arrays_from_samples` (fields built directly from in-memory
+    ``Sample`` objects via :func:`_sample_fields`), so both can never compute
+    different targets from the same underlying data (D11).
+    """
+    obs = fields["obs"].astype(np.float32)
+    row_ptr = fields["legal_row_ptr"]
+    legal_ids = fields["legal_ids"]
+    legal_visits = fields["legal_visits"]
+    chosen = fields["chosen_gid"]
+    final_scores = fields["final_scores"]
+    players = fields["num_players"]
+    sims = fields["sims_requested"]
 
-        meta = {
-            "chosen_gid": chosen.copy(),
-            "node": data["node"].copy(),
-            "game_idx": data["game_idx"].copy(),
-            "forced": data["forced"].copy(),
-            "acting_seat": data["acting_seat"].copy(),
-            "seat_mask": data["seat_mask"].copy(),
-            "num_players": players.copy(),
-            "total_visits": data["total_visits"].copy(),
-            "root_value": data["root_value"].copy(),
-            "phase": [PHASES[int(p)] for p in data["phase"]],
-            "move_type": [MOVE_TYPES[int(m)] for m in data["move_type"]],
-            "legal_row_ptr": row_ptr.copy(),
-            "legal_ids": legal_ids.copy(),
-            "legal_visits": legal_visits.copy(),
-            "legal_q": data["legal_q"].astype(np.float32).copy(),
-            "sims_requested": sims.copy(),
-            "uct_c": data["uct_c"].copy(),
-            "n_legal_raw": data["n_legal_raw"].copy(),
-            "pair_merge": data["pair_merge"].copy(),
-        }
+    n = obs.shape[0]
+    legal_mask = np.zeros((n, NUM_GLOBAL_ACTIONS), dtype=bool)
+    policy = np.zeros((n, NUM_GLOBAL_ACTIONS), dtype=np.float32)
+    value = np.zeros((n, 4), dtype=np.float32)
+    weight = np.zeros(n, dtype=np.float32)
+    for i in range(n):
+        ids = legal_ids[row_ptr[i]:row_ptr[i + 1]]
+        visits = legal_visits[row_ptr[i]:row_ptr[i + 1]]
+        legal_mask[i, ids] = True
+        policy[i] = policy_target(ids, visits, NUM_GLOBAL_ACTIONS)
+        value[i] = value_targets(final_scores[i], int(players[i]))
+        weight[i] = sample_weight(int(sims[i]))
+
+    meta = {
+        "chosen_gid": chosen.copy(),
+        "node": fields["node"].copy(),
+        "game_idx": fields["game_idx"].copy(),
+        "forced": fields["forced"].copy(),
+        "acting_seat": fields["acting_seat"].copy(),
+        "seat_mask": fields["seat_mask"].copy(),
+        "num_players": players.copy(),
+        "total_visits": fields["total_visits"].copy(),
+        "root_value": fields["root_value"].copy(),
+        "phase": [PHASES[int(p)] for p in fields["phase"]],
+        "move_type": [MOVE_TYPES[int(m)] for m in fields["move_type"]],
+        "legal_row_ptr": row_ptr.copy(),
+        "legal_ids": legal_ids.copy(),
+        "legal_visits": legal_visits.copy(),
+        "legal_q": fields["legal_q"].astype(np.float32).copy(),
+        "sims_requested": sims.copy(),
+        "uct_c": fields["uct_c"].copy(),
+        "n_legal_raw": fields["n_legal_raw"].copy(),
+        "pair_merge": fields["pair_merge"].copy(),
+    }
     return {
         "obs": obs,
         "legal_mask": legal_mask,
@@ -267,3 +282,19 @@ def load_shard(path) -> dict:
         "weight": weight,
         "meta": meta,
     }
+
+
+def load_shard(path) -> dict:
+    """Load one shard and compute float targets at load time."""
+    with np.load(Path(path)) as data:
+        fields = {k: data[k] for k in data.files}
+    return _compute_arrays(fields)
+
+
+def arrays_from_samples(samples: list[Sample]) -> dict:
+    """In-memory equivalent of ``write_shards()`` + :func:`load_shard` for a
+    ``Sample`` list — skips the ``.npz`` round trip. Shares :func:`_compute_arrays`
+    with :func:`load_shard` so the persisted-dataset and in-memory paths can
+    never compute different policy/value/weight targets from the same samples.
+    """
+    return _compute_arrays(_sample_fields(samples))
