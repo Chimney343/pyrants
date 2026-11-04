@@ -316,6 +316,23 @@ class CEngine:
     _globally_initialized = False
     _global_lock = __import__("threading").Lock()
 
+    @staticmethod
+    def _ensure_global_init() -> None:
+        """Intern symbols and register the default handlers exactly once.
+
+        Both ``available()`` and ``initialize()`` must go through this path.
+        Setting ``_globally_initialized`` after only ``intern_init`` would make
+        ``initialize()`` skip ``register_default_effects``, leaving every
+        ``generic_card`` lookup empty.
+        """
+        if CEngine._globally_initialized:
+            return
+        with CEngine._global_lock:
+            if not CEngine._globally_initialized:
+                _lib.intern_init(4096)
+                _lib.register_default_effects()
+                CEngine._globally_initialized = True
+
     def __init__(self):
         self._definition = None
         self._arena = None
@@ -348,11 +365,7 @@ class CEngine:
         if self._initialized:
             return
 
-        with CEngine._global_lock:
-            if not CEngine._globally_initialized:
-                _lib.intern_init(4096)
-                _lib.register_default_effects()
-                CEngine._globally_initialized = True
+        CEngine._ensure_global_init()
 
         catalog_path = catalog_path or str(_data_dir() / "cards")
         board_path = board_path or str(_data_dir() / "boards" / "tyrants_of_the_underdark.json")
@@ -462,13 +475,9 @@ class CEngine:
 
     @staticmethod
     def available() -> bool:
-        """Check if the engine_c DLL is loadable."""
+        """Check if the engine_c DLL is loadable and prepare its global state."""
         try:
-            if not CEngine._globally_initialized:
-                with CEngine._global_lock:
-                    if not CEngine._globally_initialized:
-                        _lib.intern_init(4096)
-                        CEngine._globally_initialized = True
+            CEngine._ensure_global_init()
             return True
         except Exception:
             return False

@@ -899,6 +899,57 @@ passed.
 - Status: **MITIGATED, one item open** (2026-09-11)
 - Resolution: the owner chose the second of the review's two options — rather than patch the recomposer, wipe `artifacts/ismcts/` (every game was played under the old rule) and play a fresh corpus under one rule set. `datasets/sims_vs_wins_v2` deleted. 32 × 4-player games at a uniform 200 sims (`artifacts/ismcts/runs/20260911T193759Z_58e54c44a5f5`, 50 min on 16 workers): 34/34 replays verify, strict build accepts 32/32 → `datasets/teacher_v3_32` (26,306 samples, leak 0/4611, value means ≈ 0, argmax 0.844 at 200 sims, pair merges 0.16 %). Census re-baked on the new corpus: 34 walked / 0 skipped / 0 collisions, `CENSUS_CORPUS` line added so the corpus size is printed, the three `insane_outcast` branches are live again (70 / 47 / 14 states via demon-deck give effects), and `steal_white_trophy_to_board` — which the new corpus never reaches — got its live-engine test (`tests/nn/test_actions_live_custom_effects.py::test_steal_white_trophy_to_board_on_live_engine`, both steps). The two artifact-bound `tests/` failures skip now that the artifact is gone. **Open:** F-013's G1 reference vectors (`docs/validation/harness/f013b_gen_vectors.py`) were frozen under the old rule and still fail; re-capture them under the current rule or pin the old rule for that corpus, and record which. Process rule going forward: a rule change and an encoder change do not share a commit, and every run manifest already records the setup SHA — the builder's strict mode is the gate that refuses to mix them.
 
+### F-035 `engine_serialize_state` drops pending decisions and the shuffle stream
+- Class: ENGINE-CORRECTNESS (persistence)
+- Severity: MAJOR (a save taken while a promotion, generic choice or ability decision is pending reloads as a different game; future reshuffles draw from a different stream)
+- Origin: Found by the 2026-11-04 architecture review (Phase 0.1)
+- Code: `engine_c/saveload.c:62` refuses only `pending_generic`; the serializer (`saveload.c:56-139`) never writes `pending_eot`, `pending_immediate`, `pending_ability`, `shuffle_seed` or `shuffle_counter`; `engine_deserialize_state` creates the game with seed 42 (`saveload.c:189`, `:191`) and restores zones only. `engine_c/bindings/session.py:161-174` exposes `save()` at any state.
+- Falsification test: build a state with `pending_eot` (or `pending_immediate`/`pending_ability`) set, call `CSession.save()` then `CSession.load()`, and compare legal moves plus the next mid-game reshuffle order.
+- Expected if REAL: the reloaded state has no pending decision and a different reshuffle stream.
+- Expected if FALSE POSITIVE: the pending fields and `shuffle_seed`/`shuffle_counter` survive the round trip.
+- Status: **OPEN** (deferred to the candidate-2 decision-stack migration; adding fields changes the scenario schema)
+
+### F-036 `CEngine.available()` marks the engine initialized without registering effects
+- Class: ENGINE-OPENSPIEL (bindings initialization)
+- Severity: MINOR latent (zero callers today; if `available()` runs before `initialize()`, `generic_card` lookup returns NULL and every card play becomes a no-op)
+- Origin: Found by the 2026-11-04 architecture review (Phase 0.1)
+- Code: `engine_c/bindings/ce_api.py:477-483` set `_globally_initialized` after `intern_init` only, while `initialize()` (`ce_api.py:352-371`) skips its registration block once the flag is set; `engine_c/rules.c:43-44` returns the state unchanged when the effect lookup misses.
+- Falsification test: `tests/c_engine/test_ce_api_init.py::test_available_registers_effects_once` and `::test_available_leaves_flag_false_when_registration_fails`
+- Expected if REAL: `available()` records only `intern_init`.
+- Expected if FALSE POSITIVE: `available()` and `initialize()` both intern and register effects exactly once.
+- Status: **FIXED** (2026-11-04)
+- Resolution: both entry points call `CEngine._ensure_global_init()` (`ce_api.py:319-334`), which interns and registers the default handlers under the global lock; the regression test records the calls.
+
+### F-037 `PyrantsCGame._init_attrs` drops `setup_data_json`
+- Class: ENGINE-OPENSPIEL (game reconstruction)
+- Severity: MINOR latent (only reached by an instance built without `__init__`; a custom setup would be silently replaced by the default setup)
+- Origin: Found by the 2026-11-04 architecture review (Phase 0.1)
+- Code: `openspiel_pyrants/game_c.py:135-148` initializes `CEngine` without `setup_data_json`, while `__init__` passes it (`game_c.py:121-126`).
+- Falsification test: construct a `PyrantsCGame` without `__init__` using a custom `setup_data_json`, call `get_player_ids()`, and inspect the resulting C definition.
+- Expected if REAL: the custom setup is absent.
+- Expected if FALSE POSITIVE: `_init_attrs` passes `resolved["setup_data_json"]`.
+- Status: **OPEN** (no in-repo caller; revisit with candidate 8's game handle)
+
+### F-038 Legal-move capacity is hard-coded twice and truncates silently
+- Class: ENGINE-OPENSPIEL (bindings action space)
+- Severity: MINOR (current states are far below the cap; a future action space above 1024 would lose moves with no error)
+- Origin: Found by the 2026-11-04 architecture review (Phase 0.1)
+- Code: `engine_c/bindings/ce_api.py:412-413` allocates `CMove * 1024` and passes `max_moves=1024`; `openspiel_pyrants/action_encoding_c.py:39` defines `NUM_DISTINCT_ACTIONS = 1024` independently; `engine_c/rules.c:200-283` caps every write and returns at most `max_moves` with no truncation flag.
+- Falsification test: assert the binding buffer equals `NUM_DISTINCT_ACTIONS`; a state with exactly `max_moves` moves cannot be distinguished from one with more.
+- Expected if REAL: the two constants can drift and truncation is unobservable.
+- Expected if FALSE POSITIVE: one constant feeds the other and overflow is detected.
+- Status: **OPEN** (fold into candidate 3)
+
+### F-039 Engine purity has no automated guard, and `loader.c` already violates the stated contract
+- Class: ARCHITECTURE-PROCESS (engine purity)
+- Severity: MINOR (the contract is documented but unenforced; `loader.c`'s `fopen` is the known exception)
+- Origin: Found by the 2026-11-04 architecture review (Phase 0.1)
+- Code: `tests/test_engine_purity.py` is absent; `git show 956f603` shows `tests/legacy_engine/test_engine_purity.py` deleted; `AGENTS.md:107-108` and `docs/adr/0001-c-engine-as-source-of-truth.md:69-72,117-119,132` still cite it. `engine_c/loader.c:11` calls `fopen` (plus `fread`/`fclose`); `actions.c`, `describe.c` and `saveload.c` include `<stdio.h>` only for `snprintf`; `cJSON.c` is vendored.
+- Falsification test: add `fopen` to a non-test library source; no test fails.
+- Expected if REAL: the new I/O compiles and the suite stays green.
+- Expected if FALSE POSITIVE: a guard rejects it.
+- Status: **OPEN** (restore a guard that bans real I/O in non-test, non-`cJSON.c` sources; decide whether `loader.c` is allowlisted or refactored)
+
 ## 4. Unanchored (suspicions that could not be fully anchored)
 
 - **[unverified]** `engine_c/rules.c:504-561` (`apply_end_of_turn_effects`, tag `end_of_turn_mass_discard`) and `engine_c/generic_runtime.c` (~lines 531-538, same tag) both implement what looks like the same card effect via two separate code paths — one from the natural end-of-turn phase transition, one from the pending-generic-choice resolver. Whether these are genuinely mutually exclusive (different triggers) or can both fire for the same card, causing a double discard, was not traced through the full call graph and needs dedicated tracing before it can be entered as a ledger finding.
