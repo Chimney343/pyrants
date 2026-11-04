@@ -94,10 +94,10 @@ Condensed layout below; see [docs/repo-structure.md](docs/repo-structure.md) for
 - Coverage: `python -m pytest --cov` (no fixed threshold; keep new code covered)
 
 **C engine tests** (`engine_c/`):
-- Build + run the C suite: `just build-c` (compiles and runs `test_engine`, `test_view`, `test_describe`, `test_generic_actions`, `test_saveload`)
+- Build + run the C suite: `just build-c` (compiles and runs every executable listed in `engine_c/tests.txt`; currently `test_engine`, `test_view`, `test_describe`, `test_generic_actions`, `test_saveload`, `test_rollout`, `test_infostate_hash`, `test_catalog_assembly`, `test_dt_ched`)
 - Run already-built C test binaries: `just test-c`
 - Python-side C-binding tests: `just test-c-python` (runs `pytest tests/c_engine -v`)
-- C test sources live in `engine_c/tests/` (`test_view.c`, `test_describe.c`, `test_saveload.c`, `test_generic_actions.c`) plus top-level `engine_c/test_engine.c`, `test_generic.c`, `test_intern_c.c`.
+- The library and test source lists are `engine_c/sources.txt` and `engine_c/tests.txt`. `just check-build-manifest` (also run by `just test-c` and `just test-all`) rejects an unlisted library or test source. C test sources live in `engine_c/tests/` plus top-level `engine_c/test_engine.c`, `test_intern_c.c`, `test_dt_ched.c`.
 
 **Always run both `ruff check .` and the relevant test suite before committing.** Add or update tests for any code you change.
 
@@ -112,7 +112,7 @@ Condensed layout below; see [docs/repo-structure.md](docs/repo-structure.md) for
 ## Build and Deployment
 
 - **C build (Windows/MSVC):** `just build-c` → `engine_c/compile.bat [debug|release]` produces `libengine.lib`, `test_*.exe`, and `engine_c.dll` (exports per `engine_c.def`).
-- **C build (GCC/MinGW/Linux/macOS):** `cd engine_c && make` → `libengine.a`; `make test` builds and runs `test_engine`.
+- **C build (GCC/MinGW/Linux/macOS):** `cd engine_c && make` → `libengine.a`; `make test` builds and runs every executable listed in `tests.txt`.
 - **Python:** no separate build step; install deps and run. The C `engine_c.dll` must be built and present for any C-engine tooling or C-binding tests to work.
 - **CI:** no `.github/workflows` present in the repo; validation is local (`just test`, `just build-c`, `just test-c-python`, `ruff check .`).
 - **Artifacts:** generated outputs (replays, profiler, stuck reports) go under `artifacts/` and are not shipped.
@@ -128,7 +128,7 @@ Condensed layout below; see [docs/repo-structure.md](docs/repo-structure.md) for
 ## Debugging and Troubleshooting
 
 - **`engine_c.dll` not found / import errors from bindings:** rebuild with `just build-c` and ensure the DLL is in `engine_c/` on the loader's path.
-- **C tests fail to link:** rerun `just build-c` from a clean state (`cd engine_c && nmake /f Makefile clean` or delete `*.obj`/`*.lib`); confirm VS 2022 Build Tools + C++ workload are installed.
+- **C tests fail to link:** rerun `just build-c` from a clean state (`cd engine_c && make clean`, or delete `*.obj`/`*.lib`); confirm VS 2022 Build Tools + C++ workload are installed.
 - **Stale Repowise index:** the auto-generated block below may lag HEAD; trust source files first and heed any `stale_warning` in `_meta` from Repowise tools.
 - **Performance profiling:** `just ismcts-perf` produces cProfile output under `artifacts/ismcts/`.
 

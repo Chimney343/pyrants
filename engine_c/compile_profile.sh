@@ -21,10 +21,9 @@ else
     LDFLAGS="-pg"
 fi
 
-# Exclude test files and cJSON (linked as object)
-SRCS="intern.c arena.c rng.c state.c moves.c rules.c helpers.c \
-      phases.c scoring.c generic_runtime.c actions.c selection.c \
-      player_view.c loader.c cJSON.c"
+# The library source list lives in sources.txt; the profiling build uses the
+# same list as the release/ASan builds (extra objects are harmless here).
+SRCS=$(awk '!/^[[:space:]]*#/ && NF {printf "%s ", $0}' sources.txt)
 
 OBJ_DIR="build_profile"
 mkdir -p "$OBJ_DIR"

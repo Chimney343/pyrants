@@ -1,0 +1,6 @@
+# Build manifests and the scripts that parse them must keep LF endings even
+# when core.autocrlf is enabled on Windows.
+engine_c/sources.txt text eol=lf
+engine_c/tests.txt text eol=lf
+engine_c/Makefile text eol=lf
+engine_c/compile_profile.sh text eol=lf

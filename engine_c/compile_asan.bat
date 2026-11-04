@@ -10,6 +10,7 @@ REM   - run the C unit tests directly (test_engine_asan.exe etc.), or
 REM   - point the Python bindings at engine_c_asan.dll via:
 REM       set PYRANTS_ENGINE_DLL=<repo>\engine_c\engine_c_asan.dll
 REM     and run pytest as usual.
+REM Source and test lists live in sources.txt and tests.txt.
 
 setlocal enabledelayedexpansion
 
@@ -34,80 +35,38 @@ REM traces) + /Od (no optimization, so line numbers in reports are accurate)
 REM + /fsanitize=address. Incompatible with /RTC1, which we don't use anyway.
 set CFLAGS=/nologo /W3 /std:c11 /MTd /Zi /Od /fsanitize=address
 
-set SRCS=intern.c arena.c rng.c state.c moves.c rules.c helpers.c phases.c scoring.c generic_runtime.c actions.c selection.c player_view.c loader.c cJSON.c view.c describe.c saveload.c rollout.c
-
 call %VCVARS% > nul
 if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 
 cd /d "%~dp0"
 
+set "SRCS="
+set "LIBOBJS="
+for /f "usebackq eol=# tokens=*" %%s in ("sources.txt") do (
+    set "SRCS=!SRCS! %%s"
+    set "LIBOBJS=!LIBOBJS! %%~ns.obj"
+)
+
 echo Building libengine_asan.lib (AddressSanitizer)...
-cl %CFLAGS% /c %SRCS%
+cl %CFLAGS% /c !SRCS!
 if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 
-lib /nologo /out:libengine_asan.lib *.obj
+lib /nologo /out:libengine_asan.lib !LIBOBJS!
 if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 
-echo Building test_engine_asan.exe...
-cl %CFLAGS% /I. /Fe:test_engine_asan.exe test_engine.c test_intern_c.c libengine_asan.lib
-if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
+for /f "usebackq eol=# tokens=1,2 delims=|" %%t in ("tests.txt") do (
+    echo Building %%t_asan.exe...
+    cl %CFLAGS% /I. /Fe:%%t_asan.exe %%u libengine_asan.lib
+    if errorlevel 1 exit /b 1
 
-echo Running tests under ASan...
-.\test_engine_asan.exe
-if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
-
-echo Building test_view_asan.exe...
-cl %CFLAGS% /I. /Fe:test_view_asan.exe tests\test_view.c libengine_asan.lib
-if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
-
-echo Running view tests under ASan...
-.\test_view_asan.exe
-if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
-
-echo Building test_describe_asan.exe...
-cl %CFLAGS% /I. /Fe:test_describe_asan.exe tests\test_describe.c libengine_asan.lib
-if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
-
-echo Running describe tests under ASan...
-.\test_describe_asan.exe
-if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
-
-echo Building test_generic_actions_asan.exe...
-cl %CFLAGS% /I. /Fe:test_generic_actions_asan.exe tests\test_generic_actions.c libengine_asan.lib
-if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
-
-echo Running generic action tests under ASan...
-.\test_generic_actions_asan.exe
-if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
-
-echo Building test_saveload_asan.exe...
-cl %CFLAGS% /I. /Fe:test_saveload_asan.exe tests\test_saveload.c libengine_asan.lib
-if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
-
-echo Running saveload tests under ASan...
-.\test_saveload_asan.exe
-if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
-
-echo Building test_rollout_asan.exe...
-cl %CFLAGS% /I. /Fe:test_rollout_asan.exe tests\test_rollout.c libengine_asan.lib
-if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
-
-echo Running rollout tests under ASan...
-.\test_rollout_asan.exe
-if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
-
-echo Building test_catalog_assembly_asan.exe...
-cl %CFLAGS% /I. /Fe:test_catalog_assembly_asan.exe tests\test_catalog_assembly.c libengine_asan.lib
-if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
-
-echo Running catalog assembly tests under ASan...
-.\test_catalog_assembly_asan.exe
-if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
+    echo Running %%t under ASan...
+    .\%%t_asan.exe
+    if errorlevel 1 exit /b 1
+)
 
 echo Building engine_c_asan.dll...
-del /Q test_engine.obj test_intern_c.obj test_view.obj test_describe.obj test_generic_actions.obj test_saveload.obj test_catalog_assembly.obj test_rollout.obj 2>nul
 del /Q engine_c_asan.dll 2>nul
-cl %CFLAGS% /LD /Fe:engine_c_asan.dll *.obj /link /DEF:engine_c.def /INCREMENTAL:NO
+cl %CFLAGS% /LD /Fe:engine_c_asan.dll !LIBOBJS! /link /DEF:engine_c.def /INCREMENTAL:NO /MACHINE:X64
 if %ERRORLEVEL% neq 0 (
     echo ERROR: Cannot link engine_c_asan.dll. If the file is in use, close any
     echo        Python processes or terminals that have loaded it, then retry.
@@ -120,7 +79,7 @@ REM next to engine_c_asan.dll so the OS loader picks it up automatically.
 copy /Y "%VCToolsInstallDir%bin\Hostx64\x64\clang_rt.asan_dynamic-x86_64.dll" . > nul
 if %ERRORLEVEL% neq 0 (
     echo WARNING: could not copy clang_rt.asan_dynamic-x86_64.dll next to
-    echo          engine_c_asan.dll — loading it from Python will fail with
+    echo          engine_c_asan.dll - loading it from Python will fail with
     echo          "Could not find module ... or one of its dependencies".
 )
 

@@ -28,18 +28,14 @@ test:
 # Both test trees. `just test` collects tests/ only; openspiel_pyrants/tests/
 # runs separately. Use this in every "done when" so a regression in the
 # OpenSpiel layer cannot slip past again (F-029).
-test-all:
+test-all: check-build-manifest
     $a = 0; $b = 0; & {{python}} -m pytest -q; $a = $LASTEXITCODE; & {{python}} -m pytest openspiel_pyrants/tests/ -q; $b = $LASTEXITCODE; if ($a -ne 0 -or $b -ne 0) { exit 1 }
 
-test-c:
-    & .\engine_c\test_engine.exe
-    & .\engine_c\test_view.exe
-    & .\engine_c\test_describe.exe
-    & .\engine_c\test_generic_actions.exe
-    & .\engine_c\test_saveload.exe
-    & .\engine_c\test_catalog_assembly.exe
-    & .\engine_c\test_rollout.exe
-    & .\engine_c\test_infostate_hash.exe
+check-build-manifest:
+    & {{python}} scripts/check_build_manifest.py
+
+test-c: check-build-manifest
+    $a = 0; Get-Content engine_c/tests.txt | Where-Object { $_.Trim() -and -not $_.Trim().StartsWith('#') } | ForEach-Object { $t = ($_ -split '\|')[0].Trim(); & ".\engine_c\$t.exe"; if ($LASTEXITCODE -ne 0) { $a = 1 } }; if ($a -ne 0) { exit 1 }
 
 test-c-python: generate-test-card-scenarios
     & {{python}} -m pytest tests/c_engine -v
