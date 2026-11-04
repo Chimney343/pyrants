@@ -5,6 +5,7 @@ describe.c
 generic_runtime.c
 helpers.c
 intern.c
+layout.c
 loader.c
 moves.c
 phases.c

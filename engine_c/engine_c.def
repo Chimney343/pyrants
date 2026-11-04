@@ -10,6 +10,8 @@ EXPORTS
     engine_public_view
     engine_private_view
     engine_infostate_hash
+    engine_layout_size
+    engine_layout_offset
     engine_load_definition_json
     engine_apply_setup_json
     engine_clone_cow

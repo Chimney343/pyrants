@@ -11,11 +11,18 @@ Usage:
     next_state = eng.apply(state, moves[0])
 """
 
+import contextlib
 import ctypes
 import os
 from ctypes import (
-    POINTER, Structure, c_bool, c_char_p, c_double, c_int, c_uint32,
-    c_uint64, c_void_p, byref, cast, pointer,
+    POINTER,
+    Structure,
+    c_bool,
+    c_char_p,
+    c_int,
+    c_uint32,
+    c_uint64,
+    c_void_p,
 )
 
 _dll_path = os.environ.get("PYRANTS_ENGINE_DLL")
@@ -28,10 +35,8 @@ if not _dll_path:
         _dll_path = os.path.join(os.path.dirname(__file__), "..", "engine_c", "engine_c.dll")
 
 _lib = None
-try:
+with contextlib.suppress(OSError):
     _lib = ctypes.CDLL(_dll_path)
-except OSError:
-    pass
 
 # ── type aliases ──────────────────────────────────────────────────────────
 Sym = c_uint32
@@ -298,22 +303,27 @@ class PendingPromotionState(Structure):
     ]
 
 class PendingGenericChoiceState(Structure):
-    _fields_ = [
-        ("source_card_id", Sym), ("exec_kind", c_int),
-        ("option_ids", POINTER(Sym)), ("option_count", c_int),
-        ("selected_option_ids", POINTER(Sym)), ("selected_count", c_int),
-        ("current_option_id", Sym),
-        ("current_actions", POINTER(CardAction)), ("current_action_count", c_int),
-        ("next_action_index", c_int), ("awaiting_option", c_bool),
-        ("remaining_repeats", c_int), ("allow_repeat", c_bool),
-        ("last_selection_keys", Sym * 8), ("last_selection_values", Sym * 8),
-        ("last_selection_count", c_int),
-        ("counter_keys", Sym * 8), ("counter_values", c_int * 8),
-        ("counter_count", c_int),
-        ("limit_keys", Sym * 8), ("limit_values", c_int * 8),
-        ("limit_count", c_int),
-        ("resolve_depth", c_int),
-    ]
+    pass
+
+
+PendingGenericChoiceState._fields_ = [
+    ("source_card_id", Sym), ("exec_kind", c_int),
+    ("option_ids", POINTER(Sym)), ("option_count", c_int),
+    ("selected_option_ids", POINTER(Sym)), ("selected_count", c_int),
+    ("current_option_id", Sym),
+    ("current_actions", POINTER(CardAction)), ("current_action_count", c_int),
+    ("next_action_index", c_int), ("awaiting_option", c_bool),
+    ("remaining_repeats", c_int), ("allow_repeat", c_bool),
+    ("last_selection_keys", Sym * 8), ("last_selection_values", Sym * 8),
+    ("last_selection_count", c_int),
+    ("counter_keys", Sym * 8), ("counter_values", c_int * 8),
+    ("counter_count", c_int),
+    ("limit_keys", Sym * 8), ("limit_values", c_int * 8),
+    ("limit_count", c_int),
+    ("resolve_depth", c_int),
+    ("parent", POINTER(PendingGenericChoiceState)),
+    ("last_played_card_id", Sym),
+]
 
 class GameStateStruct(Structure):
     _fields_ = [
@@ -439,6 +449,42 @@ class CGameView(Structure):
 
 
 # ── function signatures ───────────────────────────────────────────────────
+# ── layout contract ───────────────────────────────────────────────────────
+# C names on the left, the ctypes mirror on the right. PublicView/PrivateView
+# are excluded: they are dead and are removed by the 0.4 cleanup.
+_MIRRORED_STRUCTS = {
+    "MetaEntry": MetaEntry,
+    "CardAction": CardAction,
+    "CardOption": CardOption,
+    "ExecutionModel": ExecutionModel,
+    "GlobalCondition": GlobalCondition,
+    "StateContract": StateContract,
+    "PaidAbility": PaidAbility,
+    "CardDefinition": CardDefinition,
+    "CardCatalog": CardCatalog,
+    "NodeDefinition": NodeDefinition,
+    "BoardDefinition": BoardDefinition,
+    "DeckEntry": DeckEntry,
+    "DeckDefinition": DeckDefinition,
+    "SpecialStackDef": SpecialStackDef,
+    "SetupDefinition": SetupDefinition,
+    "GameDefinition": GameDefinition,
+    "NodeState": NodeState,
+    "PlayerState": PlayerState,
+    "ResourcePool": ResourcePool,
+    "MarketState": MarketState,
+    "PendingAbilityState": PendingAbilityState,
+    "PendingPromotionState": PendingPromotionState,
+    "PendingGenericChoiceState": PendingGenericChoiceState,
+    "GameState": GameStateStruct,
+    "Move": Move,
+    "MoveData": MoveData,
+    "CPlayerZoneView": CPlayerZoneView,
+    "CNodeOccupancyView": CNodeOccupancyView,
+    "CGameView": CGameView,
+}
+
+
 def _setup():
     _lib.intern_init.argtypes = [c_int]
     _lib.intern_init.restype = None
@@ -479,6 +525,11 @@ def _setup():
         POINTER(GameStateStruct), Sym, POINTER(c_uint64),
     ]
     _lib.engine_infostate_hash.restype = None
+
+    _lib.engine_layout_size.argtypes = [c_char_p]
+    _lib.engine_layout_size.restype = ctypes.c_size_t
+    _lib.engine_layout_offset.argtypes = [c_char_p, c_char_p]
+    _lib.engine_layout_offset.restype = ctypes.c_longlong
 
     _lib.register_default_effects.argtypes = []
     _lib.register_default_effects.restype = None
@@ -527,4 +578,11 @@ def _setup():
 
 
 if _lib is not None:
+    if not hasattr(_lib, "engine_layout_size") or not hasattr(_lib, "engine_layout_offset"):
+        raise RuntimeError(
+            "engine_c.dll is missing the struct layout probe; rebuild it with 'just build-c'"
+        )
     _setup()
+    from .layout_probe import assert_layout
+
+    assert_layout(_lib, _MIRRORED_STRUCTS)
