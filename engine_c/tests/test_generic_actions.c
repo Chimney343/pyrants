@@ -1484,6 +1484,24 @@ static void test_op_promote_card(void) {
     printf("PASS: promote_card op owns discard target, apply and describe\n");
 }
 
+static void test_op_table_complete(void) {
+    int count = op_table_count();
+    assert(count == 13);
+    for (int i = 0; i < count; i++) {
+        const CardOp *op = op_table_at(i);
+        assert(op != NULL);
+        assert(op->name != NULL && op->name[0] != '\0');
+        assert(op->needs_selection);
+        assert(op->enumerate != NULL);
+        assert(op->target_from_move != NULL);
+        assert(op->apply != NULL);
+        assert(op->describe != NULL);
+        assert(op_lookup(intern(op->name)) == op);
+    }
+    assert(op_lookup(intern("custom_effect")) == NULL);
+    printf("PASS: op table complete for %d migrated ops; custom_effect remains legacy\n", count);
+}
+
 static void test_sel_deploy_empty_barracks(void) {
     Sym p1 = intern("p1");
     Sym site_a = intern("site_a");
@@ -1553,6 +1571,7 @@ int main(void) {
     test_op_devour();
     test_op_play_card();
     test_op_promote_card();
+    test_op_table_complete();
     test_sel_place_spy_relocation();
     test_sel_place_spy_supply_regression();
     test_sel_deploy_empty_barracks();
