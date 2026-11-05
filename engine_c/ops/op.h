@@ -11,6 +11,7 @@
 typedef enum {
     OP_TARGET_NONE = 0,
     OP_TARGET_RETURN_SPY,
+    OP_TARGET_PLACE_SPY,
 } OpTargetKind;
 
 typedef struct {
@@ -21,6 +22,10 @@ typedef struct {
             Sym spy_owner_id;
             int free_enemy_return;
         } return_spy;
+        struct {
+            Sym target_node_id;
+            Sym source_node_id;
+        } place_spy;
     } as;
 } OpTarget;
 
@@ -35,7 +40,9 @@ typedef GameState *(*OpApplyFn)(GameState *state, Sym player_id,
                                 const CardDefinition *card, const CardAction *action,
                                 const OpTarget *target);
 typedef void (*OpDescribeFn)(const GameState *state, const CardAction *action,
-                             const OpTarget *target, char *buf, size_t cap);
+                             const OpTarget *target,
+                             const char *const *node_ids, const char *const *node_labels,
+                             int node_pair_count, char *buf, size_t cap);
 
 typedef struct {
     const char *name;

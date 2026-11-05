@@ -4,9 +4,11 @@
 #include <string.h>
 
 extern const CardOp OP_RETURN_SPY;
+extern const CardOp OP_PLACE_SPY;
 
 static const CardOp *const OPS[] = {
     &OP_RETURN_SPY,
+    &OP_PLACE_SPY,
 };
 
 const CardOp *op_lookup(Sym op) {

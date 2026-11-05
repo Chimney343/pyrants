@@ -31,20 +31,25 @@ identical.
 - The typed `OpTarget` record is built from the frozen `Move` payload at the
   apply boundary. The `Move` string remains the wire format; no payload,
   decisions or action-id change is allowed.
-- Migration is one leaf op at a time, starting with `return_spy`. A C test at
-  the op-table interface asserts the descriptor is complete, the legacy
-  dispatcher reaches it, the typed target round-trips, apply matches card
-  behavior, and unmigrated ops still fall back.
+- Migration is one leaf op at a time, starting with `return_spy`, then
+  `place_spy`. A C test at the op-table interface asserts the descriptor is
+  complete, the legacy dispatcher reaches it, the typed target round-trips,
+  apply matches card behavior, and unmigrated ops still fall back.
+- Op describe callbacks receive the viewer's node-id/label arrays so target
+  labels are produced by the op without duplicating node naming in each op.
 
 ## Consequences
 
-`return_spy` now answers from the op table; its selection, target derivation,
-apply and option-label describe are in `engine_c/ops/return_spy.c`. The legacy
-`sel_return_spy`, `apply_return_spy_gen` registry entries are removed for that
-op. The colon parser and `find_sel`/`atoi` code remain for the other ops until
-their migrations.
+`return_spy` and `place_spy` now answer from the op table; their selection,
+target derivation, apply and describe callbacks live in
+`engine_c/ops/return_spy.c` and `engine_c/ops/place_spy.c`. The legacy
+`sel_return_spy`/`apply_return_spy_gen` and `sel_place_spy`/`apply_place_spy`
+registry entries are removed for those ops. `place_spy` keeps its rulebook
+decline as a valid null target, and both ops reproduce the legacy
+`last_selection` records so follow-up actions keep working. The colon parser
+and `find_sel`/`atoi` code remain for the other ops until their migrations.
 
 `op_lookup` is a small name scan. It is called on the selection/apply paths;
-the table is small and this is not a hot-loop concern for the first op. The op
-describe currently owns the modal option label; the generic move-label path can
-adopt it as more ops migrate.
+the table is small and this is not a hot-loop concern for the first ops. The op
+describe now owns both the modal option label and the generic move-target label
+for migrated ops; `engine_node_label` is the shared node-label helper.

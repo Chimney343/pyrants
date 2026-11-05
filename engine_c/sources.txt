@@ -9,6 +9,7 @@ layout.c
 loader.c
 moves.c
 ops/op.c
+ops/place_spy.c
 ops/return_spy.c
 phases.c
 player_view.c

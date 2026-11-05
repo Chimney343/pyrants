@@ -48,6 +48,11 @@ static const char *_player_label(const char *id_str) {
     return id_str ? id_str : "unknown";
 }
 
+const char *engine_node_label(const char *node_id_str,
+                              const char *const *node_ids,
+                              const char *const *node_labels,
+                              int node_pair_count);
+
 static const char *node_label(const char *node_id_str,
                               const char *const *node_ids,
                               const char *const *node_labels,
@@ -59,6 +64,13 @@ static const char *node_label(const char *node_id_str,
         }
     }
     return _humanize_id(node_id_str);
+}
+
+const char *engine_node_label(const char *node_id_str,
+                              const char *const *node_ids,
+                              const char *const *node_labels,
+                              int node_pair_count) {
+    return node_label(node_id_str, node_ids, node_labels, node_pair_count);
 }
 
 static const char *troop_owner_label(const GameState *state, Sym node_id, int slot_index) {
@@ -172,7 +184,18 @@ int engine_describe_move(const GameState *state, const Move *move,
                 const CardAction *act = pending_generic_active_action(state->pending_generic);
                 if (act) {
                     const char *op = intern_str(act->op);
-                    if (op && (strcmp(op, "devour") == 0 || strcmp(op, "devour_cost") == 0)) {
+                    const CardOp *card_op = op_lookup(act->op);
+                    if (card_op && card_op->describe) {
+                        OpTarget target;
+                        OpTarget *target_ptr = NULL;
+                        if (card_op->target_from_move
+                            && card_op->target_from_move(state, state->current_player_id,
+                                                         act, move, &target)) {
+                            target_ptr = &target;
+                        }
+                        card_op->describe(state, act, target_ptr, node_ids, node_labels,
+                                          node_pair_count, buf, sizeof(buf));
+                    } else if (op && (strcmp(op, "devour") == 0 || strcmp(op, "devour_cost") == 0)) {
                         const char *name = card_name_for(state, aid);
                         snprintf(buf, sizeof(buf), "Devour %s", name);
                     } else if (op && strcmp(op, "promote_card") == 0) {
@@ -211,15 +234,6 @@ int engine_describe_move(const GameState *state, const Move *move,
                     } else if (op && strcmp(op, "recruit_card") == 0) {
                         const char *name = card_name_for(state, aid);
                         snprintf(buf, sizeof(buf), "Recruit %s", name);
-                    } else if (op && strcmp(op, "place_spy") == 0) {
-                        Sym tid = move->data.resolve_generic.target_id;
-                        const char *dst_label = node_label(intern_str(aid), node_ids, node_labels, node_pair_count);
-                        if (tid != SYM_NULL) {
-                            const char *src_label = node_label(intern_str(tid), node_ids, node_labels, node_pair_count);
-                            snprintf(buf, sizeof(buf), "Move your spy from %s to %s", src_label, dst_label);
-                        } else {
-                            snprintf(buf, sizeof(buf), "Place a spy at %s", dst_label);
-                        }
                     } else if (op && strcmp(op, "assassinate_troop") == 0) {
                         Sym tid = move->data.resolve_generic.target_id;
                         int slot_idx = 0;
@@ -479,7 +493,11 @@ int engine_describe_move(const GameState *state, const Move *move,
                                             if (opt->action_count == 1) {
                                                 const CardAction *a = &opt->actions[0];
                                                 const char *op = intern_str(a->op);
-                                                if (op && strcmp(op, "gain_resource") == 0) {
+                                                const CardOp *card_op = op_lookup(a->op);
+                                                if (card_op && card_op->describe) {
+                                                    card_op->describe(state, a, NULL, NULL, NULL, 0,
+                                                                      buf, sizeof(buf));
+                                                } else if (op && strcmp(op, "gain_resource") == 0) {
                                                     int count = a->quantity_kind == QUANT_FIXED ? a->quantity_value : 1;
                                                     const char *res = "resource";
                                                     for (int mi = 0; mi < a->metadata_count; mi++) {
@@ -493,8 +511,6 @@ int engine_describe_move(const GameState *state, const Move *move,
                                                 } else if (op && strcmp(op, "draw_cards") == 0) {
                                                     int count = a->quantity_kind == QUANT_FIXED ? a->quantity_value : 1;
                                                     snprintf(buf, sizeof(buf), "Draw %d card%s", count, count == 1 ? "" : "s");
-                                                } else if (op && strcmp(op, "place_spy") == 0) {
-                                                    snprintf(buf, sizeof(buf), "Place a spy");
                                                 } else {
                                                     snprintf(buf, sizeof(buf), "%s", _humanize_id(intern_str(opt->option_id)));
                                                 }
@@ -507,7 +523,8 @@ int engine_describe_move(const GameState *state, const Move *move,
                                                     if (!op) continue;
                                                     const CardOp *card_op = op_lookup(a->op);
                                                     if (card_op && card_op->describe) {
-                                                        card_op->describe(state, a, NULL, part_buf, sizeof(part_buf));
+                                                        card_op->describe(state, a, NULL, NULL, NULL, 0,
+                                                                          part_buf, sizeof(part_buf));
                                                     } else if (strcmp(op, "return_spy") == 0) {
                                                         snprintf(part_buf, sizeof(part_buf), "Return a spy");
                                                     } else if (strcmp(op, "custom_effect") == 0) {

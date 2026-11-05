@@ -116,8 +116,11 @@ static GameState *op_return_spy_apply(GameState *state, Sym player_id,
 }
 
 static void op_return_spy_describe(const GameState *state, const CardAction *action,
-                                   const OpTarget *target, char *buf, size_t cap) {
+                                   const OpTarget *target,
+                                   const char *const *node_ids, const char *const *node_labels,
+                                   int node_pair_count, char *buf, size_t cap) {
     (void)state; (void)action; (void)target;
+    (void)node_ids; (void)node_labels; (void)node_pair_count;
     snprintf(buf, cap, "Return a spy");
 }
 

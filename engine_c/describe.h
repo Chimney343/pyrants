@@ -29,6 +29,12 @@ int engine_describe_move(const GameState *state, const Move *move,
                          int node_pair_count,
                          char *out, int out_cap);
 
+/* Node id -> friendly label, used by op modules' describe callbacks. */
+const char *engine_node_label(const char *node_id_str,
+                              const char *const *node_ids,
+                              const char *const *node_labels,
+                              int node_pair_count);
+
 #ifdef __cplusplus
 }
 #endif
