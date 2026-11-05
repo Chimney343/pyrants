@@ -10,7 +10,7 @@ cd "$PROJECT_ROOT/engine_c"
 
 BUILD_TYPE="${1:-release}"
 
-CFLAGS="-std=c11 -Wall -Wextra -fPIC -DPROFILE_BUILD"
+CFLAGS="-std=c11 -Wall -Wextra -fPIC -DPROFILE_BUILD -I."
 LDFLAGS=""
 
 if [ "$BUILD_TYPE" = "debug" ]; then
@@ -44,3 +44,4 @@ echo "=== Linking profile_runner ==="
 gcc $LDFLAGS $OBJS "$OBJ_DIR/profile_runner.o" -o "$OBJ_DIR/profile_runner"
 
 echo "=== Build complete: engine_c/build_profile/profile_runner ==="
+

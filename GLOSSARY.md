@@ -45,3 +45,12 @@ module's shape is settled, not before.
 - **move display query** - the C `engine_display_moves` and its Python
   `display_moves()` adapters. The legal-move query compacts the applicable
   entries; the display query keeps the viewer's full ordered list.
+- **op** - one card action verb (`return_spy`, `place_spy`, ...). An op module
+  owns its needs-selection rule, target enumeration, typed target, apply and
+  describe.
+- **op table** - the central `CardOp` dispatch table in `engine_c/ops/`. A
+  migrated op answers from the table; unmigrated ops fall back to the legacy
+  action/selection registries.
+- **op target** - the typed internal record (`OpTarget`) built from the frozen
+  `Move` payload at the apply boundary. The payload string stays the wire
+  format; apply/describe consume the typed record.

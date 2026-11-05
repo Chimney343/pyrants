@@ -30,7 +30,7 @@ $(LIB): $(OBJS)
 	$(AR) $(ARFLAGS) $@ $^
 
 %.o: %.c
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) -I. -c $< -o $@
 
 clean:
 	rm -f $(OBJS) $(LIB) *.obj *.lib \
@@ -54,3 +54,4 @@ arena.o: arena.h
 rng.o: rng.h
 loader.o: cJSON.h rng.h arena.h
 rules.o: rules.h helpers.h phases.h scoring.h moves.h
+

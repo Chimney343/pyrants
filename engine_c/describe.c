@@ -1,6 +1,7 @@
 #include "describe.h"
 #include "generic_runtime.h"
 #include "intern.h"
+#include "ops/op.h"
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -504,7 +505,10 @@ int engine_describe_move(const GameState *state, const Move *move,
                                                     const CardAction *a = &opt->actions[ai];
                                                     const char *op = intern_str(a->op);
                                                     if (!op) continue;
-                                                    if (strcmp(op, "return_spy") == 0) {
+                                                    const CardOp *card_op = op_lookup(a->op);
+                                                    if (card_op && card_op->describe) {
+                                                        card_op->describe(state, a, NULL, part_buf, sizeof(part_buf));
+                                                    } else if (strcmp(op, "return_spy") == 0) {
                                                         snprintf(part_buf, sizeof(part_buf), "Return a spy");
                                                     } else if (strcmp(op, "custom_effect") == 0) {
                                                         const char *ek = NULL;

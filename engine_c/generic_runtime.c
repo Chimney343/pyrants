@@ -3,6 +3,7 @@
 #include "selection.h"
 #include "arena.h"
 #include "engine.h"
+#include "ops/op.h"
 #include "rng.h"
 #include <string.h>
 #include <stdlib.h>
@@ -162,11 +163,13 @@ const CardAction *pending_generic_active_action(const PendingGenericChoiceState 
 int action_requires_selection(const CardAction *action) {
     static const char *selection_ops[] = {
         "deploy_troops", "assassinate_troop", "supplant_troop", "place_spy",
-        "return_spy", "return_unit", "move_troop", "force_discard",
+        "return_unit", "move_troop", "force_discard",
         "recruit_card", "devour", "devour_cost", "play_card", NULL
     };
     const char *op = intern_str(action->op);
     if (!op) return 0;
+    const CardOp *card_op = op_lookup(action->op);
+    if (card_op) return card_op->needs_selection;
     /* force_discard with target_scope "opponent" auto-applies to all
      * opponents at the last-selected site (Chuul's local_discard),
      * opponents with 3+ cards (Nothic's mass_discard).
@@ -840,6 +843,45 @@ GameState *apply_resolve_generic_choice(GameState *src, const Move *move) {
                 else p->next_action_index++;
                 return auto_resolve_pending_generic(state, pid);
             }
+            const CardOp *card_op = op_lookup(action->op);
+            if (card_op && card_op->target_from_move && card_op->apply) {
+                OpTarget target;
+                if (!card_op->target_from_move(state, pid, action, move, &target)) {
+                    engine_destroy(state);
+                    return NULL;
+                }
+                /* Mirror the legacy selection record: return_spy's only
+                 * sk/sv pair is node_id, plus a carried target_node_id. */
+                Sym carry_target_node = SYM_NULL;
+                for (int si = 0; si < p->last_selection_count; si++) {
+                    const char *k = intern_str(p->last_selection_keys[si]);
+                    if (k && strcmp(k, "target_node_id") == 0) {
+                        carry_target_node = p->last_selection_values[si];
+                        break;
+                    }
+                }
+                p->last_selection_count = 1;
+                p->last_selection_keys[0] = intern("node_id");
+                p->last_selection_values[0] = target.as.return_spy.node_id;
+                if (carry_target_node != SYM_NULL && p->last_selection_count < 8) {
+                    p->last_selection_keys[p->last_selection_count] = intern("target_node_id");
+                    p->last_selection_values[p->last_selection_count] = carry_target_node;
+                    p->last_selection_count++;
+                }
+
+                GameState *prev_sel = state;
+                state = card_op->apply(state, pid, card, action, &target);
+                int nested = (state != prev_sel);
+                if (state != prev_sel) engine_destroy(prev_sel);
+                if (!state) return NULL;
+                p = state->pending_generic;
+                if (p && action_requires_additional_choice(state, pid, action))
+                    return auto_resolve_pending_generic(state, pid);
+                if (p && !nested && p->next_action_index == pre_idx)
+                    p->next_action_index++;
+                return auto_resolve_pending_generic(state, pid);
+            }
+
             int sk[8] = {0};
             Sym sv[8] = {0};
             int sc = 0;

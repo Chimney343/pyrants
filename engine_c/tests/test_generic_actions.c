@@ -1,6 +1,7 @@
 #include "generic_runtime.h"
 #include "intern.h"
 #include "moves.h"
+#include "ops/op.h"
 #include "selection.h"
 #include "state.h"
 #include "engine.h"
@@ -601,6 +602,85 @@ static void test_sel_place_spy_supply_regression(void) {
     printf("PASS: sel_place_spy supply placement unchanged (no decline, no source)\n");
 }
 
+static void test_op_return_spy(void) {
+    Sym p1 = intern("p1");
+    Sym site_a = intern("site_a");
+    Sym site_b = intern("site_b");
+    Sym kind_site = intern("site");
+
+    NodeDefinition board_nodes[2];
+    memset(board_nodes, 0, sizeof(board_nodes));
+    board_nodes[0].node_id = site_a;
+    board_nodes[0].kind = kind_site;
+    board_nodes[1].node_id = site_b;
+    board_nodes[1].kind = kind_site;
+
+    BoardDefinition board;
+    memset(&board, 0, sizeof(board));
+    board.nodes = board_nodes;
+    board.node_count = 2;
+
+    GameDefinition def;
+    memset(&def, 0, sizeof(def));
+    def.board = board;
+
+    GameState s;
+    memset(&s, 0, sizeof(s));
+    s.definition = &def;
+    s.player_count = 1;
+    s.players[0].player_id = p1;
+    s.players[0].spies_available = 0;
+    s.node_count = 2;
+    s.nodes[0].node_id = site_a;
+    s.nodes[1].node_id = site_b;
+    s.nodes[0].spies[0] = p1;
+    s.nodes[0].spy_count = 1;
+
+    CardAction action;
+    memset(&action, 0, sizeof(action));
+    action.op = intern("return_spy");
+    action.metadata[0].key = intern("spy_owner");
+    action.metadata[0].value = intern("self");
+    action.metadata_count = 1;
+
+    const CardOp *op = op_lookup(intern("return_spy"));
+    assert(op != NULL);
+    assert(op->needs_selection);
+    assert(op->enumerate != NULL);
+    assert(op->target_from_move != NULL);
+    assert(op->apply != NULL);
+    assert(op->describe != NULL);
+    assert(action_requires_selection(&action) == 1);
+    assert(op_lookup(intern("place_spy")) == NULL);
+
+    Move out[8];
+    memset(out, 0, sizeof(out));
+    int n = legal_generic_target_selection_moves(&s, p1, NULL, NULL, &action, out, 8);
+    assert(n == 1);
+    assert(out[0].type == MOVE_RESOLVE_GENERIC);
+    assert(out[0].data.resolve_generic.action_id == site_a);
+    assert(out[0].data.resolve_generic.target_id == SYM_NULL);
+
+    OpTarget target;
+    memset(&target, 0, sizeof(target));
+    assert(op->target_from_move(&s, p1, &action, &out[0], &target));
+    assert(target.kind == OP_TARGET_RETURN_SPY);
+    assert(target.as.return_spy.node_id == site_a);
+    assert(target.as.return_spy.spy_owner_id == p1);
+    assert(target.as.return_spy.free_enemy_return == 0);
+
+    char label[64];
+    label[0] = '\0';
+    op->describe(&s, &action, NULL, label, sizeof(label));
+    assert(strcmp(label, "Return a spy") == 0);
+
+    assert(op->apply(&s, p1, NULL, &action, &target) == &s);
+    assert(s.nodes[0].spy_count == 0);
+    assert(s.players[0].spies_available == 1);
+
+    printf("PASS: return_spy op owns selection/target/apply/describe\n");
+}
+
 static void test_sel_deploy_empty_barracks(void) {
     Sym p1 = intern("p1");
     Sym site_a = intern("site_a");
@@ -658,6 +738,7 @@ static void test_sel_deploy_with_troops(void) {
 int main(void) {
     intern_init(4096);
     register_selection_handlers();
+    test_op_return_spy();
     test_sel_place_spy_relocation();
     test_sel_place_spy_supply_regression();
     test_sel_deploy_empty_barracks();

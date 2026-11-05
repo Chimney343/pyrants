@@ -1,0 +1,53 @@
+#ifndef ENGINE_OPS_OP_H
+#define ENGINE_OPS_OP_H
+
+#include "state.h"
+
+#include <stddef.h>
+
+/* Typed internal target for a card op. The frozen Move payload string remains
+ * the wire format; this record is built at the apply boundary and never
+ * crosses the Python/decisions boundary. */
+typedef enum {
+    OP_TARGET_NONE = 0,
+    OP_TARGET_RETURN_SPY,
+} OpTargetKind;
+
+typedef struct {
+    OpTargetKind kind;
+    union {
+        struct {
+            Sym node_id;
+            Sym spy_owner_id;
+            int free_enemy_return;
+        } return_spy;
+    } as;
+} OpTarget;
+
+typedef int (*OpEnumerateFn)(const GameState *state, Sym player_id,
+                             const PendingGenericChoiceState *pending,
+                             const CardDefinition *card, const CardAction *action,
+                             Move *out, int max_out);
+typedef int (*OpTargetFromMoveFn)(const GameState *state, Sym player_id,
+                                  const CardAction *action, const Move *move,
+                                  OpTarget *out);
+typedef GameState *(*OpApplyFn)(GameState *state, Sym player_id,
+                                const CardDefinition *card, const CardAction *action,
+                                const OpTarget *target);
+typedef void (*OpDescribeFn)(const GameState *state, const CardAction *action,
+                             const OpTarget *target, char *buf, size_t cap);
+
+typedef struct {
+    const char *name;
+    int needs_selection;
+    OpEnumerateFn enumerate;
+    OpTargetFromMoveFn target_from_move;
+    OpApplyFn apply;
+    OpDescribeFn describe;
+} CardOp;
+
+const CardOp *op_lookup(Sym op);
+int op_table_count(void);
+const CardOp *op_table_at(int index);
+
+#endif

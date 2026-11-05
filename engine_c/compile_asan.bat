@@ -48,7 +48,7 @@ for /f "usebackq eol=# tokens=*" %%s in ("sources.txt") do (
 )
 
 echo Building libengine_asan.lib (AddressSanitizer)...
-cl %CFLAGS% /c !SRCS!
+cl %CFLAGS% /I. /c !SRCS!
 if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 
 lib /nologo /out:libengine_asan.lib !LIBOBJS!
@@ -85,3 +85,4 @@ if %ERRORLEVEL% neq 0 (
 
 echo Done. Point the Python bindings at it with:
 echo   set PYRANTS_ENGINE_DLL=%~dp0engine_c_asan.dll
+

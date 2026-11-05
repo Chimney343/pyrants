@@ -1,5 +1,6 @@
 #include "generic_runtime.h"
 #include "helpers.h"
+#include "ops/op.h"
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -458,58 +459,6 @@ static int sel_place_spy(const GameState *state, Sym player_id,
     return w;
 }
 
-static int node_has_supplantable_troop(const GameState *state, Sym player_id, Sym nid) {
-    for (int i = 0; i < state->node_count; i++) {
-        if (state->nodes[i].node_id != nid) continue;
-        for (int s = 0; s < state->nodes[i].troop_slot_count; s++) {
-            Sym occ = state->nodes[i].troop_slots[s];
-            if (occ != SYM_NULL && occ != player_id) return 1;
-        }
-        return 0;
-    }
-    return 0;
-}
-
-static int sel_return_spy(const GameState *state, Sym player_id,
-                           const PendingGenericChoiceState *pending,
-                           const CardDefinition *card, const CardAction *action,
-                           Move *out, int max_out) {
-    int w = 0;
-    const char *spy_owner = NULL;
-    int requires_supplant_target = 0;
-    for (int mi = 0; mi < action->metadata_count; mi++) {
-        const char *mk = intern_str(action->metadata[mi].key);
-        const char *mv = intern_str(action->metadata[mi].value);
-        if (mk && strcmp(mk, "spy_owner") == 0)
-            spy_owner = mv;
-        if (mk && strcmp(mk, "requires_supplant_target") == 0
-            && mv && strcmp(mv, "true") == 0)
-            requires_supplant_target = 1;
-    }
-    bool only_self = spy_owner && strcmp(spy_owner, "self") == 0;
-    bool only_enemy = spy_owner && strcmp(spy_owner, "opponent") == 0;
-    for (int i = 0; i < state->node_count && w < max_out; i++) {
-        Sym nid = state->nodes[i].node_id;
-        if (requires_supplant_target && !node_has_supplantable_troop(state, player_id, nid))
-            continue;
-        for (int s = 0; s < state->nodes[i].spy_count && w < max_out; s++) {
-            Sym spy = state->nodes[i].spies[s];
-            if (spy == player_id && !only_enemy) {
-                out[w].type = MOVE_RESOLVE_GENERIC;
-                out[w].data.resolve_generic.action_id = nid;
-                out[w].player_index = 0;
-                w++;
-            } else if (spy != player_id && !only_self && has_presence(state, player_id, nid)) {
-                out[w].type = MOVE_RESOLVE_GENERIC;
-                out[w].data.resolve_generic.action_id = nid;
-                out[w].player_index = 0;
-                w++;
-            }
-        }
-    }
-    return w;
-}
-
 static int sel_return_unit(const GameState *state, Sym player_id,
                             const PendingGenericChoiceState *pending,
                             const CardDefinition *card, const CardAction *action,
@@ -925,6 +874,10 @@ int legal_generic_target_selection_moves(const GameState *state, Sym player_id,
                                           const PendingGenericChoiceState *pending,
                                           const CardDefinition *card,
                                           const CardAction *action, Move *out, int max_out) {
+    const CardOp *op = op_lookup(action->op);
+    if (op && op->enumerate)
+        return op->enumerate(state, player_id, pending, card, action, out, max_out);
+
     for (int i = 0; i < sel_dispatch_count; i++) {
         if (sel_op_keys[i] == action->op && sel_dispatch[i])
             return sel_dispatch[i](state, player_id, pending, card, action, out, max_out);
@@ -937,7 +890,6 @@ void register_selection_handlers(void) {
     register_sel(intern("assassinate_troop"), sel_assassinate_supplant);
     register_sel(intern("supplant_troop"), sel_assassinate_supplant);
     register_sel(intern("place_spy"), sel_place_spy);
-    register_sel(intern("return_spy"), sel_return_spy);
     register_sel(intern("return_unit"), sel_return_unit);
     register_sel(intern("move_troop"), sel_move_troop);
     register_sel(intern("force_discard"), sel_force_discard);

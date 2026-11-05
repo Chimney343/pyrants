@@ -43,7 +43,7 @@ for /f "usebackq eol=# tokens=*" %%s in ("sources.txt") do (
 )
 
 echo Building libengine.lib (%BUILD_TYPE%)...
-cl %CFLAGS% /c !SRCS!
+cl %CFLAGS% /I. /c !SRCS!
 if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 
 lib /nologo /out:libengine.lib !LIBOBJS!
@@ -70,3 +70,4 @@ if %ERRORLEVEL% neq 0 (
 )
 
 echo Done.
+

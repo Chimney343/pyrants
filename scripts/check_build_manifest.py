@@ -36,9 +36,12 @@ def main() -> int:
             errors.append(f"sources.txt: missing {name}")
 
     discovered_library = {
-        path.name
+        path.relative_to(ENGINE).as_posix()
         for path in ENGINE.glob("*.c")
         if not path.name.startswith("test_") and path.name != "profile_runner.c"
+    } | {
+        path.relative_to(ENGINE).as_posix()
+        for path in (ENGINE / "ops").glob("*.c")
     }
     listed_library = set(source_names)
     for name in sorted(discovered_library - listed_library):

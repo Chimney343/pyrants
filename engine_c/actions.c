@@ -293,47 +293,6 @@ static GameState *apply_place_spy(GameState *state, Sym player_id, const CardDef
     return state;
 }
 
-static GameState *apply_return_spy_gen(GameState *state, Sym player_id, const CardDefinition *card,
-                                        Sym source, const CardAction *action,
-                                        int *sk, Sym *sv, int sc) {
-    (void)card; (void)source;
-    Sym node_id = find_sel(sk, sv, sc, "node_id");
-    if (node_id == SYM_NULL) return state;
-    Sym spy_owner = find_sel(sk, sv, sc, "spy_owner_id");
-    if (spy_owner == SYM_NULL) {
-        int enemy_only = 0;
-        for (int i = 0; i < action->metadata_count; i++) {
-            const char *k = intern_str(action->metadata[i].key);
-            const char *v = intern_str(action->metadata[i].value);
-            if (k && strcmp(k, "spy_owner") == 0) {
-                if (v && strcmp(v, "self") == 0) spy_owner = player_id;
-                else if (v && strcmp(v, "opponent") == 0) enemy_only = 1;
-            }
-        }
-        if (spy_owner == SYM_NULL && enemy_only) {
-            NodeState *ns = cow_node(state, node_id);
-            if (ns) {
-                for (int si = 0; si < ns->spy_count; si++) {
-                    if (ns->spies[si] != SYM_NULL && ns->spies[si] != player_id) {
-                        spy_owner = ns->spies[si];
-                        break;
-                    }
-                }
-            }
-        }
-    }
-    if (spy_owner == SYM_NULL) spy_owner = player_id;
-    int free_enemy_return = 0;
-    for (int i = 0; i < action->metadata_count; i++) {
-        const char *k = intern_str(action->metadata[i].key);
-        const char *v = intern_str(action->metadata[i].value);
-        if (k && strcmp(k, "free_enemy_return") == 0 && v && strcmp(v, "true") == 0)
-            free_enemy_return = 1;
-    }
-    apply_return_spy(state, player_id, node_id, spy_owner, free_enemy_return);
-    return state;
-}
-
 static GameState *apply_return_unit(GameState *state, Sym player_id, const CardDefinition *card,
                                      Sym source, const CardAction *action,
                                      int *sk, Sym *sv, int sc) {
@@ -995,7 +954,6 @@ void register_generic_actions(void) {
     register_action(intern("assassinate_troop"), apply_assassinate_troop);
     register_action(intern("supplant_troop"), apply_supplant_troop);
     register_action(intern("place_spy"), apply_place_spy);
-    register_action(intern("return_spy"), apply_return_spy_gen);
     register_action(intern("return_unit"), apply_return_unit);
     register_action(intern("move_troop"), apply_move_troop);
     register_action(intern("force_discard"), apply_force_discard);
