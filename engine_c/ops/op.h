@@ -18,6 +18,7 @@ typedef enum {
     OP_TARGET_TROOP_SLOT,
     OP_TARGET_FORCE_DISCARD,
     OP_TARGET_RECRUIT_CARD,
+    OP_TARGET_DEVOUR,
 } OpTargetKind;
 
 typedef struct {
@@ -58,6 +59,9 @@ typedef struct {
         struct {
             Sym target_card_id;
         } recruit_card;
+        struct {
+            Sym target_card_id;
+        } devour;
     } as;
 } OpTarget;
 

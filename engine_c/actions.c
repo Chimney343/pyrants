@@ -738,7 +738,6 @@ void register_generic_actions(void) {
     register_action(intern("draw_cards"), apply_draw_cards);
     register_action(intern("force_discard"), apply_force_discard_auto);
     register_action(intern("promote_card"), apply_promote_card_gen);
-    register_action(intern("devour"), apply_devour);
     register_action(intern("devour_cost"), apply_devour);
     register_action(intern("grant_vp"), apply_grant_vp);
     register_action(intern("conditional_bonus"), apply_conditional_bonus);

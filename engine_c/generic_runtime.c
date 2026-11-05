@@ -162,7 +162,7 @@ const CardAction *pending_generic_active_action(const PendingGenericChoiceState 
 
 int action_requires_selection(const CardAction *action) {
     static const char *selection_ops[] = {
-        "devour", "devour_cost", "play_card", NULL
+        "devour_cost", "play_card", NULL
     };
     const char *op = intern_str(action->op);
     if (!op) return 0;
@@ -980,6 +980,15 @@ GameState *apply_resolve_generic_choice(GameState *src, const Move *move) {
                     p->last_selection_count = 1;
                     p->last_selection_keys[0] = intern("target_card_id");
                     p->last_selection_values[0] = target.as.recruit_card.target_card_id;
+                    if (carry_target_node != SYM_NULL && p->last_selection_count < 8) {
+                        p->last_selection_keys[p->last_selection_count] = intern("target_node_id");
+                        p->last_selection_values[p->last_selection_count] = carry_target_node;
+                        p->last_selection_count++;
+                    }
+                } else if (target.kind == OP_TARGET_DEVOUR) {
+                    p->last_selection_count = 1;
+                    p->last_selection_keys[0] = intern("target_card_id");
+                    p->last_selection_values[0] = target.as.devour.target_card_id;
                     if (carry_target_node != SYM_NULL && p->last_selection_count < 8) {
                         p->last_selection_keys[p->last_selection_count] = intern("target_node_id");
                         p->last_selection_values[p->last_selection_count] = carry_target_node;

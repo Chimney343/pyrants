@@ -17,4 +17,10 @@ int legal_assassinate_supplant_moves(const GameState *state, Sym player_id,
                                      const CardDefinition *card, const CardAction *action,
                                      Move *out, int max_out);
 
+/* Shared target enumeration for devour and devour_cost. */
+int legal_devour_moves(const GameState *state, Sym player_id,
+                       const PendingGenericChoiceState *pending,
+                       const CardDefinition *card, const CardAction *action,
+                       Move *out, int max_out);
+
 #endif

@@ -465,7 +465,7 @@ int devour_target_count(const GameState *state, Sym player_id,
     }
 }
 
-static int sel_devour(const GameState *state, Sym player_id,
+int legal_devour_moves(const GameState *state, Sym player_id,
                        const PendingGenericChoiceState *pending,
                        const CardDefinition *card, const CardAction *action,
                        Move *out, int max_out) {
@@ -616,8 +616,7 @@ int legal_generic_target_selection_moves(const GameState *state, Sym player_id,
 
 void register_selection_handlers(void) {
     register_sel(intern("promote_card"), sel_promote);
-    register_sel(intern("devour"), sel_devour);
-    register_sel(intern("devour_cost"), sel_devour);
+    register_sel(intern("devour_cost"), legal_devour_moves);
     register_sel(intern("play_card"), sel_play_card);
     register_sel(intern("custom_effect"), sel_custom_effect);
 }
