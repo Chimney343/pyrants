@@ -37,6 +37,7 @@
       },
       {
         "option_id": "option_2",
+        "viability": "allow_without_targets",
         "actions": [
           {
             "action_id": "option_2_action_1",

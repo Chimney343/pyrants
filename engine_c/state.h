@@ -74,6 +74,7 @@ typedef struct {
     Sym         option_id;
     CardAction *actions;
     int         action_count;
+    Sym         viability;  /* named option-viability predicate; SYM_NULL = default */
 } CardOption;
 
 typedef struct {

@@ -35,6 +35,7 @@
       },
       {
         "option_id": "option_2",
+        "viability": "own_spy_and_other_troop",
         "actions": [
           {
             "action_id": "option_2_action_1",

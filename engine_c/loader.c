@@ -165,6 +165,7 @@ static CardOption *parse_options(cJSON *arr, int *out_count, Arena *arena) {
         cJSON *jo = cJSON_GetArrayItem(arr, i);
         memset(&opts[i], 0, sizeof(CardOption));
         opts[i].option_id = json_string_sym(jo, "option_id", SYM_NULL);
+        opts[i].viability = json_string_sym(jo, "viability", SYM_NULL);
         cJSON *act_arr = cJSON_GetObjectItem(jo, "actions");
         opts[i].actions = parse_actions_array(act_arr, &opts[i].action_count, arena);
     }
@@ -481,9 +482,21 @@ GameDefinition *engine_load_definition_json(const char *catalog_json, const char
         def->catalog = parse_catalog(catalog_json, arena);
         for (int i = 0; i < def->catalog.card_count; i++) {
             Sym on_discard = def->catalog.cards[i].on_discard;
-            if (on_discard == SYM_NULL) continue;
-            const char *value = intern_str(on_discard);
-            if (!value || strcmp(value, "inner_circle") != 0) return NULL;
+            if (on_discard != SYM_NULL) {
+                const char *value = intern_str(on_discard);
+                if (!value || strcmp(value, "inner_circle") != 0) return NULL;
+            }
+            for (int oi = 0; oi < def->catalog.cards[i].execution.option_count; oi++) {
+                Sym viability = def->catalog.cards[i].execution.options[oi].viability;
+                if (viability == SYM_NULL) continue;
+                const char *v = intern_str(viability);
+                if (!v
+                    || (strcmp(v, "allow_without_targets") != 0
+                        && strcmp(v, "own_spy_and_other_troop") != 0
+                        && strcmp(v, "enemy_white_trophy") != 0
+                        && strcmp(v, "own_spy_anywhere") != 0))
+                    return NULL;
+            }
         }
     }
 

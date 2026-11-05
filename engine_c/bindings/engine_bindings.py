@@ -154,6 +154,7 @@ class CardOption(Structure):
     _fields_ = [
         ("option_id", Sym),
         ("actions", POINTER(CardAction)), ("action_count", c_int),
+        ("viability", Sym),
     ]
 
 class ExecutionModel(Structure):

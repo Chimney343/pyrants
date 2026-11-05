@@ -32,9 +32,13 @@ without card-id checks.
 - Second field: `CardDefinition.negative`. It replaces the `insane_outcast`
   card-id checks in promotion, devour and the negative-card grant path; the
   helper `negative_card_id` locates the catalog's negative card.
-- Subsequent fields: `option_viability` predicates for Gauth/Cloaker/Mummy
-  Lord/Grazzt, a timing/trigger field for F-015, and the `custom_effect`
-  effect-kind decomposition.
+- Third field: `CardOption.viability`, a named predicate. The loader accepts
+  `allow_without_targets` (Gauth option 2), `own_spy_and_other_troop`
+  (Cloaker option 2), `enemy_white_trophy` (Mummy Lord option 2) and
+  `own_spy_anywhere` (Graz'zt option 2). The four card-id viability branches
+  are gone; the predicates are evaluated for both modal and repeat options.
+- Subsequent fields: a timing/trigger field for F-015 and the
+  `custom_effect` effect-kind decomposition.
 - The catalog JSON gains the fields; the C struct, Python ctypes mirror and
   layout probe grow with them. Move payloads, decisions and action ids do not
   change.
@@ -46,8 +50,10 @@ return NULL and a C catalog test locks that rejection. Ambassador's discard
 behavior now comes from the catalog, so its card-id branch is gone from
 `helpers.c` and `rules.c`. `negative` is a loader-read boolean; promotion,
 devour and the Insane Outcast grant path use the loaded property instead of
-the card id. The remaining card-id and source-fragment branches stay until
-their named fields land.
+the card id. `option_viability` is a loader-validated predicate; the
+Gauth/Cloaker/Mummy Lord/Graz'zt card-id branches are gone, and a catalog
+test rejects unknown predicate names. The remaining timing/source-fragment
+branches stay until their named fields land.
 
 `custom_effect` remains a multi-effect dispatcher and is explicitly deferred;
 its 13 effect kinds are catalog data that needs its own decomposition rather

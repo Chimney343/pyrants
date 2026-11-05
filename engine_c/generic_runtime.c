@@ -1375,19 +1375,24 @@ static int modal_option_is_viable(GameState *state, Sym player_id,
                                   const CardDefinition *opt_card, Sym oid) {
     int viable = 1;
     int pi = -1;
+    const CardOption *opt = NULL;
+    const char *viability = NULL;
     for (int pi2 = 0; pi2 < state->player_count; pi2++)
         if (state->players[pi2].player_id == player_id) { pi = pi2; break; }
 
     /* --- Generic viability: every non-optional selection-requiring
      *     action in the option must have at least one legal target. --- */
-    if (opt_card && opt_card->execution.kind == EXEC_MODAL) {
-        const CardOption *opt = NULL;
+    if (opt_card) {
         for (int oi = 0; oi < opt_card->execution.option_count; oi++) {
             if (opt_card->execution.options[oi].option_id == oid) {
                 opt = &opt_card->execution.options[oi];
                 break;
             }
         }
+        if (opt && opt->viability != SYM_NULL)
+            viability = intern_str(opt->viability);
+    }
+    if (opt_card && opt_card->execution.kind == EXEC_MODAL) {
         if (opt) {
             for (int ai = 0; ai < opt->action_count && viable; ai++) {
                 const CardAction *act = &opt->actions[ai];
@@ -1409,61 +1414,46 @@ static int modal_option_is_viable(GameState *state, Sym player_id,
                 int nc = legal_generic_target_selection_moves(
                     state, player_id, pending, opt_card, act, dummy, 1);
                 if (nc == 0) {
-                    /* Gauth option_2: draw_cards works unconditionally;
-                     * targeted_discard auto-skips when no opponent has
-                     * 3+ cards ??? option remains viable. */
-                    const char *cid2 = intern_str(pending->source_card_id);
-                    const char *os = intern_str(oid);
-                    if (!(cid2 && strcmp(cid2, "gauth") == 0
-                          && os && strcmp(os, "option_2") == 0))
+                    /* Some options keep an unconditional sibling action;
+                     * the catalog names that exception. */
+                    if (!(viability && strcmp(viability, "allow_without_targets") == 0))
                         viable = 0;
                 }
             }
         }
     }
-    /* --- Card-specific viability overrides (more restrictive) --- */
-    if (viable && pending->source_card_id != SYM_NULL && oid != SYM_NULL) {
-        const char *cid = intern_str(pending->source_card_id);
-        const char *oid_str = intern_str(oid);
-        /* Cloaker option_2: requires a site where the current player
-         * has a spy deployed AND another (player or white) troop. */
-        if (cid && strcmp(cid, "cloaker") == 0
-            && oid_str && strcmp(oid_str, "option_2") == 0 && pi >= 0) {
+    /* --- Catalog-declared viability overrides (more restrictive) --- */
+    if (viable && viability) {
+        if (strcmp(viability, "own_spy_and_other_troop") == 0) {
             viable = 0;
-            for (int n = 0; n < state->node_count && !viable; n++) {
-                const NodeState *ns = &state->nodes[n];
-                int has_spy = 0;
-                for (int s = 0; s < ns->spy_count; s++)
-                    if (ns->spies[s] == player_id) { has_spy = 1; break; }
-                if (!has_spy) continue;
-                int has_troop = 0;
-                for (int t = 0; t < ns->troop_slot_count; t++) {
-                    Sym occ = ns->troop_slots[t];
-                    if (occ == SYM_NULL) continue;
-                    if (occ == player_id) { has_troop = 1; break; }
-                    const char *os = intern_str(occ);
-                    if (os && strcmp(os, "white") == 0) { has_troop = 1; break; }
+            if (pi >= 0) {
+                for (int n = 0; n < state->node_count && !viable; n++) {
+                    const NodeState *ns = &state->nodes[n];
+                    int has_spy = 0;
+                    for (int s = 0; s < ns->spy_count; s++)
+                        if (ns->spies[s] == player_id) { has_spy = 1; break; }
+                    if (!has_spy) continue;
+                    int has_troop = 0;
+                    for (int t = 0; t < ns->troop_slot_count; t++) {
+                        Sym occ = ns->troop_slots[t];
+                        if (occ == SYM_NULL) continue;
+                        if (occ == player_id) { has_troop = 1; break; }
+                        const char *os = intern_str(occ);
+                        if (os && strcmp(os, "white") == 0) { has_troop = 1; break; }
+                    }
+                    if (has_troop) viable = 1;
                 }
-                if (has_troop) viable = 1;
             }
-        }
-        /* Mummy Lord option_2: requires at least one enemy player
-         * with a white troop in their trophy hall. */
-        if (cid && strcmp(cid, "mummy_lord") == 0
-            && oid_str && strcmp(oid_str, "option_2") == 0) {
+        } else if (strcmp(viability, "enemy_white_trophy") == 0) {
             viable = 0;
             for (int ep = 0; ep < state->player_count && !viable; ep++) {
                 if (state->players[ep].player_id == player_id) continue;
                 for (int ti = 0; ti < state->players[ep].trophy_hall_count && !viable; ti++) {
-                    Sym occ = state->players[ep].trophy_hall[ti];
-                    const char *os = intern_str(occ);
+                    const char *os = intern_str(state->players[ep].trophy_hall[ti]);
                     if (os && strcmp(os, "white") == 0) viable = 1;
                 }
             }
-        }
-        /* Graz'zt option_2: requires at least one own spy on the board. */
-        if (cid && strcmp(cid, "grazzt") == 0
-            && oid_str && strcmp(oid_str, "option_2") == 0) {
+        } else if (strcmp(viability, "own_spy_anywhere") == 0) {
             if (count_player_spies(state, player_id) == 0) viable = 0;
         }
     }

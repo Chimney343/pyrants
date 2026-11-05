@@ -38,6 +38,7 @@
       },
       {
         "option_id": "option_2",
+        "viability": "enemy_white_trophy",
         "actions": [
           {
             "action_id": "option_2_action_1",

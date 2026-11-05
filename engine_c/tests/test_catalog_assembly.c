@@ -80,6 +80,20 @@ static void test_engine_load(void) {
             assert(def->catalog.cards[i].on_discard == intern("inner_circle"));
         if (def->catalog.cards[i].card_id == intern("insane_outcast"))
             assert(def->catalog.cards[i].negative);
+        if (def->catalog.cards[i].card_id == intern("gauth")) {
+            assert(def->catalog.cards[i].execution.option_count >= 2);
+            assert(def->catalog.cards[i].execution.options[1].viability
+                   == intern("allow_without_targets"));
+        }
+        if (def->catalog.cards[i].card_id == intern("cloaker"))
+            assert(def->catalog.cards[i].execution.options[1].viability
+                   == intern("own_spy_and_other_troop"));
+        if (def->catalog.cards[i].card_id == intern("mummy_lord"))
+            assert(def->catalog.cards[i].execution.options[1].viability
+                   == intern("enemy_white_trophy"));
+        if (def->catalog.cards[i].card_id == intern("grazzt"))
+            assert(def->catalog.cards[i].execution.options[1].viability
+                   == intern("own_spy_anywhere"));
     }
 
     /* Spot-check the engine-resolved aboleth definition against the JSON. */
@@ -147,11 +161,60 @@ static void test_invalid_on_discard(void) {
     printf("PASS: invalid on_discard is rejected by the loader\n");
 }
 
+static void test_invalid_viability(void) {
+    intern_init(4096);
+    Arena *arena = arena_create(16 * 1024 * 1024);
+    assert(arena);
+
+    char *json = test_load_catalog_json_both();
+    assert(json != NULL);
+    cJSON *root = cJSON_Parse(json);
+    assert(root != NULL);
+    cJSON *cards = cJSON_GetObjectItem(root, "cards");
+    assert(cards != NULL && cJSON_IsArray(cards));
+    int n = cJSON_GetArraySize(cards);
+    for (int i = 0; i < n; i++) {
+        cJSON *card = cJSON_GetArrayItem(cards, i);
+        cJSON *cid = cJSON_GetObjectItem(card, "card_id");
+        if (!cid || !cJSON_IsString(cid)
+            || strcmp(cid->valuestring, "gauth") != 0) continue;
+        cJSON *em = cJSON_GetObjectItem(card, "execution_model");
+        cJSON *opts = em ? cJSON_GetObjectItem(em, "options") : NULL;
+        assert(opts != NULL && cJSON_IsArray(opts));
+        for (int oi = 0; oi < cJSON_GetArraySize(opts); oi++) {
+            cJSON *opt = cJSON_GetArrayItem(opts, oi);
+            cJSON *oid = cJSON_GetObjectItem(opt, "option_id");
+            if (oid && cJSON_IsString(oid)
+                && strcmp(oid->valuestring, "option_2") == 0) {
+                cJSON_DeleteItemFromObject(opt, "viability");
+                cJSON_AddStringToObject(opt, "viability", "bogus");
+                break;
+            }
+        }
+        break;
+    }
+    char *bad = cJSON_PrintUnformatted(root);
+    assert(bad != NULL);
+
+    const char *board_path, *setup_path;
+    test_board_setup_paths(&board_path, &setup_path);
+    GameDefinition *def = engine_load_definition_json(bad, board_path, setup_path, arena);
+    assert(def == NULL);
+
+    free(bad);
+    cJSON_Delete(root);
+    free(json);
+    arena_destroy(arena);
+    intern_destroy();
+    printf("PASS: invalid option viability is rejected by the loader\n");
+}
+
 int main(void) {
     test_assembled_json_contents();
     test_engine_load();
     test_missing_manifest_fails();
     test_invalid_on_discard();
+    test_invalid_viability();
     printf("All catalog assembly tests passed.\n");
     return 0;
 }
