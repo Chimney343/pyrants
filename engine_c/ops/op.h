@@ -14,6 +14,7 @@ typedef enum {
     OP_TARGET_PLACE_SPY,
     OP_TARGET_RETURN_UNIT,
     OP_TARGET_DEPLOY_TROOPS,
+    OP_TARGET_MOVE_TROOP,
 } OpTargetKind;
 
 typedef struct {
@@ -37,6 +38,12 @@ typedef struct {
         struct {
             Sym node_id;
         } deploy_troops;
+        struct {
+            Sym source_node_id;
+            int source_slot_index;
+            Sym target_node_id;
+            int target_slot_index;
+        } move_troop;
     } as;
 } OpTarget;
 

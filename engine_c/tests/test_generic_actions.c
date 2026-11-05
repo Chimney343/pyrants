@@ -922,6 +922,87 @@ static void test_op_deploy_troops(void) {
     printf("PASS: deploy_troops op owns node/decline target, apply and describe\n");
 }
 
+static void test_op_move_troop(void) {
+    Sym p1 = intern("p1");
+    Sym p2 = intern("p2");
+    Sym site_a = intern("site_a");
+    Sym site_b = intern("site_b");
+    Sym kind_site = intern("site");
+
+    NodeDefinition board_nodes[2];
+    memset(board_nodes, 0, sizeof(board_nodes));
+    board_nodes[0].node_id = site_a;
+    board_nodes[0].kind = kind_site;
+    board_nodes[1].node_id = site_b;
+    board_nodes[1].kind = kind_site;
+
+    BoardDefinition board;
+    memset(&board, 0, sizeof(board));
+    board.nodes = board_nodes;
+    board.node_count = 2;
+
+    GameDefinition def;
+    memset(&def, 0, sizeof(def));
+    def.board = board;
+
+    GameState s;
+    memset(&s, 0, sizeof(s));
+    s.definition = &def;
+    s.player_count = 2;
+    s.players[0].player_id = p1;
+    s.players[1].player_id = p2;
+    s.node_count = 2;
+    s.nodes[0].node_id = site_a;
+    s.nodes[1].node_id = site_b;
+    s.nodes[0].troop_slot_count = 1;
+    s.nodes[1].troop_slot_count = 1;
+    s.nodes[0].troop_slots[0] = p2;
+    s.nodes[0].spies[0] = p1;
+    s.nodes[0].spy_count = 1;
+
+    CardAction action;
+    memset(&action, 0, sizeof(action));
+    action.op = intern("move_troop");
+
+    const CardOp *op = op_lookup(intern("move_troop"));
+    assert(op != NULL);
+    assert(op->needs_selection);
+    assert(op->enumerate != NULL);
+    assert(op->target_from_move != NULL);
+    assert(op->apply != NULL);
+    assert(op->describe != NULL);
+
+    Move out[8];
+    memset(out, 0, sizeof(out));
+    int n = legal_generic_target_selection_moves(&s, p1, NULL, NULL, &action, out, 8);
+    assert(n == 1);
+    assert(out[0].data.resolve_generic.action_id == site_a);
+    const char *tid = intern_str(out[0].data.resolve_generic.target_id);
+    assert(tid && strcmp(tid, "0:site_b:0") == 0);
+
+    OpTarget target;
+    memset(&target, 0, sizeof(target));
+    assert(op->target_from_move(&s, p1, &action, &out[0], &target));
+    assert(target.kind == OP_TARGET_MOVE_TROOP);
+    assert(target.as.move_troop.source_node_id == site_a);
+    assert(target.as.move_troop.source_slot_index == 0);
+    assert(target.as.move_troop.target_node_id == site_b);
+    assert(target.as.move_troop.target_slot_index == 0);
+
+    const char *ids[2] = {"site_a", "site_b"};
+    const char *labels[2] = {"A", "B"};
+    char label[96];
+    label[0] = '\0';
+    op->describe(&s, &action, &target, ids, labels, 2, label, sizeof(label));
+    assert(strcmp(label, "Move Player 2 troop from A to B") == 0);
+
+    assert(op->apply(&s, p1, NULL, &action, &target) == &s);
+    assert(s.nodes[0].troop_slots[0] == SYM_NULL);
+    assert(s.nodes[1].troop_slots[0] == p2);
+
+    printf("PASS: move_troop op owns source/destination target, apply and describe\n");
+}
+
 static void test_sel_deploy_empty_barracks(void) {
     Sym p1 = intern("p1");
     Sym site_a = intern("site_a");
@@ -983,6 +1064,7 @@ int main(void) {
     test_op_place_spy();
     test_op_return_unit();
     test_op_deploy_troops();
+    test_op_move_troop();
     test_sel_place_spy_relocation();
     test_sel_place_spy_supply_regression();
     test_sel_deploy_empty_barracks();

@@ -232,31 +232,6 @@ static GameState *apply_supplant_troop(GameState *state, Sym player_id, const Ca
     return state;
 }
 
-static GameState *apply_move_troop(GameState *state, Sym player_id, const CardDefinition *card,
-                                    Sym source, const CardAction *action,
-                                    int *sk, Sym *sv, int sc) {
-    (void)card; (void)source; (void)action;
-    Sym src_node = find_sel(sk, sv, sc, "source_node_id");
-    Sym dst_node = find_sel(sk, sv, sc, "target_node_id");
-    int src_slot = find_sel_int(sk, sv, sc, "source_slot_index", -1);
-    int dst_slot = find_sel_int(sk, sv, sc, "target_slot_index", -1);
-    if (src_node == SYM_NULL || dst_node == SYM_NULL || src_slot < 0 || dst_slot < 0) return state;
-
-    NodeState *nss = cow_node(state, src_node);
-    NodeState *nsd = cow_node(state, dst_node);
-    if (!nss || !nsd) return state;
-    if (src_slot >= nss->troop_slot_count || dst_slot >= nsd->troop_slot_count) return state;
-    Sym occ = nss->troop_slots[src_slot];
-    if (occ == SYM_NULL || occ == player_id) return state;
-    if (nsd->troop_slots[dst_slot] != SYM_NULL) return state;
-
-    nss->troop_slots[src_slot] = SYM_NULL;
-    nsd->troop_slots[dst_slot] = occ;
-    if (state->pending_generic)
-        increment_pending_counter(state->pending_generic, action);
-    return state;
-}
-
 static GameState *apply_force_discard(GameState *state, Sym player_id, const CardDefinition *card,
                                        Sym source, const CardAction *action,
                                        int *sk, Sym *sv, int sc) {
@@ -856,7 +831,6 @@ void register_generic_actions(void) {
     register_action(intern("draw_cards"), apply_draw_cards);
     register_action(intern("assassinate_troop"), apply_assassinate_troop);
     register_action(intern("supplant_troop"), apply_supplant_troop);
-    register_action(intern("move_troop"), apply_move_troop);
     register_action(intern("force_discard"), apply_force_discard);
     register_action(intern("promote_card"), apply_promote_card_gen);
     register_action(intern("recruit_card"), apply_recruit_card_gen);

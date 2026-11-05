@@ -163,7 +163,7 @@ const CardAction *pending_generic_active_action(const PendingGenericChoiceState 
 int action_requires_selection(const CardAction *action) {
     static const char *selection_ops[] = {
         "assassinate_troop", "supplant_troop",
-        "move_troop", "force_discard",
+        "force_discard",
         "recruit_card", "devour", "devour_cost", "play_card", NULL
     };
     const char *op = intern_str(action->op);
@@ -923,6 +923,22 @@ GameState *apply_resolve_generic_choice(GameState *src, const Move *move) {
                         p->last_selection_keys[0] = intern("target_node_id");
                         p->last_selection_values[0] = target.as.deploy_troops.node_id;
                     }
+                } else if (target.kind == OP_TARGET_MOVE_TROOP) {
+                    char src_slot_buf[16];
+                    char dst_slot_buf[16];
+                    snprintf(src_slot_buf, sizeof(src_slot_buf), "%d",
+                             target.as.move_troop.source_slot_index);
+                    snprintf(dst_slot_buf, sizeof(dst_slot_buf), "%d",
+                             target.as.move_troop.target_slot_index);
+                    p->last_selection_count = 4;
+                    p->last_selection_keys[0] = intern("source_node_id");
+                    p->last_selection_values[0] = target.as.move_troop.source_node_id;
+                    p->last_selection_keys[1] = intern("source_slot_index");
+                    p->last_selection_values[1] = intern(src_slot_buf);
+                    p->last_selection_keys[2] = intern("target_node_id");
+                    p->last_selection_values[2] = target.as.move_troop.target_node_id;
+                    p->last_selection_keys[3] = intern("target_slot_index");
+                    p->last_selection_values[3] = intern(dst_slot_buf);
                 }
 
                 GameState *prev_sel = state;

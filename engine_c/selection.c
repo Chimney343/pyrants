@@ -368,56 +368,6 @@ static int sel_custom_effect(const GameState *state, Sym player_id,
     return w;
 }
 
-static int sel_move_troop(const GameState *state, Sym player_id,
-                           const PendingGenericChoiceState *pending,
-                           const CardDefinition *card, const CardAction *action,
-                           Move *out, int max_out) {
-    int w = 0;
-    int requires_presence = 1;
-    int allow_white = 0, white_only = 0;
-    for (int i = 0; i < action->filter_count; i++) {
-        const char *f = intern_str(action->filters[i]);
-        if (f && strcmp(f, "allow_white_troop") == 0) allow_white = 1;
-        if (f && strcmp(f, "white_troop_only") == 0) white_only = 1;
-    }
-    for (int i = 0; i < action->metadata_count; i++) {
-        const char *k = intern_str(action->metadata[i].key);
-        const char *v = intern_str(action->metadata[i].value);
-        if (k && strcmp(k, "ignore_presence_requirement") == 0 && v
-            && strcmp(v, "true") == 0)
-            requires_presence = 0;
-    }
-    for (int si = 0; si < state->node_count && w < max_out; si++) {
-        Sym src = state->nodes[si].node_id;
-        if (requires_presence && !has_presence(state, player_id, src)) continue;
-        for (int ss = 0; ss < state->nodes[si].troop_slot_count; ss++) {
-            Sym occ = state->nodes[si].troop_slots[ss];
-            if (occ == SYM_NULL || occ == player_id) continue;
-            {
-                const char *os = intern_str(occ);
-                int is_white = (os && strcmp(os, "white") == 0);
-                if (white_only && !is_white) continue;
-                if (!allow_white && is_white) continue;
-            }
-            for (int di = 0; di < state->node_count && w < max_out; di++) {
-                if (di == si) continue;
-                for (int ts = 0; ts < state->nodes[di].troop_slot_count && w < max_out; ts++) {
-                    if (state->nodes[di].troop_slots[ts] != SYM_NULL) continue;
-                    const char *dst_str = intern_str(state->nodes[di].node_id);
-                    char buf[128];
-                    snprintf(buf, sizeof(buf), "%d:%s:%d", ss, dst_str ? dst_str : "?", ts);
-                    out[w].type = MOVE_RESOLVE_GENERIC;
-                    out[w].data.resolve_generic.action_id = src;
-                    out[w].data.resolve_generic.target_id = intern(buf);
-                    out[w].player_index = 0;
-                    w++;
-                }
-            }
-        }
-    }
-    return w;
-}
-
 static int sel_force_discard(const GameState *state, Sym player_id,
                               const PendingGenericChoiceState *pending,
                               const CardDefinition *card, const CardAction *action,
@@ -733,7 +683,6 @@ int legal_generic_target_selection_moves(const GameState *state, Sym player_id,
 void register_selection_handlers(void) {
     register_sel(intern("assassinate_troop"), sel_assassinate_supplant);
     register_sel(intern("supplant_troop"), sel_assassinate_supplant);
-    register_sel(intern("move_troop"), sel_move_troop);
     register_sel(intern("force_discard"), sel_force_discard);
     register_sel(intern("promote_card"), sel_promote);
     register_sel(intern("recruit_card"), sel_recruit);
