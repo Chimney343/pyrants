@@ -637,9 +637,11 @@ static GameState *apply_cleanup(GameState *state) {
     PlayerState *ps = cow_player(state, pid);
     if (!ps) return NULL;
 
-    Sym ambassador_sym = intern("ambassador");
     for (int i = 0; i < ps->hand_count; i++) {
-        if (ps->hand[i] == ambassador_sym) {
+        const CardDefinition *cd = card_by_id_state(state, ps->hand[i]);
+        const char *on_discard = (cd && cd->on_discard != SYM_NULL)
+            ? intern_str(cd->on_discard) : NULL;
+        if (on_discard && strcmp(on_discard, "inner_circle") == 0) {
             if (ps->inner_circle_count < MAX_ZONE_SIZE)
                 ps->inner_circle[ps->inner_circle_count++] = ps->hand[i];
         } else {

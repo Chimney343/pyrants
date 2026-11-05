@@ -198,6 +198,7 @@ CardDefinition._fields_ = [
     ("effect_key", Sym),
     ("effect_payload", POINTER(MetaEntry)), ("effect_payload_count", c_int),
     ("paid_ability", PaidAbility),
+    ("on_discard", Sym),
 ]
 
 class CardCatalog(Structure):

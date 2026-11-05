@@ -298,6 +298,7 @@ static CardDefinition parse_card_definition(cJSON *jcard, Arena *arena) {
     cd.state_contract = parse_state_contract(jsc, arena);
 
     cd.effect_key = json_string_sym(jcard, "effect_key", SYM_NULL);
+    cd.on_discard = json_string_sym(jcard, "on_discard", SYM_NULL);
 
     cJSON *jep = cJSON_GetObjectItem(jcard, "effect_payload");
     cd.effect_payload = parse_effect_payload(jep, &cd.effect_payload_count, arena);
@@ -477,6 +478,12 @@ GameDefinition *engine_load_definition_json(const char *catalog_json, const char
 
     if (catalog_json) {
         def->catalog = parse_catalog(catalog_json, arena);
+        for (int i = 0; i < def->catalog.card_count; i++) {
+            Sym on_discard = def->catalog.cards[i].on_discard;
+            if (on_discard == SYM_NULL) continue;
+            const char *value = intern_str(on_discard);
+            if (!value || strcmp(value, "inner_circle") != 0) return NULL;
+        }
     }
 
     json = read_file(board_path, &len);

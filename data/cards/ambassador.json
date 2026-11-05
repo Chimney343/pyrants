@@ -10,6 +10,7 @@
   "inner_circle_vp": 3,
   "rules_text": "At end of turn, promote another card you played this turn. If this card would be discarded from hand to discard pile, you may choose to promote this card instead.",
   "notes": "The self-promotion effect is an optional replacement effect that applies only when this card would move from hand to discard pile.",
+  "on_discard": "inner_circle",
   "execution_model": {
     "kind": "sequence",
     "actions": [

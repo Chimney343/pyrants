@@ -644,9 +644,11 @@ int discard_hand_card(GameState *state, Sym player_id, int hand_idx) {
     if (hand_idx < 0 || hand_idx >= ps->hand_count) return -1;
 
     Sym card_id = ps->hand[hand_idx];
-    Sym ambassador_sym = intern("ambassador");
+    const CardDefinition *cd = card_by_id(state, card_id);
+    const char *on_discard = (cd && cd->on_discard != SYM_NULL)
+        ? intern_str(cd->on_discard) : NULL;
 
-    if (card_id == ambassador_sym) {
+    if (on_discard && strcmp(on_discard, "inner_circle") == 0) {
         if (ps->inner_circle_count < MAX_ZONE_SIZE)
             ps->inner_circle[ps->inner_circle_count++] = card_id;
     } else {

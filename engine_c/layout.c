@@ -95,6 +95,7 @@ static const LayoutEntry layout_entries[] = {
     FIELD(CardDefinition, effect_payload),
     FIELD(CardDefinition, effect_payload_count),
     FIELD(CardDefinition, paid_ability),
+    FIELD(CardDefinition, on_discard),
 
     SIZE_OF(CardCatalog),
     FIELD(CardCatalog, catalog_id),

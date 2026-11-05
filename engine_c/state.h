@@ -134,6 +134,7 @@ typedef struct CardDefinition {
     MetaEntry        *effect_payload;
     int               effect_payload_count;
     PaidAbility       paid_ability;
+    Sym               on_discard;  /* e.g. "inner_circle"; SYM_NULL = discard pile */
 } CardDefinition;
 
 typedef struct {

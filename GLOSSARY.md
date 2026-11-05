@@ -58,3 +58,11 @@ module's shape is settled, not before.
   (`custom_effect` today). It is not a leaf op; it needs a catalog-level
   effect-kind decomposition rather than a shallow per-op wrapper, and is
   deferred to candidate 4.
+- **catalog field** - a named, loader-validated value on a card or action
+  (`on_discard` is the first). The runtime reads the field from the loaded
+  definition instead of branching on card ids or untyped strings.
+- **card property** - a catalog field describing a card-wide rule, such as
+  `on_discard: "inner_circle"` or the planned negative-card flag.
+- **option viability predicate** - a named catalog field describing when a
+  modal option is offered (the planned Gauth/Cloaker/Mummy Lord/Grazzt
+  replacement for card-id viability branches).
