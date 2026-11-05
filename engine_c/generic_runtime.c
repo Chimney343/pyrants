@@ -313,7 +313,7 @@ static int pending_generic_card_definition(const GameState *state,
 
 GameState *resolve_generic_execution(GameState *state, Sym player_id,
                                       const CardDefinition *card, Sym source_card_id) {
-    GameState *updated = engine_clone_cow(state);
+    GameState *updated = engine_clone(state);
     if (!updated) return NULL;
 
     Arena *arena = (Arena *)updated->arena;
@@ -739,7 +739,7 @@ int move_is_unavailable_placeholder(const Move *move) {
 }
 
 GameState *apply_resolve_generic_choice(GameState *src, const Move *move) {
-    GameState *state = engine_clone_cow(src);
+    GameState *state = engine_clone(src);
     if (!state) return NULL;
     PendingGenericChoiceState *p = state->pending_generic;
     if (!p) { engine_destroy(state); return NULL; }

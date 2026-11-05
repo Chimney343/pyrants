@@ -10,7 +10,7 @@ Read `justfile` in full (140 lines) and its recipe bodies; `just --list` was not
 |---|---|---|
 | Engine core | `engine_c/state.c`, `state.h`, `phases.c`, `actions.c`, `rules.c`, `rng.c`/`rng.h`, `scoring.c`, `generic_runtime.c`, `rollout.c`, `arena.c`, `selection.c`, `moves.c` | C, built via `engine_c/compile.bat` (`just build-c`) |
 | Python↔C bindings | `engine_c/bindings/engine_bindings.py` (ctypes), `ce_api.py` (`CEngine`/`CState`), `c_adapter.py` (`CEngineAdapter`), `view.py`, `session.py` | |
-| OpenSpiel binding layer | `openspiel_pyrants/game_c.py` (`PyrantsCGame`), `state_c.py` (`PyrantsCState`), `action_encoding_c.py`, `observer_c.py`, `c_rollout_evaluator.py`, `__init__.py` (registers `python_pyrants_c`) | |
+| OpenSpiel binding layer | `openspiel_pyrants/game_c.py` (`PyrantsCGame`), `state_c.py` (`PyrantsCState`), `action_encoding_c.py`, `c_rollout_evaluator.py`, `__init__.py` (registers `python_pyrants_c`) | |
 | ISMCTS implementation | **Not in this repo.** Stock `open_spiel.python.algorithms.ismcts.ISMCTSBot` at `.venv/Lib/site-packages/open_spiel/python/algorithms/ismcts.py`, driven unmodified by `scripts/run_ismcts.py` | No custom ISMCTS search code exists in-repo; `openspiel_pyrants/c_rollout_evaluator.py` supplies only the leaf-evaluation rollout, not the tree search |
 | Card / rules data | `data/cards/*.json` (catalog), `data/boards/tyrants_of_the_underdark.json`, `data/decks/base_setup.json`, `data/layouts/*.json` | |
 | Tests / fixtures | `tests/c_engine/*.py` (per-card behavior tests), `tests/test_run_ismcts_*.py`, `openspiel_pyrants/tests/*`, `engine_c/test_*.exe` (C-level tests via `just test-c`), `data/scenarios/{batch_card_generation,test_card_generation,random_card_generation,cards}` | |

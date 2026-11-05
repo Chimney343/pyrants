@@ -4,7 +4,8 @@ Status: **landed** 2026-09-12.
 Plan: [`docs/ismcts-walltime-plan.md`](../ismcts-walltime-plan.md) § A3, option (a).
 
 `engine_random_rollout` advances its private chain of clones one `engine_apply`
-at a time, and every apply is `engine_apply = engine_clone_cow + apply_*`.
+at a time, and every apply is `engine_apply = engine_clone + apply_*` (the
+no-op `engine_clone_cow` wrapper was removed in the 0.4 cleanup).
 `engine_clone` (`engine_c/state.c:175`) calls `arena_create(512 * 1024)`, so the
 hot loop paid one 512 KiB `malloc` per step and one `free` of the previous
 step's arena, ~1.3–2.0 µs inside an ~8–10 µs step. Option (a) replaces the

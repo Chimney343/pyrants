@@ -1,6 +1,8 @@
+#include "engine.h"
 #include "generic_runtime.h"
 #include "helpers.h"
 #include "phases.h"
+#include "rules.h"
 #include "moves.h"
 #include "rng.h"
 #include <string.h>
@@ -688,13 +690,10 @@ static GameState *apply_play_card_nested(GameState *state, Sym player_id, const 
     }
 
     const CardDefinition *nested_cd = card_by_id_act(state, nested_id);
-    if (!nested_cd) return state;
-
-    EffectFn effect = lookup_effect(nested_cd->effect_key);
-    if (!effect) return state;
+    if (!nested_cd || !card_effect_is_generic(nested_cd)) return state;
 
     if (state->pending_generic) state->pending_generic->last_played_card_id = nested_id;
-    return effect(state, player_id, nested_cd);
+    return apply_card_effect(state, player_id, nested_cd);
 }
 
 static void give_insane_outcast(GameState *state, Sym player_id, Sym target_id, const CardAction *action) {
@@ -813,7 +812,7 @@ static GameState *apply_custom_effect(GameState *state, Sym player_id, const Car
              * deployed. Keep the action pending so the engine re-emits the
              * deploy selection. Cloning marks the state as progressed
              * (nested) without advancing next_action_index. */
-            return engine_clone_cow(state);
+            return engine_clone(state);
         }
         if (source_player == SYM_NULL || trophy_idx_sym == SYM_NULL) return state;
         const char *idx_str = intern_str(trophy_idx_sym);

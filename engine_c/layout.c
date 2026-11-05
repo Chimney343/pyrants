@@ -163,7 +163,6 @@ static const LayoutEntry layout_entries[] = {
     FIELD(NodeState, spies),
     FIELD(NodeState, spy_count),
     FIELD(NodeState, vp_tokens),
-    FIELD(NodeState, cow_dirty),
 
     SIZE_OF(PlayerState),
     FIELD(PlayerState, player_id),
@@ -183,12 +182,10 @@ static const LayoutEntry layout_entries[] = {
     FIELD(PlayerState, spies_available),
     FIELD(PlayerState, vp_tokens),
     FIELD(PlayerState, score),
-    FIELD(PlayerState, cow_dirty),
 
     SIZE_OF(ResourcePool),
     FIELD(ResourcePool, power),
     FIELD(ResourcePool, influence),
-    FIELD(ResourcePool, cow_dirty),
 
     SIZE_OF(MarketState),
     FIELD(MarketState, deck),
@@ -197,7 +194,6 @@ static const LayoutEntry layout_entries[] = {
     FIELD(MarketState, row_count),
     FIELD(MarketState, discard_pile),
     FIELD(MarketState, discard_pile_count),
-    FIELD(MarketState, cow_dirty),
 
     SIZE_OF(PendingAbilityState),
     FIELD(PendingAbilityState, card_id),

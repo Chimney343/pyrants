@@ -260,7 +260,7 @@ class NodeState(Structure):
         ("node_id", Sym),
         ("troop_slots", Sym * MAX_TROOP_SLOTS), ("troop_slot_count", c_int),
         ("spies", Sym * MAX_SPY_SLOTS), ("spy_count", c_int),
-        ("vp_tokens", c_int), ("cow_dirty", c_bool),
+        ("vp_tokens", c_int),
     ]
 
 class PlayerState(Structure):
@@ -274,18 +274,16 @@ class PlayerState(Structure):
         ("trophy_hall", Sym * MAX_ZONE_SIZE), ("trophy_hall_count", c_int),
         ("barracks", c_int), ("spies_available", c_int),
         ("vp_tokens", c_int), ("score", c_int),
-        ("cow_dirty", c_bool),
     ]
 
 class ResourcePool(Structure):
-    _fields_ = [("power", c_int), ("influence", c_int), ("cow_dirty", c_bool)]
+    _fields_ = [("power", c_int), ("influence", c_int)]
 
 class MarketState(Structure):
     _fields_ = [
         ("deck", Sym * MAX_ZONE_SIZE), ("deck_count", c_int),
         ("row", Sym * MAX_ZONE_SIZE), ("row_count", c_int),
         ("discard_pile", Sym * MAX_ZONE_SIZE), ("discard_pile_count", c_int),
-        ("cow_dirty", c_bool),
     ]
 
 class PendingAbilityState(Structure):
@@ -368,46 +366,6 @@ class Move(Structure):
         ("type", c_int), ("data", MoveData), ("player_index", c_int),
     ]
 
-class PublicView(Structure):
-    _fields_ = [
-        ("player_count", c_int),
-        ("player_ids", Sym * MAX_PLAYERS),
-        ("node_count", c_int),
-        ("nodes", type("_pnv", (Structure,), {"_fields_": [
-            ("node_id", Sym),
-            ("troop_counts", c_int * MAX_PLAYERS),
-            ("troop_owner_count", c_int),
-            ("troop_owners", Sym * MAX_PLAYERS),
-            ("white_troops", c_int),
-            ("spy_owner_count", c_int),
-            ("spy_owners", Sym * MAX_SPY_SLOTS),
-            ("vp_tokens", c_int),
-            ("controlled", c_bool),
-            ("controller_id", Sym),
-        ]}) * MAX_NODES),
-        ("round_number", c_int), ("phase", c_int),
-        ("current_player_id", Sym),
-        ("resource_pool", ResourcePool), ("market", MarketState),
-        ("pending_ability", type("_pav", (Structure,), {"_fields_": [
-            ("ability_key", Sym), ("source_card_id", Sym), ("resolved", c_bool),
-        ]})),
-        ("has_pending_ability", c_bool),
-        ("pending_immediate", type("_ppv", (Structure,), {"_fields_": [
-            ("card_id", Sym), ("is_optional", c_bool), ("player_index", c_int),
-        ]}) * MAX_PENDING_PROMO),
-        ("pending_immediate_count", c_int),
-        ("pending_generic", type("_pgv", (Structure,), {"_fields_": [
-            ("source_card_id", Sym), ("player_index", c_int), ("is_pending", c_bool),
-        ]})),
-        ("has_pending_generic", c_bool),
-    ]
-
-class PrivateView(Structure):
-    _fields_ = [
-        ("public_view", PublicView), ("player", PlayerState), ("player_index", c_int),
-    ]
-
-
 # ── CGameView structs ──────────────────────────────────────────────────────
 class CPlayerZoneView(Structure):
     _fields_ = [
@@ -450,8 +408,8 @@ class CGameView(Structure):
 
 # ── function signatures ───────────────────────────────────────────────────
 # ── layout contract ───────────────────────────────────────────────────────
-# C names on the left, the ctypes mirror on the right. PublicView/PrivateView
-# are excluded: they are dead and are removed by the 0.4 cleanup.
+# C names on the left, the ctypes mirror on the right. The dead public/private
+# view structs were removed in the 0.4 cleanup.
 _MIRRORED_STRUCTS = {
     "MetaEntry": MetaEntry,
     "CardAction": CardAction,
@@ -515,11 +473,6 @@ def _setup():
     _lib.engine_is_terminal.restype = c_int
     _lib.engine_winner.argtypes = [POINTER(GameStateStruct), POINTER(c_int)]
     _lib.engine_winner.restype = Sym
-
-    _lib.engine_public_view.argtypes = [POINTER(GameStateStruct), POINTER(PublicView)]
-    _lib.engine_public_view.restype = None
-    _lib.engine_private_view.argtypes = [POINTER(GameStateStruct), Sym, POINTER(PrivateView)]
-    _lib.engine_private_view.restype = None
 
     _lib.engine_infostate_hash.argtypes = [
         POINTER(GameStateStruct), Sym, POINTER(c_uint64),

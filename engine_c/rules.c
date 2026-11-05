@@ -40,10 +40,7 @@ static GameState *apply_effect_with_wrappers(GameState *state, Sym player_id,
     if (focus_needed && !focus_requirement_met(state, player_id, card, source_card_id, SYM_NULL))
         return state;
 
-    EffectFn effect = lookup_effect(card->effect_key);
-    if (!effect) return state;
-
-    GameState *result = effect(state, player_id, card);
+    GameState *result = apply_card_effect(state, player_id, card);
     if (!result) return state;
     if (result != state) engine_destroy(state);
 
@@ -631,7 +628,7 @@ static GameState *apply_cleanup(GameState *state) {
 }
 
 GameState *engine_apply(const GameState *src, const Move *move) {
-    GameState *state = engine_clone_cow(src);
+    GameState *state = engine_clone(src);
     if (!state) return NULL;
 
     Sym pid = state->current_player_id;
@@ -760,35 +757,6 @@ Sym engine_winner(const GameState *state, int *score_out) {
     return state->players[max_idx].player_id;
 }
 
-static GameState *effect_gain_power(GameState *state, Sym player_id, const CardDefinition *card) {
-    (void)player_id;
-    int amount = 0;
-    for (int i = 0; i < card->effect_payload_count; i++) {
-        const char *k = intern_str(card->effect_payload[i].key);
-        const char *v = intern_str(card->effect_payload[i].value);
-        if (k && strcmp(k, "power") == 0 && v) amount = atoi(v);
-    }
-    cow_resource_pool(state)->power += amount;
-    return state;
-}
-
-static GameState *effect_gain_influence(GameState *state, Sym player_id, const CardDefinition *card) {
-    (void)player_id;
-    int amount = 0;
-    for (int i = 0; i < card->effect_payload_count; i++) {
-        const char *k = intern_str(card->effect_payload[i].key);
-        const char *v = intern_str(card->effect_payload[i].value);
-        if (k && strcmp(k, "influence") == 0 && v) amount = atoi(v);
-    }
-    cow_resource_pool(state)->influence += amount;
-    return state;
-}
-
-static GameState *effect_noop(GameState *state, Sym player_id, const CardDefinition *card) {
-    (void)player_id; (void)card;
-    return state;
-}
-
 static GameState *effect_generic_card(GameState *state, Sym player_id, const CardDefinition *card) {
     Sym source = card->card_id;
     for (int i = 0; i < card->effect_payload_count; i++) {
@@ -799,11 +767,18 @@ static GameState *effect_generic_card(GameState *state, Sym player_id, const Car
     return resolve_generic_execution(state, player_id, card, source);
 }
 
+int card_effect_is_generic(const CardDefinition *card) {
+    if (!card) return 0;
+    const char *key = intern_str(card->effect_key);
+    return key != NULL && strcmp(key, "generic_card") == 0;
+}
+
+GameState *apply_card_effect(GameState *state, Sym player_id, const CardDefinition *card) {
+    if (!card_effect_is_generic(card)) return NULL;
+    return effect_generic_card(state, player_id, card);
+}
+
 void register_default_effects(void) {
-    register_effect(intern("gain_power"), effect_gain_power);
-    register_effect(intern("gain_influence"), effect_gain_influence);
-    register_effect(intern("noop"), effect_noop);
-    register_effect(intern("generic_card"), effect_generic_card);
     register_generic_actions();
     register_selection_handlers();
 }

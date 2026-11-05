@@ -20,9 +20,6 @@ GameState *engine_apply(const GameState *state, const Move *move);
 int        engine_is_terminal(const GameState *state);
 Sym        engine_winner(const GameState *state, int *score_out);
 
-void       engine_public_view(const GameState *state, PublicView *out);
-void       engine_private_view(const GameState *state, Sym player_id, PrivateView *out);
-
 #ifdef __cplusplus
 }
 #endif

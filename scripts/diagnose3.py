@@ -1,4 +1,4 @@
-"""Diagnostic v3: Test if engine_clone_cow preserves hand correctly."""
+"""Diagnostic v3: Test if engine_clone preserves hand correctly."""
 import ctypes
 import os
 import sys
@@ -6,12 +6,16 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "engine_c", "bindings"))
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from game_setup.loaders import assemble_catalog_text
 from pathlib import Path
 
 from engine_bindings import (
-    _lib, Move as CMove,
+    Move as CMove,
 )
+from engine_bindings import (
+    _lib,
+)
+
+from game_setup.loaders import assemble_catalog_text
 
 _lib.intern_init(4096)
 _lib.register_default_effects()
@@ -32,7 +36,7 @@ state = _lib.engine_create_game_definition(def_ptr, pids, 2, 42)
 assert state, "Failed to create game state"
 
 # Advance to main phase
-for step in range(10):
+for _step in range(10):
     if state.contents.phase == 2:  # MAIN
         break
     moves = (CMove * 64)()
@@ -46,7 +50,7 @@ for step in range(10):
         break
 
 # Now clone WITHOUT applying any move
-clone = _lib.engine_clone_cow(state)
+clone = _lib.engine_clone(state)
 print(f"Original state ptr: {state}")
 print(f"Clone state ptr: {clone}")
 

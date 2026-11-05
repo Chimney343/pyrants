@@ -39,9 +39,6 @@ int legal_generic_target_selection_moves(const GameState *state, Sym player_id,
                                           const CardDefinition *card,
                                           const CardAction *action, Move *out, int max_out);
 
-void public_view(const GameState *state, PublicView *out);
-void private_view(const GameState *state, Sym player_id, PrivateView *out);
-
 void register_generic_actions(void);
 void register_selection_handlers(void);
 

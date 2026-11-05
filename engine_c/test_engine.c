@@ -201,12 +201,11 @@ static void test_cow(void) {
     GameState *gs = engine_create_game_definition(def, player_ids, 2, 42);
 
     NodeState *node = cow_node(gs, gs->nodes[0].node_id);
-    assert(node);
-    assert(node->cow_dirty);
+    assert(node == &gs->nodes[0]);
 
     PlayerState *player = cow_player(gs, intern("p1"));
     assert(player);
-    assert(player->cow_dirty);
+    assert(player->player_id == intern("p1"));
 
     printf("PASS: cow accessors\n");
     engine_destroy(gs);

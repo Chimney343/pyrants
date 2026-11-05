@@ -3,14 +3,6 @@
 
 #include "state.h"
 
-#define EFFECT_COUNT 16
-
-typedef GameState* (*EffectFn)(GameState*, Sym player_id, const CardDefinition* card);
-
-extern EffectFn effect_registry[EFFECT_COUNT];
-void register_effect(Sym effect_key, EffectFn fn);
-EffectFn lookup_effect(Sym effect_key);
-
 int  has_presence(const GameState *state, Sym player_id, Sym node_id);
 int  player_has_any_troops_on_board(const GameState *state, Sym player_id);
 int  can_deploy_to_node(const GameState *state, Sym player_id, Sym node_id, int has_troops);

@@ -3,9 +3,8 @@
 Provides clone-via-replay, legal move enumeration, move application, terminal
 checks, and public/private view serialization for information_state_string.
 
-Views are built from CState properties rather than the C engine_public_view /
-engine_private_view functions, which have struct-layout mismatches with the
-Python ctypes definitions.
+Views are built from CState properties; the old C public/private view
+functions were removed in the 0.4 cleanup.
 """
 
 from __future__ import annotations

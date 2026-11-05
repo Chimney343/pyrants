@@ -163,7 +163,3 @@ class PyrantsCGame(pyspiel.Game):
 
         return PyrantsCState(self)
 
-    def make_py_observer(self, iig_obs_type=None, params=None):
-        from openspiel_pyrants.observer_c import PyrantsCObserver
-
-        return PyrantsCObserver(params)

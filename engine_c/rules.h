@@ -10,4 +10,7 @@ Sym        engine_winner(const GameState *state, int *score_out);
 
 void register_default_effects(void);
 
+int card_effect_is_generic(const CardDefinition *card);
+GameState *apply_card_effect(GameState *state, Sym player_id, const CardDefinition *card);
+
 #endif

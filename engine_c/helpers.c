@@ -10,25 +10,6 @@ static int str_sym_compare(const void *a, const void *b) {
     return strcmp(sa ? sa : "", sb ? sb : "");
 }
 
-EffectFn effect_registry[EFFECT_COUNT];
-static Sym effect_keys[EFFECT_COUNT];
-static int effect_count = 0;
-
-void register_effect(Sym effect_key, EffectFn fn) {
-    if (effect_count < EFFECT_COUNT) {
-        effect_keys[effect_count] = effect_key;
-        effect_registry[effect_count] = fn;
-        effect_count++;
-    }
-}
-
-EffectFn lookup_effect(Sym effect_key) {
-    for (int i = 0; i < effect_count; i++) {
-        if (effect_keys[i] == effect_key) return effect_registry[i];
-    }
-    return NULL;
-}
-
 static const CardDefinition *card_by_id(const GameState *state, Sym card_id) {
     for (int i = 0; i < state->definition->catalog.card_count; i++) {
         if (state->definition->catalog.cards[i].card_id == card_id)

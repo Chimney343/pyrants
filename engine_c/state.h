@@ -214,7 +214,6 @@ typedef struct {
     Sym  spies[MAX_SPY_SLOTS];
     int  spy_count;
     int  vp_tokens;
-    bool cow_dirty;
 } NodeState;
 
 typedef struct {
@@ -235,13 +234,11 @@ typedef struct {
     int  spies_available;
     int  vp_tokens;
     int  score;
-    bool cow_dirty;
 } PlayerState;
 
 typedef struct {
     int power;
     int influence;
-    bool cow_dirty;
 } ResourcePool;
 
 typedef struct {
@@ -251,7 +248,6 @@ typedef struct {
     int  row_count;
     Sym  discard_pile[MAX_ZONE_SIZE];
     int  discard_pile_count;
-    bool cow_dirty;
 } MarketState;
 
 typedef struct {
@@ -368,67 +364,12 @@ typedef struct {
     int player_index;
 } Move;
 
-/* ---- Player View Structures ---- */
-
-typedef struct {
-    Sym  node_id;
-    int  troop_counts[MAX_PLAYERS];
-    int  troop_owner_count;
-    Sym  troop_owners[MAX_PLAYERS];
-    int  white_troops;
-    int  spy_owner_count;
-    Sym  spy_owners[MAX_SPY_SLOTS];
-    int  vp_tokens;
-    bool controlled;
-    Sym  controller_id;
-} PublicNodeView;
-
-typedef struct {
-    Sym  ability_key;
-    Sym  source_card_id;
-    bool resolved;
-} PublicPendingAbilityView;
-
-typedef struct {
-    Sym  card_id;
-    bool is_optional;
-    int  player_index;
-} PublicPendingPromotionView;
-
-typedef struct {
-    Sym  source_card_id;
-    int  player_index;
-    bool is_pending;
-} PublicPendingGenericChoiceView;
-
-typedef struct {
-    int          player_count;
-    Sym          player_ids[MAX_PLAYERS];
-    int          node_count;
-    PublicNodeView nodes[MAX_NODES];
-    int          round_number;
-    TurnPhase    phase;
-    Sym          current_player_id;
-    ResourcePool resource_pool;
-    MarketState  market;
-    PublicPendingAbilityView     pending_ability;
-    bool                         has_pending_ability;
-    PublicPendingPromotionView   pending_immediate[MAX_PENDING_PROMO];
-    int                          pending_immediate_count;
-    PublicPendingGenericChoiceView pending_generic;
-    bool                            has_pending_generic;
-} PublicView;
-
-typedef struct {
-    PublicView   public_view;
-    PlayerState  player;
-    int          player_index;
-} PrivateView;
-
 #ifdef __cplusplus
 }
 #endif
 
+/* Lookup accessors kept under their historical cow_ names. The old dirty-flag
+ * bookkeeping was never read and was removed in the 0.4 cleanup. */
 NodeState *cow_node(GameState *state, Sym node_id);
 PlayerState *cow_player(GameState *state, Sym player_id);
 MarketState *cow_market(GameState *state);
@@ -439,7 +380,6 @@ void shuffle_deck(Sym *deck, int count, uint64_t seed, int counter, RNG *rng);
 void draw_cards_state(PlayerState *ps, int count, RNG *rng, uint64_t shuffle_seed, int *shuffle_counter);
 void reshuffle_discard_into_deck(GameState *state, Sym player_id);
 
-GameState *engine_clone_cow(const GameState *src);
 GameState *engine_determinize(const GameState *src, Sym observing_player_id, uint64_t seed);
 
 #endif

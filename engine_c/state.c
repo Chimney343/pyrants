@@ -206,16 +206,6 @@ GameState *engine_clone(const GameState *src) {
     return dst;
 }
 
-GameState *engine_clone_cow(const GameState *src) {
-    GameState *dst = engine_clone(src);
-    if (!dst) return NULL;
-    for (int i = 0; i < dst->node_count && i < MAX_NODES; i++) dst->nodes[i].cow_dirty = false;
-    for (int i = 0; i < dst->player_count && i < MAX_PLAYERS; i++) dst->players[i].cow_dirty = false;
-    dst->resource_pool.cow_dirty = false;
-    dst->market.cow_dirty = false;
-    return dst;
-}
-
 void reshuffle_discard_into_deck(GameState *state, Sym player_id) {
     PlayerState *player = cow_player(state, player_id);
     if (!player) return;
@@ -231,40 +221,22 @@ void reshuffle_discard_into_deck(GameState *state, Sym player_id) {
 }
 
 NodeState *cow_node(GameState *state, Sym node_id) {
-    for (int i = 0; i < state->node_count; i++) {
-        if (state->nodes[i].node_id == node_id) {
-            if (!state->nodes[i].cow_dirty) {
-                state->nodes[i].cow_dirty = true;
-            }
-            return &state->nodes[i];
-        }
-    }
+    for (int i = 0; i < state->node_count; i++)
+        if (state->nodes[i].node_id == node_id) return &state->nodes[i];
     return NULL;
 }
 
 PlayerState *cow_player(GameState *state, Sym player_id) {
-    for (int i = 0; i < state->player_count; i++) {
-        if (state->players[i].player_id == player_id) {
-            if (!state->players[i].cow_dirty) {
-                state->players[i].cow_dirty = true;
-            }
-            return &state->players[i];
-        }
-    }
+    for (int i = 0; i < state->player_count; i++)
+        if (state->players[i].player_id == player_id) return &state->players[i];
     return NULL;
 }
 
 MarketState *cow_market(GameState *state) {
-    if (!state->market.cow_dirty) {
-        state->market.cow_dirty = true;
-    }
     return &state->market;
 }
 
 ResourcePool *cow_resource_pool(GameState *state) {
-    if (!state->resource_pool.cow_dirty) {
-        state->resource_pool.cow_dirty = true;
-    }
     return &state->resource_pool;
 }
 
