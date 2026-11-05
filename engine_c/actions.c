@@ -266,22 +266,22 @@ static GameState *apply_promote_card_gen(GameState *state, Sym player_id, const 
             int idx = find_sel_int(sk, sv, sc, "discard_index", -1);
             if (idx >= 0 && idx < ps->discard_pile_count && ps->inner_circle_count < MAX_ZONE_SIZE) {
                 Sym card_id = ps->discard_pile[idx];
-                Sym insane = intern("insane_outcast");
+                
                 for (int i = idx; i < ps->discard_pile_count - 1; i++)
                     ps->discard_pile[i] = ps->discard_pile[i + 1];
                 ps->discard_pile_count--;
-                if (card_id != insane)
+                if (!card_is_negative(state, card_id))
                     ps->inner_circle[ps->inner_circle_count++] = card_id;
             }
         } else if (sz && strcmp(sz, "hand") == 0) {
             int idx = find_sel_int(sk, sv, sc, "hand_index", -1);
             if (idx >= 0 && idx < ps->hand_count && ps->inner_circle_count < MAX_ZONE_SIZE) {
                 Sym card_id = ps->hand[idx];
-                Sym insane = intern("insane_outcast");
+                
                 for (int i = idx; i < ps->hand_count - 1; i++)
                     ps->hand[i] = ps->hand[i + 1];
                 ps->hand_count--;
-                if (card_id != insane)
+                if (!card_is_negative(state, card_id))
                     ps->inner_circle[ps->inner_circle_count++] = card_id;
             }
         } else if (sz && strcmp(sz, "played") == 0) {
@@ -313,15 +313,16 @@ static GameState *apply_grant_vp(GameState *state, Sym player_id, const CardDefi
 
 static void give_insane_outcast(GameState *state, Sym player_id, Sym target_id, const CardAction *action) {
     int count = resolve_count(state, player_id, action);
-    Sym insane = intern("insane_outcast");
-    int total = special_stack_total_for_card(state, insane);
+    Sym negative = negative_card_id(state);
+    if (negative == SYM_NULL) return;
+    int total = special_stack_total_for_card(state, negative);
     if (total < 0) return;
     PlayerState *ps = cow_player(state, target_id);
     if (!ps) return;
     for (int c = 0; c < count; c++) {
         if (ps->discard_pile_count >= MAX_ZONE_SIZE) break;
-        if (remaining_special_stack_count(state, insane) <= 0) break;
-        ps->discard_pile[ps->discard_pile_count++] = insane;
+        if (remaining_special_stack_count(state, negative) <= 0) break;
+        ps->discard_pile[ps->discard_pile_count++] = negative;
     }
 }
 
@@ -612,3 +613,4 @@ void register_generic_actions(void) {
     register_action(intern("conditional_bonus"), apply_conditional_bonus);
     register_action(intern("custom_effect"), apply_custom_effect);
 }
+

@@ -58,15 +58,15 @@ static GameState *op_devour_apply(GameState *state, Sym player_id,
     }
     Sym source = state->pending_generic
         ? state->pending_generic->source_card_id : SYM_NULL;
-    Sym insane = intern("insane_outcast");
+    
 
     if (strcmp(z, "hand") == 0) {
         int idx = -1;
         for (int i = 0; i < ps->hand_count; i++)
             if (ps->hand[i] == target_card_id) { idx = i; break; }
         if (idx >= 0 && idx < ps->hand_count
-            && (ps->hand[idx] == insane || state->devour_pile_count < MAX_ZONE_SIZE)) {
-            if (ps->hand[idx] != insane)
+            && (!card_is_negative(state, ps->hand[idx]) || state->devour_pile_count < MAX_ZONE_SIZE)) {
+            if (!card_is_negative(state, ps->hand[idx]))
                 state->devour_pile[state->devour_pile_count++] = ps->hand[idx];
             for (int i = idx; i < ps->hand_count - 1; i++)
                 ps->hand[i] = ps->hand[i + 1];
@@ -75,7 +75,7 @@ static GameState *op_devour_apply(GameState *state, Sym player_id,
     } else if (strcmp(z, "played_self") == 0) {
         for (int i = 0; i < ps->played_cards_count; i++) {
             if (ps->played_cards[i] == source) {
-                if (source != insane && state->devour_pile_count < MAX_ZONE_SIZE)
+                if (!card_is_negative(state, source) && state->devour_pile_count < MAX_ZONE_SIZE)
                     state->devour_pile[state->devour_pile_count++] = source;
                 for (int j = i; j < ps->played_cards_count - 1; j++)
                     ps->played_cards[j] = ps->played_cards[j + 1];
@@ -86,7 +86,7 @@ static GameState *op_devour_apply(GameState *state, Sym player_id,
     } else if (strcmp(z, "market") == 0) {
         for (int i = 0; i < state->market.row_count; i++) {
             if (state->market.row[i] != target_card_id) continue;
-            if (target_card_id != insane && state->devour_pile_count < MAX_ZONE_SIZE)
+            if (!card_is_negative(state, target_card_id) && state->devour_pile_count < MAX_ZONE_SIZE)
                 state->devour_pile[state->devour_pile_count++] = target_card_id;
             MarketState *ms = cow_market(state);
             if (ms) {
@@ -113,7 +113,7 @@ static GameState *op_devour_apply(GameState *state, Sym player_id,
     } else if (strcmp(z, "inner_circle") == 0) {
         for (int i = 0; i < ps->inner_circle_count; i++) {
             if (ps->inner_circle[i] != target_card_id) continue;
-            if (target_card_id != insane && state->devour_pile_count < MAX_ZONE_SIZE)
+            if (!card_is_negative(state, target_card_id) && state->devour_pile_count < MAX_ZONE_SIZE)
                 state->devour_pile[state->devour_pile_count++] = target_card_id;
             for (int j = i; j < ps->inner_circle_count - 1; j++)
                 ps->inner_circle[j] = ps->inner_circle[j + 1];
@@ -154,3 +154,5 @@ const CardOp OP_DEVOUR_COST = {
     .apply = op_devour_apply,
     .describe = op_devour_describe,
 };
+
+

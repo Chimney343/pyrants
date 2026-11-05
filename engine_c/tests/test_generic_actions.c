@@ -1502,6 +1502,42 @@ static void test_op_table_complete(void) {
     printf("PASS: op table complete for %d migrated ops; custom_effect remains legacy\n", count);
 }
 
+static void test_negative_card_property(void) {
+    Sym p1 = intern("p1");
+    Sym negative_id = intern("negative_card");
+
+    CardDefinition card;
+    memset(&card, 0, sizeof(card));
+    card.card_id = negative_id;
+    card.name = intern("Negative Card");
+    card.negative = true;
+
+    CardCatalog catalog;
+    memset(&catalog, 0, sizeof(catalog));
+    catalog.cards = &card;
+    catalog.card_count = 1;
+
+    GameDefinition def;
+    memset(&def, 0, sizeof(def));
+    def.catalog = catalog;
+
+    GameState s;
+    memset(&s, 0, sizeof(s));
+    s.definition = &def;
+    s.player_count = 1;
+    s.players[0].player_id = p1;
+    s.players[0].played_cards_count = 1;
+    s.players[0].played_cards[0] = negative_id;
+
+    assert(card_is_negative(&s, negative_id) == 1);
+    assert(negative_card_id(&s) == negative_id);
+    promote_card(&s, p1, negative_id);
+    assert(s.players[0].played_cards_count == 0);
+    assert(s.players[0].inner_circle_count == 0);
+
+    printf("PASS: negative card property suppresses promotion\n");
+}
+
 static void test_sel_deploy_empty_barracks(void) {
     Sym p1 = intern("p1");
     Sym site_a = intern("site_a");
@@ -1571,6 +1607,7 @@ int main(void) {
     test_op_devour();
     test_op_play_card();
     test_op_promote_card();
+    test_negative_card_property();
     test_op_table_complete();
     test_sel_place_spy_relocation();
     test_sel_place_spy_supply_regression();

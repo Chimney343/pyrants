@@ -29,10 +29,12 @@ without card-id checks.
 - First field: `CardDefinition.on_discard`. `"inner_circle"` replaces the
   `ambassador` card-id checks in `discard_hand_card` and `apply_cleanup`;
   `SYM_NULL` means the discard pile. The loader rejects any other value.
-- Subsequent fields: `negative`/special-card properties for `insane_outcast`,
-  `option_viability` predicates for Gauth/Cloaker/Mummy Lord/Grazzt, a
-  timing/trigger field for F-015, and the `custom_effect` effect-kind
-  decomposition.
+- Second field: `CardDefinition.negative`. It replaces the `insane_outcast`
+  card-id checks in promotion, devour and the negative-card grant path; the
+  helper `negative_card_id` locates the catalog's negative card.
+- Subsequent fields: `option_viability` predicates for Gauth/Cloaker/Mummy
+  Lord/Grazzt, a timing/trigger field for F-015, and the `custom_effect`
+  effect-kind decomposition.
 - The catalog JSON gains the fields; the C struct, Python ctypes mirror and
   layout probe grow with them. Move payloads, decisions and action ids do not
   change.
@@ -42,8 +44,10 @@ without card-id checks.
 `on_discard` is validated by `engine_load_definition_json`; invalid values
 return NULL and a C catalog test locks that rejection. Ambassador's discard
 behavior now comes from the catalog, so its card-id branch is gone from
-`helpers.c` and `rules.c`. The remaining card-id and source-fragment branches
-stay until their named fields land.
+`helpers.c` and `rules.c`. `negative` is a loader-read boolean; promotion,
+devour and the Insane Outcast grant path use the loaded property instead of
+the card id. The remaining card-id and source-fragment branches stay until
+their named fields land.
 
 `custom_effect` remains a multi-effect dispatcher and is explicitly deferred;
 its 13 effect kinds are catalog data that needs its own decomposition rather

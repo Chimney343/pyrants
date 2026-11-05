@@ -29,6 +29,21 @@ static int str_sym_compare(const void *a, const void *b) {
     return strcmp(sa ? sa : "", sb ? sb : "");
 }
 
+static const CardDefinition *card_by_id(const GameState *state, Sym card_id);
+
+int card_is_negative(const GameState *state, Sym card_id) {
+    const CardDefinition *cd = card_by_id(state, card_id);
+    return cd && cd->negative;
+}
+
+Sym negative_card_id(const GameState *state) {
+    if (!state || !state->definition) return SYM_NULL;
+    for (int i = 0; i < state->definition->catalog.card_count; i++)
+        if (state->definition->catalog.cards[i].negative)
+            return state->definition->catalog.cards[i].card_id;
+    return SYM_NULL;
+}
+
 static const CardDefinition *card_by_id(const GameState *state, Sym card_id) {
     for (int i = 0; i < state->definition->catalog.card_count; i++) {
         if (state->definition->catalog.cards[i].card_id == card_id)
@@ -390,13 +405,12 @@ int focus_requirement_met(const GameState *state, Sym player_id, const CardDefin
 void promote_card(GameState *state, Sym player_id, Sym card_id) {
     PlayerState *ps = cow_player(state, player_id);
     if (!ps) return;
-    Sym insane = intern("insane_outcast");
     for (int i = 0; i < ps->played_cards_count; i++) {
         if (ps->played_cards[i] == card_id) {
             for (int j = i; j < ps->played_cards_count - 1; j++)
                 ps->played_cards[j] = ps->played_cards[j + 1];
             ps->played_cards_count--;
-            if (card_id == insane)
+            if (card_is_negative(state, card_id))
                 return;
             if (ps->inner_circle_count < MAX_ZONE_SIZE)
                 ps->inner_circle[ps->inner_circle_count++] = card_id;

@@ -135,6 +135,7 @@ typedef struct CardDefinition {
     int               effect_payload_count;
     PaidAbility       paid_ability;
     Sym               on_discard;  /* e.g. "inner_circle"; SYM_NULL = discard pile */
+    bool              negative;    /* cannot be promoted/devoured; returns to supply */
 } CardDefinition;
 
 typedef struct {

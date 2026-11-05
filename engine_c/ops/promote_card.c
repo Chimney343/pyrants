@@ -83,11 +83,11 @@ static GameState *op_promote_card_apply(GameState *state, Sym player_id,
             if (idx >= 0 && idx < ps->hand_count
                 && ps->inner_circle_count < MAX_ZONE_SIZE) {
                 Sym card_id = ps->hand[idx];
-                Sym insane = intern("insane_outcast");
+                
                 for (int i = idx; i < ps->hand_count - 1; i++)
                     ps->hand[i] = ps->hand[i + 1];
                 ps->hand_count--;
-                if (card_id != insane)
+                if (!card_is_negative(state, card_id))
                     ps->inner_circle[ps->inner_circle_count++] = card_id;
             }
         } else if (sz && strcmp(sz, "discard") == 0) {
@@ -95,11 +95,11 @@ static GameState *op_promote_card_apply(GameState *state, Sym player_id,
             if (idx >= 0 && idx < ps->discard_pile_count
                 && ps->inner_circle_count < MAX_ZONE_SIZE) {
                 Sym card_id = ps->discard_pile[idx];
-                Sym insane = intern("insane_outcast");
+                
                 for (int i = idx; i < ps->discard_pile_count - 1; i++)
                     ps->discard_pile[i] = ps->discard_pile[i + 1];
                 ps->discard_pile_count--;
-                if (card_id != insane)
+                if (!card_is_negative(state, card_id))
                     ps->inner_circle[ps->inner_circle_count++] = card_id;
             }
         }
@@ -152,3 +152,4 @@ const CardOp OP_PROMOTE_CARD = {
     .apply = op_promote_card_apply,
     .describe = op_promote_card_describe,
 };
+

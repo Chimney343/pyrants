@@ -109,5 +109,6 @@ void engine_build_view(const GameState *state, CGameView *out) {
 
     out->house_guard_remaining = remaining_special_stack_count(state, intern("house_guard"));
     out->priestess_remaining = remaining_special_stack_count(state, intern("priestess_of_lolth"));
-    out->insane_outcast_remaining = remaining_special_stack_count(state, intern("insane_outcast"));
+    out->insane_outcast_remaining = remaining_special_stack_count(state, negative_card_id(state));
 }
+

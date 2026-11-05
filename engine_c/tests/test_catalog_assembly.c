@@ -76,6 +76,10 @@ static void test_engine_load(void) {
     for (int i = 0; i < def->catalog.card_count; i++) {
         assert(def->catalog.cards[i].card_id != SYM_NULL);
         assert(def->catalog.cards[i].name != SYM_NULL);
+        if (def->catalog.cards[i].card_id == intern("ambassador"))
+            assert(def->catalog.cards[i].on_discard == intern("inner_circle"));
+        if (def->catalog.cards[i].card_id == intern("insane_outcast"))
+            assert(def->catalog.cards[i].negative);
     }
 
     /* Spot-check the engine-resolved aboleth definition against the JSON. */

@@ -3,6 +3,9 @@
 
 #include "state.h"
 
+int  card_is_negative(const GameState *state, Sym card_id);
+Sym  negative_card_id(const GameState *state);
+
 Sym  pending_counter_key(const CardAction *action);
 void increment_pending_counter(PendingGenericChoiceState *p, const CardAction *action);
 
