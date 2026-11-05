@@ -54,3 +54,7 @@ module's shape is settled, not before.
 - **op target** - the typed internal record (`OpTarget`) built from the frozen
   `Move` payload at the apply boundary. The payload string stays the wire
   format; apply/describe consume the typed record.
+- **op dispatcher** - an op whose own surface is a set of effect kinds
+  (`custom_effect` today). It is not a leaf op; it needs a catalog-level
+  effect-kind decomposition rather than a shallow per-op wrapper, and is
+  deferred to candidate 4.

@@ -1,6 +1,6 @@
 # ADR-0004: One op module and a typed target behind one op table
 
-- **Status:** Active (migration in progress)
+- **Status:** Active (candidate 1 complete for 13 of 14 ops; `custom_effect` deferred to candidate 4)
 - **Date:** 2026-11-05
 - **Decision owner:** maintainers
 - **Supersedes:** -
@@ -41,6 +41,20 @@ identical.
 - Op describe callbacks receive the viewer's node-id/label arrays so target
   labels are produced by the op without duplicating node naming in each op.
 
+## Deferred: custom_effect
+
+`custom_effect` is not a leaf op. It dispatches 13 effect kinds across 14
+cards, with a 453-line target selector and a 168-line apply function, and its
+needs-selection rule varies by effect kind. Wrapping that in one `CardOp`
+descriptor with a boolean `needs_selection` would be a shallow move, not a
+deep one: the complexity would simply move behind the descriptor.
+
+Candidate 4 (the catalog as the whole card spec) owns the real decomposition:
+declare the effect kinds and their targets as catalog fields, validate them in
+the loader, and let the op/effect table dispatch from that data. Until then
+`custom_effect` remains on the legacy selector/apply/describe path, and the
+op-table completeness test records the exception explicitly.
+
 ## Consequences
 
 `return_spy`, `place_spy`, `return_unit`, `deploy_troops`, `move_troop`,
@@ -74,8 +88,8 @@ thirteen reproduce the legacy `last_selection` records so follow-up actions
 keep working. The pending counter key/increment helpers moved from `actions.c`
 to `helpers.c` so op modules can share them, and `engine_card_name` exposes the
 catalog display name to op describe callbacks. The colon parser and
-`find_sel`/`atoi` code now remain only for `custom_effect` until its
-migration.
+`find_sel`/`atoi` code now remain only for the deferred `custom_effect`
+dispatcher; candidate 4 owns its decomposition.
 
 `op_lookup` is a small name scan. It is called on the selection/apply paths;
 the table is small and this is not a hot-loop concern for the first ops. The op
