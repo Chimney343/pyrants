@@ -38,6 +38,9 @@ const char *engine_node_label(const char *node_id_str,
 /* Player id -> display label, used by op modules' describe callbacks. */
 const char *engine_player_label(const char *player_id_str);
 
+/* Card id -> catalog display name (falls back to the id). */
+const char *engine_card_name(const GameState *state, Sym card_id);
+
 #ifdef __cplusplus
 }
 #endif

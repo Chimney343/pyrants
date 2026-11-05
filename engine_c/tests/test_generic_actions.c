@@ -1216,6 +1216,72 @@ static void test_op_force_discard(void) {
     printf("PASS: force_discard op owns player target, RNG discard and describe\n");
 }
 
+static void test_op_recruit_card(void) {
+    Sym p1 = intern("p1");
+    Sym card_a = intern("card_a");
+
+    CardDefinition card;
+    memset(&card, 0, sizeof(card));
+    card.card_id = card_a;
+    card.name = intern("Test Card");
+    card.cost = 1;
+
+    CardCatalog catalog;
+    memset(&catalog, 0, sizeof(catalog));
+    catalog.cards = &card;
+    catalog.card_count = 1;
+
+    GameDefinition def;
+    memset(&def, 0, sizeof(def));
+    def.catalog = catalog;
+
+    GameState s;
+    memset(&s, 0, sizeof(s));
+    s.definition = &def;
+    s.player_count = 1;
+    s.players[0].player_id = p1;
+    s.market.row_count = 1;
+    s.market.row[0] = card_a;
+    s.resource_pool.influence = 1;
+
+    CardAction action;
+    memset(&action, 0, sizeof(action));
+    action.op = intern("recruit_card");
+
+    const CardOp *op = op_lookup(intern("recruit_card"));
+    assert(op != NULL);
+    assert(op->needs_selection);
+    assert(op->enumerate != NULL);
+    assert(op->target_from_move != NULL);
+    assert(op->apply != NULL);
+    assert(op->describe != NULL);
+
+    Move out[8];
+    memset(out, 0, sizeof(out));
+    int n = legal_generic_target_selection_moves(&s, p1, NULL, NULL, &action, out, 8);
+    assert(n == 1);
+    assert(out[0].data.resolve_generic.action_id == card_a);
+
+    OpTarget target;
+    memset(&target, 0, sizeof(target));
+    assert(op->target_from_move(&s, p1, &action, &out[0], &target));
+    assert(target.kind == OP_TARGET_RECRUIT_CARD);
+    assert(target.as.recruit_card.target_card_id == card_a);
+
+    char label[96];
+    label[0] = '\0';
+    op->describe(&s, &action, &target, NULL, NULL, 0, label, sizeof(label));
+    assert(strcmp(label, "Recruit Test Card") == 0);
+
+    assert(op->apply(&s, p1, NULL, &action, &target) == &s);
+    assert(s.players[0].discard_pile_count == 1);
+    assert(s.players[0].discard_pile[0] == card_a);
+    assert(s.resource_pool.influence == 0);
+    assert(s.market.row_count == 0);
+
+    printf("PASS: recruit_card op owns market target, apply and describe\n");
+}
+
 static void test_sel_deploy_empty_barracks(void) {
     Sym p1 = intern("p1");
     Sym site_a = intern("site_a");
@@ -1281,6 +1347,7 @@ int main(void) {
     test_op_assassinate_troop();
     test_op_supplant_troop();
     test_op_force_discard();
+    test_op_recruit_card();
     test_sel_place_spy_relocation();
     test_sel_place_spy_supply_regression();
     test_sel_deploy_empty_barracks();

@@ -77,6 +77,10 @@ const char *engine_player_label(const char *player_id_str) {
     return _player_label(player_id_str);
 }
 
+const char *engine_card_name(const GameState *state, Sym card_id) {
+    return card_name_for(state, card_id);
+}
+
 static const char *troop_owner_label(const GameState *state, Sym node_id, int slot_index) {
     if (!state) return "unknown";
     for (int i = 0; i < state->node_count; i++) {
@@ -235,9 +239,6 @@ int engine_describe_move(const GameState *state, const Move *move,
                             const char *name = card_name_for(state, aid);
                             snprintf(buf, sizeof(buf), "Promote %s", name);
                         }
-                    } else if (op && strcmp(op, "recruit_card") == 0) {
-                        const char *name = card_name_for(state, aid);
-                        snprintf(buf, sizeof(buf), "Recruit %s", name);
                     } else if (op && strcmp(op, "custom_effect") == 0) {
                         const char *effect_kind = NULL;
                         for (int mi = 0; mi < act->metadata_count; mi++) {

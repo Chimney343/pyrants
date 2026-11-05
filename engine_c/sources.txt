@@ -14,6 +14,7 @@ ops/force_discard.c
 ops/move_troop.c
 ops/op.c
 ops/place_spy.c
+ops/recruit_card.c
 ops/return_spy.c
 ops/supplant_troop.c
 ops/return_unit.c

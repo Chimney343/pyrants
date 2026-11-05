@@ -292,34 +292,6 @@ static GameState *apply_promote_card_gen(GameState *state, Sym player_id, const 
     return state;
 }
 
-static GameState *apply_recruit_card_gen(GameState *state, Sym player_id, const CardDefinition *card,
-                                          Sym source, const CardAction *action,
-                                          int *sk, Sym *sv, int sc) {
-    (void)card; (void)source;
-    Sym target_card_id = find_sel(sk, sv, sc, "target_card_id");
-    if (target_card_id == SYM_NULL) return state;
-    int slot = -1;
-    for (int i = 0; i < state->market.row_count; i++)
-        if (state->market.row[i] == target_card_id) { slot = i; break; }
-    if (slot < 0) {
-        for (int s = 0; s < state->definition->setup.special_stack_count; s++) {
-            if (state->definition->setup.special_stacks[s].card_id == target_card_id) {
-                slot = state->definition->setup.special_stacks[s].market_slot;
-                break;
-            }
-        }
-    }
-    if (slot < 0) return state;
-    int free_recruit = 0;
-    for (int mi = 0; mi < action->metadata_count; mi++) {
-        const char *mk = intern_str(action->metadata[mi].key);
-        if (mk && strcmp(mk, "free_recruit") == 0) { free_recruit = 1; break; }
-    }
-    if (free_recruit) apply_recruit_free(state, player_id, slot);
-    else apply_recruit(state, player_id, slot);
-    return state;
-}
-
 static GameState *apply_grant_vp(GameState *state, Sym player_id, const CardDefinition *card,
                                   Sym source, const CardAction *action,
                                   int *sk, Sym *sv, int sc) {
@@ -766,7 +738,6 @@ void register_generic_actions(void) {
     register_action(intern("draw_cards"), apply_draw_cards);
     register_action(intern("force_discard"), apply_force_discard_auto);
     register_action(intern("promote_card"), apply_promote_card_gen);
-    register_action(intern("recruit_card"), apply_recruit_card_gen);
     register_action(intern("devour"), apply_devour);
     register_action(intern("devour_cost"), apply_devour);
     register_action(intern("grant_vp"), apply_grant_vp);

@@ -426,38 +426,6 @@ static int sel_promote(const GameState *state, Sym player_id,
     return w;
 }
 
-static int sel_recruit(const GameState *state, Sym player_id,
-                        const PendingGenericChoiceState *pending,
-                        const CardDefinition *card, const CardAction *action,
-                        Move *out, int max_out) {
-    int w = 0;
-    Sym required_aspect = SYM_NULL;
-    int max_cost = -1;
-    int free_recruit = 0;
-    for (int mi = 0; mi < action->metadata_count; mi++) {
-        const char *mk = intern_str(action->metadata[mi].key);
-        const char *mv = intern_str(action->metadata[mi].value);
-        if (mk && strcmp(mk, "required_aspect") == 0 && mv) required_aspect = intern(mv);
-        if (mk && strcmp(mk, "max_cost") == 0 && mv) max_cost = atoi(mv);
-        if (mk && strcmp(mk, "free_recruit") == 0) free_recruit = 1;
-    }
-    for (int s = 0; s < state->market.row_count && w < max_out; s++) {
-        Sym cid = state->market.row[s];
-        const CardDefinition *cd = NULL;
-        for (int i = 0; i < state->definition->catalog.card_count; i++)
-            if (state->definition->catalog.cards[i].card_id == cid) { cd = &state->definition->catalog.cards[i]; break; }
-        if (!cd) continue;
-        if (required_aspect != SYM_NULL && cd->aspect != required_aspect) continue;
-        if (max_cost >= 0 && cd->cost > max_cost) continue;
-        if (!free_recruit && state->resource_pool.influence < cd->cost) continue;
-        out[w].type = MOVE_RESOLVE_GENERIC;
-        out[w].data.resolve_generic.action_id = cid;
-        out[w].player_index = 0;
-        w++;
-    }
-    return w;
-}
-
 int devour_target_count(const GameState *state, Sym player_id,
                         const CardAction *action, int exclude_hand_index) {
     /* Resolve the source zone exactly like sel_devour: metadata.source_zone
@@ -648,7 +616,6 @@ int legal_generic_target_selection_moves(const GameState *state, Sym player_id,
 
 void register_selection_handlers(void) {
     register_sel(intern("promote_card"), sel_promote);
-    register_sel(intern("recruit_card"), sel_recruit);
     register_sel(intern("devour"), sel_devour);
     register_sel(intern("devour_cost"), sel_devour);
     register_sel(intern("play_card"), sel_play_card);
