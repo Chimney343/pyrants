@@ -368,7 +368,7 @@ static int sel_custom_effect(const GameState *state, Sym player_id,
     return w;
 }
 
-static int sel_promote(const GameState *state, Sym player_id,
+int legal_promote_card_moves(const GameState *state, Sym player_id,
                         const PendingGenericChoiceState *pending,
                         const CardDefinition *card, const CardAction *action,
                         Move *out, int max_out) {
@@ -570,6 +570,5 @@ int legal_generic_target_selection_moves(const GameState *state, Sym player_id,
 }
 
 void register_selection_handlers(void) {
-    register_sel(intern("promote_card"), sel_promote);
     register_sel(intern("custom_effect"), sel_custom_effect);
 }

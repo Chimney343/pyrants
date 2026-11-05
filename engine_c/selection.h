@@ -23,4 +23,11 @@ int legal_devour_moves(const GameState *state, Sym player_id,
                        const CardDefinition *card, const CardAction *action,
                        Move *out, int max_out);
 
+/* Selection-requiring promotion target enumeration. No-selection promotion
+ * forms are handled by the legacy apply path. */
+int legal_promote_card_moves(const GameState *state, Sym player_id,
+                             const PendingGenericChoiceState *pending,
+                             const CardDefinition *card, const CardAction *action,
+                             Move *out, int max_out);
+
 #endif

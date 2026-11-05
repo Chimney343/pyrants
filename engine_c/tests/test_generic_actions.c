@@ -651,7 +651,7 @@ static void test_op_return_spy(void) {
     assert(op->apply != NULL);
     assert(op->describe != NULL);
     assert(action_requires_selection(&action) == 1);
-    assert(op_lookup(intern("promote_card")) == NULL);
+    assert(op_lookup(intern("custom_effect")) == NULL);
 
     Move out[8];
     memset(out, 0, sizeof(out));
@@ -1419,6 +1419,71 @@ static void test_op_play_card(void) {
     printf("PASS: play_card op owns inner/market target, apply and describe\n");
 }
 
+static void test_op_promote_card(void) {
+    Sym p1 = intern("p1");
+    Sym card_a = intern("card_a");
+
+    CardDefinition card;
+    memset(&card, 0, sizeof(card));
+    card.card_id = card_a;
+    card.name = intern("Test Card");
+
+    CardCatalog catalog;
+    memset(&catalog, 0, sizeof(catalog));
+    catalog.cards = &card;
+    catalog.card_count = 1;
+
+    GameDefinition def;
+    memset(&def, 0, sizeof(def));
+    def.catalog = catalog;
+
+    GameState s;
+    memset(&s, 0, sizeof(s));
+    s.definition = &def;
+    s.player_count = 1;
+    s.players[0].player_id = p1;
+    s.players[0].discard_pile_count = 1;
+    s.players[0].discard_pile[0] = card_a;
+
+    CardAction action;
+    memset(&action, 0, sizeof(action));
+    action.op = intern("promote_card");
+    action.source_fragment = intern("promote_from_discard");
+
+    const CardOp *op = op_lookup(intern("promote_card"));
+    assert(op != NULL);
+    assert(op->needs_selection);
+    assert(op->enumerate != NULL);
+    assert(op->target_from_move != NULL);
+    assert(op->apply != NULL);
+    assert(op->describe != NULL);
+    assert(action_requires_selection(&action) == 1);
+
+    Move out[8];
+    memset(out, 0, sizeof(out));
+    int n = legal_generic_target_selection_moves(&s, p1, NULL, NULL, &action, out, 8);
+    assert(n == 1);
+    assert(out[0].data.resolve_generic.action_id == card_a);
+
+    OpTarget target;
+    memset(&target, 0, sizeof(target));
+    assert(op->target_from_move(&s, p1, &action, &out[0], &target));
+    assert(target.kind == OP_TARGET_PROMOTE_CARD);
+    assert(target.as.promote_card.target_card_id == card_a);
+
+    char label[96];
+    label[0] = '\0';
+    op->describe(&s, &action, &target, NULL, NULL, 0, label, sizeof(label));
+    assert(strcmp(label, "Promote Test Card") == 0);
+
+    assert(op->apply(&s, p1, NULL, &action, &target) == &s);
+    assert(s.players[0].discard_pile_count == 0);
+    assert(s.players[0].inner_circle_count == 1);
+    assert(s.players[0].inner_circle[0] == card_a);
+
+    printf("PASS: promote_card op owns discard target, apply and describe\n");
+}
+
 static void test_sel_deploy_empty_barracks(void) {
     Sym p1 = intern("p1");
     Sym site_a = intern("site_a");
@@ -1487,6 +1552,7 @@ int main(void) {
     test_op_recruit_card();
     test_op_devour();
     test_op_play_card();
+    test_op_promote_card();
     test_sel_place_spy_relocation();
     test_sel_place_spy_supply_regression();
     test_sel_deploy_empty_barracks();

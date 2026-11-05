@@ -16,6 +16,7 @@ ops/move_troop.c
 ops/op.c
 ops/place_spy.c
 ops/play_card.c
+ops/promote_card.c
 ops/recruit_card.c
 ops/return_spy.c
 ops/supplant_troop.c

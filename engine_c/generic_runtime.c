@@ -180,8 +180,6 @@ int action_requires_selection(const CardAction *action) {
             if (sf && strcmp(sf, "on_opponent_discard_punish") == 0) return 0;
         }
     }
-    const CardOp *card_op = op_lookup(action->op);
-    if (card_op) return card_op->needs_selection;
     if (op && strcmp(op, "promote_card") == 0) {
         const char *sf = intern_str(action->source_fragment);
         if (sf && strcmp(sf, "promote_top_of_deck") == 0) return 0;
@@ -190,6 +188,8 @@ int action_requires_selection(const CardAction *action) {
         if (timing && strcmp(timing, "end_of_turn") == 0) return 0;
         return 1;
     }
+    const CardOp *card_op = op_lookup(action->op);
+    if (card_op) return card_op->needs_selection;
     if (op && strcmp(op, "custom_effect") == 0) {
         for (int i = 0; i < action->metadata_count; i++) {
             const char *k = intern_str(action->metadata[i].key);
@@ -1001,6 +1001,43 @@ GameState *apply_resolve_generic_choice(GameState *src, const Move *move) {
                         p->last_selection_count = 1;
                         p->last_selection_keys[0] = intern("target_card_id");
                         p->last_selection_values[0] = target.as.play_card.target_card_id;
+                    }
+                    if (carry_target_node != SYM_NULL && p->last_selection_count < 8) {
+                        p->last_selection_keys[p->last_selection_count] = intern("target_node_id");
+                        p->last_selection_values[p->last_selection_count] = carry_target_node;
+                        p->last_selection_count++;
+                    }
+                } else if (target.kind == OP_TARGET_PROMOTE_CARD) {
+                    if (target.as.promote_card.source_zone != SYM_NULL) {
+                        p->last_selection_count = 1;
+                        p->last_selection_keys[0] = intern("source_zone");
+                        p->last_selection_values[0] = target.as.promote_card.source_zone;
+                        const char *sz = intern_str(target.as.promote_card.source_zone);
+                        if (sz && strcmp(sz, "played") == 0) {
+                            p->last_selection_keys[1] = intern("target_card_id");
+                            p->last_selection_values[1] =
+                                target.as.promote_card.target_card_id;
+                            p->last_selection_count = 2;
+                        } else if (sz && strcmp(sz, "hand") == 0) {
+                            char idx_buf[16];
+                            snprintf(idx_buf, sizeof(idx_buf), "%d",
+                                     target.as.promote_card.hand_index);
+                            p->last_selection_keys[1] = intern("hand_index");
+                            p->last_selection_values[1] = intern(idx_buf);
+                            p->last_selection_count = 2;
+                        } else if (sz && strcmp(sz, "discard") == 0) {
+                            char idx_buf[16];
+                            snprintf(idx_buf, sizeof(idx_buf), "%d",
+                                     target.as.promote_card.discard_index);
+                            p->last_selection_keys[1] = intern("discard_index");
+                            p->last_selection_values[1] = intern(idx_buf);
+                            p->last_selection_count = 2;
+                        }
+                    } else {
+                        p->last_selection_count = 1;
+                        p->last_selection_keys[0] = intern("target_card_id");
+                        p->last_selection_values[0] =
+                            target.as.promote_card.target_card_id;
                     }
                     if (carry_target_node != SYM_NULL && p->last_selection_count < 8) {
                         p->last_selection_keys[p->last_selection_count] = intern("target_node_id");

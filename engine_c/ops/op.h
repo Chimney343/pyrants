@@ -20,6 +20,7 @@ typedef enum {
     OP_TARGET_RECRUIT_CARD,
     OP_TARGET_DEVOUR,
     OP_TARGET_PLAY_CARD,
+    OP_TARGET_PROMOTE_CARD,
 } OpTargetKind;
 
 typedef struct {
@@ -68,6 +69,12 @@ typedef struct {
             int inner_circle_index;
             int from_inner_circle;
         } play_card;
+        struct {
+            Sym target_card_id;
+            Sym source_zone;
+            int hand_index;
+            int discard_index;
+        } promote_card;
     } as;
 } OpTarget;
 
