@@ -11,6 +11,7 @@ moves.c
 ops/op.c
 ops/place_spy.c
 ops/return_spy.c
+ops/return_unit.c
 phases.c
 player_view.c
 rng.c

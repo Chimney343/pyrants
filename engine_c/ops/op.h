@@ -12,6 +12,7 @@ typedef enum {
     OP_TARGET_NONE = 0,
     OP_TARGET_RETURN_SPY,
     OP_TARGET_PLACE_SPY,
+    OP_TARGET_RETURN_UNIT,
 } OpTargetKind;
 
 typedef struct {
@@ -26,6 +27,12 @@ typedef struct {
             Sym target_node_id;
             Sym source_node_id;
         } place_spy;
+        struct {
+            Sym node_id;
+            Sym unit_type;
+            int slot_index;
+            Sym spy_owner_id;
+        } return_unit;
     } as;
 } OpTarget;
 

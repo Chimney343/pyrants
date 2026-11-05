@@ -163,7 +163,7 @@ const CardAction *pending_generic_active_action(const PendingGenericChoiceState 
 int action_requires_selection(const CardAction *action) {
     static const char *selection_ops[] = {
         "deploy_troops", "assassinate_troop", "supplant_troop",
-        "return_unit", "move_troop", "force_discard",
+        "move_troop", "force_discard",
         "recruit_card", "devour", "devour_cost", "play_card", NULL
     };
     const char *op = intern_str(action->op);
@@ -884,6 +884,31 @@ GameState *apply_resolve_generic_choice(GameState *src, const Move *move) {
                                 target.as.place_spy.source_node_id;
                             p->last_selection_count++;
                         }
+                    }
+                } else if (target.kind == OP_TARGET_RETURN_UNIT) {
+                    const char *ut = intern_str(target.as.return_unit.unit_type);
+                    p->last_selection_count = 1;
+                    p->last_selection_keys[0] = intern("node_id");
+                    p->last_selection_values[0] = target.as.return_unit.node_id;
+                    p->last_selection_keys[1] = intern("unit_type");
+                    p->last_selection_values[1] = target.as.return_unit.unit_type;
+                    p->last_selection_count = 2;
+                    if (ut && strcmp(ut, "troop") == 0) {
+                        char slot_buf[16];
+                        snprintf(slot_buf, sizeof(slot_buf), "%d",
+                                 target.as.return_unit.slot_index);
+                        p->last_selection_keys[2] = intern("target_slot_index");
+                        p->last_selection_values[2] = intern(slot_buf);
+                        p->last_selection_count = 3;
+                    } else if (ut && strcmp(ut, "spy") == 0) {
+                        p->last_selection_keys[2] = intern("spy_owner_id");
+                        p->last_selection_values[2] = target.as.return_unit.spy_owner_id;
+                        p->last_selection_count = 3;
+                    }
+                    if (carry_target_node != SYM_NULL && p->last_selection_count < 8) {
+                        p->last_selection_keys[p->last_selection_count] = intern("target_node_id");
+                        p->last_selection_values[p->last_selection_count] = carry_target_node;
+                        p->last_selection_count++;
                     }
                 }
 

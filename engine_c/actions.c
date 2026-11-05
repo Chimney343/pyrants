@@ -261,41 +261,6 @@ static GameState *apply_supplant_troop(GameState *state, Sym player_id, const Ca
     return state;
 }
 
-static GameState *apply_return_unit(GameState *state, Sym player_id, const CardDefinition *card,
-                                     Sym source, const CardAction *action,
-                                     int *sk, Sym *sv, int sc) {
-    (void)card; (void)source; (void)action;
-    Sym unit_type = find_sel(sk, sv, sc, "unit_type");
-    Sym node_id = find_sel(sk, sv, sc, "node_id");
-    if (unit_type == SYM_NULL || node_id == SYM_NULL) return state;
-
-    NodeState *ns = cow_node(state, node_id);
-    if (!ns) return state;
-
-    const char *ut = intern_str(unit_type);
-    if (ut && strcmp(ut, "troop") == 0) {
-        int slot = find_sel_int(sk, sv, sc, "target_slot_index", -1);
-        if (slot < 0 || slot >= ns->troop_slot_count) return state;
-        Sym owner = ns->troop_slots[slot];
-        if (owner == SYM_NULL || owner == intern("white")) return state;
-        ns->troop_slots[slot] = SYM_NULL;
-        PlayerState *ps = cow_player(state, owner);
-        if (ps) ps->barracks++;
-    } else if (ut && strcmp(ut, "spy") == 0) {
-        Sym spy_owner = find_sel(sk, sv, sc, "spy_owner_id");
-        int found = -1;
-        for (int i = 0; i < ns->spy_count; i++)
-            if (ns->spies[i] == spy_owner) { found = i; break; }
-        if (found < 0) return state;
-        for (int i = found; i < ns->spy_count - 1; i++)
-            ns->spies[i] = ns->spies[i + 1];
-        ns->spy_count--;
-        PlayerState *ps = cow_player(state, spy_owner);
-        if (ps) ps->spies_available++;
-    }
-    return state;
-}
-
 static GameState *apply_move_troop(GameState *state, Sym player_id, const CardDefinition *card,
                                     Sym source, const CardAction *action,
                                     int *sk, Sym *sv, int sc) {
@@ -921,7 +886,6 @@ void register_generic_actions(void) {
     register_action(intern("deploy_troops"), apply_deploy_troops);
     register_action(intern("assassinate_troop"), apply_assassinate_troop);
     register_action(intern("supplant_troop"), apply_supplant_troop);
-    register_action(intern("return_unit"), apply_return_unit);
     register_action(intern("move_troop"), apply_move_troop);
     register_action(intern("force_discard"), apply_force_discard);
     register_action(intern("promote_card"), apply_promote_card_gen);

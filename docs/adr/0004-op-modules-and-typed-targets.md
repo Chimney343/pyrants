@@ -32,22 +32,25 @@ identical.
   apply boundary. The `Move` string remains the wire format; no payload,
   decisions or action-id change is allowed.
 - Migration is one leaf op at a time, starting with `return_spy`, then
-  `place_spy`. A C test at the op-table interface asserts the descriptor is
-  complete, the legacy dispatcher reaches it, the typed target round-trips,
-  apply matches card behavior, and unmigrated ops still fall back.
+  `place_spy`, then `return_unit`. A C test at the op-table interface asserts
+  the descriptor is complete, the legacy dispatcher reaches it, the typed
+  target round-trips, apply matches card behavior, and unmigrated ops still
+  fall back.
 - Op describe callbacks receive the viewer's node-id/label arrays so target
   labels are produced by the op without duplicating node naming in each op.
 
 ## Consequences
 
-`return_spy` and `place_spy` now answer from the op table; their selection,
-target derivation, apply and describe callbacks live in
-`engine_c/ops/return_spy.c` and `engine_c/ops/place_spy.c`. The legacy
-`sel_return_spy`/`apply_return_spy_gen` and `sel_place_spy`/`apply_place_spy`
-registry entries are removed for those ops. `place_spy` keeps its rulebook
-decline as a valid null target, and both ops reproduce the legacy
-`last_selection` records so follow-up actions keep working. The colon parser
-and `find_sel`/`atoi` code remain for the other ops until their migrations.
+`return_spy`, `place_spy` and `return_unit` now answer from the op table; their
+selection, target derivation, apply and describe callbacks live in
+`engine_c/ops/return_spy.c`, `engine_c/ops/place_spy.c` and
+`engine_c/ops/return_unit.c`. The legacy
+`sel_return_spy`/`apply_return_spy_gen`, `sel_place_spy`/`apply_place_spy` and
+`sel_return_unit`/`apply_return_unit` registry entries are removed for those
+ops. `place_spy` keeps its rulebook decline as a valid null target, and all
+three reproduce the legacy `last_selection` records so follow-up actions keep
+working. The colon parser and `find_sel`/`atoi` code remain for the other ops
+until their migrations.
 
 `op_lookup` is a small name scan. It is called on the selection/apply paths;
 the table is small and this is not a hot-loop concern for the first ops. The op

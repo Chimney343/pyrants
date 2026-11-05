@@ -35,6 +35,9 @@ const char *engine_node_label(const char *node_id_str,
                               const char *const *node_labels,
                               int node_pair_count);
 
+/* Player id -> display label, used by op modules' describe callbacks. */
+const char *engine_player_label(const char *player_id_str);
+
 #ifdef __cplusplus
 }
 #endif

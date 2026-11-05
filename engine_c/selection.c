@@ -402,70 +402,6 @@ static int sel_custom_effect(const GameState *state, Sym player_id,
     return w;
 }
 
-static int sel_return_unit(const GameState *state, Sym player_id,
-                            const PendingGenericChoiceState *pending,
-                            const CardDefinition *card, const CardAction *action,
-                            Move *out, int max_out) {
-    int w = 0;
-    int include_self = 1;
-    int include_opponent = 0;
-    int requires_presence = 0;
-    const char *scope = intern_str(action->target_scope);
-    if (scope) {
-        if (strcmp(scope, "opponent_unit") == 0) {
-            include_self = 0;
-            include_opponent = 1;
-        } else if (strcmp(scope, "self_or_opponent_unit") == 0) {
-            include_opponent = 1;
-        }
-    }
-    for (int i = 0; i < action->metadata_count; i++) {
-        const char *k = intern_str(action->metadata[i].key);
-        const char *v = intern_str(action->metadata[i].value);
-        if (k && strcmp(k, "requires_presence") == 0 && v && strcmp(v, "true") == 0) {
-            requires_presence = 1;
-        }
-    }
-    for (int i = 0; i < state->node_count && w < max_out; i++) {
-        Sym nid = state->nodes[i].node_id;
-        if (requires_presence && !has_presence(state, player_id, nid)) continue;
-        for (int s = 0; s < state->nodes[i].troop_slot_count && w < max_out; s++) {
-            Sym occ = state->nodes[i].troop_slots[s];
-            if (occ == SYM_NULL) continue;
-            int is_own = (occ == player_id);
-            const char *occ_str = intern_str(occ);
-            int is_opponent = (!is_own && occ_str && strcmp(occ_str, "white") != 0);
-            int include = (include_self && is_own) || (include_opponent && is_opponent);
-            if (!include) continue;
-            char buf[32];
-            snprintf(buf, sizeof(buf), "troop:%d", s);
-            out[w].type = MOVE_RESOLVE_GENERIC;
-            out[w].data.resolve_generic.action_id = nid;
-            out[w].data.resolve_generic.target_id = intern(buf);
-            out[w].data.resolve_generic.selection_index = 0;
-            out[w].player_index = 0;
-            w++;
-        }
-        for (int s = 0; s < state->nodes[i].spy_count && w < max_out; s++) {
-            Sym spy = state->nodes[i].spies[s];
-            int is_own = (spy == player_id);
-            int is_opponent = (!is_own);
-            int include = (include_self && is_own) || (include_opponent && is_opponent);
-            if (!include) continue;
-            char buf[32];
-            const char *pid_str = intern_str(spy);
-            snprintf(buf, sizeof(buf), "spy:%s", pid_str ? pid_str : "?");
-            out[w].type = MOVE_RESOLVE_GENERIC;
-            out[w].data.resolve_generic.action_id = nid;
-            out[w].data.resolve_generic.target_id = intern(buf);
-            out[w].data.resolve_generic.selection_index = 0;
-            out[w].player_index = 0;
-            w++;
-        }
-    }
-    return w;
-}
-
 static int sel_move_troop(const GameState *state, Sym player_id,
                            const PendingGenericChoiceState *pending,
                            const CardDefinition *card, const CardAction *action,
@@ -832,7 +768,6 @@ void register_selection_handlers(void) {
     register_sel(intern("deploy_troops"), sel_deploy);
     register_sel(intern("assassinate_troop"), sel_assassinate_supplant);
     register_sel(intern("supplant_troop"), sel_assassinate_supplant);
-    register_sel(intern("return_unit"), sel_return_unit);
     register_sel(intern("move_troop"), sel_move_troop);
     register_sel(intern("force_discard"), sel_force_discard);
     register_sel(intern("promote_card"), sel_promote);
