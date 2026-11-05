@@ -37,8 +37,11 @@ without card-id checks.
   (Cloaker option 2), `enemy_white_trophy` (Mummy Lord option 2) and
   `own_spy_anywhere` (Graz'zt option 2). The four card-id viability branches
   are gone; the predicates are evaluated for both modal and repeat options.
-- Subsequent fields: a timing/trigger field for F-015 and the
-  `custom_effect` effect-kind decomposition.
+- Fourth field: `CardAction.timing` is loader-validated to `immediate` or
+  `end_of_turn`. End-of-turn actions are deferred to the EOT phase rather than
+  executing inline during pending-generic resolution; the EOT phase applies
+  promotions, force discard and scaled VP once. This fixes F-015.
+- Remaining: the `custom_effect` effect-kind decomposition.
 - The catalog JSON gains the fields; the C struct, Python ctypes mirror and
   layout probe grow with them. Move payloads, decisions and action ids do not
   change.
@@ -52,8 +55,10 @@ behavior now comes from the catalog, so its card-id branch is gone from
 devour and the Insane Outcast grant path use the loaded property instead of
 the card id. `option_viability` is a loader-validated predicate; the
 Gauth/Cloaker/Mummy Lord/Graz'zt card-id branches are gone, and a catalog
-test rejects unknown predicate names. The remaining timing/source-fragment
-branches stay until their named fields land.
+test rejects unknown predicate names. `timing` is validated to
+`immediate`/`end_of_turn`; end-of-turn actions no longer execute inline, so
+Neogi discards once (F-015). The remaining source-fragment branches stay until
+their named fields land.
 
 `custom_effect` remains a multi-effect dispatcher and is explicitly deferred;
 its 13 effect kinds are catalog data that needs its own decomposition rather

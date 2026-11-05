@@ -563,7 +563,9 @@ static void apply_end_of_turn_effects(GameState *state, int include_force_discar
                     for (int c = 0; c < state->shuffle_counter; c++)
                         rng_next(&rng);
                     int idx = rng_randint(&rng, 0, tps->hand_count - 1);
+                    Sym discarded = tps->hand[idx];
                     discard_hand_card(state, tpid, idx);
+                    trigger_opponent_discard_reactive(state, pid, tpid, discarded);
                     state->shuffle_counter++;
                 }
             }

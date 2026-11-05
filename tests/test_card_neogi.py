@@ -26,10 +26,10 @@ def test_neogi_execution_model_deploys_four_and_random_mass_discard() -> None:
 
     assert discard["op"] == "force_discard"
     assert discard["target_scope"] == "opponent"
-    assert discard["timing"] == "immediate"
+    assert discard["timing"] == "end_of_turn"
     assert discard["source_fragment"] == "end_of_turn_mass_discard"
 
     assert "Deploy 4 troops" in neogi["rules_text"]
-    assert "random card" in neogi["rules_text"]
+    assert "discards a card" in neogi["rules_text"]
     assert "four" in neogi["notes"]
-    assert "random" in neogi["notes"]
+    assert "discard 1 card" in neogi["notes"]

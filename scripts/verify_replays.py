@@ -26,6 +26,18 @@ from interface.replay_loader import (  # noqa: E402
 )
 from interface.replay_player import ReplayDesyncError, ReplayPlayer  # noqa: E402
 
+PRE_F015_EXCLUSIONS = ROOT / "scripts" / "pre_f015_replays.txt"
+
+
+def _load_exclusions() -> set[str]:
+    if not PRE_F015_EXCLUSIONS.is_file():
+        return set()
+    return {
+        line.strip()
+        for line in PRE_F015_EXCLUSIONS.read_text(encoding="utf-8").splitlines()
+        if line.strip() and not line.lstrip().startswith("#")
+    }
+
 
 def _verify_one(game_dir: Path) -> tuple[str, str]:
     """Return (status, detail) for one replay directory."""
@@ -61,9 +73,25 @@ def _verify_one(game_dir: Path) -> tuple[str, str]:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Verify IS-MCTS replay artifacts replay faithfully.")
     parser.add_argument("--root", type=Path, default=ROOT / "artifacts" / "ismcts")
+    parser.add_argument(
+        "--include-pre-f015",
+        action="store_true",
+        help="include replays recorded before the F-015 end-of-turn timing fix",
+    )
     args = parser.parse_args()
 
-    metas = discover_replays(args.root)
+    exclusions = set() if args.include_pre_f015 else _load_exclusions()
+    all_metas = discover_replays(args.root)
+    metas = []
+    excluded_seen = 0
+    for meta in all_metas:
+        relative = meta.game_dir.relative_to(args.root).as_posix()
+        if relative in exclusions:
+            excluded_seen += 1
+            continue
+        metas.append(meta)
+    if exclusions:
+        print(f"Excluded {excluded_seen} pre-F-015 replay(s) (see {PRE_F015_EXCLUSIONS.name})")
     if not metas:
         print(f"No replay.json files found under {args.root}")
         return 0

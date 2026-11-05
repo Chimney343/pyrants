@@ -64,5 +64,8 @@ module's shape is settled, not before.
 - **card property** - a catalog field describing a card-wide rule, such as
   `on_discard: "inner_circle"` or the planned negative-card flag.
 - **option viability predicate** - a named catalog field describing when a
-  modal option is offered (the planned Gauth/Cloaker/Mummy Lord/Grazzt
-  replacement for card-id viability branches).
+  modal option is offered (Gauth/Cloaker/Mummy Lord/Grazzt use the validated
+  predicates in place of card-id branches).
+- **timing trigger** - the loader-validated `immediate`/`end_of_turn`
+  action field. End-of-turn actions are deferred to the EOT phase and applied
+  once; they must not execute inline during pending-generic resolution.

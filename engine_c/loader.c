@@ -470,6 +470,14 @@ static SetupDefinition parse_setup(const char *json_str, Arena *arena) {
     return sd;
 }
 
+static int action_timing_valid(const CardAction *action) {
+    if (action->timing == SYM_NULL) return 1;
+    const char *timing = intern_str(action->timing);
+    return timing != NULL
+        && (strcmp(timing, "immediate") == 0
+            || strcmp(timing, "end_of_turn") == 0);
+}
+
 GameDefinition *engine_load_definition_json(const char *catalog_json, const char *board_path,
                                             const char *setup_path, Arena *arena) {
     GameDefinition *def = arena_calloc(arena, 1, sizeof(GameDefinition));
@@ -486,16 +494,25 @@ GameDefinition *engine_load_definition_json(const char *catalog_json, const char
                 const char *value = intern_str(on_discard);
                 if (!value || strcmp(value, "inner_circle") != 0) return NULL;
             }
-            for (int oi = 0; oi < def->catalog.cards[i].execution.option_count; oi++) {
-                Sym viability = def->catalog.cards[i].execution.options[oi].viability;
-                if (viability == SYM_NULL) continue;
-                const char *v = intern_str(viability);
-                if (!v
-                    || (strcmp(v, "allow_without_targets") != 0
-                        && strcmp(v, "own_spy_and_other_troop") != 0
-                        && strcmp(v, "enemy_white_trophy") != 0
-                        && strcmp(v, "own_spy_anywhere") != 0))
+            for (int ai = 0; ai < def->catalog.cards[i].action_count; ai++)
+                if (!action_timing_valid(&def->catalog.cards[i].actions[ai])) return NULL;
+            for (int ai = 0; ai < def->catalog.cards[i].execution.action_count; ai++)
+                if (!action_timing_valid(&def->catalog.cards[i].execution.actions[ai]))
                     return NULL;
+            for (int oi = 0; oi < def->catalog.cards[i].execution.option_count; oi++) {
+                const CardOption *opt = &def->catalog.cards[i].execution.options[oi];
+                Sym viability = opt->viability;
+                if (viability != SYM_NULL) {
+                    const char *v = intern_str(viability);
+                    if (!v
+                        || (strcmp(v, "allow_without_targets") != 0
+                            && strcmp(v, "own_spy_and_other_troop") != 0
+                            && strcmp(v, "enemy_white_trophy") != 0
+                            && strcmp(v, "own_spy_anywhere") != 0))
+                        return NULL;
+                }
+                for (int ai = 0; ai < opt->action_count; ai++)
+                    if (!action_timing_valid(&opt->actions[ai])) return NULL;
             }
         }
     }

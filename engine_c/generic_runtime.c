@@ -498,48 +498,15 @@ GameState *auto_resolve_pending_generic(GameState *state, Sym player_id) {
             }
         }
 
-        /* Intercept end-of-turn grant_vp: deferred to end-of-turn effects
-         * (scaled_vp counting). Applying immediately would use the wrong
-         * count resolver. */
+        /* Every other end-of-turn action is deferred to the EOT phase:
+         * pending promotions are registered above, grant_vp/scaled VP and
+         * mass discard run in apply_end_of_turn_effects / resolve_end_of_turn.
+         * Applying them inline is the F-015 double-discard bug. */
         {
-            const char *op_str = intern_str(action->op);
-            if (op_str && strcmp(op_str, "grant_vp") == 0) {
-                const char *timing_str = intern_str(action->timing);
-                if (timing_str && strcmp(timing_str, "end_of_turn") == 0) {
-                    p->next_action_index++;
-                    continue;
-                }
-            }
-        }
-
-        /* Intercept end_of_turn_mass_discard opponent-scoped force_discard:
-         * each opponent discards a random card immediately (Neogi).
-         * No minimum hand size guard ??? if they have 1 card, they lose it. */
-        {
-            const char *op_str = intern_str(action->op);
-            if (op_str && strcmp(op_str, "force_discard") == 0) {
-                const char *ts = intern_str(action->target_scope);
-                const char *sf_str = intern_str(action->source_fragment);
-                if (ts && strcmp(ts, "opponent") == 0
-                    && sf_str && strcmp(sf_str, "end_of_turn_mass_discard") == 0) {
-                    for (int tp = 0; tp < state->player_count; tp++) {
-                        Sym tpid = state->players[tp].player_id;
-                        if (tpid == player_id) continue;
-                        PlayerState *ps = cow_player(state, tpid);
-                        if (!ps || ps->hand_count == 0) continue;
-                        RNG rng;
-                        rng_seed(&rng, state->shuffle_seed);
-                        for (int c = 0; c < state->shuffle_counter; c++)
-                            rng_next(&rng);
-                        int idx = rng_randint(&rng, 0, ps->hand_count - 1);
-                        Sym discarded = ps->hand[idx];
-                        discard_hand_card(state, tpid, idx);
-                        trigger_opponent_discard_reactive(state, player_id, tpid, discarded);
-                        state->shuffle_counter++;
-                    }
-                    p->next_action_index++;
-                    continue;
-                }
+            const char *timing_str = intern_str(action->timing);
+            if (timing_str && strcmp(timing_str, "end_of_turn") == 0) {
+                p->next_action_index++;
+                continue;
             }
         }
 
