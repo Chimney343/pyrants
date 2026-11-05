@@ -3,6 +3,9 @@
 
 #include "state.h"
 
+Sym  pending_counter_key(const CardAction *action);
+void increment_pending_counter(PendingGenericChoiceState *p, const CardAction *action);
+
 int  has_presence(const GameState *state, Sym player_id, Sym node_id);
 int  player_has_any_troops_on_board(const GameState *state, Sym player_id);
 int  can_deploy_to_node(const GameState *state, Sym player_id, Sym node_id, int has_troops);

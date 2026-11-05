@@ -162,7 +162,7 @@ const CardAction *pending_generic_active_action(const PendingGenericChoiceState 
 
 int action_requires_selection(const CardAction *action) {
     static const char *selection_ops[] = {
-        "deploy_troops", "assassinate_troop", "supplant_troop",
+        "assassinate_troop", "supplant_troop",
         "move_troop", "force_discard",
         "recruit_card", "devour", "devour_cost", "play_card", NULL
     };
@@ -909,6 +909,19 @@ GameState *apply_resolve_generic_choice(GameState *src, const Move *move) {
                         p->last_selection_keys[p->last_selection_count] = intern("target_node_id");
                         p->last_selection_values[p->last_selection_count] = carry_target_node;
                         p->last_selection_count++;
+                    }
+                } else if (target.kind == OP_TARGET_DEPLOY_TROOPS) {
+                    if (target.as.deploy_troops.node_id == SYM_NULL) {
+                        p->last_selection_count = 0;
+                        if (carry_target_node != SYM_NULL && p->last_selection_count < 8) {
+                            p->last_selection_keys[0] = intern("target_node_id");
+                            p->last_selection_values[0] = carry_target_node;
+                            p->last_selection_count = 1;
+                        }
+                    } else {
+                        p->last_selection_count = 1;
+                        p->last_selection_keys[0] = intern("target_node_id");
+                        p->last_selection_values[0] = target.as.deploy_troops.node_id;
                     }
                 }
 

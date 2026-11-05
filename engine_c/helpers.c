@@ -1,8 +1,27 @@
 #include "helpers.h"
 #include "generic_runtime.h"
 #include "scoring.h"
+#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+
+Sym pending_counter_key(const CardAction *action) {
+    char buf[128];
+    snprintf(buf, sizeof(buf), "%s:%s", intern_str(action->op), intern_str(action->action_id));
+    return intern(buf);
+}
+
+void increment_pending_counter(PendingGenericChoiceState *p, const CardAction *action) {
+    Sym key = pending_counter_key(action);
+    for (int i = 0; i < p->counter_count; i++) {
+        if (p->counter_keys[i] == key) { p->counter_values[i]++; return; }
+    }
+    if (p->counter_count < 8) {
+        p->counter_keys[p->counter_count] = key;
+        p->counter_values[p->counter_count] = 1;
+        p->counter_count++;
+    }
+}
 
 static int str_sym_compare(const void *a, const void *b) {
     const char *sa = intern_str(*(const Sym *)a);

@@ -28,40 +28,6 @@ static int mk_move(Move *out, int w, int max, Sym pid, const PendingGenericChoic
     return w + 1;
 }
 
-static int sel_deploy(const GameState *state, Sym player_id,
-                      const PendingGenericChoiceState *pending,
-                      const CardDefinition *card, const CardAction *action,
-                      Move *out, int max_out) {
-    int w = 0;
-    int pi = player_index_for_id(state, player_id);
-    if (pi < 0) return 0;
-    if (state->players[pi].barracks <= 0) {
-        /* Rulebook 319/589: taking the Deploy action with an empty barracks
-         * grants 1 VP instead. Nothing is placed, so the node is irrelevant —
-         * emit a single sentinel move rather than one per node. */
-        if (max_out > 0) {
-            out[0].type = MOVE_RESOLVE_GENERIC;
-            out[0].data.resolve_generic.action_id = SYM_NULL;
-            out[0].data.resolve_generic.target_id = SYM_NULL;
-            out[0].data.resolve_generic.selection_index = 0;
-            out[0].player_index = 0;
-            return 1;
-        }
-        return 0;
-    }
-    int ht = player_has_any_troops_on_board(state, player_id);
-    for (int i = 0; i < state->node_count && w < max_out; i++) {
-        Sym nid = state->nodes[i].node_id;
-        if (can_deploy_to_node(state, player_id, nid, ht)) {
-            out[w].type = MOVE_RESOLVE_GENERIC;
-            out[w].data.resolve_generic.action_id = nid;
-            out[w].player_index = 0;
-            w++;
-        }
-    }
-    return w;
-}
-
 static int sel_assassinate_supplant(const GameState *state, Sym player_id,
                                      const PendingGenericChoiceState *pending,
                                      const CardDefinition *card, const CardAction *action,
@@ -765,7 +731,6 @@ int legal_generic_target_selection_moves(const GameState *state, Sym player_id,
 }
 
 void register_selection_handlers(void) {
-    register_sel(intern("deploy_troops"), sel_deploy);
     register_sel(intern("assassinate_troop"), sel_assassinate_supplant);
     register_sel(intern("supplant_troop"), sel_assassinate_supplant);
     register_sel(intern("move_troop"), sel_move_troop);

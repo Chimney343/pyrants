@@ -125,29 +125,11 @@ static int resolve_count(GameState *state, Sym player_id, const CardAction *acti
     return 1;
 }
 
-static Sym pending_counter_key(const CardAction *action) {
-    char buf[128];
-    snprintf(buf, sizeof(buf), "%s:%s", intern_str(action->op), intern_str(action->action_id));
-    return intern(buf);
-}
-
 static int pending_counter_val(const PendingGenericChoiceState *p, const CardAction *action) {
     Sym key = pending_counter_key(action);
     for (int i = 0; i < p->counter_count; i++)
         if (p->counter_keys[i] == key) return p->counter_values[i];
     return 0;
-}
-
-static void increment_pending_counter(PendingGenericChoiceState *p, const CardAction *action) {
-    Sym key = pending_counter_key(action);
-    for (int i = 0; i < p->counter_count; i++) {
-        if (p->counter_keys[i] == key) { p->counter_values[i]++; return; }
-    }
-    if (p->counter_count < 8) {
-        p->counter_keys[p->counter_count] = key;
-        p->counter_values[p->counter_count] = 1;
-        p->counter_count++;
-    }
 }
 
 static GameState *apply_gain_resource(GameState *state, Sym player_id, const CardDefinition *card,
@@ -179,17 +161,6 @@ static GameState *apply_draw_cards(GameState *state, Sym player_id, const CardDe
         if (ps->hand_count < MAX_ZONE_SIZE)
             ps->hand[ps->hand_count++] = ps->deck[--ps->deck_count];
     }
-    return state;
-}
-
-static GameState *apply_deploy_troops(GameState *state, Sym player_id, const CardDefinition *card,
-                                       Sym source, const CardAction *action,
-                                       int *sk, Sym *sv, int sc) {
-    (void)card; (void)source;
-    Sym target = find_sel(sk, sv, sc, "target_node_id");
-    if (apply_free_deploy(state, player_id, target) != 0) return state;
-    if (state->pending_generic)
-        increment_pending_counter(state->pending_generic, action);
     return state;
 }
 
@@ -883,7 +854,6 @@ GameState *apply_generic_action(GameState *state, Sym player_id, const CardDefin
 void register_generic_actions(void) {
     register_action(intern("gain_resource"), apply_gain_resource);
     register_action(intern("draw_cards"), apply_draw_cards);
-    register_action(intern("deploy_troops"), apply_deploy_troops);
     register_action(intern("assassinate_troop"), apply_assassinate_troop);
     register_action(intern("supplant_troop"), apply_supplant_troop);
     register_action(intern("move_troop"), apply_move_troop);

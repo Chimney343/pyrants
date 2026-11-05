@@ -6,11 +6,13 @@
 extern const CardOp OP_RETURN_SPY;
 extern const CardOp OP_PLACE_SPY;
 extern const CardOp OP_RETURN_UNIT;
+extern const CardOp OP_DEPLOY_TROOPS;
 
 static const CardOp *const OPS[] = {
     &OP_RETURN_SPY,
     &OP_PLACE_SPY,
     &OP_RETURN_UNIT,
+    &OP_DEPLOY_TROOPS,
 };
 
 const CardOp *op_lookup(Sym op) {

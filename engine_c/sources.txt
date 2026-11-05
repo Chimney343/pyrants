@@ -8,6 +8,7 @@ intern.c
 layout.c
 loader.c
 moves.c
+ops/deploy_troops.c
 ops/op.c
 ops/place_spy.c
 ops/return_spy.c
