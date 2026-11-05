@@ -311,33 +311,6 @@ static GameState *apply_grant_vp(GameState *state, Sym player_id, const CardDefi
     return state;
 }
 
-static GameState *apply_play_card_nested(GameState *state, Sym player_id, const CardDefinition *card,
-                                          Sym source, const CardAction *action,
-                                          int *sk, Sym *sv, int sc) {
-    (void)card;
-    const char *sf = intern_str(action->source_fragment);
-    if (!sf) return state;
-
-    Sym nested_id = SYM_NULL;
-    if (strcmp(sf, "play_from_inner_circle_without_removal") == 0) {
-        int idx = find_sel_int(sk, sv, sc, "inner_circle_index", -1);
-        PlayerState *ps = cow_player(state, player_id);
-        if (!ps || idx < 0 || idx >= ps->inner_circle_count) return state;
-        nested_id = ps->inner_circle[idx];
-    } else if (strcmp(sf, "play") == 0) {
-        nested_id = find_sel(sk, sv, sc, "target_card_id");
-        if (nested_id == SYM_NULL) return state;
-    } else {
-        return state;
-    }
-
-    const CardDefinition *nested_cd = card_by_id_act(state, nested_id);
-    if (!nested_cd || !card_effect_is_generic(nested_cd)) return state;
-
-    if (state->pending_generic) state->pending_generic->last_played_card_id = nested_id;
-    return apply_card_effect(state, player_id, nested_cd);
-}
-
 static void give_insane_outcast(GameState *state, Sym player_id, Sym target_id, const CardAction *action) {
     int count = resolve_count(state, player_id, action);
     Sym insane = intern("insane_outcast");
@@ -638,5 +611,4 @@ void register_generic_actions(void) {
     register_action(intern("grant_vp"), apply_grant_vp);
     register_action(intern("conditional_bonus"), apply_conditional_bonus);
     register_action(intern("custom_effect"), apply_custom_effect);
-    register_action(intern("play_card"), apply_play_card_nested);
 }

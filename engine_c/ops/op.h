@@ -19,6 +19,7 @@ typedef enum {
     OP_TARGET_FORCE_DISCARD,
     OP_TARGET_RECRUIT_CARD,
     OP_TARGET_DEVOUR,
+    OP_TARGET_PLAY_CARD,
 } OpTargetKind;
 
 typedef struct {
@@ -62,6 +63,11 @@ typedef struct {
         struct {
             Sym target_card_id;
         } devour;
+        struct {
+            Sym target_card_id;
+            int inner_circle_index;
+            int from_inner_circle;
+        } play_card;
     } as;
 } OpTarget;
 

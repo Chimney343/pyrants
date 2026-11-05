@@ -14,6 +14,7 @@ extern const CardOp OP_FORCE_DISCARD;
 extern const CardOp OP_RECRUIT_CARD;
 extern const CardOp OP_DEVOUR;
 extern const CardOp OP_DEVOUR_COST;
+extern const CardOp OP_PLAY_CARD;
 
 static const CardOp *const OPS[] = {
     &OP_RETURN_SPY,
@@ -27,6 +28,7 @@ static const CardOp *const OPS[] = {
     &OP_RECRUIT_CARD,
     &OP_DEVOUR,
     &OP_DEVOUR_COST,
+    &OP_PLAY_CARD,
 };
 
 const CardOp *op_lookup(Sym op) {

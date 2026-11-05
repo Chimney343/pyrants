@@ -539,51 +539,6 @@ int legal_devour_moves(const GameState *state, Sym player_id,
     return w;
 }
 
-static int sel_play_card(const GameState *state, Sym player_id,
-                          const PendingGenericChoiceState *pending,
-                          const CardDefinition *card, const CardAction *action,
-                          Move *out, int max_out) {
-    int w = 0;
-    const char *sf = intern_str(action->source_fragment);
-    if (sf && strcmp(sf, "play_from_inner_circle_without_removal") == 0) {
-        int pi = -1;
-        for (int i = 0; i < state->player_count; i++)
-            if (state->players[i].player_id == player_id) { pi = i; break; }
-        if (pi < 0) return 0;
-        for (int i = 0; i < state->players[pi].inner_circle_count && w < max_out; i++) {
-            out[w].type = MOVE_RESOLVE_GENERIC;
-            out[w].data.resolve_generic.action_id = state->players[pi].inner_circle[i];
-            out[w].player_index = 0;
-            w++;
-        }
-        return w;
-    }
-    if (sf && strcmp(sf, "play") == 0) {
-        int max_cost = 9999;
-        for (int i = 0; i < action->metadata_count; i++) {
-            const char *k = intern_str(action->metadata[i].key);
-            const char *v = intern_str(action->metadata[i].value);
-            if (k && strcmp(k, "max_cost") == 0 && v) max_cost = atoi(v);
-        }
-        for (int s = 0; s < state->market.row_count && w < max_out; s++) {
-            Sym cid = state->market.row[s];
-            if (max_cost < 9999) {
-                const CardDefinition *cd = NULL;
-                for (int ci = 0; ci < state->definition->catalog.card_count; ci++)
-                    if (state->definition->catalog.cards[ci].card_id == cid)
-                        { cd = &state->definition->catalog.cards[ci]; break; }
-                if (!cd || cd->cost > max_cost) continue;
-            }
-            out[w].type = MOVE_RESOLVE_GENERIC;
-            out[w].data.resolve_generic.action_id = cid;
-            out[w].player_index = 0;
-            w++;
-        }
-        return w;
-    }
-    return 0;
-}
-
 typedef int (*SelFn)(const GameState*, Sym, const PendingGenericChoiceState*,
                       const CardDefinition*, const CardAction*, Move*, int);
 
@@ -616,6 +571,5 @@ int legal_generic_target_selection_moves(const GameState *state, Sym player_id,
 
 void register_selection_handlers(void) {
     register_sel(intern("promote_card"), sel_promote);
-    register_sel(intern("play_card"), sel_play_card);
     register_sel(intern("custom_effect"), sel_custom_effect);
 }

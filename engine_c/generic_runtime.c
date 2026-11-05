@@ -161,9 +161,6 @@ const CardAction *pending_generic_active_action(const PendingGenericChoiceState 
 }
 
 int action_requires_selection(const CardAction *action) {
-    static const char *selection_ops[] = {
-        "play_card", NULL
-    };
     const char *op = intern_str(action->op);
     if (!op) return 0;
     /* force_discard with target_scope "opponent" auto-applies to all
@@ -185,8 +182,6 @@ int action_requires_selection(const CardAction *action) {
     }
     const CardOp *card_op = op_lookup(action->op);
     if (card_op) return card_op->needs_selection;
-    for (int i = 0; selection_ops[i]; i++)
-        if (strcmp(op, selection_ops[i]) == 0) return 1;
     if (op && strcmp(op, "promote_card") == 0) {
         const char *sf = intern_str(action->source_fragment);
         if (sf && strcmp(sf, "promote_top_of_deck") == 0) return 0;
@@ -989,6 +984,24 @@ GameState *apply_resolve_generic_choice(GameState *src, const Move *move) {
                     p->last_selection_count = 1;
                     p->last_selection_keys[0] = intern("target_card_id");
                     p->last_selection_values[0] = target.as.devour.target_card_id;
+                    if (carry_target_node != SYM_NULL && p->last_selection_count < 8) {
+                        p->last_selection_keys[p->last_selection_count] = intern("target_node_id");
+                        p->last_selection_values[p->last_selection_count] = carry_target_node;
+                        p->last_selection_count++;
+                    }
+                } else if (target.kind == OP_TARGET_PLAY_CARD) {
+                    if (target.as.play_card.from_inner_circle) {
+                        char idx_buf[16];
+                        snprintf(idx_buf, sizeof(idx_buf), "%d",
+                                 target.as.play_card.inner_circle_index);
+                        p->last_selection_count = 1;
+                        p->last_selection_keys[0] = intern("inner_circle_index");
+                        p->last_selection_values[0] = intern(idx_buf);
+                    } else {
+                        p->last_selection_count = 1;
+                        p->last_selection_keys[0] = intern("target_card_id");
+                        p->last_selection_values[0] = target.as.play_card.target_card_id;
+                    }
                     if (carry_target_node != SYM_NULL && p->last_selection_count < 8) {
                         p->last_selection_keys[p->last_selection_count] = intern("target_node_id");
                         p->last_selection_values[p->last_selection_count] = carry_target_node;
