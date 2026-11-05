@@ -162,7 +162,7 @@ const CardAction *pending_generic_active_action(const PendingGenericChoiceState 
 
 int action_requires_selection(const CardAction *action) {
     static const char *selection_ops[] = {
-        "devour_cost", "play_card", NULL
+        "play_card", NULL
     };
     const char *op = intern_str(action->op);
     if (!op) return 0;

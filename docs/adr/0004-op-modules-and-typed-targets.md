@@ -33,39 +33,40 @@ identical.
   decisions or action-id change is allowed.
 - Migration is one leaf op at a time, starting with `return_spy`, then
   `place_spy`, `return_unit`, `deploy_troops`, `move_troop`,
-  `assassinate_troop`, `supplant_troop`, `force_discard`, `recruit_card`, and
-  `devour`. A C test at the op-table interface asserts the descriptor is
-  complete, the legacy dispatcher reaches it, the typed target round-trips,
-  apply matches card behavior, and unmigrated ops still fall back.
+  `assassinate_troop`, `supplant_troop`, `force_discard`, `recruit_card`,
+  `devour`, and `devour_cost`. A C test at the op-table interface asserts the
+  descriptor is complete, the legacy dispatcher reaches it, the typed target
+  round-trips, apply matches card behavior, and unmigrated ops still fall back.
 - Op describe callbacks receive the viewer's node-id/label arrays so target
   labels are produced by the op without duplicating node naming in each op.
 
 ## Consequences
 
 `return_spy`, `place_spy`, `return_unit`, `deploy_troops`, `move_troop`,
-`assassinate_troop`, `supplant_troop`, `force_discard`, `recruit_card` and
-`devour` now answer from the op table; their selection, target derivation,
-apply and describe callbacks live in `engine_c/ops/return_spy.c`,
-`engine_c/ops/place_spy.c`, `engine_c/ops/return_unit.c`,
-`engine_c/ops/deploy_troops.c`, `engine_c/ops/move_troop.c`,
-`engine_c/ops/assassinate_troop.c`, `engine_c/ops/supplant_troop.c`,
-`engine_c/ops/force_discard.c`, `engine_c/ops/recruit_card.c` and
-`engine_c/ops/devour.c`. The legacy
+`assassinate_troop`, `supplant_troop`, `force_discard`, `recruit_card`,
+`devour` and `devour_cost` now answer from the op table; their selection,
+target derivation, apply and describe callbacks live in
+`engine_c/ops/return_spy.c`, `engine_c/ops/place_spy.c`,
+`engine_c/ops/return_unit.c`, `engine_c/ops/deploy_troops.c`,
+`engine_c/ops/move_troop.c`, `engine_c/ops/assassinate_troop.c`,
+`engine_c/ops/supplant_troop.c`, `engine_c/ops/force_discard.c`,
+`engine_c/ops/recruit_card.c` and `engine_c/ops/devour.c` (shared by the
+devour/devour_cost descriptors). The legacy
 `sel_return_spy`/`apply_return_spy_gen`, `sel_place_spy`/`apply_place_spy`,
 `sel_return_unit`/`apply_return_unit`, `sel_deploy`/`apply_deploy_troops`,
 `sel_move_troop`/`apply_move_troop`, `apply_assassinate_troop`,
 `apply_supplant_troop`, `sel_force_discard`,
-`sel_recruit`/`apply_recruit_card_gen` and the `devour` registry entry are
-removed for those ops. The shared `legal_assassinate_supplant_moves` and
-`legal_devour_moves` selectors are used by the migrated op modules;
-`devour_cost` still uses the legacy apply until its migration. `force_discard`
-keeps its `target_scope="opponent"` auto-apply cases ahead of the op lookup and
-keeps the legacy auto-apply path; only its selection-requiring forms are
-op-dispatched. `place_spy` keeps its rulebook decline as a valid null target;
+`sel_recruit`/`apply_recruit_card_gen`, and the `devour`/`devour_cost`
+registries and `apply_devour` are removed for those ops. The shared
+`legal_assassinate_supplant_moves` and `legal_devour_moves` selectors are used
+by the migrated op modules. `force_discard` keeps its
+`target_scope="opponent"` auto-apply cases ahead of the op lookup and keeps the
+legacy auto-apply path; only its selection-requiring forms are op-dispatched.
+`place_spy` keeps its rulebook decline as a valid null target;
 `deploy_troops` keeps its empty-barracks decline (which grants the VP) as a
-valid null target; and all ten reproduce the legacy `last_selection` records
-so follow-up actions keep working. The pending counter key/increment helpers
-moved from `actions.c` to `helpers.c` so op modules can share them, and
+valid null target; and all eleven reproduce the legacy `last_selection`
+records so follow-up actions keep working. The pending counter key/increment
+helpers moved from `actions.c` to `helpers.c` so op modules can share them, and
 `engine_card_name` exposes the catalog display name to op describe callbacks.
 The colon parser and `find_sel`/`atoi` code remain for the other ops until
 their migrations.

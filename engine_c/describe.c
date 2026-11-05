@@ -203,9 +203,6 @@ int engine_describe_move(const GameState *state, const Move *move,
                         }
                         card_op->describe(state, act, target_ptr, node_ids, node_labels,
                                           node_pair_count, buf, sizeof(buf));
-                    } else if (op && (strcmp(op, "devour") == 0 || strcmp(op, "devour_cost") == 0)) {
-                        const char *name = card_name_for(state, aid);
-                        snprintf(buf, sizeof(buf), "Devour %s", name);
                     } else if (op && strcmp(op, "promote_card") == 0) {
                         const char *sf = intern_str(act->source_fragment);
                         Sym tid = move->data.resolve_generic.target_id;

@@ -616,7 +616,6 @@ int legal_generic_target_selection_moves(const GameState *state, Sym player_id,
 
 void register_selection_handlers(void) {
     register_sel(intern("promote_card"), sel_promote);
-    register_sel(intern("devour_cost"), legal_devour_moves);
     register_sel(intern("play_card"), sel_play_card);
     register_sel(intern("custom_effect"), sel_custom_effect);
 }

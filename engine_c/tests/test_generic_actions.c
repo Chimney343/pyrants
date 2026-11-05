@@ -1320,6 +1320,13 @@ static void test_op_devour(void) {
     assert(op->target_from_move != NULL);
     assert(op->apply != NULL);
     assert(op->describe != NULL);
+    const CardOp *cost_op = op_lookup(intern("devour_cost"));
+    assert(cost_op != NULL);
+    assert(cost_op->needs_selection);
+    assert(cost_op->enumerate != NULL);
+    assert(cost_op->target_from_move != NULL);
+    assert(cost_op->apply != NULL);
+    assert(cost_op->describe != NULL);
 
     Move out[8];
     memset(out, 0, sizeof(out));

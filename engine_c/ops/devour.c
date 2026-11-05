@@ -145,3 +145,12 @@ const CardOp OP_DEVOUR = {
     .apply = op_devour_apply,
     .describe = op_devour_describe,
 };
+
+const CardOp OP_DEVOUR_COST = {
+    .name = "devour_cost",
+    .needs_selection = 1,
+    .enumerate = op_devour_enumerate,
+    .target_from_move = op_devour_target,
+    .apply = op_devour_apply,
+    .describe = op_devour_describe,
+};

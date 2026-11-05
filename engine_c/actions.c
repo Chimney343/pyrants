@@ -311,109 +311,6 @@ static GameState *apply_grant_vp(GameState *state, Sym player_id, const CardDefi
     return state;
 }
 
-static GameState *apply_devour(GameState *state, Sym player_id, const CardDefinition *card,
-                                Sym source, const CardAction *action,
-                                int *sk, Sym *sv, int sc) {
-    (void)card;
-    Sym zone = find_sel(sk, sv, sc, "source_zone");
-    if (zone == SYM_NULL) {
-        for (int i = 0; i < action->metadata_count; i++) {
-            const char *k = intern_str(action->metadata[i].key);
-            if (k && strcmp(k, "source_zone") == 0) zone = action->metadata[i].value;
-        }
-    }
-    const char *z = intern_str(zone);
-    PlayerState *ps = cow_player(state, player_id);
-    if (!ps || !z) return state;
-
-    /* Check self_replace metadata (Carrion Crawler). */
-    int self_replace = 0;
-    for (int i = 0; i < action->metadata_count; i++) {
-        const char *k = intern_str(action->metadata[i].key);
-        const char *v = intern_str(action->metadata[i].value);
-        if (k && strcmp(k, "self_replace") == 0 && v && strcmp(v, "true") == 0) {
-            self_replace = 1;
-            break;
-        }
-    }
-
-    Sym insane = intern("insane_outcast");
-
-    if (strcmp(z, "hand") == 0) {
-        int idx = find_sel_int(sk, sv, sc, "hand_index", -1);
-        if (idx < 0) {
-            Sym target_card_id = find_sel(sk, sv, sc, "target_card_id");
-            if (target_card_id != SYM_NULL) {
-                for (int i = 0; i < ps->hand_count; i++) {
-                    if (ps->hand[i] == target_card_id) { idx = i; break; }
-                }
-            }
-        }
-        if (idx >= 0 && idx < ps->hand_count
-            && (ps->hand[idx] == insane || state->devour_pile_count < MAX_ZONE_SIZE)) {
-            if (ps->hand[idx] != insane)
-                state->devour_pile[state->devour_pile_count++] = ps->hand[idx];
-            for (int i = idx; i < ps->hand_count - 1; i++) ps->hand[i] = ps->hand[i + 1];
-            ps->hand_count--;
-        }
-    } else if (strcmp(z, "played_self") == 0) {
-        for (int i = 0; i < ps->played_cards_count; i++) {
-            if (ps->played_cards[i] == source) {
-                if (source != insane && state->devour_pile_count < MAX_ZONE_SIZE)
-                    state->devour_pile[state->devour_pile_count++] = source;
-                for (int j = i; j < ps->played_cards_count - 1; j++)
-                    ps->played_cards[j] = ps->played_cards[j + 1];
-                ps->played_cards_count--;
-                break;
-            }
-        }
-    } else if (strcmp(z, "market") == 0) {
-        Sym target_card_id = find_sel(sk, sv, sc, "target_card_id");
-        if (target_card_id == SYM_NULL) return state;
-        for (int i = 0; i < state->market.row_count; i++) {
-            if (state->market.row[i] == target_card_id) {
-                if (target_card_id != insane && state->devour_pile_count < MAX_ZONE_SIZE)
-                    state->devour_pile[state->devour_pile_count++] = target_card_id;
-                MarketState *ms = cow_market(state);
-                if (ms) {
-                    if (self_replace && ms->row_count < MAX_ZONE_SIZE) {
-                        ms->row[i] = source;
-                        for (int pci = 0; pci < ps->played_cards_count; pci++) {
-                            if (ps->played_cards[pci] == source) {
-                                for (int pcj = pci; pcj < ps->played_cards_count - 1; pcj++)
-                                    ps->played_cards[pcj] = ps->played_cards[pcj + 1];
-                                ps->played_cards_count--;
-                                break;
-                            }
-                        }
-                    } else if (ms->deck_count > 0) {
-                        ms->row[i] = ms->deck[--ms->deck_count];
-                    } else {
-                        for (int j = i; j < ms->row_count - 1; j++)
-                            ms->row[j] = ms->row[j + 1];
-                        ms->row_count--;
-                    }
-                }
-                break;
-            }
-        }
-    } else if (strcmp(z, "inner_circle") == 0) {
-        Sym target_card_id = find_sel(sk, sv, sc, "target_card_id");
-        if (target_card_id == SYM_NULL) return state;
-        for (int i = 0; i < ps->inner_circle_count; i++) {
-            if (ps->inner_circle[i] == target_card_id) {
-                if (target_card_id != insane && state->devour_pile_count < MAX_ZONE_SIZE)
-                    state->devour_pile[state->devour_pile_count++] = target_card_id;
-                for (int j = i; j < ps->inner_circle_count - 1; j++)
-                    ps->inner_circle[j] = ps->inner_circle[j + 1];
-                ps->inner_circle_count--;
-                break;
-            }
-        }
-    }
-    return state;
-}
-
 static GameState *apply_play_card_nested(GameState *state, Sym player_id, const CardDefinition *card,
                                           Sym source, const CardAction *action,
                                           int *sk, Sym *sv, int sc) {
@@ -738,7 +635,6 @@ void register_generic_actions(void) {
     register_action(intern("draw_cards"), apply_draw_cards);
     register_action(intern("force_discard"), apply_force_discard_auto);
     register_action(intern("promote_card"), apply_promote_card_gen);
-    register_action(intern("devour_cost"), apply_devour);
     register_action(intern("grant_vp"), apply_grant_vp);
     register_action(intern("conditional_bonus"), apply_conditional_bonus);
     register_action(intern("custom_effect"), apply_custom_effect);
