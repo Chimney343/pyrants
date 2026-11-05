@@ -55,3 +55,11 @@ schema and action ids are unchanged: the display list keeps the old order, and
 the applicable list is the same sequence the old filter produced. Candidate 4
 can move card-specific legality metadata into the catalog without changing
 this interface.
+
+IS-MCTS is stochastic: removing a dead branch can change visit order, so a
+paired run may choose different moves. The invariant is the applicable move
+set (same payloads and order) and the same card execution, not identical
+search choices. The candidate-3 32-game comparison kept every decision's
+legal-move payloads identical; only Q values, visit counts, and chosen moves
+differed. Depth-1-3 states, a 56-step playout, and determinized samples also
+matched on hashes, action maps, and rollout values.
