@@ -16,6 +16,7 @@ from tests.c_engine.card_test_helpers import (
     _make_engine,
     _session_player_index,
     _sptr,
+    display_moves_flat,
     make_card_test_session,
 )
 
@@ -108,7 +109,7 @@ def test_nothic_both_options_offered():
 
     option_ids = {
         m.data.get("action_id")
-        for m in session.legal_moves()
+        for m in display_moves_flat(session)
         if m.move_type == "resolve_generic"
     }
     assert "option_1" in option_ids, f"option_1 missing; got {option_ids}"

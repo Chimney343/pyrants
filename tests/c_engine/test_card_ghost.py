@@ -19,6 +19,7 @@ from tests.c_engine.card_test_helpers import (
     _make_engine,
     _session_player_index,
     _sptr,
+    display_moves_flat,
     make_card_test_session,
 )
 
@@ -75,7 +76,7 @@ def _set_devour_pile(session: CSession, card_ids: list[str]) -> None:
 
 
 def _resolve_moves(session: CSession) -> list:
-    return [m for m in session.legal_moves() if m.move_type == "resolve_generic"]
+    return [m for m in display_moves_flat(session) if m.move_type == "resolve_generic"]
 
 
 def _option_move(session: CSession, option_id: str):

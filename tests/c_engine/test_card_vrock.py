@@ -13,7 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from engine_c.bindings.ce_api import CEngine
 from engine_c.bindings.engine_bindings import _lib
 from engine_c.bindings.session import CSession
-from tests.c_engine.card_test_helpers import make_card_test_session
+from tests.c_engine.card_test_helpers import display_moves_flat, make_card_test_session
 
 DATA_DIR = Path(__file__).resolve().parents[2] / "data"
 
@@ -179,7 +179,7 @@ def test_vrock_option_2_not_available_without_own_spy_on_board() -> None:
         raise AssertionError("Vrock not in hand")
 
     option_2_moves = [
-        m for m in session.legal_moves()
+        m for m in display_moves_flat(session)
         if m._move_type == "resolve_generic" and m.data.get("action_id") == "option_2"
     ]
     assert len(option_2_moves) == 1, (

@@ -10,7 +10,8 @@ from pathlib import Path
 import pyspiel
 
 from engine_c.bindings.ce_api import CEngine
-from openspiel_pyrants.action_encoding_c import NUM_DISTINCT_ACTIONS
+
+NUM_DISTINCT_ACTIONS = 1024
 
 _DATA_DIR = Path(__file__).resolve().parents[1] / "data"
 _DEFAULT_BOARD = _DATA_DIR / "boards" / "tyrants_of_the_underdark.json"

@@ -8,7 +8,7 @@ The wrapper translates between two domains: OpenSpiel expects integer actions on
 
 - `game_c.py` — loads board, cards, and setup data; declares the `GameType` and `GameInfo`; spawns state objects.
 - `state_c.py` — wraps one moment in the game. Holds a `CEngineAdapter` over a C `GameState`, delegates all rule questions to it, and translates integer actions back into engine moves.
-- `action_encoding_c.py` — builds the per-state mapping between engine moves and integer action ids.
+- `state_c.py` also builds the per-state mapping between engine moves and integer action ids.
 - `__init__.py` — registers the game with `pyspiel` so `load_game("python_pyrants_c")` works.
 
 ## Game Object
@@ -41,7 +41,7 @@ Once the engine exists, the state delegates all game queries to the adapter. `cu
 
 OpenSpiel consumes integer actions. The C engine produces `CMoveWrapper` moves with typed fields: `PlayCardMove(hand_index=2)`, `DeployMove(node="site_7")`, `AssassinateMove(node="site_3", slot=1)`, and the other move kinds.
 
-`compute_c_action_map(adapter)` in `openspiel_pyrants/action_encoding_c.py` flattens these into a per-state list, assigning action ids 0, 1, 2, ... in the **C engine's native order** — no sorting, because the engine already emits legal moves in a deterministic order.
+`state_c.py` flattens these with `list(enumerate(adapter.legal_moves()))` into a per-state list, assigning action ids 0, 1, 2, ... in the **C engine's native order** — no sorting, because the engine already emits legal moves in a deterministic order.
 
 The only filtering is dropping UI-only placeholder moves: `generic_runtime.c` emits a `resolve_generic` move tagged `target_id="unavailable"` for each non-viable modal option (so the Tkinter viewer can grey it out), and `engine_apply` rejects those moves outright. `_is_unavailable()` filters them out so every action in `legal_actions()` is actually applicable. If *every* option is a placeholder, the raw list is returned instead — an empty `legal_actions()` at a non-terminal state would deadlock OpenSpiel silently, whereas the raw list fails loudly in `engine_apply` with full context.
 

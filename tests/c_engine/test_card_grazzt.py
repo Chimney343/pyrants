@@ -11,6 +11,7 @@ from tests.c_engine.card_test_helpers import (
     _make_engine,
     _session_player_index,
     _sptr,
+    display_moves_flat,
     make_card_test_session,
 )
 
@@ -253,7 +254,7 @@ def test_grazzt_option_2_unavailable_with_no_spies() -> None:
             session.submit_move(m)
             break
 
-    opt2 = [m for m in session.legal_moves() if m.data.get("action_id") == "option_2"]
+    opt2 = [m for m in display_moves_flat(session) if m.data.get("action_id") == "option_2"]
     assert opt2, "option_2 should still be listed even when unavailable"
     assert opt2[0].data.get("target_id") == "unavailable", (
         f"option_2 should be unavailable with no spies; got {opt2[0].data}"

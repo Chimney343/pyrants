@@ -133,3 +133,8 @@ def _node_state(s, node_id: str):
     for ni in range(s.node_count):
         if s.nodes[ni].node_id == nid: return s.nodes[ni]
     raise ValueError(f"Node {node_id} not found")
+
+
+def display_moves_flat(session):
+    """Display moves including greyed-out placeholders, for viewer assertions."""
+    return [move for move, _applicable in session.display_moves()]

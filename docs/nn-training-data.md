@@ -68,7 +68,7 @@ Facts verified against code and data:
 
 - `policy` is OpenSpiel's `NORMALIZED_VISITED_COUNT`: child visits divided by root total visits. Over the 120-game experiment it sums to 1 on all 101,230 non-forced decisions, and `policy × (sims_requested − 1)` is an exact integer for every entry. Integer visit counts are therefore recoverable from the files already on disk. The root's first simulation only expands the node, which is why the divisor is sims − 1.
 - The acting player's observation is stored nowhere. `decisions.jsonl` keeps a hash of it (`scripts/run_ismcts.py:642`). `steps.jsonl` is written after the move is applied (`scripts/run_ismcts.py:668-674`) and has no hand. The replay is the only path back to the observation.
-- Action ids are positional per state (`openspiel_pyrants/action_encoding_c.py:24-36`). Id 3 means "the fourth legal move here" and nothing more. Only the move strings and payloads carry meaning, so any encoder must key on payloads.
+- Action ids are positional per state (`openspiel_pyrants/state_c.py`, `list(enumerate(adapter.legal_moves()))`). Id 3 means "the fourth legal move here" and nothing more. Only the move strings and payloads carry meaning, so any encoder must key on payloads.
 - Returns are score differences for 2 players and raw scores for 3 to 4 players (`openspiel_pyrants/state_c.py:171-190`). Value targets need one normalization across player counts.
 - The pending card-choice context (which card is resolving, which op) is not part of the private view (`engine_c/bindings/c_adapter.py:245`). IS-MCTS gets it implicitly through the history prefix in the info-state key. A network needs it as explicit input.
 

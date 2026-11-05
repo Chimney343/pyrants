@@ -39,21 +39,7 @@ int engine_random_rollout(const GameState *state, uint64_t seed, int max_length,
         int n = engine_legal_moves(view, moves, ROLLOUT_MOVE_BUFFER);
         if (n <= 0) break;
 
-        /* engine_legal_moves() reports UI-only placeholders for non-viable
-         * modal options alongside real moves; engine_apply refuses them.
-         * Sampling uniformly over the raw list picked one most of the time at
-         * a mid-game position, which aborted the rollout on the spot and left
-         * it scoring a non-terminal state — so compact them out first and
-         * sample only over what the engine will actually accept. */
-        int playable = 0;
-        for (int i = 0; i < n; i++) {
-            if (move_is_unavailable_placeholder(&moves[i])) continue;
-            if (playable != i) moves[playable] = moves[i];
-            playable++;
-        }
-        if (playable <= 0) break; /* every option was a placeholder */
-
-        int pick = (int)(rng_next(&rng) % (unsigned int)playable);
+        int pick = (int)(rng_next(&rng) % (unsigned int)n);
         GameState *next = engine_apply(view, &moves[pick]);
         if (!next) break;
 

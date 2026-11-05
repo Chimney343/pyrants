@@ -15,6 +15,7 @@ from engine_c.bindings.session import CSession
 from tests.c_engine.card_test_helpers import (
     _session_player_index,
     _sptr,
+    display_moves_flat,
     make_card_test_session,
 )
 
@@ -256,7 +257,7 @@ def test_option_2_unavailable_without_spy_on_board():
     session = _build_session()
     _play_card(session)
 
-    opt2 = [m for m in session.legal_moves()
+    opt2 = [m for m in display_moves_flat(session)
             if m.move_type == "resolve_generic" and m.data.get("action_id") == "option_2"]
     assert opt2, "option_2 should still be listed"
     assert opt2[0].data.get("target_id") == "unavailable", (
@@ -283,14 +284,17 @@ def test_option_2_available_with_spy_on_board():
 
 def test_option_2_only_returns_own_spy_not_enemy():
     """Return_spy target selection only shows sites with own spies, not enemy spies."""
-    session = _build_session(spies={_SITE_A: [_P2]})
+    session = _build_session(spies={_SITE_A: [_P1], _SITE_B: [_P2]})
     _play_card(session)
 
     _resolve_option(session, "option_2")
 
     targets = [m for m in session.legal_moves() if m.move_type == "resolve_generic"]
     target_node_ids = [m.data.get("action_id") for m in targets]
-    assert _SITE_A not in target_node_ids, (
+    assert _SITE_A in target_node_ids, (
+        f"Own spy site should be returnable; got targets {target_node_ids}"
+    )
+    assert _SITE_B not in target_node_ids, (
         f"Should not be able to return enemy spy; got targets {target_node_ids}"
     )
 

@@ -1,9 +1,11 @@
 import os
-import sys, json, collections
+import sys, collections
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from common import *
 import pyspiel
-from openspiel_pyrants.action_encoding_c import compute_c_action_map
+
+def compute_c_action_map(adapter):
+    return list(enumerate(adapter.legal_moves()))
 
 def raw(st): return st._adapter._state._s
 

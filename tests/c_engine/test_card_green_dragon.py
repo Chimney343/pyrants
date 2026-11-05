@@ -10,6 +10,7 @@ from tests.c_engine.card_test_helpers import (
     _make_engine,
     _session_player_index,
     _sptr,
+    display_moves_flat,
     make_card_test_session,
 )
 
@@ -410,7 +411,7 @@ def test_green_dragon_option2_not_available_without_spies():
                 and m.data.get("card_id") == "green_dragon"]
     session.submit_move(playable[0])
 
-    option_moves = [m for m in session.legal_moves()
+    option_moves = [m for m in display_moves_flat(session)
                     if getattr(m, "move_type", "") == "resolve_generic"]
     opts_by_id = {m.data.get("action_id"): m.data for m in option_moves}
     assert "option_1" in opts_by_id, f"option_1 should be available, got: {list(opts_by_id)}"

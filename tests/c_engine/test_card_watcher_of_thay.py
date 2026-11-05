@@ -12,6 +12,7 @@ from tests.c_engine.card_test_helpers import (
     _make_engine,
     _session_player_index,
     _sptr,
+    display_moves_flat,
     make_card_test_session,
 )
 
@@ -184,7 +185,7 @@ def test_option_2_unavailable_without_spies():
 
     assert _has_pending_generic(session)
 
-    options = [m for m in session.legal_moves() if m.move_type == "resolve_generic"]
+    options = [m for m in display_moves_flat(session) if m.move_type == "resolve_generic"]
     option_ids = {m.data.get("action_id") for m in options}
 
     assert "option_1" in option_ids, "option_1 should always be available"

@@ -202,44 +202,18 @@ def _available_aspects_for_source(player_card_aspects, source_card_id):
     return frozenset(aspects)
 
 
-def _end_main_phase_available(state_ptr):
-    s = state_ptr.contents
-    cpid = s.current_player_id
-    for i in range(s.pending_eot_count):
-        pe = s.pending_eot[i]
-        if not (pe.requires_another_played_card and pe.deferred_choice):
-            continue
-        if pe.repeat_while_targets:
-            continue
-        source_id = pe.source_card_id
-        found = False
-        has_other = False
-        for j in range(s.player_count):
-            if s.players[j].player_id == cpid:
-                found = True
-                ps = s.players[j]
-                for k in range(ps.played_cards_count):
-                    if ps.played_cards[k] != source_id:
-                        has_other = True
-                        break
-                break
-        if found and not has_other:
-            return False
-    return True
-
-
 def _build_c_legal_moves(session, state_ptr, *, node_names=None, player_spy_count=0,
                           player_card_aspects=None, moves=None) -> tuple:
     if moves is None:
         try:
-            moves = session.legal_moves()
+            moves = session.display_moves()
         except Exception:
             return ()
 
     from .engine_bindings import _lib as _elib
 
     result = []
-    for mw in moves:
+    for mw, available in moves:
         raw_label = _describe_c_move(state_ptr, mw, node_names_dict=node_names)
         source_card_id = ""
         card_action_id = ""
@@ -312,13 +286,6 @@ def _build_c_legal_moves(session, state_ptr, *, node_names=None, player_spy_coun
             node_names=node_names,
             player_available_aspects=player_available_aspects,
         )
-        if mw.move_type == "end_main_phase":
-            try:
-                available = _end_main_phase_available(state_ptr)
-            except Exception:
-                available = True
-        else:
-            available = mw.data.get("target_id") != "unavailable"
         if not available:
             final_label += " [ILLEGAL MOVE]"
         result.append(CLegalMoveView(mw, mw.move_type, final_label, available=available))
@@ -465,8 +432,10 @@ def build_c_game_view(
     # actually possible (main phase, no pending choice).
     try:
         moves = session.legal_moves()
+        display_moves = session.display_moves()
     except Exception:
         moves = None
+        display_moves = None
     playable_hand_ids: set[str] | None = None
     if moves is not None:
         s_raw = state_ptr.contents
@@ -566,7 +535,7 @@ def build_c_game_view(
         player_summaries=tuple(player_summaries),
         board_nodes=tuple(board_nodes),
         prompts=(f"{current_player_id} is acting in {_PHASE_MAP.get(c_view.phase, 'unknown').replace('_', ' ')}.",),
-        legal_moves=_build_c_legal_moves(session, state_ptr, node_names=node_names, player_spy_count=player_spy_count, player_card_aspects=player_card_aspects, moves=moves),
+        legal_moves=_build_c_legal_moves(session, state_ptr, node_names=node_names, player_spy_count=player_spy_count, player_card_aspects=player_card_aspects, moves=display_moves),
         is_terminal=_session_attr(session, "is_terminal"),
         winner_id=_session_attr(session, "winner_id"),
         final_scores=_session_attr(session, "final_scores", default={}),

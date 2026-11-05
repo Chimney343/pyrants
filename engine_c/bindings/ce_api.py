@@ -410,10 +410,22 @@ class CEngine:
         return CState(gs)
 
     def legal_moves(self, state: CState) -> list:
-        """Return legal moves. Mirrors engine.rules.legal_moves()."""
+        """Return applicable legal moves only."""
         moves = (CMove * 1024)()
         n = _lib.engine_legal_moves(state.ptr, moves, 1024)
         return [CMoveWrapper(moves[i]) for i in range(n)]
+
+    def display_moves(self, state: CState) -> list:
+        """Return ``(move, applicable)`` pairs for the viewer.
+
+        Includes display-only entries (a non-viable modal option, or an
+        end-main-phase entry blocked by a deferred promotion) that
+        ``legal_moves`` deliberately omits.
+        """
+        moves = (CMove * 1024)()
+        applicable = (ctypes.c_ubyte * 1024)()
+        n = _lib.engine_display_moves(state.ptr, moves, applicable, 1024)
+        return [(CMoveWrapper(moves[i]), bool(applicable[i])) for i in range(n)]
 
     def apply(self, state: CState, move: CMoveWrapper) -> CState | None:
         """Apply a move. Mirrors engine.rules.apply(). Returns None on failure."""

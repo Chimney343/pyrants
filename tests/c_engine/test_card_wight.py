@@ -21,6 +21,7 @@ from engine_c.bindings.engine_bindings import _lib
 from tests.c_engine.card_test_helpers import (
     _make_engine,
     _sptr,
+    display_moves_flat,
     make_card_test_session,
 )
 
@@ -86,7 +87,7 @@ def _play_wight(session):
 
 def _option_moves(session):
     return [
-        m for m in session.legal_moves()
+        m for m in display_moves_flat(session)
         if m.move_type == "resolve_generic"
         and m.data.get("action_id") in ("option_1", "option_2")
     ]

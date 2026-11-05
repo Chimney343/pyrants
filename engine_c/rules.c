@@ -194,7 +194,33 @@ static int legal_main_phase_actions(const GameState *state, Sym player_id,
     return w;
 }
 
-int engine_legal_moves(const GameState *state, Move *out, int max_moves) {
+static int end_main_phase_available(const GameState *state) {
+    Sym cpid = state->current_player_id;
+    for (int i = 0; i < state->pending_eot_count; i++) {
+        const PendingPromotionState *pe = &state->pending_eot[i];
+        if (!(pe->requires_another_played_card && pe->deferred_choice)) continue;
+        if (pe->repeat_while_targets) continue;
+
+        Sym source_id = pe->source_card_id;
+        for (int j = 0; j < state->player_count; j++) {
+            if (state->players[j].player_id != cpid) continue;
+            int has_other = 0;
+            for (int k = 0; k < state->players[j].played_cards_count; k++) {
+                if (state->players[j].played_cards[k] != source_id) {
+                    has_other = 1;
+                    break;
+                }
+            }
+            if (!has_other) return 0;
+            break;
+        }
+    }
+    return 1;
+}
+
+static int collect_moves(const GameState *state, Move *out, unsigned char *applicable,
+                         int max_moves, int applicable_only) {
+    if (applicable && max_moves > 0) memset(applicable, 1, (size_t)max_moves);
     if (state->phase == PHASE_GAME_OVER || max_moves <= 0) return 0;
 
     Sym player_id = state->current_player_id;
@@ -224,7 +250,8 @@ int engine_legal_moves(const GameState *state, Move *out, int max_moves) {
                 &state->pending_immediate[0], player_id, out, max_moves);
         }
         if (state->pending_generic)
-            return legal_pending_generic_choice_moves((GameState *)state, player_id, out, max_moves);
+            return collect_pending_generic_choice_moves(
+                (GameState *)state, player_id, out, applicable, max_moves, applicable_only);
 
         int w = legal_pending_ability_moves(state, player_id, out, max_moves);
         if (state->pending_ability == NULL) {
@@ -247,6 +274,7 @@ int engine_legal_moves(const GameState *state, Move *out, int max_moves) {
         if (w < max_moves) {
             out[w].type = MOVE_END_MAIN_PHASE;
             out[w].player_index = 0;
+            if (applicable) applicable[w] = end_main_phase_available(state) ? 1 : 0;
             w++;
         }
         return w;
@@ -277,6 +305,15 @@ int engine_legal_moves(const GameState *state, Move *out, int max_moves) {
         return 0;
     }
     return 0;
+}
+
+int engine_legal_moves(const GameState *state, Move *out, int max_moves) {
+    return collect_moves(state, out, NULL, max_moves, 1);
+}
+
+int engine_display_moves(const GameState *state, Move *out, unsigned char *applicable,
+                         int max_moves) {
+    return collect_moves(state, out, applicable, max_moves, 0);
 }
 
 static GameState *apply_play_card(GameState *state, Sym card_id, int hand_index, Sym player_id) {

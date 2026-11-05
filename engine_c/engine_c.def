@@ -4,6 +4,7 @@ EXPORTS
     engine_clone
     engine_destroy
     engine_legal_moves
+    engine_display_moves
     engine_apply
     engine_is_terminal
     engine_winner
@@ -27,7 +28,6 @@ EXPORTS
     resolve_generic_execution
     auto_resolve_pending_generic
     apply_resolve_generic_choice
-    legal_pending_generic_choice_moves
     register_generic_actions
     register_selection_handlers
     intern

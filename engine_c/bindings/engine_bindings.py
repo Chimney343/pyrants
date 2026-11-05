@@ -467,6 +467,10 @@ def _setup():
 
     _lib.engine_legal_moves.argtypes = [POINTER(GameStateStruct), POINTER(Move), c_int]
     _lib.engine_legal_moves.restype = c_int
+    _lib.engine_display_moves.argtypes = [
+        POINTER(GameStateStruct), POINTER(Move), POINTER(ctypes.c_ubyte), c_int,
+    ]
+    _lib.engine_display_moves.restype = c_int
     _lib.engine_apply.argtypes = [POINTER(GameStateStruct), POINTER(Move)]
     _lib.engine_apply.restype = POINTER(GameStateStruct)
     _lib.engine_is_terminal.argtypes = [POINTER(GameStateStruct)]

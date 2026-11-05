@@ -15,7 +15,7 @@ import pytest
 
 from engine_c.bindings.ce_api import CEngine
 from engine_c.bindings.session import CSession
-from tests.c_engine.card_test_helpers import make_card_test_session
+from tests.c_engine.card_test_helpers import display_moves_flat, make_card_test_session
 
 DATA_DIR = Path(__file__).resolve().parents[2] / "data"
 
@@ -49,7 +49,7 @@ def _play_moves(session: CSession, card_id: str) -> list:
 
 
 def _generic_moves(session: CSession) -> list:
-    return [m for m in session.legal_moves() if m._move_type == "resolve_generic"]
+    return [m for m in display_moves_flat(session) if m._move_type == "resolve_generic"]
 
 
 def _generic_target_ids(session: CSession) -> list[str]:

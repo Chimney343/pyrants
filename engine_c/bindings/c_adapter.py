@@ -131,6 +131,9 @@ class CEngineAdapter:
     def legal_moves(self) -> list[CMoveWrapper]:
         return self._engine.legal_moves(self._state)
 
+    def display_moves(self) -> list[tuple[CMoveWrapper, bool]]:
+        return self._engine.display_moves(self._state)
+
     def apply(self, move: CMoveWrapper) -> None:
         """Apply a move, mutating this adapter's state. Raises RuntimeError on failure."""
         new_state = self._engine.apply(self._state, move)

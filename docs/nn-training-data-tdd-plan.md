@@ -45,7 +45,7 @@ the deviation is called out in § 2.
 | G5 | `visit_counts` is the stub `{chosen: 1}`. | `scripts/run_ismcts.py:646` |
 | G6 | The stock bot returns before touching `_root_node` when exactly one action is legal, so `_root_node` is stale on forced moves. `child.return_sum` accumulates `returns[cur_player]`, i.e. the acting player's `returns()` units (score difference for 2 players, raw score for 3-4). | `open_spiel/python/algorithms/ismcts.py` `run_search` (lines 110-121) and `run_simulation`; `openspiel_pyrants/state_c.py:171` |
 | G7 | `read_pending_generic_context(ptr)` returns the 6-key dict or `None`, and must be read before `apply_action`. | `engine_c/bindings/pending_context.py:21` |
-| G8 | `compute_c_action_map` drops `unavailable` placeholders and defines the runner's action-id order. The builder must call the same function for parity. | `openspiel_pyrants/action_encoding_c.py:17-36` |
+| G8 | The runner's action-id order is `list(enumerate(adapter.legal_moves()))`; legal moves are now applicable-only, so no placeholder filter is needed. The builder must use the same ordering for parity. | `openspiel_pyrants/state_c.py` |
 | G9 | `engine_determinize` pools each opponent's hand+deck+discard and reshuffles them, and reshuffles the market deck. It never touches the board, the market row, played cards, inner circles or trophy halls. | `engine_c/state.c:271-318` |
 | G10 | `CGameView` exposes public scalars the private view does not: `house_guard_remaining`, `priestess_remaining`, `insane_outcast_remaining`, `devour_pile`, `market_deck_count`, `market_discard_count`. | `engine_c/bindings/engine_bindings.py:420-434` |
 | G11 | `setup_data_json` differs per game: a deck pair is drawn per `game_index`. | `scripts/run_ismcts.py:128` |

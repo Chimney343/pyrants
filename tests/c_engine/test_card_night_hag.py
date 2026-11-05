@@ -29,6 +29,7 @@ from tests.c_engine.card_test_helpers import (
     _make_engine,
     _session_player_index,
     _sptr,
+    display_moves_flat,
     make_card_test_session,
 )
 
@@ -107,7 +108,7 @@ def _spy_count_at_node(session: CSession, node_id: str) -> int:
 
 
 def _resolve_generic_moves(session: CSession) -> list:
-    return [m for m in session.legal_moves() if m.move_type == "resolve_generic"]
+    return [m for m in display_moves_flat(session) if m.move_type == "resolve_generic"]
 
 
 def _play_card(session: CSession, card_id: str = CARD_ID) -> None:

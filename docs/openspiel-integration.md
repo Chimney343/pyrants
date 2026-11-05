@@ -53,7 +53,7 @@ just openspiel-test
 All moves are encoded as integers `[0, num_distinct_actions)` per state.
 `num_distinct_actions = 1024` (power of 2, upper bound of ~756 move instances).
 
-The per-state bijection is computed by `openspiel_pyrants.action_encoding_c`:
+The per-state bijection is computed by `openspiel_pyrants.state_c`:
 1. Call `engine_c` legal-move generation.
 2. Moves are already in deterministic native order.
 3. Assign ids `0..N−1`.

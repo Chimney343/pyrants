@@ -19,7 +19,7 @@ def _play_card(session, card_id):
 
 def _get_option_moves(session):
     result = {}
-    for m in session.legal_moves():
+    for m, _applicable in session.display_moves():
         if m.move_type == "resolve_generic":
             aid = m.data.get("action_id")
             tid = m.data.get("target_id")

@@ -92,26 +92,17 @@ def test_rollout_scores_vary(requires_c_engine):
     assert len(set(margins)) > 5, f"leaf values barely vary: {sorted(set(margins))}"
 
 
-def test_legal_moves_still_report_placeholders(requires_c_engine):
-    """The filter belongs to the consumers, not the generator.
-
-    The viewer greys these options out, so they must keep coming back from
-    ``legal_moves()``; it is the rollout and ``compute_c_action_map`` that drop
-    them.  If this ever stops holding, the fix moved to the wrong layer.
-    """
+def test_legal_moves_exclude_placeholders_during_rollout(requires_c_engine):
+    """``legal_moves`` is applicable-only; the display query keeps placeholders."""
     state = _midgame_state(2, plies=40)
     rng = np.random.RandomState(7)
-    seen = False
     for _ in range(2000):
         if state.is_terminal():
             break
-        moves = state._adapter.legal_moves()
-        if any(
+        legal = state._adapter.legal_moves()
+        assert not any(
             m.move_type == "resolve_generic" and m.data.get("target_id") == "unavailable"
-            for m in moves
-        ):
-            seen = True
-            break
+            for m in legal
+        ), "legal_moves leaked a display-only placeholder"
         actions = state.legal_actions(state.current_player())
         state.apply_action(int(rng.choice(actions)))
-    assert seen, "no placeholder move observed — fixture no longer covers the defect"

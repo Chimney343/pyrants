@@ -19,7 +19,6 @@ from engine_c.bindings.ce_api import CEngine
 from engine_c.bindings.pending_context import read_pending_generic_context_full
 from interface.replay_loader import engine_seed, load_replay
 from interface.replay_player import ReplayDesyncError, find_matching_move
-from openspiel_pyrants.action_encoding_c import compute_c_action_map
 from openspiel_pyrants.nn.actions import action_context, move_to_global_action
 from openspiel_pyrants.nn.dataset import Sample
 from openspiel_pyrants.nn.observation import encode_observation, seat_order
@@ -274,8 +273,7 @@ def iter_samples(
             decision = decisions[i] if i < len(decisions) else {}
             cp = entry.get("player_id") or adapter.state.current_player_id
 
-            raw_moves = adapter.legal_moves()
-            moves = [move for _idx, move in compute_c_action_map(adapter)]
+            moves = list(adapter.legal_moves())
             payloads = [move.to_payload() for move in moves]
 
             if allow_legacy:
@@ -332,10 +330,10 @@ def iter_samples(
                 0.0 for _ in unique_gids
             ]
 
-            match = find_matching_move(raw_moves, entry["payload"])
+            match = find_matching_move(moves, entry["payload"])
             if match is None:
                 raise ReplayDesyncError(
-                    i, entry["payload"], [m.to_payload() for m in raw_moves[:10]]
+                    i, entry["payload"], [m.to_payload() for m in moves[:10]]
                 )
             chosen_gid = move_to_global_action(match.to_payload(), ctx)
 

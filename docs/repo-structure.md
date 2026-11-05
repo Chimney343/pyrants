@@ -55,7 +55,7 @@ This package wraps the C engine as a **DeepMind OpenSpiel** game, enabling IS-MC
 | `__init__.py` | Registers `python_pyrants_c` with `pyspiel.register_game()` |
 | `game_c.py` | `PyrantsCGame(pyspiel.Game)` — declares `GameType`/`GameInfo` and owns a `CEngine` |
 | `state_c.py` | `PyrantsCState(pyspiel.State)` — adapts the C engine; chance node selects a shuffle seed, then `CEngineAdapter` drives all transitions |
-| `action_encoding_c.py` | `compute_c_action_map(adapter)` — Move ↔ int mapping in native engine order; `NUM_DISTINCT_ACTIONS = 1024` |
+| `state_c.py` (action ids) | `list(enumerate(adapter.legal_moves()))` — Move ↔ int mapping in native engine order; `game_c.py` defines `NUM_DISTINCT_ACTIONS = 1024` |
 | `state_c.py` | `PyrantsCState.observation_string` supplies observation/information-state strings |
 
 ### Tests (`openspiel_pyrants/tests/`)

@@ -11,7 +11,6 @@ import pyspiel
 
 from engine_c.bindings.ce_api import CMoveWrapper
 from engine_c.bindings.c_adapter import CEngineAdapter
-from openspiel_pyrants.action_encoding_c import compute_c_action_map
 
 _SEED_MIXER_MULTIPLIER = 2654435761
 _SEED_MIXER_MASK = 0x7FFFFFFF
@@ -19,6 +18,19 @@ _SEED_MIXER_MASK = 0x7FFFFFFF
 
 def _public_to_seed(action_id: int) -> int:
     return (action_id * _SEED_MIXER_MULTIPLIER) & _SEED_MIXER_MASK
+
+
+def _indexed_moves(adapter: CEngineAdapter) -> list[tuple[int, CMoveWrapper]]:
+    """Applicable moves in native order, with the old action-map fallback.
+
+    A modal state where every option is display-only would otherwise expose an
+    empty action list at a non-terminal state; keep the display entries in that
+    edge case, exactly as the deleted ``compute_c_action_map`` did.
+    """
+    moves = list(adapter.legal_moves())
+    if not moves:
+        moves = [move for move, _applicable in adapter.display_moves()]
+    return list(enumerate(moves))
 
 
 class _EngineShim:
@@ -129,7 +141,7 @@ class PyrantsCState(pyspiel.State):
         if self._pending_initial_chance:
             return list(range(self._game.get_shuffle_seed_count()))
         if self._cached_indexed_moves is None:
-            self._cached_indexed_moves = compute_c_action_map(self._adapter)
+            self._cached_indexed_moves = _indexed_moves(self._adapter)
         return list(range(len(self._cached_indexed_moves)))
 
     def _apply_action(self, action):
@@ -150,7 +162,7 @@ class PyrantsCState(pyspiel.State):
         else:
             indexed = self._cached_indexed_moves
             if indexed is None:
-                indexed = compute_c_action_map(self._adapter)
+                indexed = _indexed_moves(self._adapter)
             move = indexed[int(action)][1]
             self._move_log.append(move)
             self._adapter.apply(move)
@@ -161,7 +173,7 @@ class PyrantsCState(pyspiel.State):
             return f"shuffle_seed={action}"
         indexed = self._cached_indexed_moves
         if indexed is None:
-            indexed = compute_c_action_map(self._adapter)
+            indexed = _indexed_moves(self._adapter)
         move = indexed[int(action)][1]
         return str(move)
 
@@ -307,7 +319,7 @@ class PyrantsCState(pyspiel.State):
     def decode_action(self, aid: int):
         indexed = self._cached_indexed_moves
         if indexed is None:
-            indexed = compute_c_action_map(self._adapter)
+            indexed = _indexed_moves(self._adapter)
         return indexed[int(aid)][1]
 
     def move_to_str(self, move) -> str:

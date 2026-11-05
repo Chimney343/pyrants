@@ -34,3 +34,14 @@ module's shape is settled, not before.
   struct's memory directly. Mirrored structs are listed in
   `_MIRRORED_STRUCTS` in `engine_c/bindings/engine_bindings.py`; the layout
   probe asserts their size and field offsets.
+- **legal move** - a move `engine_apply` accepts. `engine_legal_moves` and
+  `CEngineAdapter.legal_moves` return only legal moves, so callers no longer
+  filter UI placeholders or re-check end-main legality.
+- **display move** - a viewer-facing `(move, applicable)` pair returned by
+  `engine_display_moves` / `CSession.display_moves`. It includes legal moves
+  (applicable = true) plus display-only entries such as a non-viable modal
+  option or an end-main-phase entry blocked by a deferred promotion
+  (applicable = false).
+- **move display query** - the C `engine_display_moves` and its Python
+  `display_moves()` adapters. The legal-move query compacts the applicable
+  entries; the display query keeps the viewer's full ordered list.

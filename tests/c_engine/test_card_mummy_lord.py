@@ -17,6 +17,7 @@ from tests.c_engine.card_test_helpers import (
     _make_engine,
     _session_player_index,
     _sptr,
+    display_moves_flat,
     make_card_test_session,
 )
 
@@ -78,7 +79,7 @@ def _resolve_generics_by_action(session: CSession, action_id: str | None) -> lis
 
 
 def _resolve_generic_moves(session: CSession) -> list:
-    return [m for m in session.legal_moves()
+    return [m for m in display_moves_flat(session)
             if m._move_type == "resolve_generic"]
 
 

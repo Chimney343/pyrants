@@ -18,6 +18,7 @@ from tests.c_engine.card_test_helpers import (
     _make_engine,
     _session_player_index,
     _sptr,
+    display_moves_flat,
     make_card_test_session,
 )
 
@@ -341,7 +342,7 @@ def test_option_2_requires_presence():
     _play_card(session)
     assert _has_pending_generic(session)
 
-    generic_moves = [m for m in session.legal_moves() if m.move_type == "resolve_generic"]
+    generic_moves = [m for m in display_moves_flat(session) if m.move_type == "resolve_generic"]
     option_2_moves = [m for m in generic_moves if m.data.get("action_id") == "option_2"]
 
     assert option_2_moves, "option_2 should still be listed"
@@ -360,14 +361,13 @@ def test_option_2_no_targets_available():
     )
 
     _play_card(session)
-    _pick_option(session, "option_2")
-
-    assassinate_moves = [
-        m for m in session.legal_moves()
-        if m.move_type == "resolve_generic" and m.data.get("action_id") == _SITE
+    option_2 = [
+        m for m in display_moves_flat(session)
+        if m.move_type == "resolve_generic" and m.data.get("action_id") == "option_2"
     ]
-    assert len(assassinate_moves) == 0, (
-        f"With no white troops, no assassinate targets should exist; got {[m.data for m in assassinate_moves]}"
+    assert option_2, "option_2 should still be offered"
+    assert option_2[0].data.get("target_id") == "unavailable", (
+        "With no white troops, option_2 has no targets and is display-only"
     )
 
     session.destroy()

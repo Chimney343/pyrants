@@ -92,6 +92,12 @@ class CSession:
             return []
         return self._engine.legal_moves(self._state)
 
+    def display_moves(self) -> list[tuple[CMoveWrapper, bool]]:
+        """Viewer-facing moves, including greyed-out display-only entries."""
+        if self.is_terminal():
+            return []
+        return self._engine.display_moves(self._state)
+
     def is_terminal(self) -> bool:
         return self._engine.is_terminal(self._state)
 

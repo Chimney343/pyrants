@@ -723,13 +723,11 @@ GameState *auto_resolve_pending_generic(GameState *state, Sym player_id) {
     return state;
 }
 
-/* legal_pending_generic_choice_moves emits a placeholder resolve_generic move
- * tagged with this target_id for every non-viable modal option, so the Tkinter
- * viewer can render the option greyed out instead of hiding it.  Those moves
- * are deliberately not applicable — apply_resolve_generic_choice below refuses
- * them — so every consumer that actually *applies* moves has to filter them out
- * of engine_legal_moves()'s output first.  Callers: the C rollout loop
- * (rollout.c) and, on the Python side, compute_c_action_map(). */
+/* collect_pending_generic_choice_moves emits a display-only placeholder
+ * resolve_generic move tagged with this target_id for every non-viable modal
+ * option. engine_display_moves() returns them with applicable=0 so the viewer
+ * can render the option greyed out; engine_legal_moves() compacts them out, so
+ * callers that apply moves never see them. */
 int move_is_unavailable_placeholder(const Move *move) {
     if (!move || move->type != MOVE_RESOLVE_GENERIC) return 0;
     Sym tid = move->data.resolve_generic.target_id;
@@ -1271,7 +1269,9 @@ int card_play_modal_options_viable(const GameState *state, Sym player_id,
     return 0;
 }
 
-int legal_pending_generic_choice_moves(GameState *state, Sym player_id, Move *out, int max_out) {
+int collect_pending_generic_choice_moves(GameState *state, Sym player_id, Move *out,
+                                         unsigned char *applicable, int max_out,
+                                         int applicable_only) {
     PendingGenericChoiceState *p = state->pending_generic;
     if (!p || max_out <= 0) return 0;
 
@@ -1282,16 +1282,19 @@ int legal_pending_generic_choice_moves(GameState *state, Sym player_id, Move *ou
         for (int i = 0; i < p->option_count && w < max_out; i++) {
             Sym oid = p->option_ids[i];
             if (!modal_option_is_viable(state, player_id, p, opt_card, oid)) {
+                if (applicable_only) continue;
                 out[w].type = MOVE_RESOLVE_GENERIC;
                 out[w].data.resolve_generic.action_id = oid;
                 out[w].data.resolve_generic.target_id = intern("unavailable");
                 out[w].player_index = 0;
+                if (applicable) applicable[w] = 0;
                 w++;
                 continue;
             }
             out[w].type = MOVE_RESOLVE_GENERIC;
             out[w].data.resolve_generic.action_id = oid;
             out[w].player_index = 0;
+            if (applicable) applicable[w] = 1;
             w++;
         }
         return w;

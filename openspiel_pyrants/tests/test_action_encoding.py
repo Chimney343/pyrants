@@ -5,7 +5,7 @@ from __future__ import annotations
 import pyspiel
 
 import openspiel_pyrants  # noqa: F401
-from openspiel_pyrants.action_encoding_c import NUM_DISTINCT_ACTIONS, compute_c_action_map
+from openspiel_pyrants.game_c import NUM_DISTINCT_ACTIONS
 
 
 def _state_after_chance(seed: int = 42):
@@ -19,9 +19,9 @@ def test_num_distinct_actions() -> None:
     assert NUM_DISTINCT_ACTIONS == 1024
 
 
-def test_compute_c_action_map_is_ordered(requires_c_engine) -> None:
+def test_legal_move_indexing_is_ordered(requires_c_engine) -> None:
     state = _state_after_chance()
-    pairs = compute_c_action_map(state._adapter)
+    pairs = list(enumerate(state._adapter.legal_moves()))
     assert len(pairs) > 0
     for index, pair in enumerate(pairs):
         assert pair[0] == index

@@ -11,7 +11,7 @@ from pathlib import Path
 
 from engine_c.bindings.ce_api import CEngine, _sym_str
 from engine_c.bindings.session import CSession
-from tests.c_engine.card_test_helpers import make_card_test_session
+from tests.c_engine.card_test_helpers import display_moves_flat, make_card_test_session
 
 DATA_DIR = Path(__file__).resolve().parents[2] / "data"
 
@@ -160,7 +160,7 @@ def test_enchanter_of_thay_option_2_unavailable_without_spy_on_board():
     )
     _play_card(session, _CARD)
 
-    opt2 = [m for m in session.legal_moves() if m.move_type == "resolve_generic" and m.data.get("action_id") == "option_2"]
+    opt2 = [m for m in display_moves_flat(session) if m.move_type == "resolve_generic" and m.data.get("action_id") == "option_2"]
     assert opt2, "option_2 should still be listed"
     assert opt2[0].data.get("target_id") == "unavailable", (
         f"option_2 should be unavailable without a spy on board; got {opt2[0].data}"
