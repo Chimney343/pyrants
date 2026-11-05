@@ -28,7 +28,7 @@ static int mk_move(Move *out, int w, int max, Sym pid, const PendingGenericChoic
     return w + 1;
 }
 
-static int sel_assassinate_supplant(const GameState *state, Sym player_id,
+int legal_assassinate_supplant_moves(const GameState *state, Sym player_id,
                                      const PendingGenericChoiceState *pending,
                                      const CardDefinition *card, const CardAction *action,
                                      Move *out, int max_out) {
@@ -681,8 +681,7 @@ int legal_generic_target_selection_moves(const GameState *state, Sym player_id,
 }
 
 void register_selection_handlers(void) {
-    register_sel(intern("assassinate_troop"), sel_assassinate_supplant);
-    register_sel(intern("supplant_troop"), sel_assassinate_supplant);
+    register_sel(intern("supplant_troop"), legal_assassinate_supplant_moves);
     register_sel(intern("force_discard"), sel_force_discard);
     register_sel(intern("promote_card"), sel_promote);
     register_sel(intern("recruit_card"), sel_recruit);

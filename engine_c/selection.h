@@ -10,4 +10,11 @@
 int devour_target_count(const GameState *state, Sym player_id,
                         const CardAction *action, int exclude_hand_index);
 
+/* Shared target enumeration for assassinate_troop and supplant_troop. The
+ * action's op selects the white-troop inclusion rule. */
+int legal_assassinate_supplant_moves(const GameState *state, Sym player_id,
+                                     const PendingGenericChoiceState *pending,
+                                     const CardDefinition *card, const CardAction *action,
+                                     Move *out, int max_out);
+
 #endif

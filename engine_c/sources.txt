@@ -8,6 +8,7 @@ intern.c
 layout.c
 loader.c
 moves.c
+ops/assassinate_troop.c
 ops/deploy_troops.c
 ops/move_troop.c
 ops/op.c

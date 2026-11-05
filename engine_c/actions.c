@@ -164,47 +164,6 @@ static GameState *apply_draw_cards(GameState *state, Sym player_id, const CardDe
     return state;
 }
 
-static GameState *apply_assassinate_troop(GameState *state, Sym player_id, const CardDefinition *card,
-                                           Sym source, const CardAction *action,
-                                           int *sk, Sym *sv, int sc) {
-    (void)card; (void)source;
-    Sym target = find_sel(sk, sv, sc, "target_node_id");
-    int slot = find_sel_int(sk, sv, sc, "target_slot_index", -1);
-    if (target == SYM_NULL || slot < 0) return state;
-    for (int i = 0; i < action->metadata_count; i++) {
-        const char *k = intern_str(action->metadata[i].key);
-        const char *v = intern_str(action->metadata[i].value);
-        if (k && strcmp(k, "requires_last_selected_node") == 0 && v) {
-            PendingGenericChoiceState *p = state->pending_generic;
-            if (!p) return state;
-            Sym required = SYM_NULL;
-            for (int j = 0; j < p->last_selection_count; j++) {
-                const char *lsk = intern_str(p->last_selection_keys[j]);
-                if (lsk && strcmp(lsk, "target_node_id") == 0) {
-                    required = p->last_selection_values[j];
-                    break;
-                }
-            }
-            if (required == SYM_NULL || target != required) return state;
-            break;
-        }
-    }
-    int ignore_presence = 0;
-    for (int i = 0; i < action->metadata_count; i++) {
-        const char *k = intern_str(action->metadata[i].key);
-        const char *v = intern_str(action->metadata[i].value);
-        if (k && strcmp(k, "ignore_presence_requirement") == 0 && v
-            && strcmp(v, "true") == 0) {
-            ignore_presence = 1;
-            break;
-        }
-    }
-    if (apply_free_assassinate(state, player_id, target, slot, ignore_presence) != 0) return state;
-    if (state->pending_generic)
-        increment_pending_counter(state->pending_generic, action);
-    return state;
-}
-
 static GameState *apply_supplant_troop(GameState *state, Sym player_id, const CardDefinition *card,
                                         Sym source, const CardAction *action,
                                         int *sk, Sym *sv, int sc) {
@@ -829,7 +788,6 @@ GameState *apply_generic_action(GameState *state, Sym player_id, const CardDefin
 void register_generic_actions(void) {
     register_action(intern("gain_resource"), apply_gain_resource);
     register_action(intern("draw_cards"), apply_draw_cards);
-    register_action(intern("assassinate_troop"), apply_assassinate_troop);
     register_action(intern("supplant_troop"), apply_supplant_troop);
     register_action(intern("force_discard"), apply_force_discard);
     register_action(intern("promote_card"), apply_promote_card_gen);

@@ -162,7 +162,7 @@ const CardAction *pending_generic_active_action(const PendingGenericChoiceState 
 
 int action_requires_selection(const CardAction *action) {
     static const char *selection_ops[] = {
-        "assassinate_troop", "supplant_troop",
+        "supplant_troop",
         "force_discard",
         "recruit_card", "devour", "devour_cost", "play_card", NULL
     };
@@ -939,6 +939,29 @@ GameState *apply_resolve_generic_choice(GameState *src, const Move *move) {
                     p->last_selection_values[2] = target.as.move_troop.target_node_id;
                     p->last_selection_keys[3] = intern("target_slot_index");
                     p->last_selection_values[3] = intern(dst_slot_buf);
+                } else if (target.kind == OP_TARGET_ASSASSINATE_TROOP) {
+                    Sym owner = SYM_NULL;
+                    for (int i = 0; i < state->node_count; i++) {
+                        if (state->nodes[i].node_id != target.as.assassinate_troop.node_id)
+                            continue;
+                        int slot = target.as.assassinate_troop.slot_index;
+                        if (slot >= 0 && slot < state->nodes[i].troop_slot_count)
+                            owner = state->nodes[i].troop_slots[slot];
+                        break;
+                    }
+                    char slot_buf[16];
+                    snprintf(slot_buf, sizeof(slot_buf), "%d",
+                             target.as.assassinate_troop.slot_index);
+                    p->last_selection_count = 2;
+                    p->last_selection_keys[0] = intern("target_node_id");
+                    p->last_selection_values[0] = target.as.assassinate_troop.node_id;
+                    p->last_selection_keys[1] = intern("target_slot_index");
+                    p->last_selection_values[1] = intern(slot_buf);
+                    if (owner != SYM_NULL) {
+                        p->last_selection_keys[2] = intern("target_owner_id");
+                        p->last_selection_values[2] = owner;
+                        p->last_selection_count = 3;
+                    }
                 }
 
                 GameState *prev_sel = state;
