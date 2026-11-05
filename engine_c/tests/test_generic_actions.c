@@ -19,7 +19,7 @@ static void test_action_requires_selection_force_discard_local(void) {
 
     int r = action_requires_selection(&a);
     assert(r == 0);
-    printf("PASS: force_discard+local_discard → no selection\n");
+    printf("PASS: force_discard+local_discard ??? no selection\n");
     intern_destroy();
 }
 
@@ -33,7 +33,7 @@ static void test_action_requires_selection_force_discard_targeted(void) {
 
     int r = action_requires_selection(&a);
     assert(r == 1);
-    printf("PASS: force_discard+targeted_discard → requires selection\n");
+    printf("PASS: force_discard+targeted_discard ??? requires selection\n");
     intern_destroy();
 }
 
@@ -46,7 +46,7 @@ static void test_action_requires_selection_force_discard_default_scope(void) {
 
     int r = action_requires_selection(&a);
     assert(r == 1);
-    printf("PASS: force_discard+default scope → requires selection\n");
+    printf("PASS: force_discard+default scope ??? requires selection\n");
     intern_destroy();
 }
 
@@ -60,7 +60,7 @@ static void test_action_requires_selection_force_discard_hand_scope(void) {
 
     int r = action_requires_selection(&a);
     assert(r == 1);
-    printf("PASS: force_discard+hand scope → requires selection\n");
+    printf("PASS: force_discard+hand scope ??? requires selection\n");
     intern_destroy();
 }
 
@@ -72,7 +72,7 @@ static void test_action_requires_selection_deploy_troops(void) {
 
     int r = action_requires_selection(&a);
     assert(r == 1);
-    printf("PASS: deploy_troops → requires selection\n");
+    printf("PASS: deploy_troops ??? requires selection\n");
     intern_destroy();
 }
 
@@ -85,7 +85,7 @@ static void test_action_requires_selection_promote_end_of_turn(void) {
 
     int r = action_requires_selection(&a);
     assert(r == 0);
-    printf("PASS: promote_card+end_of_turn → no selection\n");
+    printf("PASS: promote_card+end_of_turn ??? no selection\n");
     intern_destroy();
 }
 
@@ -99,7 +99,7 @@ static void test_action_requires_selection_promote_immediate(void) {
 
     int r = action_requires_selection(&a);
     assert(r == 1);
-    printf("PASS: promote_card+immediate → requires selection\n");
+    printf("PASS: promote_card+immediate ??? requires selection\n");
     intern_destroy();
 }
 
@@ -108,11 +108,11 @@ static void test_action_requires_selection_custom_effect(void) {
     CardAction a;
     memset(&a, 0, sizeof(a));
     a.op = intern("custom_effect");
-    /* no metadata → no effect_kind → not a selection */
+    /* no metadata ??? no effect_kind ??? not a selection */
 
     int r = action_requires_selection(&a);
     assert(r == 0);
-    printf("PASS: custom_effect+no_effect_kind → no selection\n");
+    printf("PASS: custom_effect+no_effect_kind ??? no selection\n");
     intern_destroy();
 }
 
@@ -127,7 +127,7 @@ static void test_action_requires_selection_custom_effect_give_insane_outcast_to_
 
     int r = action_requires_selection(&a);
     assert(r == 0);
-    printf("PASS: custom_effect+give_insane_outcast_to_self → no selection\n");
+    printf("PASS: custom_effect+give_insane_outcast_to_self ??? no selection\n");
     intern_destroy();
 }
 
@@ -142,7 +142,7 @@ static void test_action_requires_selection_custom_effect_selected_player(void) {
 
     int r = action_requires_selection(&a);
     assert(r == 1);
-    printf("PASS: custom_effect+selected_player → requires selection\n");
+    printf("PASS: custom_effect+selected_player ??? requires selection\n");
     intern_destroy();
 }
 
@@ -157,7 +157,7 @@ static void test_action_requires_selection_custom_effect_presence_on_last_select
 
     int r = action_requires_selection(&a);
     assert(r == 1);
-    printf("PASS: custom_effect+presence_on_last_selected → requires selection\n");
+    printf("PASS: custom_effect+presence_on_last_selected ??? requires selection\n");
     intern_destroy();
 }
 
@@ -528,7 +528,7 @@ static void test_sel_place_spy_relocation(void) {
     memset(out, 0, sizeof(out));
     int n = legal_generic_target_selection_moves(&s, p1, NULL, NULL, &action, out, 64);
 
-    /* 1 decline + relocations: A→C and B→C. */
+    /* 1 decline + relocations: A???C and B???C. */
     assert(n == 3);
     int decline = 0, reloc = 0;
     for (int i = 0; i < n; i++) {
@@ -1059,9 +1059,9 @@ static void test_op_assassinate_troop(void) {
     OpTarget target;
     memset(&target, 0, sizeof(target));
     assert(op->target_from_move(&s, p1, &action, &out[0], &target));
-    assert(target.kind == OP_TARGET_ASSASSINATE_TROOP);
-    assert(target.as.assassinate_troop.node_id == site_a);
-    assert(target.as.assassinate_troop.slot_index == 0);
+    assert(target.kind == OP_TARGET_TROOP_SLOT);
+    assert(target.as.troop_slot.node_id == site_a);
+    assert(target.as.troop_slot.slot_index == 0);
 
     const char *ids[1] = {"site_a"};
     const char *labels[1] = {"A"};
@@ -1076,6 +1076,82 @@ static void test_op_assassinate_troop(void) {
     assert(s.players[0].trophy_hall[0] == p2);
 
     printf("PASS: assassinate_troop op owns node/slot target, apply and describe\n");
+}
+
+static void test_op_supplant_troop(void) {
+    Sym p1 = intern("p1");
+    Sym p2 = intern("p2");
+    Sym site_a = intern("site_a");
+    Sym kind_site = intern("site");
+
+    NodeDefinition board_nodes[1];
+    memset(board_nodes, 0, sizeof(board_nodes));
+    board_nodes[0].node_id = site_a;
+    board_nodes[0].kind = kind_site;
+
+    BoardDefinition board;
+    memset(&board, 0, sizeof(board));
+    board.nodes = board_nodes;
+    board.node_count = 1;
+
+    GameDefinition def;
+    memset(&def, 0, sizeof(def));
+    def.board = board;
+
+    GameState s;
+    memset(&s, 0, sizeof(s));
+    s.definition = &def;
+    s.player_count = 2;
+    s.players[0].player_id = p1;
+    s.players[1].player_id = p2;
+    s.node_count = 1;
+    s.nodes[0].node_id = site_a;
+    s.nodes[0].troop_slot_count = 1;
+    s.nodes[0].troop_slots[0] = p2;
+    s.nodes[0].spies[0] = p1;
+    s.nodes[0].spy_count = 1;
+
+    CardAction action;
+    memset(&action, 0, sizeof(action));
+    action.op = intern("supplant_troop");
+
+    const CardOp *op = op_lookup(intern("supplant_troop"));
+    assert(op != NULL);
+    assert(op->needs_selection);
+    assert(op->enumerate != NULL);
+    assert(op->target_from_move != NULL);
+    assert(op->apply != NULL);
+    assert(op->describe != NULL);
+
+    Move out[8];
+    memset(out, 0, sizeof(out));
+    int n = legal_generic_target_selection_moves(&s, p1, NULL, NULL, &action, out, 8);
+    assert(n == 1);
+    assert(out[0].data.resolve_generic.action_id == site_a);
+    const char *tid = intern_str(out[0].data.resolve_generic.target_id);
+    assert(tid && strcmp(tid, "0") == 0);
+
+    OpTarget target;
+    memset(&target, 0, sizeof(target));
+    assert(op->target_from_move(&s, p1, &action, &out[0], &target));
+    assert(target.kind == OP_TARGET_TROOP_SLOT);
+    assert(target.as.troop_slot.node_id == site_a);
+    assert(target.as.troop_slot.slot_index == 0);
+
+    const char *ids[1] = {"site_a"};
+    const char *labels[1] = {"A"};
+    char label[96];
+    label[0] = '\0';
+    op->describe(&s, &action, &target, ids, labels, 1, label, sizeof(label));
+    assert(strcmp(label, "Supplant Player 2 troop at A") == 0);
+
+    assert(op->apply(&s, p1, NULL, &action, &target) == &s);
+    assert(s.nodes[0].troop_slots[0] == SYM_NULL);
+    assert(s.players[0].trophy_hall_count == 1);
+    assert(s.players[0].trophy_hall[0] == p2);
+    assert(s.players[0].score == 1);
+
+    printf("PASS: supplant_troop op owns node/slot target, apply and describe\n");
 }
 
 static void test_sel_deploy_empty_barracks(void) {
@@ -1141,6 +1217,7 @@ int main(void) {
     test_op_deploy_troops();
     test_op_move_troop();
     test_op_assassinate_troop();
+    test_op_supplant_troop();
     test_sel_place_spy_relocation();
     test_sel_place_spy_supply_regression();
     test_sel_deploy_empty_barracks();
@@ -1172,3 +1249,4 @@ int main(void) {
     printf("All generic action tests passed.\n");
     return 0;
 }
+

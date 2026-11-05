@@ -164,33 +164,6 @@ static GameState *apply_draw_cards(GameState *state, Sym player_id, const CardDe
     return state;
 }
 
-static GameState *apply_supplant_troop(GameState *state, Sym player_id, const CardDefinition *card,
-                                        Sym source, const CardAction *action,
-                                        int *sk, Sym *sv, int sc) {
-    (void)card; (void)source;
-    Sym target = find_sel(sk, sv, sc, "target_node_id");
-    int slot = find_sel_int(sk, sv, sc, "target_slot_index", -1);
-    if (target == SYM_NULL || slot < 0) return state;
-
-    NodeState *ns = cow_node(state, target);
-    if (!ns || slot >= ns->troop_slot_count) return state;
-    Sym occ = ns->troop_slots[slot];
-    if (occ == SYM_NULL || occ == player_id) return state;
-    ns->troop_slots[slot] = SYM_NULL;
-    PlayerState *ps = cow_player(state, player_id);
-    if (ps && ps->trophy_hall_count < MAX_ZONE_SIZE)
-        ps->trophy_hall[ps->trophy_hall_count++] = occ;
-    if (ps && ps->barracks > 0) {
-        ns->troop_slots[slot] = player_id;
-        ps->barracks--;
-    } else if (ps) {
-        ps->score += 1;
-    }
-    if (state->pending_generic)
-        increment_pending_counter(state->pending_generic, action);
-    return state;
-}
-
 static GameState *apply_force_discard(GameState *state, Sym player_id, const CardDefinition *card,
                                        Sym source, const CardAction *action,
                                        int *sk, Sym *sv, int sc) {
@@ -788,7 +761,6 @@ GameState *apply_generic_action(GameState *state, Sym player_id, const CardDefin
 void register_generic_actions(void) {
     register_action(intern("gain_resource"), apply_gain_resource);
     register_action(intern("draw_cards"), apply_draw_cards);
-    register_action(intern("supplant_troop"), apply_supplant_troop);
     register_action(intern("force_discard"), apply_force_discard);
     register_action(intern("promote_card"), apply_promote_card_gen);
     register_action(intern("recruit_card"), apply_recruit_card_gen);

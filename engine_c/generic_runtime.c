@@ -162,7 +162,6 @@ const CardAction *pending_generic_active_action(const PendingGenericChoiceState 
 
 int action_requires_selection(const CardAction *action) {
     static const char *selection_ops[] = {
-        "supplant_troop",
         "force_discard",
         "recruit_card", "devour", "devour_cost", "play_card", NULL
     };
@@ -261,7 +260,7 @@ int card_play_devour_costs_payable(const GameState *state, Sym player_id,
         return 0; /* every option blocked */
     }
 
-    /* Unknown/missing execution kind → payable (never false-block). */
+    /* Unknown/missing execution kind ??? payable (never false-block). */
     return 1;
 }
 
@@ -521,7 +520,7 @@ GameState *auto_resolve_pending_generic(GameState *state, Sym player_id) {
 
         /* Intercept end_of_turn_mass_discard opponent-scoped force_discard:
          * each opponent discards a random card immediately (Neogi).
-         * No minimum hand size guard — if they have 1 card, they lose it. */
+         * No minimum hand size guard ??? if they have 1 card, they lose it. */
         {
             const char *op_str = intern_str(action->op);
             if (op_str && strcmp(op_str, "force_discard") == 0) {
@@ -667,7 +666,7 @@ GameState *auto_resolve_pending_generic(GameState *state, Sym player_id) {
                 }
 
                 /* Any force_discard on a card with conditional_gate that
-                 * wasn't handled above is a reactive trigger — skip
+                 * wasn't handled above is a reactive trigger ??? skip
                  * during normal play (e.g. Umber Hulk's
                  * on_opponent_discard_punish). */
                 {
@@ -687,7 +686,7 @@ GameState *auto_resolve_pending_generic(GameState *state, Sym player_id) {
             }
 
             /* Any draw_cards with a reactive source_fragment on a card
-             * with conditional_gate is a reactive trigger — skip during
+             * with conditional_gate is a reactive trigger ??? skip during
              * normal play (e.g. Grimlock's draw-2-when-opponent-discards).
              * Normal draw_cards (source_fragment "draw_cards") still fire. */
             {
@@ -939,22 +938,22 @@ GameState *apply_resolve_generic_choice(GameState *src, const Move *move) {
                     p->last_selection_values[2] = target.as.move_troop.target_node_id;
                     p->last_selection_keys[3] = intern("target_slot_index");
                     p->last_selection_values[3] = intern(dst_slot_buf);
-                } else if (target.kind == OP_TARGET_ASSASSINATE_TROOP) {
+                } else if (target.kind == OP_TARGET_TROOP_SLOT) {
                     Sym owner = SYM_NULL;
                     for (int i = 0; i < state->node_count; i++) {
-                        if (state->nodes[i].node_id != target.as.assassinate_troop.node_id)
+                        if (state->nodes[i].node_id != target.as.troop_slot.node_id)
                             continue;
-                        int slot = target.as.assassinate_troop.slot_index;
+                        int slot = target.as.troop_slot.slot_index;
                         if (slot >= 0 && slot < state->nodes[i].troop_slot_count)
                             owner = state->nodes[i].troop_slots[slot];
                         break;
                     }
                     char slot_buf[16];
                     snprintf(slot_buf, sizeof(slot_buf), "%d",
-                             target.as.assassinate_troop.slot_index);
+                             target.as.troop_slot.slot_index);
                     p->last_selection_count = 2;
                     p->last_selection_keys[0] = intern("target_node_id");
-                    p->last_selection_values[0] = target.as.assassinate_troop.node_id;
+                    p->last_selection_values[0] = target.as.troop_slot.node_id;
                     p->last_selection_keys[1] = intern("target_slot_index");
                     p->last_selection_values[1] = intern(slot_buf);
                     if (owner != SYM_NULL) {
@@ -1235,7 +1234,7 @@ GameState *apply_resolve_generic_choice(GameState *src, const Move *move) {
              * (e.g. force_discard after place_spy on Chuul, assassinate
              *  after devour_cost on Wraith) can read it.  Preserve
              * `target_node_id` from the previous selection when the
-             * current action doesn't supply one — this lets an earlier
+             * current action doesn't supply one ??? this lets an earlier
              * site selection survive an intervening non-site action
              * (e.g. devour_cost between place_spy and assassinate). */
             {
@@ -1312,7 +1311,7 @@ static int modal_option_is_viable(GameState *state, Sym player_id,
                 if (act->optional) continue;
                 if (!action_requires_selection(act)) continue;
                 /* Skip actions that depend on a last_selection from a
-                 * prior action in the same option — those selections
+                 * prior action in the same option ??? those selections
                  * haven't been made yet, so their handler would
                  * incorrectly report zero targets here. */
                 int depends_on_prior = 0;
@@ -1329,7 +1328,7 @@ static int modal_option_is_viable(GameState *state, Sym player_id,
                 if (nc == 0) {
                     /* Gauth option_2: draw_cards works unconditionally;
                      * targeted_discard auto-skips when no opponent has
-                     * 3+ cards — option remains viable. */
+                     * 3+ cards ??? option remains viable. */
                     const char *cid2 = intern_str(pending->source_card_id);
                     const char *os = intern_str(oid);
                     if (!(cid2 && strcmp(cid2, "gauth") == 0
@@ -1471,3 +1470,4 @@ int collect_pending_generic_choice_moves(GameState *state, Sym player_id, Move *
 
     return nc;
 }
+

@@ -32,33 +32,35 @@ identical.
   apply boundary. The `Move` string remains the wire format; no payload,
   decisions or action-id change is allowed.
 - Migration is one leaf op at a time, starting with `return_spy`, then
-  `place_spy`, `return_unit`, `deploy_troops`, `move_troop`, and
-  `assassinate_troop`. A C test at the op-table interface asserts the
-  descriptor is complete, the legacy dispatcher reaches it, the typed target
-  round-trips, apply matches card behavior, and unmigrated ops still fall back.
+  `place_spy`, `return_unit`, `deploy_troops`, `move_troop`,
+  `assassinate_troop`, and `supplant_troop`. A C test at the op-table
+  interface asserts the descriptor is complete, the legacy dispatcher reaches
+  it, the typed target round-trips, apply matches card behavior, and unmigrated
+  ops still fall back.
 - Op describe callbacks receive the viewer's node-id/label arrays so target
   labels are produced by the op without duplicating node naming in each op.
 
 ## Consequences
 
-`return_spy`, `place_spy`, `return_unit`, `deploy_troops`, `move_troop` and
-`assassinate_troop` now answer from the op table; their selection, target
-derivation, apply and describe callbacks live in
+`return_spy`, `place_spy`, `return_unit`, `deploy_troops`, `move_troop`,
+`assassinate_troop` and `supplant_troop` now answer from the op table; their
+selection, target derivation, apply and describe callbacks live in
 `engine_c/ops/return_spy.c`, `engine_c/ops/place_spy.c`,
 `engine_c/ops/return_unit.c`, `engine_c/ops/deploy_troops.c`,
-`engine_c/ops/move_troop.c` and `engine_c/ops/assassinate_troop.c`. The legacy
+`engine_c/ops/move_troop.c`, `engine_c/ops/assassinate_troop.c` and
+`engine_c/ops/supplant_troop.c`. The legacy
 `sel_return_spy`/`apply_return_spy_gen`, `sel_place_spy`/`apply_place_spy`,
 `sel_return_unit`/`apply_return_unit`, `sel_deploy`/`apply_deploy_troops`,
-`sel_move_troop`/`apply_move_troop` and `apply_assassinate_troop` registry
-entries are removed for those ops. The shared
-`legal_assassinate_supplant_moves` selector remains for the still-legacy
-`supplant_troop`. `place_spy` keeps its rulebook decline as a valid null
-target; `deploy_troops` keeps its empty-barracks decline (which grants the VP)
-as a valid null target; and all six reproduce the legacy `last_selection`
-records so follow-up actions keep working. The pending counter key/increment
-helpers moved from `actions.c` to `helpers.c` so op modules can share them. The
-colon parser and `find_sel`/`atoi` code remain for the other ops until their
-migrations.
+`sel_move_troop`/`apply_move_troop`, `apply_assassinate_troop` and
+`apply_supplant_troop` registry entries are removed for those ops. The shared
+`legal_assassinate_supplant_moves` selector is used by both op modules through
+their `enumerate` wrappers. `place_spy` keeps its rulebook decline as a valid
+null target; `deploy_troops` keeps its empty-barracks decline (which grants the
+VP) as a valid null target; and all seven reproduce the legacy
+`last_selection` records so follow-up actions keep working. The pending counter
+key/increment helpers moved from `actions.c` to `helpers.c` so op modules can
+share them. The colon parser and `find_sel`/`atoi` code remain for the other
+ops until their migrations.
 
 `op_lookup` is a small name scan. It is called on the selection/apply paths;
 the table is small and this is not a hot-loop concern for the first ops. The op

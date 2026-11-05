@@ -681,7 +681,6 @@ int legal_generic_target_selection_moves(const GameState *state, Sym player_id,
 }
 
 void register_selection_handlers(void) {
-    register_sel(intern("supplant_troop"), legal_assassinate_supplant_moves);
     register_sel(intern("force_discard"), sel_force_discard);
     register_sel(intern("promote_card"), sel_promote);
     register_sel(intern("recruit_card"), sel_recruit);

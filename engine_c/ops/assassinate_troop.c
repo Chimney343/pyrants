@@ -25,9 +25,9 @@ static int op_assassinate_troop_target(const GameState *state, Sym player_id,
     if (node_id == SYM_NULL || tid == SYM_NULL) return 0;
     const char *ts = intern_str(tid);
     if (!ts) return 0;
-    out->kind = OP_TARGET_ASSASSINATE_TROOP;
-    out->as.assassinate_troop.node_id = node_id;
-    out->as.assassinate_troop.slot_index = atoi(ts);
+    out->kind = OP_TARGET_TROOP_SLOT;
+    out->as.troop_slot.node_id = node_id;
+    out->as.troop_slot.slot_index = atoi(ts);
     return 1;
 }
 
@@ -36,9 +36,9 @@ static GameState *op_assassinate_troop_apply(GameState *state, Sym player_id,
                                              const CardAction *action,
                                              const OpTarget *target) {
     (void)card;
-    if (!target || target->kind != OP_TARGET_ASSASSINATE_TROOP) return state;
-    Sym node_id = target->as.assassinate_troop.node_id;
-    int slot = target->as.assassinate_troop.slot_index;
+    if (!target || target->kind != OP_TARGET_TROOP_SLOT) return state;
+    Sym node_id = target->as.troop_slot.node_id;
+    int slot = target->as.troop_slot.slot_index;
     if (node_id == SYM_NULL || slot < 0) return state;
 
     for (int i = 0; i < action->metadata_count; i++) {
@@ -94,13 +94,13 @@ static void op_assassinate_troop_describe(const GameState *state, const CardActi
                                           const char *const *node_ids, const char *const *node_labels,
                                           int node_pair_count, char *buf, size_t cap) {
     (void)action;
-    if (!target || target->kind != OP_TARGET_ASSASSINATE_TROOP) {
+    if (!target || target->kind != OP_TARGET_TROOP_SLOT) {
         snprintf(buf, cap, "Assassinate troop");
         return;
     }
-    const char *owner = troop_owner_label(state, target->as.assassinate_troop.node_id,
-                                          target->as.assassinate_troop.slot_index);
-    const char *label = engine_node_label(intern_str(target->as.assassinate_troop.node_id),
+    const char *owner = troop_owner_label(state, target->as.troop_slot.node_id,
+                                          target->as.troop_slot.slot_index);
+    const char *label = engine_node_label(intern_str(target->as.troop_slot.node_id),
                                           node_ids, node_labels, node_pair_count);
     snprintf(buf, cap, "Assassinate %s troop at %s", owner, label);
 }
@@ -113,3 +113,4 @@ const CardOp OP_ASSASSINATE_TROOP = {
     .apply = op_assassinate_troop_apply,
     .describe = op_assassinate_troop_describe,
 };
+
