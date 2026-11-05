@@ -651,7 +651,7 @@ static void test_op_return_spy(void) {
     assert(op->apply != NULL);
     assert(op->describe != NULL);
     assert(action_requires_selection(&action) == 1);
-    assert(op_lookup(intern("force_discard")) == NULL);
+    assert(op_lookup(intern("promote_card")) == NULL);
 
     Move out[8];
     memset(out, 0, sizeof(out));
@@ -1154,6 +1154,68 @@ static void test_op_supplant_troop(void) {
     printf("PASS: supplant_troop op owns node/slot target, apply and describe\n");
 }
 
+static void test_op_force_discard(void) {
+    Sym p1 = intern("p1");
+    Sym p2 = intern("p2");
+
+    CardCatalog catalog;
+    memset(&catalog, 0, sizeof(catalog));
+    GameDefinition def;
+    memset(&def, 0, sizeof(def));
+    def.catalog = catalog;
+
+    GameState s;
+    memset(&s, 0, sizeof(s));
+    s.definition = &def;
+    s.player_count = 2;
+    s.players[0].player_id = p1;
+    s.players[1].player_id = p2;
+    s.players[1].hand_count = 3;
+    s.players[1].hand[0] = intern("card_a");
+    s.players[1].hand[1] = intern("card_b");
+    s.players[1].hand[2] = intern("card_c");
+    s.shuffle_seed = 0;
+    s.shuffle_counter = 0;
+
+    CardAction action;
+    memset(&action, 0, sizeof(action));
+    action.op = intern("force_discard");
+    action.source_fragment = intern("targeted_discard");
+
+    const CardOp *op = op_lookup(intern("force_discard"));
+    assert(op != NULL);
+    assert(op->needs_selection);
+    assert(op->enumerate != NULL);
+    assert(op->target_from_move != NULL);
+    assert(op->apply != NULL);
+    assert(op->describe != NULL);
+    assert(action_requires_selection(&action) == 1);
+
+    Move out[8];
+    memset(out, 0, sizeof(out));
+    int n = legal_generic_target_selection_moves(&s, p1, NULL, NULL, &action, out, 8);
+    assert(n == 1);
+    assert(out[0].data.resolve_generic.action_id == p2);
+
+    OpTarget target;
+    memset(&target, 0, sizeof(target));
+    assert(op->target_from_move(&s, p1, &action, &out[0], &target));
+    assert(target.kind == OP_TARGET_FORCE_DISCARD);
+    assert(target.as.force_discard.target_player_id == p2);
+    assert(target.as.force_discard.target_card_id == SYM_NULL);
+
+    char label[96];
+    label[0] = '\0';
+    op->describe(&s, &action, &target, NULL, NULL, 0, label, sizeof(label));
+    assert(strcmp(label, "Force Player 2 to discard") == 0);
+
+    assert(op->apply(&s, p1, NULL, &action, &target) == &s);
+    assert(s.players[1].hand_count == 2);
+    assert(s.players[1].discard_pile_count == 1);
+
+    printf("PASS: force_discard op owns player target, RNG discard and describe\n");
+}
+
 static void test_sel_deploy_empty_barracks(void) {
     Sym p1 = intern("p1");
     Sym site_a = intern("site_a");
@@ -1218,6 +1280,7 @@ int main(void) {
     test_op_move_troop();
     test_op_assassinate_troop();
     test_op_supplant_troop();
+    test_op_force_discard();
     test_sel_place_spy_relocation();
     test_sel_place_spy_supply_regression();
     test_sel_deploy_empty_barracks();

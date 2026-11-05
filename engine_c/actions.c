@@ -164,16 +164,19 @@ static GameState *apply_draw_cards(GameState *state, Sym player_id, const CardDe
     return state;
 }
 
-static GameState *apply_force_discard(GameState *state, Sym player_id, const CardDefinition *card,
-                                       Sym source, const CardAction *action,
-                                       int *sk, Sym *sv, int sc) {
+/* Legacy auto-apply path for force_discard actions whose target_scope is
+ * "opponent" (Chuul/Nothic/Mindwitness). The selection-requiring forms are
+ * handled by the force_discard op module. */
+static GameState *apply_force_discard_auto(GameState *state, Sym player_id,
+                                           const CardDefinition *card,
+                                           Sym source, const CardAction *action,
+                                           int *sk, Sym *sv, int sc) {
     (void)card; (void)source;
     Sym target = find_sel(sk, sv, sc, "target_player_id");
     int hand_idx = find_sel_int(sk, sv, sc, "hand_index", -1);
     if (target == SYM_NULL || target == player_id) return state;
     PlayerState *ps = cow_player(state, target);
     if (!ps) return state;
-    /* targeted_discard: no hand_index → pick a random card (3+ card guard). */
     if (hand_idx < 0) {
         if (ps->hand_count < 3) return state;
         RNG rng;
@@ -761,7 +764,7 @@ GameState *apply_generic_action(GameState *state, Sym player_id, const CardDefin
 void register_generic_actions(void) {
     register_action(intern("gain_resource"), apply_gain_resource);
     register_action(intern("draw_cards"), apply_draw_cards);
-    register_action(intern("force_discard"), apply_force_discard);
+    register_action(intern("force_discard"), apply_force_discard_auto);
     register_action(intern("promote_card"), apply_promote_card_gen);
     register_action(intern("recruit_card"), apply_recruit_card_gen);
     register_action(intern("devour"), apply_devour);

@@ -368,40 +368,6 @@ static int sel_custom_effect(const GameState *state, Sym player_id,
     return w;
 }
 
-static int sel_force_discard(const GameState *state, Sym player_id,
-                              const PendingGenericChoiceState *pending,
-                              const CardDefinition *card, const CardAction *action,
-                              Move *out, int max_out) {
-    const char *sf = intern_str(action->source_fragment);
-    /* targeted_discard: player picks an opponent (with 3+ cards),
-     * then that opponent discards one random card. */
-    if (sf && strcmp(sf, "targeted_discard") == 0) {
-        int w = 0;
-        for (int p = 0; p < state->player_count && w < max_out; p++) {
-            if (state->players[p].player_id == player_id) continue;
-            if (state->players[p].hand_count >= 3) {
-                out[w].type = MOVE_RESOLVE_GENERIC;
-                out[w].data.resolve_generic.action_id = state->players[p].player_id;
-                out[w].player_index = 0;
-                w++;
-            }
-        }
-        return w;
-    }
-    /* Default: one move per card in each opponent's hand (original behaviour). */
-    int w = 0;
-    for (int p = 0; p < state->player_count && w < max_out; p++) {
-        if (state->players[p].player_id == player_id) continue;
-        for (int h = 0; h < state->players[p].hand_count && w < max_out; h++) {
-            out[w].type = MOVE_RESOLVE_GENERIC;
-            out[w].data.resolve_generic.action_id = state->players[p].hand[h];
-            out[w].player_index = 0;
-            w++;
-        }
-    }
-    return w;
-}
-
 static int sel_promote(const GameState *state, Sym player_id,
                         const PendingGenericChoiceState *pending,
                         const CardDefinition *card, const CardAction *action,
@@ -681,7 +647,6 @@ int legal_generic_target_selection_moves(const GameState *state, Sym player_id,
 }
 
 void register_selection_handlers(void) {
-    register_sel(intern("force_discard"), sel_force_discard);
     register_sel(intern("promote_card"), sel_promote);
     register_sel(intern("recruit_card"), sel_recruit);
     register_sel(intern("devour"), sel_devour);

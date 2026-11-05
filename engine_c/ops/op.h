@@ -16,6 +16,7 @@ typedef enum {
     OP_TARGET_DEPLOY_TROOPS,
     OP_TARGET_MOVE_TROOP,
     OP_TARGET_TROOP_SLOT,
+    OP_TARGET_FORCE_DISCARD,
 } OpTargetKind;
 
 typedef struct {
@@ -49,6 +50,10 @@ typedef struct {
             Sym node_id;
             int slot_index;
         } troop_slot;
+        struct {
+            Sym target_player_id;
+            Sym target_card_id;
+        } force_discard;
     } as;
 } OpTarget;
 

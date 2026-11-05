@@ -10,6 +10,7 @@ extern const CardOp OP_DEPLOY_TROOPS;
 extern const CardOp OP_MOVE_TROOP;
 extern const CardOp OP_ASSASSINATE_TROOP;
 extern const CardOp OP_SUPPLANT_TROOP;
+extern const CardOp OP_FORCE_DISCARD;
 
 static const CardOp *const OPS[] = {
     &OP_RETURN_SPY,
@@ -19,6 +20,7 @@ static const CardOp *const OPS[] = {
     &OP_MOVE_TROOP,
     &OP_ASSASSINATE_TROOP,
     &OP_SUPPLANT_TROOP,
+    &OP_FORCE_DISCARD,
 };
 
 const CardOp *op_lookup(Sym op) {

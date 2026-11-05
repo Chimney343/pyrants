@@ -10,6 +10,7 @@ loader.c
 moves.c
 ops/assassinate_troop.c
 ops/deploy_troops.c
+ops/force_discard.c
 ops/move_troop.c
 ops/op.c
 ops/place_spy.c

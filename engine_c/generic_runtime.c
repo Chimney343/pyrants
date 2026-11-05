@@ -162,13 +162,10 @@ const CardAction *pending_generic_active_action(const PendingGenericChoiceState 
 
 int action_requires_selection(const CardAction *action) {
     static const char *selection_ops[] = {
-        "force_discard",
         "recruit_card", "devour", "devour_cost", "play_card", NULL
     };
     const char *op = intern_str(action->op);
     if (!op) return 0;
-    const CardOp *card_op = op_lookup(action->op);
-    if (card_op) return card_op->needs_selection;
     /* force_discard with target_scope "opponent" auto-applies to all
      * opponents at the last-selected site (Chuul's local_discard),
      * opponents with 3+ cards (Nothic's mass_discard).
@@ -186,6 +183,8 @@ int action_requires_selection(const CardAction *action) {
             if (sf && strcmp(sf, "on_opponent_discard_punish") == 0) return 0;
         }
     }
+    const CardOp *card_op = op_lookup(action->op);
+    if (card_op) return card_op->needs_selection;
     for (int i = 0; selection_ops[i]; i++)
         if (strcmp(op, selection_ops[i]) == 0) return 1;
     if (op && strcmp(op, "promote_card") == 0) {
@@ -960,6 +959,22 @@ GameState *apply_resolve_generic_choice(GameState *src, const Move *move) {
                         p->last_selection_keys[2] = intern("target_owner_id");
                         p->last_selection_values[2] = owner;
                         p->last_selection_count = 3;
+                    }
+                } else if (target.kind == OP_TARGET_FORCE_DISCARD) {
+                    p->last_selection_count = 1;
+                    if (target.as.force_discard.target_player_id != SYM_NULL) {
+                        p->last_selection_keys[0] = intern("target_player_id");
+                        p->last_selection_values[0] =
+                            target.as.force_discard.target_player_id;
+                    } else {
+                        p->last_selection_keys[0] = intern("target_card_id");
+                        p->last_selection_values[0] =
+                            target.as.force_discard.target_card_id;
+                    }
+                    if (carry_target_node != SYM_NULL && p->last_selection_count < 8) {
+                        p->last_selection_keys[p->last_selection_count] = intern("target_node_id");
+                        p->last_selection_values[p->last_selection_count] = carry_target_node;
+                        p->last_selection_count++;
                     }
                 }
 
