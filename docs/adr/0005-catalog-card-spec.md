@@ -1,6 +1,6 @@
 # ADR-0005: Card-specific semantics are loader-validated catalog fields
 
-- **Status:** Active (candidate 4; first field landed)
+- **Status:** Active (candidate 4 runtime/card-id branches complete; op-selection variants and `custom_effect` deferred)
 - **Date:** 2026-11-05
 - **Decision owner:** maintainers
 - **Supersedes:** -
@@ -49,6 +49,16 @@ without card-id checks.
 - The catalog JSON gains the fields; the C struct, Python ctypes mirror and
   layout probe grow with them. Move payloads, decisions and action ids do not
   change.
+
+## Deferred after candidate 4
+
+- The remaining op-selection `source_fragment` modes in the play/promote/
+  devour/return_unit op modules are selection metadata inside the op table,
+  not runtime card-id branches. They can be typed later without changing the
+  catalog contract.
+- `custom_effect` remains the 13-effect-kind dispatcher deferred from
+  candidate 1. It needs a catalog-declared effect-kind table, not a shallow
+  per-op wrapper.
 
 ## Consequences
 
