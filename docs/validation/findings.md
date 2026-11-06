@@ -935,11 +935,11 @@ passed.
 - Class: ENGINE-OPENSPIEL (bindings action space)
 - Severity: MINOR (current states are far below the cap; a future action space above 1024 would lose moves with no error)
 - Origin: Found by the 2026-11-04 architecture review (Phase 0.1)
-- Code: `engine_c/bindings/ce_api.py:412-413` allocates `CMove * 1024` and passes `max_moves=1024`; `openspiel_pyrants/game_c.py` defines `NUM_DISTINCT_ACTIONS = 1024` independently; `engine_c/rules.c:200-283` caps every write and returns at most `max_moves` with no truncation flag.
+- Code: `engine_c/bindings/ce_api.py:414-415` allocates `CMove * 1024` and passes `max_moves=1024`; `openspiel_pyrants/game_c.py` defines `NUM_DISTINCT_ACTIONS = 1024` independently; `engine_c/rules.c:200-283` caps every write and returns at most `max_moves` with no truncation flag.
 - Falsification test: assert the binding buffer equals `NUM_DISTINCT_ACTIONS`; a state with exactly `max_moves` moves cannot be distinguished from one with more.
 - Expected if REAL: the two constants can drift and truncation is unobservable.
 - Expected if FALSE POSITIVE: one constant feeds the other and overflow is detected.
-- Status: **OPEN** (fold into candidate 3)
+- Status: **OPEN**. It was meant to be folded into candidate 3, but candidate 3 (`d815205`) landed without it, and the second 1024 buffer now also sizes the display query (`ce_api.py:425-427`).
 
 ### F-039 Engine purity has no automated guard, and `loader.c` already violates the stated contract
 - Class: ARCHITECTURE-PROCESS (engine purity)

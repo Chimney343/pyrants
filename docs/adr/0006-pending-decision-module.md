@@ -37,8 +37,11 @@ must keep reading the committed schema-v1 documents.
   `state`, a `pending` object (`kind`, `priority`, `count`, and the four
   pending payloads) plus `shuffle_seed` and `shuffle_counter`.
 - A document without `pending` is schema v1: it loads with no pending decision,
-  and the loader keeps seed 42 and the setup's shuffle counter. Every committed
-  `data/scenarios/*.json` file is v1 and keeps loading.
+  and the loader keeps seed 42 and the setup's shuffle counter. The committed
+  `data/scenarios/*.json` files are v1 and keep loading, except two:
+  `tests/c_engine/test_engine_c.py` rewrites
+  `test_card_generation/_ae_opt1_test.json` and `_we_focus_test.json` on every
+  run, so they are saved as v2 and were committed that way in `f6470c4`.
 - The serializer no longer refuses to save a state with a pending generic
   choice. The loader restores the generic frame's `current_actions` from the
   catalog by `source_card_id` and `current_option_id`, for the whole parent
@@ -70,3 +73,19 @@ migration is candidate 8's work, alongside the Python decision record.
 The scenario schema changed, so a scenario written by this engine and read by
 an older build loses the pending state; the frozen artifacts (`decisions.jsonl`,
 `replay.json`, NN action ids) are untouched.
+
+## Speed
+
+Measured after the fact, on 2026-11-06. The paired 32-game run (200 sims,
+4 players, 16 workers, `--uct-c 1.4`, seed 42) compares `57e0883`, the last
+engine commit before this candidate, against `f355e4f`, which has the same
+engine as `f6470c4`. Baseline run `20261106T164410Z_f5f647468a20`, candidate
+run `20261106T191411Z_bda107c0eaf4`:
+
+- All 32 games are content-identical, so the decision stack does not change
+  search.
+- Run-wall games/h went from 83.7 to 86.8. The per-game wall ratio has a
+  median of ×1.015 (range 0.964–1.076).
+
+That is no regression, and the gain is within the noise between repeat runs of
+one build, which is up to about 6% in run-wall games/h.
