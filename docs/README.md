@@ -11,6 +11,7 @@ Use these files for current project status:
 ## Subfolders
 
 - `adr/` - architecture decision records (numbered, dated, with Status/Consequences/Compliance sections).
+- `architecture-review/` - dated architecture reviews (HTML report with before/after diagrams) and the handoff plan an agent works through with the user.
 - `archive/` - older plans, reviews, and dated notes kept for history.
 - `source/` - live documentation inputs (script inputs and pending-sweep inventories).
 - `generated/` - generated reports that are produced from code and source artifacts.
@@ -20,6 +21,7 @@ Use these files for current project status:
 
 - If you want the current state of development, read the two top-level status files.
 - If you want to know why an architectural decision was made, read `adr/`.
+- If you are improving the engine_c / OpenSpiel architecture, follow `architecture-review/handoff-2026-11-04.md` (diagrams: `architecture-review/review-2026-11-04.html`).
 - If you need detailed card review input, use `source/`.
 - If you need generated audits or coverage reports, use `generated/`.
 - If you need old planning context, use `archive/`.

@@ -1,0 +1,672 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Architecture review — pyrants</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({
+    startOnLoad: true, theme: "neutral", securityLevel: "loose", deterministicIds: true,
+    flowchart: { htmlLabels: true, curve: "basis", padding: 8, nodeSpacing: 28, rankSpacing: 34 },
+    themeVariables: { fontSize: "12px", fontFamily: "ui-sans-serif, system-ui, sans-serif" }
+  });
+</script>
+<style>
+  .lbl { font-size: 10px; text-transform: uppercase; letter-spacing: .08em; }
+  .mod { border: 1px solid #94a3b8; border-radius: 6px; background: #fff; padding: 4px 8px;
+         font-size: 10.5px; text-transform: uppercase; letter-spacing: .06em; color: #334155; }
+  .deep { background: linear-gradient(135deg, #0f172a, #1e293b); color: #f8fafc;
+          border: 4px solid #0f172a; border-radius: 10px; }
+  .leakchip { border: 1.5px solid #dc2626; background: #fef2f2; color: #991b1b; border-radius: 6px;
+              padding: 3px 7px; font-size: 11px; }
+  .okchip { border: 1.5px solid #059669; background: #ecfdf5; color: #065f46; border-radius: 6px;
+            padding: 3px 7px; font-size: 11px; }
+  .seam { border-top: 2px dashed #64748b; }
+  .seam-v { border-left: 2px dashed #64748b; }
+  .ghost { opacity: .45; }
+  .struck { text-decoration: line-through; text-decoration-color: #dc2626; text-decoration-thickness: 2px; }
+  .mermaid svg { max-width: 100% !important; height: auto; }
+  .diagram { min-height: 300px; }
+  .band { border-left: 4px solid #cbd5e1; background: #fff; }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .85em;
+         background: #f1f5f9; padding: 0 .25em; border-radius: 3px; }
+</style>
+</head>
+<body class="bg-stone-50 text-slate-900 font-sans antialiased">
+<main class="max-w-6xl mx-auto px-4 sm:px-6 py-12 space-y-12">
+
+<!-- ============================ HEADER ============================ -->
+<header class="space-y-5">
+  <div class="flex flex-wrap items-baseline justify-between gap-3">
+    <h1 class="font-serif text-4xl tracking-tight">pyrants — architecture review</h1>
+    <div class="font-mono text-xs text-slate-500">HEAD 7dd5f67 · develop · 2026-11-04</div>
+  </div>
+  <p class="text-sm text-slate-600">Scope: <strong>engine_c</strong> first (candidates 1–6), the <strong>engine_c ↔ OpenSpiel seam</strong> second (7–9). Counts come from grep/git at HEAD, gathered by two read-only walks and spot-checked.</p>
+  <div class="flex flex-wrap gap-5 items-center text-xs text-slate-600 border-y border-stone-200 py-3">
+    <span class="flex items-center gap-2"><span class="mod">module</span> module</span>
+    <span class="flex items-center gap-2"><span class="inline-block w-10 seam"></span> seam</span>
+    <span class="flex items-center gap-2"><svg width="36" height="10"><line x1="0" y1="5" x2="30" y2="5" stroke="#dc2626" stroke-width="2"/><path d="M28 1l6 4-6 4" fill="#dc2626"/></svg> leakage</span>
+    <span class="flex items-center gap-2"><span class="deep inline-block w-10 h-5"></span> deep module</span>
+    <span class="flex items-center gap-2"><span class="leakchip">x</span> leak / duplicate</span>
+    <span class="flex items-center gap-2"><span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-medium">Strong</span><span class="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-medium">Worth exploring</span><span class="px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 font-medium">Speculative</span></span>
+  </div>
+</header>
+
+<section id="candidates" class="space-y-10">
+
+<h2 class="font-serif text-2xl text-slate-700 pt-2">engine_c</h2>
+
+<!-- ============================ C1 ============================ -->
+<article id="c1" class="rounded-2xl border border-stone-200 bg-white shadow-sm overflow-hidden">
+  <div class="px-6 pt-6 pb-4 border-b border-stone-100">
+    <div class="flex flex-wrap items-center gap-2 mb-2 text-xs">
+      <span class="font-mono text-stone-400">01</span>
+      <span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-medium">Strong</span>
+      <span class="px-2 py-0.5 rounded border border-slate-300 text-slate-600">in-process</span>
+      <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-600">engine_c</span>
+    </div>
+    <h3 class="font-serif text-2xl">Give each card-effect op one home</h3>
+    <div class="mt-3 font-mono text-xs text-slate-600 flex flex-wrap gap-x-4 gap-y-1">
+      <span>engine_c/actions.c</span><span>engine_c/selection.c</span><span>engine_c/generic_runtime.c</span><span>engine_c/describe.c</span><span>engine_c/bindings/label_enrich.py</span><span>openspiel_pyrants/nn/actions.py</span>
+    </div>
+  </div>
+  <div class="grid md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-stone-100">
+    <div class="p-5 diagram"><div class="lbl text-slate-400 mb-2">Before</div>
+<pre class="mermaid">
+flowchart LR
+  d0_J["card JSON<br/>op string"]
+  d0_GR["generic_runtime.c<br/>selection_ops list · 12"]
+  d0_SEL["selection.c<br/>14 handlers"]
+  d0_ACT["actions.c<br/>18 handlers"]
+  d0_STR(("target string<br/>kind:a:b:c"))
+  d0_DESC["describe.c"]
+  d0_LBL["label_enrich.py"]
+  d0_NN["nn/actions.py"]
+  d0_J --> d0_GR
+  d0_J --> d0_SEL
+  d0_J --> d0_ACT
+  d0_SEL -- "snprintf + intern" --> d0_STR
+  d0_STR -- "parsed 3x · sk/sv slots 8" --> d0_GR
+  d0_GR -- "48 find_sel + atoi" --> d0_ACT
+  d0_STR -.->|"re-parse"| d0_DESC
+  d0_STR -.->|"re-parse"| d0_LBL
+  d0_STR -.->|"re-parse"| d0_NN
+  classDef leak stroke:#dc2626,stroke-width:2px,color:#991b1b,fill:#fef2f2
+  class d0_STR leak
+  linkStyle 3,4,5,6,7,8 stroke:#dc2626,stroke-width:1.6px
+</pre>
+    </div>
+    <div class="p-5 diagram bg-stone-50/60"><div class="lbl text-slate-400 mb-3">After</div>
+      <div class="flex flex-col items-center gap-1.5">
+        <div class="flex flex-wrap justify-center gap-2"><span class="mod">legal moves</span><span class="mod">apply</span><span class="mod">describe · labels</span></div>
+        <svg width="12" height="18"><path d="M6 0v14M1 9l5 6 5-6" stroke="#475569" fill="none" stroke-width="1.5"/></svg>
+        <div class="mod w-full text-center" style="border:2px solid #059669;color:#065f46">op table — one registry</div>
+        <svg width="12" height="18"><path d="M6 0v14M1 9l5 6 5-6" stroke="#475569" fill="none" stroke-width="1.5"/></svg>
+        <div class="relative w-full" style="height:190px">
+          <div class="absolute rounded-lg border border-slate-300 bg-slate-200" style="left:28px;right:0;top:0;height:160px"><span class="lbl absolute right-2 top-1 text-slate-500">devour</span></div>
+          <div class="absolute rounded-lg border border-slate-300 bg-slate-300" style="left:14px;right:14px;top:12px;height:160px"><span class="lbl absolute right-2 top-1 text-slate-600">place_spy</span></div>
+          <div class="absolute deep p-3" style="left:0;right:28px;top:26px;height:164px">
+            <div class="lbl text-stone-300">deploy_troops op module</div>
+            <div class="mt-2 grid gap-1 text-[11px] text-slate-300/70">
+              <div class="border border-slate-600 rounded px-2 py-0.5">needs a selection?</div>
+              <div class="border border-slate-600 rounded px-2 py-0.5">enumerate targets</div>
+              <div class="border border-slate-600 rounded px-2 py-0.5">typed target record</div>
+              <div class="border border-slate-600 rounded px-2 py-0.5">apply · describe</div>
+            </div>
+          </div>
+        </div>
+        <div class="text-xs text-slate-500 mt-1">The JSON names the op. The op module owns everything else.</div>
+      </div>
+    </div>
+  </div>
+  <div class="px-6 py-5 grid md:grid-cols-3 gap-6 text-sm">
+    <div><h4 class="lbl text-slate-400 mb-1">Problem</h4><p>One op's behaviour is split across three parallel registries, joined by an untyped <code>kind:a:b:c</code> target string that four files parse independently.</p></div>
+    <div><h4 class="lbl text-slate-400 mb-1">Solution</h4><p>Make each op one module that owns whether it needs a selection, its targets, apply and describe. Every caller reaches it through a single op table.</p></div>
+    <div><h4 class="lbl text-slate-400 mb-1">Wins</h4><ul class="list-disc pl-4 space-y-0.5">
+      <li>locality: a card fix lands in one op</li><li>three registries become one table</li><li>target string stops crossing modules</li><li>one test checks every op is complete</li><li>describe stops re-parsing payloads</li></ul></div>
+  </div>
+  <div class="px-6 pb-5 text-xs text-slate-500 font-mono space-y-0.5">
+    <div>• registries: actions.c:992 (18 ops) · selection.c:935 (14) · generic_runtime.c:162 (12-op list + source_fragment special cases)</div>
+    <div>• apply_resolve_generic_choice ≈ 415 lines; colon parser pasted 3×. f1a5c46 (Lich trophy-steal) touched 5 files</div>
+    <div>• of 46 card-fix commits, 25 touch ≥ 2 op files and 8 touch ≥ 4</div>
+  </div>
+</article>
+
+<!-- ============================ C2 ============================ -->
+<article id="c2" class="rounded-2xl border border-stone-200 bg-white shadow-sm overflow-hidden">
+  <div class="px-6 pt-6 pb-4 border-b border-stone-100">
+    <div class="flex flex-wrap items-center gap-2 mb-2 text-xs">
+      <span class="font-mono text-stone-400">02</span>
+      <span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-medium">Strong</span>
+      <span class="px-2 py-0.5 rounded border border-slate-300 text-slate-600">in-process</span>
+      <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-600">engine_c</span>
+    </div>
+    <h3 class="font-serif text-2xl">Make the pending-decision stack one module</h3>
+    <div class="mt-3 font-mono text-xs text-slate-600 flex flex-wrap gap-x-4 gap-y-1">
+      <span>engine_c/state.h</span><span>engine_c/rules.c</span><span>engine_c/state.c</span><span>engine_c/saveload.c</span><span>engine_c/player_view.c</span><span>engine_c/describe.c</span><span>engine_c/generic_runtime.c</span><span>engine_c/bindings/pending_context.py</span>
+    </div>
+  </div>
+  <div class="grid md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-stone-100">
+    <div class="p-5 diagram"><div class="lbl text-slate-400 mb-2">Before</div>
+<pre class="mermaid">
+flowchart LR
+  subgraph d1_GS["GameState"]
+    d1_PI["pending_immediate · 16"]
+    d1_PE["pending_eot · 16"]
+    d1_PA["pending_ability"]
+    d1_PG["pending_generic<br/>25 fields · parent chain, cap 16"]
+  end
+  d1_RL["rules.c legal moves<br/>priority = branch order"]
+  d1_CL["state.c clone"]
+  d1_PV["player_view.c"]
+  d1_DS["describe.c"]
+  d1_SV["saveload.c<br/>checks pending_generic only"]
+  d1_PY["pending_context.py<br/>raw pointer, read before apply"]
+  d1_PI --> d1_RL
+  d1_PE --> d1_RL
+  d1_PA --> d1_RL
+  d1_PG --> d1_RL
+  d1_PG --> d1_CL
+  d1_PA --> d1_PV
+  d1_PG --> d1_PV
+  d1_PG --> d1_DS
+  d1_PG --> d1_PY
+  d1_PE -.->|"not saved?"| d1_SV
+  d1_PI -.-> d1_SV
+  d1_PA -.-> d1_SV
+  classDef leak stroke:#dc2626,stroke-width:2px,color:#991b1b,fill:#fef2f2
+  class d1_PY,d1_SV leak
+  linkStyle 8,9,10,11 stroke:#dc2626,stroke-width:1.6px
+</pre>
+    </div>
+    <div class="p-5 diagram bg-stone-50/60"><div class="lbl text-slate-400 mb-3">After</div>
+      <div class="flex flex-col items-center gap-1.5">
+        <div class="flex flex-wrap justify-center gap-2"><span class="mod">legal moves</span><span class="mod">clone</span><span class="mod">save / load</span><span class="mod">view · describe</span><span class="mod">python</span></div>
+        <svg width="12" height="18"><path d="M6 0v14M1 9l5 6 5-6" stroke="#475569" fill="none" stroke-width="1.5"/></svg>
+        <div class="deep w-full p-4">
+          <div class="flex items-baseline justify-between"><span class="lbl text-stone-300">pending-decision stack</span><span class="text-[10px] text-slate-400">ordering · clone · save · hash · describe</span></div>
+          <div class="mt-3 space-y-1.5 text-[11px]">
+            <div class="border border-slate-500 rounded px-2 py-1 text-slate-200">generic choice frame <span class="text-slate-400">(top)</span></div>
+            <div class="border border-slate-600 rounded px-2 py-1 text-slate-300/80">immediate frame</div>
+            <div class="border border-slate-600 rounded px-2 py-1 text-slate-300/70">end-of-turn frame</div>
+            <div class="border border-dashed border-amber-400/60 rounded px-2 py-1 text-amber-200/70">chance frame — ADR-0002, later</div>
+          </div>
+        </div>
+        <div class="text-xs text-slate-500 mt-1">One priority rule. Python reads a decision record instead of struct memory.</div>
+      </div>
+    </div>
+  </div>
+  <div class="px-6 py-5 grid md:grid-cols-3 gap-6 text-sm">
+    <div><h4 class="lbl text-slate-400 mb-1">Problem</h4><p>Four pending-decision mechanisms live in GameState. Their priority exists only as branch order, and clone, save, view and the Python reader each handle a different subset.</p></div>
+    <div><h4 class="lbl text-slate-400 mb-1">Solution</h4><p>One decision-stack module owns every pending kind: ordering, clone, save, hash and describe, plus the decision record Python reads.</p></div>
+    <div><h4 class="lbl text-slate-400 mb-1">Wins</h4><ul class="list-disc pl-4 space-y-0.5">
+      <li>locality: pending invariants in one module</li><li>priority rule stated once</li><li>Python stops reading raw pointers</li><li>read-before-apply ordering test retires</li><li>save/load covers every pending kind</li></ul></div>
+  </div>
+  <div class="px-6 pb-4 text-xs text-slate-500 font-mono space-y-0.5">
+    <div>• rules.c:226-231 priority by branch order · saveload.c mentions pending only at :62 · reload uses seed 42 (:189)</div>
+    <div>• pending_context.py reads state_ptr.contents.pending_generic before apply: run_ismcts.py:395/:777, _nn_dataset.py:291, view.py:250</div>
+  </div>
+  <div class="mx-6 mb-6 rounded-lg bg-amber-50 border border-amber-200 px-4 py-2 text-sm text-amber-900">Does not reopen ADR-0002 (F-003 stays postponed). It gives the postponed <code>PendingChanceState</code> an existing frame kind to fit into, which lowers the cost of resuming that work later.</div>
+</article>
+
+<!-- ============================ C3 ============================ -->
+<article id="c3" class="rounded-2xl border border-stone-200 bg-white shadow-sm overflow-hidden">
+  <div class="px-6 pt-6 pb-4 border-b border-stone-100">
+    <div class="flex flex-wrap items-center gap-2 mb-2 text-xs">
+      <span class="font-mono text-stone-400">03</span>
+      <span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-medium">Strong</span>
+      <span class="px-2 py-0.5 rounded border border-slate-300 text-slate-600">in-process</span>
+      <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-600">engine_c → OpenSpiel</span>
+    </div>
+    <h3 class="font-serif text-2xl">Make legal moves mean applicable moves</h3>
+    <div class="mt-3 font-mono text-xs text-slate-600 flex flex-wrap gap-x-4 gap-y-1">
+      <span>engine_c/generic_runtime.c</span><span>engine_c/rules.c</span><span>engine_c/rollout.c</span><span>openspiel_pyrants/action_encoding_c.py</span><span>engine_c/bindings/view.py</span><span>interface/game_viewer.py</span>
+    </div>
+  </div>
+  <div class="grid md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-stone-100">
+    <div class="p-5 diagram"><div class="lbl text-slate-400 mb-2">Before</div>
+<pre class="mermaid">
+flowchart LR
+  d2_LM["engine_legal_moves"]
+  d2_MIX["applicable moves<br/>+ 'unavailable' placeholders<br/>+ END_MAIN_PHASE always"]
+  d2_A1["engine_apply rejects<br/>generic_runtime.c:752"]
+  d2_A2["rollout.c:50 skips"]
+  d2_A3["action_encoding_c.py:17<br/>drops"]
+  d2_A4["view.py:321 greys out"]
+  d2_A5["view.py:205 re-derives<br/>END_MAIN legality"]
+  d2_LM --> d2_MIX
+  d2_MIX --> d2_A1
+  d2_MIX --> d2_A2
+  d2_MIX --> d2_A3
+  d2_MIX --> d2_A4
+  d2_MIX --> d2_A5
+  classDef leak stroke:#dc2626,stroke-width:2px,color:#991b1b,fill:#fef2f2
+  class d2_MIX leak
+  linkStyle 1,2,3,4,5 stroke:#dc2626,stroke-width:1.6px
+</pre>
+    </div>
+    <div class="p-5 diagram bg-stone-50/60"><div class="lbl text-slate-400 mb-3">After</div>
+      <div class="space-y-5 pt-4">
+        <div>
+          <div class="lbl text-slate-400 mb-1">search lane</div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="deep px-3 py-2 text-[11px] uppercase tracking-wider">legal moves</span>
+            <svg width="30" height="10"><line x1="0" y1="5" x2="24" y2="5" stroke="#475569" stroke-width="1.5"/><path d="M22 1l6 4-6 4" fill="#475569"/></svg>
+            <span class="okchip">applicable only</span>
+            <svg width="30" height="10"><line x1="0" y1="5" x2="24" y2="5" stroke="#475569" stroke-width="1.5"/><path d="M22 1l6 4-6 4" fill="#475569"/></svg>
+            <span class="mod">apply</span><span class="mod">rollout</span><span class="mod">OpenSpiel</span>
+          </div>
+        </div>
+        <div class="seam"></div>
+        <div>
+          <div class="lbl text-slate-400 mb-1">display lane</div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="mod" style="border-width:2px">display options</span>
+            <svg width="30" height="10"><line x1="0" y1="5" x2="24" y2="5" stroke="#475569" stroke-width="1.5"/><path d="M22 1l6 4-6 4" fill="#475569"/></svg>
+            <span class="mod text-slate-400">greyed options</span><span class="mod text-slate-400">labels</span>
+            <svg width="30" height="10"><line x1="0" y1="5" x2="24" y2="5" stroke="#475569" stroke-width="1.5"/><path d="M22 1l6 4-6 4" fill="#475569"/></svg>
+            <span class="mod">viewer</span>
+          </div>
+        </div>
+        <div class="text-xs text-slate-500">Search can't see a UI move, because none is emitted on the search lane.</div>
+      </div>
+    </div>
+  </div>
+  <div class="px-6 py-5 grid md:grid-cols-3 gap-6 text-sm">
+    <div><h4 class="lbl text-slate-400 mb-1">Problem</h4><p><code>engine_legal_moves</code> serves the viewer and search at once, so every search consumer has to filter out UI-only placeholder moves itself.</p></div>
+    <div><h4 class="lbl text-slate-400 mb-1">Solution</h4><p>Legal moves returns only applicable moves. A separate display query carries greyed-out options and end-main-phase availability for the viewer.</p></div>
+    <div><h4 class="lbl text-slate-400 mb-1">Wins</h4><ul class="list-disc pl-4 space-y-0.5">
+      <li>four placeholder filters deleted</li><li>closes the F-019 bug class</li><li>END_MAIN legality back in C</li><li>action_encoding_c fails the deletion test</li></ul></div>
+  </div>
+  <div class="px-6 pb-5 text-xs text-slate-500 font-mono space-y-0.5">
+    <div>• F-019: 85–93% of rollouts aborted; fix ea25b68 touched 24 files</div>
+    <div>• move_is_unavailable_placeholder (generic_runtime.c:733) isn't exported, so Python re-implements it</div>
+  </div>
+</article>
+
+<!-- ============================ C4 ============================ -->
+<article id="c4" class="rounded-2xl border border-stone-200 bg-white shadow-sm overflow-hidden">
+  <div class="px-6 pt-6 pb-4 border-b border-stone-100">
+    <div class="flex flex-wrap items-center gap-2 mb-2 text-xs">
+      <span class="font-mono text-stone-400">04</span>
+      <span class="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-medium">Worth exploring</span>
+      <span class="px-2 py-0.5 rounded border border-slate-300 text-slate-600">in-process</span>
+      <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-600">engine_c</span>
+    </div>
+    <h3 class="font-serif text-2xl">Make the card catalog the whole card spec</h3>
+    <div class="mt-3 font-mono text-xs text-slate-600 flex flex-wrap gap-x-4 gap-y-1">
+      <span>data/cards/*.json</span><span>engine_c/loader.c</span><span>engine_c/generic_runtime.c</span><span>engine_c/actions.c</span><span>engine_c/helpers.c</span><span>engine_c/rules.c</span>
+    </div>
+  </div>
+  <div class="grid md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-stone-100">
+    <div class="p-5 diagram"><div class="lbl text-slate-400 mb-3">Before</div>
+      <div class="rounded-md border border-slate-300 bg-white px-3 py-3 text-[11px] uppercase tracking-wider text-slate-600">card catalog · 125 cards · data/cards/</div>
+      <div class="relative h-[150px]">
+        <div class="absolute inset-x-0 top-[70px] seam"></div>
+        <span class="absolute right-0 top-[52px] lbl text-slate-400">catalog seam</span>
+        <div class="absolute left-2 top-3 leakchip">"gauth" · "cloaker" · "mummy_lord" · "grazzt"<div class="font-mono text-[10px] text-red-700/80">generic_runtime.c:1195-1250</div></div>
+        <div class="absolute right-2 top-[84px] leakchip">"ambassador"<div class="font-mono text-[10px] text-red-700/80">helpers.c:647 · rules.c:606</div></div>
+        <div class="absolute left-2 top-[90px] leakchip">"insane_outcast" ×4<div class="font-mono text-[10px] text-red-700/80">actions.c</div></div>
+        <div class="absolute left-[44%] top-[46px] leakchip">source_fragment: 17 values<div class="font-mono text-[10px] text-red-700/80">branched in 6 files</div></div>
+      </div>
+      <div class="rounded-md border border-slate-300 bg-slate-100 px-3 py-3 text-[11px] uppercase tracking-wider text-slate-600">runtime branches on card identity</div>
+    </div>
+    <div class="p-5 diagram bg-stone-50/60"><div class="lbl text-slate-400 mb-3">After</div>
+      <div class="rounded-md border border-slate-300 bg-white px-3 py-3">
+        <div class="text-[11px] uppercase tracking-wider text-slate-600 mb-2">card catalog</div>
+        <div class="flex flex-wrap gap-1.5"><span class="okchip">viability rule</span><span class="okchip">sub-op</span><span class="okchip">special stack</span><span class="okchip">trigger timing</span></div>
+      </div>
+      <div class="relative h-[110px]">
+        <div class="absolute inset-x-0 top-[54px] seam"></div>
+        <div class="absolute left-1/2 -translate-x-1/2 top-[36px] mod" style="border:2px solid #059669;background:#fff">loader validates · rejects unknown</div>
+      </div>
+      <div class="deep px-3 py-4 text-[11px] uppercase tracking-wider">runtime reads declared fields only · no card ids</div>
+    </div>
+  </div>
+  <div class="px-6 py-5 grid md:grid-cols-3 gap-6 text-sm">
+    <div><h4 class="lbl text-slate-400 mb-1">Problem</h4><p>Card identity leaks past the catalog seam. The runtime branches on card ids and on <code>source_fragment</code>, a descriptive field that works as a hidden sub-opcode.</p></div>
+    <div><h4 class="lbl text-slate-400 mb-1">Solution</h4><p>Promote those discriminators to declared catalog fields. The loader validates them and the op modules from #1 read them.</p></div>
+    <div><h4 class="lbl text-slate-400 mb-1">Wins</h4><ul class="list-disc pl-4 space-y-0.5">
+      <li>renaming a field stops changing behaviour</li><li>loader catches unknown discriminators</li><li>F-015 class becomes data</li><li>falls out of #1 per op</li></ul></div>
+  </div>
+  <div class="px-6 pb-5 text-xs text-slate-500 font-mono">• F-015 (Neogi's end-of-turn force_discard fires twice) is this leak showing up as a bug</div>
+</article>
+
+<!-- ============================ C5 ============================ -->
+<article id="c5" class="rounded-2xl border border-stone-200 bg-white shadow-sm overflow-hidden">
+  <div class="px-6 pt-6 pb-4 border-b border-stone-100">
+    <div class="flex flex-wrap items-center gap-2 mb-2 text-xs">
+      <span class="font-mono text-stone-400">05</span>
+      <span class="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-medium">Worth exploring</span>
+      <span class="px-2 py-0.5 rounded border border-slate-300 text-slate-600">in-process</span>
+      <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-600">engine_c → OpenSpiel → NN</span>
+    </div>
+    <h3 class="font-serif text-2xl">One visibility module for “what player p knows”</h3>
+    <div class="mt-3 font-mono text-xs text-slate-600 flex flex-wrap gap-x-4 gap-y-1">
+      <span>engine_c/player_view.c</span><span>engine_c/view.c</span><span>engine_c/state.c</span><span>engine_c/bindings/c_adapter.py</span><span>engine_c/bindings/view.py</span><span>openspiel_pyrants/nn/public.py</span><span>openspiel_pyrants/nn/observation.py</span>
+    </div>
+  </div>
+  <div class="grid md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-stone-100">
+    <div class="p-5 diagram"><div class="lbl text-slate-400 mb-2">Before — 7 projections + determinize</div>
+      <svg viewBox="0 0 420 300" class="w-full" font-family="ui-sans-serif, system-ui" font-size="10">
+        <g stroke="#94a3b8" stroke-width="1">
+          <line x1="210" y1="150" x2="68" y2="38"/><line x1="210" y1="150" x2="68" y2="151"/><line x1="210" y1="150" x2="68" y2="264"/>
+          <line x1="210" y1="150" x2="352" y2="38"/><line x1="210" y1="150" x2="352" y2="151"/><line x1="210" y1="150" x2="352" y2="264"/>
+          <line x1="210" y1="150" x2="210" y2="26"/><line x1="210" y1="150" x2="210" y2="276"/>
+        </g>
+        <line x1="40" y1="169" x2="40" y2="246" stroke="#dc2626" stroke-width="2" stroke-dasharray="4 3"/>
+        <text x="46" y="212" fill="#dc2626" font-size="9.5">hand mirror</text>
+        <ellipse cx="210" cy="150" rx="54" ry="22" fill="#f1f5f9" stroke="#475569"/>
+        <text x="210" y="154" text-anchor="middle" font-weight="600" fill="#0f172a">GameState</text>
+        <!-- L1 dead -->
+        <rect x="8" y="20" width="120" height="36" rx="5" fill="#f8fafc" stroke="#cbd5e1"/>
+        <text x="68" y="35" text-anchor="middle" fill="#94a3b8" text-decoration="line-through">C public/private view</text>
+        <text x="68" y="48" text-anchor="middle" fill="#dc2626" font-size="9">dead · layout mismatch</text>
+        <!-- L2 -->
+        <rect x="8" y="133" width="120" height="36" rx="5" fill="#fff" stroke="#64748b"/>
+        <text x="68" y="148" text-anchor="middle" fill="#0f172a">private_view_json</text>
+        <text x="68" y="161" text-anchor="middle" fill="#64748b" font-size="9">c_adapter.py · F-011</text>
+        <!-- L3 -->
+        <rect x="8" y="246" width="120" height="36" rx="5" fill="#fff" stroke="#64748b"/>
+        <text x="68" y="261" text-anchor="middle" fill="#0f172a">engine_infostate_hash</text>
+        <text x="68" y="274" text-anchor="middle" fill="#64748b" font-size="9">player_view.c:110</text>
+        <!-- R1 -->
+        <rect x="292" y="20" width="120" height="36" rx="5" fill="#fff" stroke="#64748b"/>
+        <text x="352" y="35" text-anchor="middle" fill="#0f172a">engine_build_view</text>
+        <text x="352" y="48" text-anchor="middle" fill="#dc2626" font-size="9">omniscient · 83 KB</text>
+        <!-- R2 -->
+        <rect x="292" y="133" width="120" height="36" rx="5" fill="#fff" stroke="#64748b"/>
+        <text x="352" y="148" text-anchor="middle" fill="#0f172a">build_c_game_view</text>
+        <text x="352" y="161" text-anchor="middle" fill="#64748b" font-size="9">view.py</text>
+        <!-- R3 -->
+        <rect x="292" y="246" width="120" height="36" rx="5" fill="#fef2f2" stroke="#dc2626"/>
+        <text x="352" y="261" text-anchor="middle" fill="#0f172a">nn/public multisets</text>
+        <text x="352" y="274" text-anchor="middle" fill="#dc2626" font-size="9">different hidden contract</text>
+        <!-- T -->
+        <rect x="150" y="8" width="120" height="36" rx="5" fill="#fff" stroke="#64748b"/>
+        <text x="210" y="23" text-anchor="middle" fill="#0f172a">nn/observation</text>
+        <text x="210" y="36" text-anchor="middle" fill="#64748b" font-size="9">built from 3 others</text>
+        <!-- B -->
+        <rect x="150" y="258" width="120" height="36" rx="5" fill="#fff" stroke="#64748b"/>
+        <text x="210" y="273" text-anchor="middle" fill="#0f172a">engine_determinize</text>
+        <text x="210" y="286" text-anchor="middle" fill="#64748b" font-size="9">own hidden-zone rule</text>
+      </svg>
+    </div>
+    <div class="p-5 diagram bg-stone-50/60"><div class="lbl text-slate-400 mb-3">After</div>
+      <div class="flex flex-col items-center gap-1.5">
+        <div class="mod px-6">GameState</div>
+        <svg width="12" height="18"><path d="M6 0v14M1 9l5 6 5-6" stroke="#475569" fill="none" stroke-width="1.5"/></svg>
+        <div class="w-full flex items-stretch gap-3">
+          <div class="deep flex-1 p-4">
+            <div class="lbl text-stone-300">visibility module</div>
+            <div class="text-[11px] text-slate-300/80 mt-1">what player p knows · public · own hidden · opponents' pooled</div>
+          </div>
+          <div class="seam-v"></div>
+          <div class="flex flex-col justify-center"><span class="mod">determinize</span><span class="text-[10px] text-slate-500 mt-1">resamples exactly<br/>what's hidden</span></div>
+        </div>
+        <svg width="12" height="18"><path d="M6 0v14M1 9l5 6 5-6" stroke="#475569" fill="none" stroke-width="1.5"/></svg>
+        <div class="mod w-full text-center" style="border-width:2px">player view record</div>
+        <svg width="140" height="20"><path d="M70 0v6M70 6L15 18M70 6v12M70 6l55 12" stroke="#475569" fill="none" stroke-width="1.2"/></svg>
+        <div class="flex gap-2"><span class="okchip">infostate hash</span><span class="okchip">view JSON</span><span class="okchip">NN tensor</span></div>
+        <div class="text-xs text-slate-500 mt-2">Each output derives from one record, so nothing is hand-mirrored.</div>
+      </div>
+    </div>
+  </div>
+  <div class="px-6 py-5 grid md:grid-cols-3 gap-6 text-sm">
+    <div><h4 class="lbl text-slate-400 mb-1">Problem</h4><p>There are seven projections of what player p can see, in two languages. Only sampled tests, plus one test that greps <code>state.c</code> source text, keep them equal.</p></div>
+    <div><h4 class="lbl text-slate-400 mb-1">Solution</h4><p>A single C visibility module produces the player view. The infostate hash, view JSON and NN tensor all derive from it, and determinize applies the same hidden-zone rule.</p></div>
+    <div><h4 class="lbl text-slate-400 mb-1">Wins</h4><ul class="list-disc pl-4 space-y-0.5">
+      <li>one rule, many derived outputs</li><li>hash ↔ JSON mirror test retires</li><li>determinize shares the hidden rule</li><li>source-text grep test deleted</li></ul></div>
+  </div>
+  <div class="px-6 pb-4 text-xs text-slate-500 font-mono space-y-0.5">
+    <div>• player_view.c:147 “Mirror _project_board_nodes”; c_adapter.py:6-8 says C public/private views are layout-mismatched</div>
+    <div>• test_board_projection.py:372 reads state.c text; view.c:110-112 still hard-codes special-stack counters after F-014</div>
+  </div>
+  <div class="mx-6 mb-6 rounded-lg bg-slate-100 border border-slate-200 px-4 py-2 text-sm text-slate-700"><strong>Perf gate:</strong> the F-013 projection caches and the A1 hash live here. Run <code>just ismcts-perf</code> before and after each step; this module sits on the 72.7 games/h hot path.</div>
+</article>
+
+<!-- ============================ C6 ============================ -->
+<article id="c6" class="rounded-2xl border border-stone-200 bg-white shadow-sm overflow-hidden">
+  <div class="px-6 pt-6 pb-4 border-b border-stone-100">
+    <div class="flex flex-wrap items-center gap-2 mb-2 text-xs">
+      <span class="font-mono text-stone-400">06</span>
+      <span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-medium">Strong</span>
+      <span class="px-2 py-0.5 rounded border border-slate-300 text-slate-600">deletion</span>
+      <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-600">engine_c · bindings · build</span>
+    </div>
+    <h3 class="font-serif text-2xl">Delete the hypothetical seams and the duplicate build lists</h3>
+    <div class="mt-3 font-mono text-xs text-slate-600 flex flex-wrap gap-x-4 gap-y-1">
+      <span>engine_c/helpers.c</span><span>engine_c/moves.c</span><span>engine_c/state.c</span><span>engine_c/generic_runtime.h</span><span>engine_c/engine_c.def</span><span>engine_c/Makefile · compile*.bat · compile_profile.sh</span><span>openspiel_pyrants/observer_c.py</span>
+    </div>
+  </div>
+  <div class="grid md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-stone-100">
+    <div class="p-5 diagram"><div class="lbl text-slate-400 mb-3">Before — seams with 0–1 adapters</div>
+      <div class="grid grid-cols-2 gap-2 text-[11px]">
+        <div class="mod normal-case tracking-normal"><div class="lbl text-slate-600">EffectFn registry</div><div class="text-slate-500">125/125 cards use generic_card</div><div class="mt-1 text-red-700">1 adapter</div></div>
+        <div class="mod normal-case tracking-normal"><div class="lbl text-slate-600">paid abilities</div><div class="text-slate-500">2 move types · PendingAbilityState · 0 catalog uses</div><div class="mt-1 text-red-700">0 adapters</div></div>
+        <div class="mod normal-case tracking-normal"><div class="lbl text-slate-600">make_*_move ×11</div><div class="text-slate-500">exported · 0 production callers · 60 inline builds</div><div class="mt-1 text-red-700">0 callers</div></div>
+        <div class="mod normal-case tracking-normal"><div class="lbl text-slate-600">cow_*</div><div class="text-slate-500">cow_dirty never read · clone_cow = memcpy</div><div class="mt-1 text-red-700">0 readers</div></div>
+        <div class="mod normal-case tracking-normal"><div class="lbl text-slate-600">C public/private view</div><div class="text-slate-500">bypassed, layout-mismatched · .h decls never defined</div><div class="mt-1 text-red-700">dead</div></div>
+        <div class="mod normal-case tracking-normal"><div class="lbl text-slate-600">observer_c · _EngineShim</div><div class="text-slate-500">stub observer · imitates deleted Python engine</div><div class="mt-1 text-red-700">residue</div></div>
+      </div>
+      <div class="mt-3 flex items-center gap-2 flex-wrap text-[11px]"><span class="leakchip">Makefile</span><span class="leakchip">compile.bat</span><span class="leakchip">compile_asan.bat</span><span class="leakchip">compile_profile.sh</span><span class="text-slate-500">4 source lists · Makefile misses rollout.c · 3 test files never built</span></div>
+    </div>
+    <div class="p-5 diagram bg-stone-50/60"><div class="lbl text-slate-400 mb-3">After</div>
+      <div class="grid grid-cols-2 gap-2 text-[11px] ghost">
+        <div class="rounded border border-dashed border-slate-300 px-2 py-3 struck text-slate-500">EffectFn registry</div>
+        <div class="rounded border border-dashed border-amber-400 px-2 py-3 text-amber-700">paid abilities — confirm first</div>
+        <div class="rounded border border-dashed border-slate-300 px-2 py-3 struck text-slate-500">make_*_move ×11</div>
+        <div class="rounded border border-dashed border-slate-300 px-2 py-3 struck text-slate-500">cow_*</div>
+        <div class="rounded border border-dashed border-slate-300 px-2 py-3 struck text-slate-500">C public/private view</div>
+        <div class="rounded border border-dashed border-slate-300 px-2 py-3 struck text-slate-500">observer_c · _EngineShim</div>
+      </div>
+      <div class="mt-4 flex items-center gap-2 flex-wrap text-[11px]"><span class="deep px-3 py-2 uppercase tracking-wider">one build manifest</span><svg width="30" height="10"><line x1="0" y1="5" x2="24" y2="5" stroke="#475569" stroke-width="1.5"/><path d="M22 1l6 4-6 4" fill="#475569"/></svg><span class="mod">msvc</span><span class="mod">gcc</span><span class="mod">asan</span><span class="mod">profile</span></div>
+      <div class="text-xs text-slate-500 mt-3">The deletion test passes the other way: complexity vanishes rather than moving.</div>
+    </div>
+  </div>
+  <div class="px-6 py-5 grid md:grid-cols-3 gap-6 text-sm">
+    <div><h4 class="lbl text-slate-400 mb-1">Problem</h4><p>Several modules are seams with zero or one adapter. They widen the interface that #2 and #7 must preserve and carry no behaviour, and four build scripts each keep their own source list.</p></div>
+    <div><h4 class="lbl text-slate-400 mb-1">Solution</h4><p>Delete them, and have every build script read a single source and test manifest.</p></div>
+    <div><h4 class="lbl text-slate-400 mb-1">Wins</h4><ul class="list-disc pl-4 space-y-0.5">
+      <li>complexity vanishes instead of moving</li><li>~15 dead exports removed</li><li>smaller surface for #2 and #7</li><li>every C test actually builds</li></ul></div>
+  </div>
+  <div class="mx-6 mb-6 rounded-lg bg-amber-50 border border-amber-200 px-4 py-2 text-sm text-amber-900"><strong>Confirm first:</strong> paid abilities have no catalog uses, but they may be planned content. Ask before deleting them.</div>
+</article>
+
+<h2 class="font-serif text-2xl text-slate-700 pt-6">engine_c ↔ OpenSpiel seam</h2>
+
+<!-- ============================ C7 ============================ -->
+<article id="c7" class="rounded-2xl border border-stone-200 bg-white shadow-sm overflow-hidden">
+  <div class="px-6 pt-6 pb-4 border-b border-stone-100">
+    <div class="flex flex-wrap items-center gap-2 mb-2 text-xs">
+      <span class="font-mono text-stone-400">07</span>
+      <span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-medium">Strong</span>
+      <span class="px-2 py-0.5 rounded border border-slate-300 text-slate-600">in-process</span>
+      <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-600">C ↔ Python seam</span>
+    </div>
+    <h3 class="font-serif text-2xl">Stop the GameState byte layout from being the interface</h3>
+    <div class="mt-3 font-mono text-xs text-slate-600 flex flex-wrap gap-x-4 gap-y-1">
+      <span>engine_c/engine_c.def</span><span>engine_c/state.h</span><span>engine_c/bindings/engine_bindings.py</span><span>engine_c/bindings/ce_api.py</span><span>tests/c_engine/card_test_helpers.py</span><span>tests/c_engine/test_card_*.py (118)</span>
+    </div>
+  </div>
+  <div class="grid md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-stone-100">
+    <div class="p-5 diagram"><div class="lbl text-slate-400 mb-3">Before — interface mass vs implementation mass</div>
+      <div class="flex items-end gap-4 h-[250px] px-2">
+        <div class="flex flex-col items-center w-1/4"><div class="w-full rounded border border-slate-400 bg-slate-100 flex items-center justify-center text-[10px] text-slate-600 text-center" style="height:44px">engine_c.def<br/>68 exports</div><div class="lbl text-slate-400 mt-1 text-center">declared</div></div>
+        <div class="flex flex-col items-center w-[38%]"><div class="w-full rounded border-2 border-dashed border-red-500 bg-red-50 p-2 text-[10px] text-red-900 space-y-1.5" style="height:226px">
+          <div>GameStateStruct · 19,320 B</div><div>31 mirrored ctypes structs</div><div>12 MAX_* · Phase/Exec/Move enums</div><div>no sizeof / offsetof check</div><div class="pt-1 border-t border-red-200">465 private reach-ins · 113 files</div><div>105/137 c_engine tests read <code>.contents</code></div><div>50 tests write state memory</div></div><div class="lbl text-red-500 mt-1 text-center">actual interface</div></div>
+        <div class="flex flex-col items-center w-1/4"><div class="w-full rounded bg-slate-300 flex items-center justify-center text-[10px] text-slate-700" style="height:240px">implementation</div><div class="lbl text-slate-400 mt-1">impl</div></div>
+      </div>
+    </div>
+    <div class="p-5 diagram bg-stone-50/60"><div class="lbl text-slate-400 mb-3">After</div>
+      <div class="flex items-end gap-4 h-[250px] px-2">
+        <div class="flex flex-col items-center w-[40%]"><div class="w-full rounded p-2 text-[10px] text-emerald-900 space-y-1" style="height:84px;border:2px solid #059669;background:#ecfdf5">
+          <div>1 · layout probe asserted at load</div><div>2 · scenario-building fixtures</div><div>3 · opaque handle + queries</div></div><div class="lbl text-emerald-600 mt-1">interface</div></div>
+        <div class="flex flex-col items-center flex-1"><div class="w-full deep flex items-center justify-center text-[10px] uppercase tracking-wider" style="height:240px">implementation<br/>free to change layout</div><div class="lbl text-slate-400 mt-1">deep</div></div>
+      </div>
+      <div class="text-xs text-slate-500 mt-2">Staged: (1) makes drift fail loudly, (2) frees the card tests, and (3) lets #2 and #5 reshape GameState safely.</div>
+    </div>
+  </div>
+  <div class="px-6 py-5 grid md:grid-cols-3 gap-6 text-sm">
+    <div><h4 class="lbl text-slate-400 mb-1">Problem</h4><p>The real interface between C and Python is the GameState byte layout, hand-mirrored in ctypes with no layout check. That layout has already drifted.</p></div>
+    <div><h4 class="lbl text-slate-400 mb-1">Solution</h4><p>Export a layout probe that the bindings assert at load. Then give tests a scenario-building interface instead of memory writes, and move callers to an opaque handle with queries.</p></div>
+    <div><h4 class="lbl text-slate-400 mb-1">Wins</h4><ul class="list-disc pl-4 space-y-0.5">
+      <li>layout drift fails at import</li><li>card tests survive C refactors</li><li>tests build scenarios, not bytes</li><li>unlocks #2 and #5 safely</li></ul></div>
+  </div>
+  <div class="px-6 pb-5 text-xs text-slate-500 font-mono space-y-0.5">
+    <div>• drift today: Python PendingGenericChoiceState lacks parent, last_played_card_id (C gained them in 69cd2a2)</div>
+    <div>• 29 of 68 exports have no Python reference; 823 _lib.* calls in 133 files outside bindings (616 are intern)</div>
+  </div>
+</article>
+
+<!-- ============================ C8 ============================ -->
+<article id="c8" class="rounded-2xl border border-stone-200 bg-white shadow-sm overflow-hidden">
+  <div class="px-6 pt-6 pb-4 border-b border-stone-100">
+    <div class="flex flex-wrap items-center gap-2 mb-2 text-xs">
+      <span class="font-mono text-stone-400">08</span>
+      <span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-medium">Strong</span>
+      <span class="px-2 py-0.5 rounded border border-slate-300 text-slate-600">in-process</span>
+      <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-600">OpenSpiel</span>
+    </div>
+    <h3 class="font-serif text-2xl">One game handle for every Python caller</h3>
+    <div class="mt-3 font-mono text-xs text-slate-600 flex flex-wrap gap-x-4 gap-y-1">
+      <span>openspiel_pyrants/state_c.py</span><span>openspiel_pyrants/action_encoding_c.py</span><span>openspiel_pyrants/c_rollout_evaluator.py</span><span>engine_c/bindings/c_adapter.py</span><span>engine_c/bindings/session.py</span><span>engine_c/bindings/ce_api.py</span><span>scripts/_nn_dataset.py</span><span>interface/replay_loader.py · replay_player.py</span>
+    </div>
+  </div>
+  <div class="grid md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-stone-100">
+    <div class="p-5 diagram"><div class="lbl text-slate-400 mb-2">Before</div>
+<pre class="mermaid">
+flowchart TB
+  d3_PS["PyrantsCState · pyspiel"]
+  d3_GUI["game viewer"]
+  d3_NN["_nn_dataset"]
+  d3_RP["replay_player"]
+  d3_EV["c_rollout_evaluator"]
+  d3_AE["action_encoding_c<br/>39 lines"]
+  d3_CA["CEngineAdapter<br/>raises · 8 pass-throughs"]
+  d3_SE["CSession<br/>returns None"]
+  d3_CS["ce_api CState<br/>~25 one-line accessors"]
+  d3_EB["engine_bindings<br/>ABI mirror"]
+  d3_C[("engine_c.dll")]
+  d3_PS --> d3_AE
+  d3_AE --> d3_CA
+  d3_PS --> d3_CA
+  d3_GUI --> d3_SE
+  d3_NN --> d3_CA
+  d3_RP --> d3_SE
+  d3_EV --> d3_CA
+  d3_CA --> d3_CS
+  d3_SE --> d3_CS
+  d3_CS --> d3_EB
+  d3_EB --> d3_C
+  d3_PS -.->|"engine_clone"| d3_C
+  d3_CA -.->|"infostate_hash · build_view"| d3_C
+  d3_EV -.->|"state._adapter"| d3_PS
+  d3_NN -.->|"imports GUI package"| d3_RP
+  classDef leak stroke:#dc2626,stroke-width:2px,color:#991b1b,fill:#fef2f2
+  linkStyle 11,12,13,14 stroke:#dc2626,stroke-width:1.6px
+</pre>
+    </div>
+    <div class="p-5 diagram bg-stone-50/60"><div class="lbl text-slate-400 mb-2">After</div>
+<pre class="mermaid">
+flowchart TB
+  d4_PS["PyrantsCState<br/>pyspiel adapter"]
+  d4_SE["CSession<br/>viewer adapter"]
+  d4_NN["NN dataset"]
+  d4_RV["replay viewer"]
+  d4_EV["rollout evaluator"]
+  d4_GH["GAME HANDLE<br/>seed · apply · clone · determinize<br/>moves · decision · view · replay"]
+  d4_C[("engine_c.dll")]
+  d4_PS --> d4_GH
+  d4_SE --> d4_GH
+  d4_NN --> d4_GH
+  d4_RV --> d4_GH
+  d4_EV --> d4_GH
+  d4_GH --> d4_C
+  classDef deep fill:#0f172a,color:#f8fafc,stroke:#0f172a,stroke-width:4px
+  class d4_GH deep
+</pre>
+    </div>
+  </div>
+  <div class="px-6 py-5 grid md:grid-cols-3 gap-6 text-sm">
+    <div><h4 class="lbl text-slate-400 mb-1">Problem</h4><p>Two Python adapters wrap the same engine with different failure semantics and no shared interface. Replay is implemented three times, and callers bypass the seam in four places.</p></div>
+    <div><h4 class="lbl text-slate-400 mb-1">Solution</h4><p>A single pyspiel-free game handle owns setup from seed, apply, clone, determinize, views and replay-from-log. The pyspiel state and the viewer session become its two adapters.</p></div>
+    <div><h4 class="lbl text-slate-400 mb-1">Wins</h4><ul class="list-disc pl-4 space-y-0.5">
+      <li>two adapters justify the seam</li><li>replay and seed mixer once</li><li>NN stops importing the GUI</li><li>evaluator stops touching _adapter</li><li>one failure semantics</li></ul></div>
+  </div>
+  <div class="px-6 pb-5 text-xs text-slate-500 font-mono space-y-0.5">
+    <div>• apply → destroy → swap twice: session.py:122-129 vs c_adapter.py:135-156; seed mixer copied replay_loader.py:53-59 ↔ state_c.py:16-21 (parity test)</div>
+    <div>• clone fast path state_c.py:283-305 skips _inherit_projection, unlike c_adapter __deepcopy__; returns formula duplicated in c_rollout_evaluator.py:34-39</div>
+  </div>
+</article>
+
+<!-- ============================ C9 ============================ -->
+<article id="c9" class="rounded-2xl border border-stone-200 bg-white shadow-sm overflow-hidden">
+  <div class="px-6 pt-6 pb-4 border-b border-stone-100">
+    <div class="flex flex-wrap items-center gap-2 mb-2 text-xs">
+      <span class="font-mono text-stone-400">09</span>
+      <span class="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-medium">Worth exploring</span>
+      <span class="px-2 py-0.5 rounded border border-slate-300 text-slate-600">ports &amp; adapters</span>
+      <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-600">OpenSpiel · scripts</span>
+    </div>
+    <h3 class="font-serif text-2xl">Pull the self-play step out of run_ismcts.py</h3>
+    <div class="mt-3 font-mono text-xs text-slate-600 flex flex-wrap gap-x-4 gap-y-1">
+      <span>scripts/run_ismcts.py (1488 lines)</span><span>openspiel_pyrants/ismcts_factory.py</span><span>openspiel_pyrants/state_c.py (_EngineShim)</span><span>docs/validation/harness/common.py</span>
+    </div>
+  </div>
+  <div class="grid md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-stone-100">
+    <div class="p-5 diagram"><div class="lbl text-slate-400 mb-2">Before — one script, 14 responsibilities</div>
+      <div class="rounded-md border border-slate-300 p-1.5 space-y-[3px] text-[10px] text-slate-600">
+        <div class="band px-2 py-[2px]">CLI parsing</div>
+        <div class="band px-2 py-[2px]">deck / setup JSON</div>
+        <div class="band px-2 py-[2px]">run-dir collision checks</div>
+        <div class="band px-2 py-[2px]" style="border-color:#dc2626">bot + evaluator build <span class="text-red-600">· duplicated in harness</span></div>
+        <div class="band px-2 py-[2px]" style="border-color:#0f172a">decision loop <span class="text-slate-400">· run_one_game :599-1117</span></div>
+        <div class="band px-2 py-[2px]">root stats</div>
+        <div class="band px-2 py-[2px]" style="border-color:#dc2626">pending context <span class="text-red-600">· raw pointer</span></div>
+        <div class="band px-2 py-[2px]">label enrichment</div>
+        <div class="band px-2 py-[2px]">snapshots</div>
+        <div class="band px-2 py-[2px]">replay log</div>
+        <div class="band px-2 py-[2px]" style="border-color:#dc2626">crash diagnostics <span class="text-red-600">· dup of c_adapter</span></div>
+        <div class="band px-2 py-[2px]">CSV / MD summaries</div>
+        <div class="band px-2 py-[2px]" style="border-color:#dc2626">deck metrics <span class="text-red-600">· reads _adapter._state._s</span></div>
+        <div class="band px-2 py-[2px]">multiprocessing · tqdm</div>
+      </div>
+    </div>
+    <div class="p-5 diagram bg-stone-50/60"><div class="lbl text-slate-400 mb-3">After</div>
+      <div class="space-y-2">
+        <div class="band px-3 py-1.5 text-[11px] uppercase tracking-wider text-slate-600">run_ismcts.py — CLI · fan-out · summaries</div>
+        <div class="deep px-4 py-6">
+          <div class="lbl text-stone-300">self-play module</div>
+          <div class="text-[12px] text-slate-200 mt-1">decide → record → apply</div>
+          <div class="text-[10px] text-slate-400 mt-2">bot setup · root stats · decision record, all on the game handle (#8)</div>
+        </div>
+        <div class="seam my-2"></div>
+        <div class="lbl text-slate-400">recorders — adapters at the seam</div>
+        <div class="flex flex-wrap gap-2"><span class="mod">decisions.jsonl</span><span class="mod">replay log</span><span class="mod">snapshots</span><span class="mod">crash log</span><span class="mod">in-memory (tests)</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="px-6 py-5 grid md:grid-cols-3 gap-6 text-sm">
+    <div><h4 class="lbl text-slate-400 mb-1">Problem</h4><p>run_ismcts.py is a 1488-line library in disguise. Its self-play step lives in a 520-line function whose private helpers are imported by tests and sweeps.</p></div>
+    <div><h4 class="lbl text-slate-400 mb-1">Solution</h4><p>Move decide → record → apply into a self-play module with a recorder seam. The script keeps only the CLI, process fan-out and summaries.</p></div>
+    <div><h4 class="lbl text-slate-400 mb-1">Wins</h4><ul class="list-disc pl-4 space-y-0.5">
+      <li>tests hit the self-play interface</li><li>_EngineShim deleted</li><li>harness stops duplicating bot setup</li><li>in-memory recorder for tests</li></ul></div>
+  </div>
+  <div class="px-6 pb-5 text-xs text-slate-500 font-mono">• 10 test files and 2 sweep scripts import its private functions; state._engine (_EngineShim) is used 11×</div>
+</article>
+
+</section>
+
+<!-- ============================ TOP RECOMMENDATION ============================ -->
+<section id="top-recommendation" class="rounded-2xl deep p-8 sm:p-10 text-stone-100">
+  <div class="lbl text-emerald-300 mb-2">Top recommendation</div>
+  <h2 class="font-serif text-3xl"><a href="#c1" class="underline decoration-emerald-400/60 underline-offset-4 hover:decoration-emerald-300">01 · Give each card-effect op one home</a></h2>
+  <p class="mt-4 max-w-3xl text-slate-300">This is where change happens: the three highest-churn engine files are its fragments, and a typical card fix touches 4–6 of them. Do the guard rails first; they take hours, not days: delete the hypothetical seams (<a href="#c6" class="underline">06</a>) and add the layout probe (<a href="#c7" class="underline">07</a>, stage 1).</p>
+</section>
+
+</main>
+</body>
+</html>
