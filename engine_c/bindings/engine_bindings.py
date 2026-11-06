@@ -487,6 +487,11 @@ def _setup():
     ]
     _lib.engine_infostate_hash.restype = None
 
+    _lib.engine_player_view_json.argtypes = [
+        POINTER(GameStateStruct), Sym, c_char_p, ctypes.c_size_t,
+    ]
+    _lib.engine_player_view_json.restype = ctypes.c_size_t
+
     _lib.engine_layout_size.argtypes = [c_char_p]
     _lib.engine_layout_size.restype = ctypes.c_size_t
     _lib.engine_layout_offset.argtypes = [c_char_p, c_char_p]

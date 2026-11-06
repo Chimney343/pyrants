@@ -1,39 +1,28 @@
-"""F-013 Part B projection differential tests (G1, G3) and their guards.
+"""Player-view differential tests (G1) and their guards.
 
-The F-013 Part B fix makes the board projection cheap — not just cached — by
-(a) reading ``CGameView`` straight into the six ``board_nodes`` output fields,
-(b) memoizing sym→str, (c) hoisting the board-static fields (``node_id``,
-``control_vp``, ``total_control_vp_per_turn``) into an adapter slot that
-survives ``apply()``, (d) caching the finished ``private_view_json`` string per
-player, and (e) propagating the projection across ``clone``/``determinize``.
-
-House pattern (same as ``test_board_view_cache.py`` and
-``test_observation_completeness.py``): the controls that must hold regardless
-of the fix (T5, T8, T9, T10, T12) are written first, the differential that
-pins the fix to the pre-fix implementation (T1, frozen in Phase 0) is the load
-bearing one, and the genuinely red tests (T4, T6, T7, T11) fail for the stated
-reason before their Phase is implemented.
-
-Test ↔ phase mapping (``docs/validation/f013-part-b-fix-plan.md`` § 4.1):
+F-013 Part B made the Python board projection cheap and cached it across
+``clone``/``determinize``. Candidate 5 moved the whole player view into the C
+visibility module (``engine_c/visibility.c``, ADR-0007), so the Python
+projection and its cache are gone. What these tests still pin:
 
 - T1  byte-identity vs frozen reference vectors (G1)          — all phases
-- T2  fast projection == ``build_c_board_view`` six fields     — Phase 2 (L3)
-- T3  corpus composition guard (spies + full troop slots)      — Phase 0/1
-- T4  exactly one ``engine_build_view``, zero ``build_c_board_view`` — Phase 2
+- T2  the view's ``board_nodes`` == ``build_c_board_view``'s six fields
+- T3  corpus composition guard (spies + full troop slots)
 - T5  board-static fields survive applies                      — control
-- T6  sym memo invalidated by ``intern_destroy``               — Phase 2
-- T7  repeated ``private_view_json`` serializes once           — Phase 3 (L1)
+- T6  sym memo invalidated by ``intern_destroy``
+- T7  repeated ``private_view_json`` renders once per player   — L1 cache
 - T8  destroyed adapter never serves a cached view             — control
-- T9  determinize does not change board occupancy              — control (Phase 4)
-- T10 structural trip-wire: ``engine_determinize`` is board-free — control
-- T11 clone/determinize inherit the parent projection          — Phase 4 (L2)
-- T12 inherited projection is not aliased across adapters      — control (Phase 4)
+- T9  determinize does not change board occupancy              — control
+
+T4, T10, T11 and T12 tested the deleted Python projection cache. T10's
+invariant (determinize never touches the board) is now checked more strongly
+in C: ``engine_c/tests/test_visibility.c`` asserts determinization leaves the
+observer's whole view byte-identical.
 """
 
 from __future__ import annotations
 
 import contextlib
-import copy
 import json
 import re
 import subprocess
@@ -48,7 +37,6 @@ import openspiel_pyrants  # noqa: F401
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _VECTORS_FILE = _REPO_ROOT / "docs" / "validation" / "baseline" / "f013b_view_vectors.jsonl"
-_STATE_C_FILE = _REPO_ROOT / "engine_c" / "state.c"
 
 _SYS_PATH_INSERT = (
     f"import sys; sys.path.insert(0, {str(_REPO_ROOT)!r}); "
@@ -102,28 +90,32 @@ def _load_reference_vectors() -> dict[tuple[str, str], str]:
     return refs
 
 
+def _board_nodes(adapter, pid) -> list[dict]:
+    """The ``public.board_nodes`` component of *pid*'s view."""
+    return json.loads(adapter.private_view_json(pid))["public"]["board_nodes"]
+
+
 @contextlib.contextmanager
-def _count_engine_build_views():
-    """Count ``engine_build_view`` C calls by wrapping the CDLL attribute.
+def _count_view_renders():
+    """Count ``engine_player_view_json`` C calls by wrapping the CDLL attribute.
 
     Setting the attribute on the shared ``_lib`` CDLL object patches every
-    module that imported it (``view``, ``c_adapter``), so this counts cold
-    projections regardless of which Python layer triggers them.
+    module that imported it, so this counts renders whichever layer asks.
     """
     from engine_c.bindings.engine_bindings import _lib
 
-    orig = _lib.engine_build_view
+    orig = _lib.engine_player_view_json
     seen = []
 
-    def wrapped(ptr, view):
+    def wrapped(*args):
         seen.append(1)
-        return orig(ptr, view)
+        return orig(*args)
 
-    _lib.engine_build_view = wrapped
+    _lib.engine_player_view_json = wrapped
     try:
         yield seen
     finally:
-        _lib.engine_build_view = orig
+        _lib.engine_player_view_json = orig
 
 
 class TestProjectionDifferential:
@@ -145,14 +137,12 @@ class TestProjectionDifferential:
         assert n == len(refs)
 
     def test_board_projection_matches_build_c_board_view(self, requires_c_engine):
-        """T2 — the fast projection (Phase 2+) equals the six ``board_nodes``
-        fields derived from the general-purpose ``build_c_board_view`` over the
-        whole corpus. Written against ``_project_board_nodes`` so it is RED
-        until Phase 2 provides the fast path."""
+        """T2 — the view's ``board_nodes`` equal the six fields derived from the
+        general-purpose ``build_c_board_view`` over the whole corpus."""
         from engine_c.bindings.view import build_c_board_view
 
         for cs in _iter_corpus():
-            fast = cs.adapter._project_board_nodes()
+            fast = _board_nodes(cs.adapter, cs.player_ids[0])
             view = build_c_board_view(cs.adapter)
             ref = [
                 {
@@ -165,7 +155,7 @@ class TestProjectionDifferential:
                 }
                 for n in view.board_nodes
             ]
-            assert fast == ref, f"fast projection diverged for {cs.state_id}"
+            assert fast == ref, f"view board_nodes diverged for {cs.state_id}"
 
     def test_projection_corpus_covers_spies_and_full_troop_slots(self):
         """T3 — coverage guard for T1/T2: the frozen reference corpus must
@@ -206,46 +196,19 @@ class TestProjectionDifferential:
         )
 
 
-class TestProjectionFastPath:
-    def test_projection_makes_exactly_one_engine_build_view_call(
-        self, requires_c_engine
-    ):
-        """T4 — a cold ``_board_nodes_view()`` triggers exactly one
-        ``engine_build_view`` and zero ``view.build_c_board_view`` calls (the
-        adapter must stop routing through the general-purpose API)."""
-        from unittest import mock
-
-        import engine_c.bindings.view as view_mod
-
-        game = _load_c_game(2)
-        state = _mid_game_state(game)
-        adapter = state._adapter
-        assert adapter._board_cache is None
-
-        with _count_engine_build_views() as ev, mock.patch.object(
-            view_mod, "build_c_board_view", wraps=view_mod.build_c_board_view
-        ) as spy:
-            adapter._board_nodes_view()
-            adapter._board_nodes_view()
-        assert len(ev) == 1, f"expected exactly 1 engine_build_view, got {len(ev)}"
-        assert spy.call_count == 0, (
-            f"expected zero view.build_c_board_view calls, got {spy.call_count}"
-        )
-
+class TestBoardStaticFields:
     def test_board_static_fields_survive_applies(self, requires_c_engine):
         """T5 — control: ``node_id``/``control_vp``/``total_control_vp_per_turn``
-        read back after 60 ``apply()``s equal the values read at move 0. This is
-        the invariant L3's static-field hoisting rests on; it must hold with or
-        without the hoist."""
+        read back after 60 ``apply()``s equal the values read at move 0."""
         game = _load_c_game(2)
         state = _mid_game_state(game, shuffle_seed=42, n_moves=0)
         adapter = state._adapter
+        pid = game.get_player_ids()[0]
 
         def static_fields():
-            nodes = adapter._board_nodes_view()
             return [
                 (n["node_id"], n["control_vp"], n["total_control_vp_per_turn"])
-                for n in nodes
+                for n in _board_nodes(adapter, pid)
             ]
 
         first = static_fields()
@@ -295,13 +258,9 @@ print("sym-cache-clear-ok")
 
 class TestSerializedViewCache:
     def test_repeated_private_view_json_serializes_once(self, requires_c_engine):
-        """T7 — L1: 10 unmutated calls for one player id trigger exactly one
-        projection *and* one ``json.dumps``; a second player id on the same
-        adapter triggers a second serialization (per-player keying, not a
-        single-slot cache)."""
-        import json as _json
-        from unittest import mock
-
+        """T7 — L1: 10 unmutated calls for one player id render the view
+        exactly once; a second player id on the same adapter renders a second
+        time (per-player keying, not a single-slot cache)."""
         game = _load_c_game(2)
         state = _mid_game_state(game)
         adapter = state._adapter
@@ -310,19 +269,14 @@ class TestSerializedViewCache:
         pid = pids[cp if cp >= 0 else 0]
         other_pid = pids[1 if cp == 0 else 0]
 
-        with _count_engine_build_views() as ev, mock.patch(
-            "engine_c.bindings.c_adapter.json.dumps", wraps=_json.dumps
-        ) as spy:
+        with _count_view_renders() as renders:
             for _ in range(10):
                 adapter.private_view_json(pid)
-            assert spy.call_count == 1, (
-                f"expected exactly 1 json.dumps, got {spy.call_count}"
-            )
+            assert len(renders) == 1, f"expected exactly 1 render, got {len(renders)}"
             adapter.private_view_json(other_pid)
-            assert spy.call_count == 2, (
-                f"second player id should re-serialize, got {spy.call_count}"
+            assert len(renders) == 2, (
+                f"second player id should render again, got {len(renders)}"
             )
-        assert len(ev) == 1, f"expected exactly 1 projection, got {len(ev)}"
 
     def test_destroyed_adapter_does_not_serve_a_cached_view(self, requires_c_engine):
         """T8 — control: after ``destroy()`` a cached view must never be served;
@@ -342,9 +296,8 @@ class TestSerializedViewCache:
 
 class TestDeterminizeProjectionInvariant:
     def test_determinize_does_not_change_board_occupancy(self, requires_c_engine):
-        """T9 — control (Phase 4's invariant): for K>=50 seeds across >=10
-        roots, a determinized child's board occupancy equals its parent's.
-        Written and green before propagation is implemented, never after."""
+        """T9 — control: for K>=50 seeds across >=10 roots, a determinized
+        child's board occupancy equals its parent's."""
         game = _load_c_game(2)
         roots = []
         for seed in range(11, 61):
@@ -359,102 +312,12 @@ class TestDeterminizeProjectionInvariant:
         for root in roots:
             adapter = root._adapter
             pid = root._game.get_player_ids()[root.current_player()]
-            parent_nodes = adapter._board_nodes_view()
+            parent_nodes = _board_nodes(adapter, pid)
             for k in range(50):
                 child = adapter.determinize(pid, 5000 + k)
                 assert child is not None
-                assert child._board_nodes_view() == parent_nodes, (
+                assert _board_nodes(child, pid) == parent_nodes, (
                     "determinize changed board occupancy"
                 )
                 checked += 1
         assert checked >= 500
-
-    def test_engine_determinize_does_not_reference_board_state(
-        self, requires_c_engine
-    ):
-        """T10 — structural trip-wire: ``engine_determinize``'s body in
-        ``engine_c/state.c`` must not touch the board. If a future edit makes
-        determinize board-touching, Phase 4's projection propagation goes
-        silently unsound — this catches it in C, where the invariant lives."""
-        src = _STATE_C_FILE.read_text(encoding="utf-8")
-        start = src.find("GameState *engine_determinize(")
-        assert start != -1, "engine_determinize not found in state.c"
-        # Extract the function body by brace depth.
-        body_start = src.find("{", start)
-        depth = 0
-        i = body_start
-        while i < len(src):
-            if src[i] == "{":
-                depth += 1
-            elif src[i] == "}":
-                depth -= 1
-                if depth == 0:
-                    break
-            i += 1
-        body = src[body_start : i + 1]
-        forbidden = ("->nodes", "node_count", "troop_slot", "spy")
-        hits = [tok for tok in forbidden if tok in body]
-        assert not hits, (
-            f"engine_determinize now references board state: {hits} — "
-            f"Phase 4 projection propagation would be unsound"
-        )
-
-    def test_clone_and_determinize_inherit_the_parent_projection(
-        self, requires_c_engine
-    ):
-        """T11 — Phase 4: a warm parent's ``determinize()`` and ``deepcopy()``
-        children perform zero fresh board projections on their first view.
-        Supersedes ``test_determinize_and_clone_get_independent_fresh_caches``,
-        which asserted the opposite; safe to invert because T9+T10 lock down
-        the engine invariant the old test hedged against."""
-        game = _load_c_game(2)
-        state = _mid_game_state(game)
-        adapter = state._adapter
-        pids = state._game.get_player_ids()
-        cp = state.current_player()
-        pid = pids[cp if cp >= 0 else 0]
-
-        adapter.private_view_json(pid)  # warm the parent board projection
-        d = adapter.determinize(pid, 12345)
-        c = copy.deepcopy(adapter)
-        assert d is not None
-
-        with _count_engine_build_views() as ev:
-            d.private_view_json(pid)
-            c.private_view_json(pid)
-        assert len(ev) == 0, (
-            f"children performed {len(ev)} fresh projections; expected 0 "
-            f"(inherited from the warm parent)"
-        )
-
-    def test_inherited_projection_is_not_aliased_across_adapters(
-        self, requires_c_engine
-    ):
-        """T12 — control: mutating the list — and the dicts inside it —
-        returned by a child's ``_board_nodes_view()`` must not change what the
-        parent or a sibling subsequently returns. Once projection data is
-        shared across a family (Phase 4), an aliased structure would corrupt
-        siblings through one member."""
-        game = _load_c_game(2)
-        state = _mid_game_state(game)
-        adapter = state._adapter
-        pids = state._game.get_player_ids()
-        cp = state.current_player()
-        pid = pids[cp if cp >= 0 else 0]
-
-        parent_before = adapter._board_nodes_view()
-        adapter.private_view_json(pid)  # warm
-        d = adapter.determinize(pid, 777)
-        c = copy.deepcopy(adapter)
-        assert d is not None
-
-        child_nodes = d._board_nodes_view()
-        assert child_nodes, "child view should be non-empty"
-        child_nodes.append({"node_id": "mutant"})
-        child_nodes[0]["vp_tokens"] = 9999
-        del child_nodes[0]["control_vp"]
-        # A re-read through the child itself may be corrupted by that mutation —
-        # that is the child's own business — but the parent and the sibling
-        # (which never saw the mutated object) must be untouched.
-        assert adapter._board_nodes_view() == parent_before
-        assert c._board_nodes_view() == parent_before

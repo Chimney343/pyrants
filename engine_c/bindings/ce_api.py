@@ -45,6 +45,9 @@ from .engine_bindings import (
     Move as CMove,
 )
 
+# A 4-player view is about 13 KB; a larger one is retried with the exact size.
+_VIEW_BUFFER_BYTES = 32 * 1024
+
 _PHASE_MAP = {
     PHASE_SETUP: "setup",
     PHASE_DRAW: "draw",
@@ -472,6 +475,23 @@ class CEngine:
             pid = _sym_str(state._s.player_ids[i])
             result[pid] = scores_arr[i]
         return bool(terminal), result
+
+    def player_view_json(self, state: CState, player_id: str) -> str:
+        """*player_id*'s view of *state* as JSON (``engine_c/visibility.c``).
+
+        Raises KeyError when *player_id* is not a player in *state*.
+        """
+        player_sym = _lib.intern(player_id.encode())
+        cap = _VIEW_BUFFER_BYTES
+        buf = ctypes.create_string_buffer(cap)
+        need = _lib.engine_player_view_json(state.ptr, player_sym, buf, cap)
+        if need >= cap:
+            cap = need + 1
+            buf = ctypes.create_string_buffer(cap)
+            need = _lib.engine_player_view_json(state.ptr, player_sym, buf, cap)
+        if need == 0:
+            raise KeyError(player_id)
+        return buf.value.decode("ascii")
 
     def determinize(self, state: CState, observing_player_id: str, seed: int) -> CState:
         """Clone state with opponent hidden zones reshuffled for observing player."""

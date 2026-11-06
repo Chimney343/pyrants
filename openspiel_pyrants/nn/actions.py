@@ -209,11 +209,11 @@ def action_context(adapter, pid: str, pending=None) -> ActionContext:
         pending = {"op": pending}
     pending = pending or {}
     order = tuple(seat_order(adapter, pid))
+    view = json.loads(adapter.private_view_json(pid))
     troop_slots_by_node = {
         node["node_id"]: tuple(node.get("troop_slots", ()))
-        for node in adapter._ensure_board_nodes()
+        for node in view.get("public", {}).get("board_nodes", ())
     }
-    view = json.loads(adapter.private_view_json(pid))
     summaries = view.get("public", {}).get("public_player_summaries", {})
     trophy_halls = {
         player_id: tuple(summary.get("trophy_hall") or ())

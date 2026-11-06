@@ -26,9 +26,13 @@ the assertions below:
   change board occupancy) and T10 (``engine_determinize`` is structurally
   board-free) lock down the engine invariant the old test was hedging against.
 - ``test_repeated_calls_hit_the_cache`` (T2) spied on ``view.build_c_board_view``,
-  which the adapter stops calling in Part B Phase 2. It is re-pointed at the
-  new projection entry point ``_project_board_nodes`` so it cannot pass
+  which the adapter stops calling in Part B Phase 2. It was re-pointed at the
+  projection entry point ``_project_board_nodes`` so it cannot pass
   vacuously at ``call_count == 0``.
+
+Candidate 5 (ADR-0007) moved the whole view into C, so T2 now counts calls to
+``engine_player_view_json``, the one remaining render. The assertion is
+unchanged: N unmutated calls render once.
 """
 
 from __future__ import annotations
@@ -36,7 +40,6 @@ from __future__ import annotations
 import json
 import re
 from pathlib import Path
-from unittest import mock
 
 import numpy as np
 import pyspiel
@@ -129,13 +132,14 @@ class TestBoardViewCache:
 
     def test_repeated_calls_hit_the_cache(self, requires_c_engine):
         """T2 — the one red test (G3): N unmutated calls trigger exactly one
-        underlying board projection.
+        underlying render.
 
-        F-013 Part B re-points the spy at ``_project_board_nodes``, the fast
-        projection entry point the adapter uses from Phase 2 onward. The old
-        spy target ``view.build_c_board_view`` would pass vacuously at
-        ``call_count == 0`` once the adapter stops calling it.
+        The spy sits on ``engine_player_view_json``, the C render the adapter
+        uses since candidate 5. An older spy target would pass vacuously at
+        ``call_count == 0`` because the adapter no longer calls it.
         """
+        from engine_c.bindings.engine_bindings import _lib
+
         game = _load_c_game(2)
         state = _mid_game_state(game)
         adapter = state._adapter
@@ -143,12 +147,20 @@ class TestBoardViewCache:
         cp = state.current_player()
         pid = pids[cp if cp >= 0 else 0]
 
-        with mock.patch.object(
-            type(adapter), "_project_board_nodes", wraps=adapter._project_board_nodes
-        ) as spy:
+        renders = []
+        orig = _lib.engine_player_view_json
+
+        def wrapped(*args):
+            renders.append(1)
+            return orig(*args)
+
+        _lib.engine_player_view_json = wrapped
+        try:
             for _ in range(10):
                 adapter.private_view_json(pid)
-        assert spy.call_count == 1, f"expected 1 board build, got {spy.call_count}"
+        finally:
+            _lib.engine_player_view_json = orig
+        assert len(renders) == 1, f"expected 1 render, got {len(renders)}"
 
     # Superseded by Part B T11 (test_board_projection.py): once a parent's
     # projection is warm, its determinize()/deepcopy() children inherit it and

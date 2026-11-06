@@ -217,12 +217,10 @@ class TestInformationStateKey:
             st = adapter._state._s
             setup(st, pi)
             adapter._view_cache.clear()
-            adapter._board_cache = None
             before_string = state.information_state_string(p)
             before_key = state.information_state_key(p)
             mutate(st, pi)
             adapter._view_cache.clear()
-            adapter._board_cache = None
             assert state.information_state_string(p) != before_string
             assert state.information_state_key(p) != before_key
 

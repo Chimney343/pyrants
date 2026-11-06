@@ -477,7 +477,7 @@ def test_presence_agrees_with_engine_deploy_targets(requires_c_engine) -> None:
                 else:
                     cp = adapter.state.current_player_id
                     order = tuple(seat_order(adapter, cp))
-                    nodes = adapter._ensure_board_nodes()
+                    nodes = json.loads(adapter.private_view_json(cp))["public"]["board_nodes"]
                     troops = {
                         n["node_id"]: tuple(n.get("troop_slots", ())) for n in nodes
                     }

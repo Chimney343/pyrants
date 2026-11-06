@@ -1,5 +1,11 @@
 """F-013 Part B census: where the private-view cost actually goes (one search).
 
+Retired by candidate 5 (ADR-0007): the Python board projection and its caches
+that this script measures were replaced by the C visibility module, so the
+adapter internals it reads (``_board_cache``, ``_ensure_board_nodes``) no
+longer exist and the script no longer runs. It is kept as the record of how
+F-013 Part B's numbers were taken.
+
 Wall-clock and call counts are environment-sensitive, so this is a script, not
 a pytest. It runs one ``num_sims=200`` search from the ``f013_timing`` root and
 emits, on a single line each:
