@@ -86,3 +86,22 @@ module's shape is settled, not before.
 - **scenario schema** - the versioned layout of a scenario document.
   Version 2 adds `schema_version`, `state.pending` and the shuffle stream;
   version 1 documents (no `pending`) still load, with no pending decision.
+- **visibility module** - the C module `engine_c/visibility.c` that answers
+  "what does player p know?". Its visibility rule drives the player view, the
+  tree key and determinization (ADR-0007).
+- **visibility rule** - the module's table: for each card zone and each
+  relation (self or opponent), whether the observer sees the cards or only a
+  count, and whether determinization resamples the zone. A zone the rule shows
+  is never resampled.
+- **player view** - one player's view of a state, rendered by the visibility
+  module's single walk. As JSON it is `private_view_json`, the OpenSpiel
+  observation string.
+- **tree key** - `engine_infostate_hash`: a 128-bit fingerprint of the same
+  walk as the player view, so two states share a key exactly when they share a
+  view. Only comparable inside one process.
+- **resampled zone** - a zone determinization reshuffles. A player's resampled
+  zones are pooled and shuffled together; a shared one shuffles alone.
+- **deduced multiset** - what can be worked out from public history but is not
+  seen directly: an opponent's hand+deck bag, your own deck's remainder, what
+  is left in the market deck. `nn/public.py` computes these; by decision they
+  stay outside the player view.
