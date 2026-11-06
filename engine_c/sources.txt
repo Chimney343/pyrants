@@ -32,3 +32,4 @@ scoring.c
 selection.c
 state.c
 view.c
+visibility.c

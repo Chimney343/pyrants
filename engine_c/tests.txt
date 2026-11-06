@@ -5,5 +5,6 @@ test_generic_actions|tests/test_generic_actions.c
 test_saveload|tests/test_saveload.c
 test_rollout|tests/test_rollout.c
 test_infostate_hash|tests/test_infostate_hash.c
+test_visibility|tests/test_visibility.c
 test_catalog_assembly|tests/test_catalog_assembly.c
 test_dt_ched|test_dt_ched.c

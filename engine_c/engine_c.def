@@ -9,6 +9,7 @@ EXPORTS
     engine_is_terminal
     engine_winner
     engine_infostate_hash
+    engine_player_view_json
     engine_layout_size
     engine_layout_offset
     engine_load_definition_json
