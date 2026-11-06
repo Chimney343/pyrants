@@ -99,6 +99,17 @@ static CardVariant variant_from_string(Sym source_fragment) {
         return CARD_VARIANT_END_OF_TURN_MASS_DISCARD;
     if (strcmp(s, "on_opponent_discard_punish") == 0)
         return CARD_VARIANT_ON_OPPONENT_DISCARD_PUNISH;
+    if (strcmp(s, "scaled_vp") == 0) return CARD_VARIANT_SCALED_VP;
+    if (strcmp(s, "scaled_vp_from_promoted_cards") == 0)
+        return CARD_VARIANT_SCALED_VP_FROM_PROMOTED_CARDS;
+    if (strcmp(s, "scaled_vp_from_white_trophies") == 0)
+        return CARD_VARIANT_SCALED_VP_FROM_WHITE_TROPHIES;
+    if (strcmp(s, "scaled_vp_from_trophies") == 0)
+        return CARD_VARIANT_SCALED_VP_FROM_TROPHIES;
+    if (strcmp(s, "scaled_vp_from_controlled_sites") == 0)
+        return CARD_VARIANT_SCALED_VP_FROM_CONTROLLED_SITES;
+    if (strcmp(s, "scaled_vp_from_total_controlled_sites") == 0)
+        return CARD_VARIANT_SCALED_VP_FROM_TOTAL_CONTROLLED_SITES;
     return CARD_VARIANT_NONE;
 }
 
@@ -492,6 +503,13 @@ static int action_variant_valid(const CardAction *action) {
         && action->source_fragment != SYM_NULL
         && action->variant == CARD_VARIANT_NONE)
         return 0;
+    if (op && strcmp(op, "grant_vp") == 0
+        && action->source_fragment != SYM_NULL) {
+        const char *sf = intern_str(action->source_fragment);
+        if (sf && strncmp(sf, "scaled_vp", 9) == 0
+            && action->variant == CARD_VARIANT_NONE)
+            return 0;
+    }
     return 1;
 }
 

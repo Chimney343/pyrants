@@ -83,41 +83,40 @@ static int resolve_count(GameState *state, Sym player_id, const CardAction *acti
         }
     }
     {
-        const char *sf = intern_str(action->source_fragment);
-        if (sf) {
-            if (strcmp(sf, "scaled_vp_from_white_trophies") == 0) {
-                int pi2 = player_index_for_id(state, player_id);
-                if (pi2 < 0) return 0;
-                if (per == 1) per = 3;
-                return count_trophies(&state->players[pi2], "white") / per;
+        CardVariant variant = action->variant;
+        if (variant == CARD_VARIANT_SCALED_VP_FROM_WHITE_TROPHIES) {
+            int pi2 = player_index_for_id(state, player_id);
+            if (pi2 < 0) return 0;
+            if (per == 1) per = 3;
+            return count_trophies(&state->players[pi2], "white") / per;
+        }
+        if (variant == CARD_VARIANT_SCALED_VP_FROM_TROPHIES) {
+            int pi2 = player_index_for_id(state, player_id);
+            if (pi2 < 0) return 0;
+            if (per == 1) per = 5;
+            return count_trophies(&state->players[pi2], "non_white") / per;
+        }
+        if (variant == CARD_VARIANT_SCALED_VP_FROM_CONTROLLED_SITES) {
+            if (per == 1) per = 2;
+            return count_controlled_sites(state, player_id) / per;
+        }
+        if (variant == CARD_VARIANT_SCALED_VP
+            || variant == CARD_VARIANT_SCALED_VP_FROM_PROMOTED_CARDS) {
+            if (per == 1) per = 3;
+            int pi2 = player_index_for_id(state, player_id);
+            if (pi2 < 0) return 0;
+            const PlayerState *ps = &state->players[pi2];
+            Sym required_aspect = SYM_NULL;
+            Sym required_secondary_aspect = SYM_NULL;
+            for (int i = 0; i < action->metadata_count; i++) {
+                const char *k = intern_str(action->metadata[i].key);
+                if (k && strcmp(k, "required_aspect") == 0)
+                    required_aspect = action->metadata[i].value;
+                if (k && strcmp(k, "required_secondary_aspect") == 0)
+                    required_secondary_aspect = action->metadata[i].value;
             }
-            if (strcmp(sf, "scaled_vp_from_trophies") == 0) {
-                int pi2 = player_index_for_id(state, player_id);
-                if (pi2 < 0) return 0;
-                if (per == 1) per = 5;
-                return count_trophies(&state->players[pi2], "non_white") / per;
-            }
-            if (strcmp(sf, "scaled_vp_from_controlled_sites") == 0) {
-                if (per == 1) per = 2;
-                return count_controlled_sites(state, player_id) / per;
-            }
-            if (strcmp(sf, "scaled_vp") == 0 || strcmp(sf, "scaled_vp_from_promoted_cards") == 0) {
-                if (per == 1) per = 3;
-                int pi2 = player_index_for_id(state, player_id);
-                if (pi2 < 0) return 0;
-                const PlayerState *ps = &state->players[pi2];
-                Sym required_aspect = SYM_NULL;
-                Sym required_secondary_aspect = SYM_NULL;
-                for (int i = 0; i < action->metadata_count; i++) {
-                    const char *k = intern_str(action->metadata[i].key);
-                    if (k && strcmp(k, "required_aspect") == 0)
-                        required_aspect = action->metadata[i].value;
-                    if (k && strcmp(k, "required_secondary_aspect") == 0)
-                        required_secondary_aspect = action->metadata[i].value;
-                }
-                return count_runtime_cards_by_aspect(state, ps->inner_circle, ps->inner_circle_count,
-                                                      required_aspect, required_secondary_aspect) / per;
-            }
+            return count_runtime_cards_by_aspect(state, ps->inner_circle, ps->inner_circle_count,
+                                                  required_aspect, required_secondary_aspect) / per;
         }
     }
     if (action->quantity_kind == QUANT_FIXED && action->quantity_value > 0)

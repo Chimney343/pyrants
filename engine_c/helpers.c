@@ -322,7 +322,6 @@ int remaining_special_stack_count(const GameState *state, Sym card_id) {
 }
 
 int scaled_vp_award_count(const GameState *state, Sym player_id, const CardAction *action) {
-    const char *sf = intern_str(action->source_fragment);
     const char *cf = NULL;
     int per = 1;
 
@@ -334,11 +333,19 @@ int scaled_vp_award_count(const GameState *state, Sym player_id, const CardActio
     }
 
     if (!cf) {
-        if (sf && strcmp(sf, "scaled_vp_from_white_trophies") == 0) { cf = "trophy_hall_white"; per = (per == 1) ? 3 : per; }
-        else if (sf && strcmp(sf, "scaled_vp_from_trophies") == 0) { cf = "trophy_hall_non_white"; per = (per == 1) ? 5 : per; }
-        else if (sf && strcmp(sf, "scaled_vp_from_controlled_sites") == 0) { cf = "controlled_sites"; per = (per == 1) ? 2 : per; }
-        else if (sf && (strcmp(sf, "scaled_vp") == 0 || strcmp(sf, "scaled_vp_from_promoted_cards") == 0))
-            { cf = "inner_circle_cards"; per = (per == 1) ? 3 : per; }
+        switch (action->variant) {
+            case CARD_VARIANT_SCALED_VP_FROM_WHITE_TROPHIES:
+                cf = "trophy_hall_white"; per = (per == 1) ? 3 : per; break;
+            case CARD_VARIANT_SCALED_VP_FROM_TROPHIES:
+                cf = "trophy_hall_non_white"; per = (per == 1) ? 5 : per; break;
+            case CARD_VARIANT_SCALED_VP_FROM_CONTROLLED_SITES:
+                cf = "controlled_sites"; per = (per == 1) ? 2 : per; break;
+            case CARD_VARIANT_SCALED_VP:
+            case CARD_VARIANT_SCALED_VP_FROM_PROMOTED_CARDS:
+                cf = "inner_circle_cards"; per = (per == 1) ? 3 : per; break;
+            default:
+                break;
+        }
     }
     if (!cf || per <= 0) return 0;
 

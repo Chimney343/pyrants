@@ -81,8 +81,8 @@ static int resolve_runtime_action_count(GameState *state, Sym player_id, const C
             return total / per;
         }
     }
-    const char *sf = intern_str(action->source_fragment);
-    if (sf && strstr(sf, "controlled_sites")) return count_controlled_sites(state, player_id) / per;
+    if (card_variant_is_scaled_vp(action->variant))
+        return count_controlled_sites(state, player_id) / per;
     return resolve_action_count(state, player_id, action);
 }
 

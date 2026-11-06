@@ -571,7 +571,7 @@ static void apply_end_of_turn_effects(GameState *state, int include_force_discar
             }
 
             if (include_scaled_vp && op && strcmp(op, "grant_vp") == 0
-                && sf && strncmp(sf, "scaled_vp", 9) == 0) {
+                && card_variant_is_scaled_vp(action->variant)) {
                 PlayerState *cps = cow_player(state, pid);
                 if (cps) {
                     int vp = scaled_vp_award_count(state, pid, action);
