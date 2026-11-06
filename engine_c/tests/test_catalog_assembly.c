@@ -112,6 +112,22 @@ static void test_engine_load(void) {
                     found = 1;
             assert(found);
         }
+        if (def->catalog.cards[i].card_id == intern("grimlock")) {
+            int found = 0;
+            for (int ai = 0; ai < def->catalog.cards[i].action_count; ai++)
+                if (def->catalog.cards[i].actions[ai].variant
+                    == CARD_VARIANT_ON_OPPONENT_DISCARD_DRAW)
+                    found = 1;
+            assert(found);
+        }
+        if (def->catalog.cards[i].card_id == intern("umber_hulk")) {
+            int found = 0;
+            for (int ai = 0; ai < def->catalog.cards[i].action_count; ai++)
+                if (def->catalog.cards[i].actions[ai].variant
+                    == CARD_VARIANT_ON_OPPONENT_DISCARD_PUNISH)
+                    found = 1;
+            assert(found);
+        }
     }
 
     /* Spot-check the engine-resolved aboleth definition against the JSON. */
@@ -356,6 +372,53 @@ static void test_invalid_scaled_variant(void) {
     printf("PASS: invalid scaled_vp variant is rejected by the loader\n");
 }
 
+static void test_invalid_on_trigger(void) {
+    intern_init(4096);
+    Arena *arena = arena_create(16 * 1024 * 1024);
+    assert(arena);
+
+    char *json = test_load_catalog_json_both();
+    assert(json != NULL);
+    cJSON *root = cJSON_Parse(json);
+    assert(root != NULL);
+    cJSON *cards = cJSON_GetObjectItem(root, "cards");
+    assert(cards != NULL && cJSON_IsArray(cards));
+    int n = cJSON_GetArraySize(cards);
+    for (int i = 0; i < n; i++) {
+        cJSON *card = cJSON_GetArrayItem(cards, i);
+        cJSON *cid = cJSON_GetObjectItem(card, "card_id");
+        if (!cid || !cJSON_IsString(cid)
+            || strcmp(cid->valuestring, "grimlock") != 0) continue;
+        cJSON *actions = cJSON_GetObjectItem(card, "actions");
+        assert(actions != NULL && cJSON_IsArray(actions));
+        for (int ai = 0; ai < cJSON_GetArraySize(actions); ai++) {
+            cJSON *action = cJSON_GetArrayItem(actions, ai);
+            cJSON *sf = cJSON_GetObjectItem(action, "source_fragment");
+            if (sf && cJSON_IsString(sf)
+                && strcmp(sf->valuestring, "on_opponent_discard_draw") == 0) {
+                cJSON_DeleteItemFromObject(action, "source_fragment");
+                cJSON_AddStringToObject(action, "source_fragment", "on_bogus");
+                break;
+            }
+        }
+        break;
+    }
+    char *bad = cJSON_PrintUnformatted(root);
+    assert(bad != NULL);
+
+    const char *board_path, *setup_path;
+    test_board_setup_paths(&board_path, &setup_path);
+    GameDefinition *def = engine_load_definition_json(bad, board_path, setup_path, arena);
+    assert(def == NULL);
+
+    free(bad);
+    cJSON_Delete(root);
+    free(json);
+    arena_destroy(arena);
+    intern_destroy();
+    printf("PASS: invalid on_* trigger is rejected by the loader\n");
+}
+
 int main(void) {
     test_assembled_json_contents();
     test_engine_load();
@@ -365,6 +428,7 @@ int main(void) {
     test_invalid_timing();
     test_invalid_force_variant();
     test_invalid_scaled_variant();
+    test_invalid_on_trigger();
     printf("All catalog assembly tests passed.\n");
     return 0;
 }

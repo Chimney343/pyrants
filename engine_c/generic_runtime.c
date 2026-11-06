@@ -649,8 +649,7 @@ GameState *auto_resolve_pending_generic(GameState *state, Sym player_id) {
             {
                 const char *op_str2 = intern_str(action->op);
                 if (op_str2 && strcmp(op_str2, "draw_cards") == 0) {
-                    const char *sf2 = intern_str(action->source_fragment);
-                    if (sf2 && strncmp(sf2, "on_", 3) == 0) {
+                    if (card_variant_is_on_trigger(action->variant)) {
                         int skip = 0;
                         for (int gc = 0; gc < card->global_condition_count; gc++) {
                             const char *gct = intern_str(card->global_conditions[gc].condition_type);

@@ -64,8 +64,7 @@ void trigger_opponent_discard_reactive(GameState *state, Sym actor_id, Sym victi
 
         for (int ai = 0; ai < card->action_count; ai++) {
             const CardAction *action = &card->actions[ai];
-            const char *sf = intern_str(action->source_fragment);
-            if (!sf || strncmp(sf, "on_", 3) != 0) continue;
+            if (!card_variant_is_on_trigger(action->variant)) continue;
 
             const char *ts = intern_str(action->target_scope);
             Sym beneficiary = victim_id;

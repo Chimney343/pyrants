@@ -69,11 +69,17 @@ typedef enum {
     CARD_VARIANT_SCALED_VP_FROM_TROPHIES,
     CARD_VARIANT_SCALED_VP_FROM_CONTROLLED_SITES,
     CARD_VARIANT_SCALED_VP_FROM_TOTAL_CONTROLLED_SITES,
+    CARD_VARIANT_ON_OPPONENT_DISCARD_DRAW,
 } CardVariant;
 
 static inline int card_variant_is_scaled_vp(CardVariant variant) {
     return variant >= CARD_VARIANT_SCALED_VP
         && variant <= CARD_VARIANT_SCALED_VP_FROM_TOTAL_CONTROLLED_SITES;
+}
+
+static inline int card_variant_is_on_trigger(CardVariant variant) {
+    return variant == CARD_VARIANT_ON_OPPONENT_DISCARD_DRAW
+        || variant == CARD_VARIANT_ON_OPPONENT_DISCARD_PUNISH;
 }
 
 typedef struct {

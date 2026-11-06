@@ -42,10 +42,9 @@ without card-id checks.
   executing inline during pending-generic resolution; the EOT phase applies
   promotions, force discard and scaled VP once. This fixes F-015.
 - Fifth field: `CardAction.variant`, a loader-mapped enum for the compared
-  `source_fragment` families. The six `force_discard` modes and six
-  `scaled_vp` sources are typed; the descriptive string stays for labels and
-  compatibility. Remaining families: `on_*` triggers and op-selection
-  variants.
+  `source_fragment` families. The six `force_discard` modes, six `scaled_vp`
+  sources and two `on_*` triggers are typed; the descriptive string stays for
+  labels and compatibility. Remaining family: op-selection variants.
 - Remaining: the `custom_effect` effect-kind decomposition.
 - The catalog JSON gains the fields; the C struct, Python ctypes mirror and
   layout probe grow with them. Move payloads, decisions and action ids do not
@@ -63,11 +62,11 @@ Gauth/Cloaker/Mummy Lord/Graz'zt card-id branches are gone, and a catalog
 test rejects unknown predicate names. `timing` is validated to
 `immediate`/`end_of_turn`; end-of-turn actions no longer execute inline, so
 Neogi discards once (F-015). `CardAction.variant` types the six
-`force_discard` modes and six `scaled_vp` sources; the loader rejects unknown
-force/scaled modes and the runtime switches on the enum instead of
-`source_fragment` in the force op, needs-selection rules, EOT phase and
-VP-count paths. The remaining source-fragment families stay until their named
-variants/fields land.
+`force_discard` modes, six `scaled_vp` sources and two `on_*` triggers; the
+loader rejects unknown modes/triggers and the runtime switches on the enum
+instead of `source_fragment` in the force op, needs-selection rules, EOT
+phase, VP-count and reactive-trigger paths. The op-selection variants remain
+until their named variants/fields land.
 
 `custom_effect` remains a multi-effect dispatcher and is explicitly deferred;
 its 13 effect kinds are catalog data that needs its own decomposition rather

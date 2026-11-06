@@ -110,6 +110,8 @@ static CardVariant variant_from_string(Sym source_fragment) {
         return CARD_VARIANT_SCALED_VP_FROM_CONTROLLED_SITES;
     if (strcmp(s, "scaled_vp_from_total_controlled_sites") == 0)
         return CARD_VARIANT_SCALED_VP_FROM_TOTAL_CONTROLLED_SITES;
+    if (strcmp(s, "on_opponent_discard_draw") == 0)
+        return CARD_VARIANT_ON_OPPONENT_DISCARD_DRAW;
     return CARD_VARIANT_NONE;
 }
 
@@ -508,6 +510,11 @@ static int action_variant_valid(const CardAction *action) {
         const char *sf = intern_str(action->source_fragment);
         if (sf && strncmp(sf, "scaled_vp", 9) == 0
             && action->variant == CARD_VARIANT_NONE)
+            return 0;
+    }
+    if (action->source_fragment != SYM_NULL) {
+        const char *sf = intern_str(action->source_fragment);
+        if (sf && strncmp(sf, "on_", 3) == 0 && !card_variant_is_on_trigger(action->variant))
             return 0;
     }
     return 1;
