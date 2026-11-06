@@ -951,6 +951,17 @@ passed.
 - Expected if FALSE POSITIVE: a guard rejects it.
 - Status: **OPEN** (restore a guard that bans real I/O in non-test, non-`cJSON.c` sources; decide whether `loader.c` is allowlisted or refactored)
 
+### F-040 `just build-c` reports success when a C test fails, and leaves a stale DLL
+- Class: ARCHITECTURE-PROCESS (build gate)
+- Severity: MAJOR (every gate after `build-c` can run against an old `engine_c.dll` while reporting green)
+- Origin: Found 2026-11-06 while building candidate 5's visibility module
+- Code: `engine_c/compile.bat:52-60` and `engine_c/compile_asan.bat:57-65`. Inside the `for /f` loop over `tests.txt`, a failing `cl` or test run hit `if errorlevel 1 exit /b 1`. That stopped the script before the DLL link step, but `cmd /c "engine_c\compile.bat"` (the `just build-c` recipe) exited 0. Minimal batch files with the same loop exit 1, so the trigger is specific to the full script; the exit code from the block is lost.
+- Falsification test: append `test_bogus|tests/test_does_not_exist.c` to `engine_c/tests.txt` and run `just build-c`.
+- Expected if REAL: exit code 0, a C1083 error in the log, no "Done.", and `engine_c.dll` not rebuilt.
+- Expected if FALSE POSITIVE: a non-zero exit code.
+- Observed: exit code 0 (REAL). `just test-c` did not catch a test that failed to build either: with `engine_c/test_visibility.exe` removed it exited 0, because the missing executable left the previous `$LASTEXITCODE` in place.
+- Status: **FIXED** (2026-11-06). Both scripts now `goto :test_failed` out of the loop. That label sits at top level, prints the failing test, and runs `exit /b 1`. Re-running the falsification test exits 1 with "ERROR: test_bogus (build) failed; engine_c.dll was not rebuilt."; a clean `just build-c` exits 0. The `just test-c` recipe now fails on a missing executable ("MISSING: ...", exit 1) and still exits 0 when every test is present and passes.
+
 ## 4. Unanchored (suspicions that could not be fully anchored)
 
 - **[unverified]** `engine_c/rules.c:504-561` (`apply_end_of_turn_effects`, tag `end_of_turn_mass_discard`) and `engine_c/generic_runtime.c` (~lines 531-538, same tag) both implement what looks like the same card effect via two separate code paths — one from the natural end-of-turn phase transition, one from the pending-generic-choice resolver. Whether these are genuinely mutually exclusive (different triggers) or can both fire for the same card, causing a double discard, was not traced through the full call graph and needs dedicated tracing before it can be entered as a ledger finding.

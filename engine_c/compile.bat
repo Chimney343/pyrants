@@ -49,14 +49,18 @@ if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 lib /nologo /out:libengine.lib !LIBOBJS!
 if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 
+REM A failing test jumps to :test_failed. An "exit /b" inside this block lost
+REM its exit code under "cmd /c", so build-c reported success with a stale DLL.
 for /f "usebackq eol=# tokens=1,2 delims=|" %%t in ("tests.txt") do (
     echo Building %%t.exe...
+    set "FAILED_TEST=%%t (build)"
     cl %CFLAGS% /I. /Fe:%%t.exe %%u libengine.lib
-    if errorlevel 1 exit /b 1
+    if errorlevel 1 goto :test_failed
 
     echo Running %%t...
+    set "FAILED_TEST=%%t (run)"
     .\%%t.exe
-    if errorlevel 1 exit /b 1
+    if errorlevel 1 goto :test_failed
 )
 
 echo Building engine_c.dll...
@@ -70,4 +74,9 @@ if %ERRORLEVEL% neq 0 (
 )
 
 echo Done.
+exit /b 0
+
+:test_failed
+echo ERROR: !FAILED_TEST! failed; engine_c.dll was not rebuilt.
+exit /b 1
 

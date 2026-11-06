@@ -35,7 +35,7 @@ check-build-manifest:
     & {{python}} scripts/check_build_manifest.py
 
 test-c: check-build-manifest
-    $a = 0; Get-Content engine_c/tests.txt | Where-Object { $_.Trim() -and -not $_.Trim().StartsWith('#') } | ForEach-Object { $t = ($_ -split '\|')[0].Trim(); & ".\engine_c\$t.exe"; if ($LASTEXITCODE -ne 0) { $a = 1 } }; if ($a -ne 0) { exit 1 }
+    $a = 0; Get-Content engine_c/tests.txt | Where-Object { $_.Trim() -and -not $_.Trim().StartsWith('#') } | ForEach-Object { $t = ($_ -split '\|')[0].Trim(); $exe = ".\engine_c\$t.exe"; if (-not (Test-Path $exe)) { Write-Host "MISSING: $exe (run just build-c)"; $a = 1 } else { & $exe; if ($LASTEXITCODE -ne 0) { $a = 1 } } }; if ($a -ne 0) { exit 1 }
 
 test-c-python: generate-test-card-scenarios
     & {{python}} -m pytest tests/c_engine -v

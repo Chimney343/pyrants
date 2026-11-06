@@ -54,14 +54,18 @@ if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 lib /nologo /out:libengine_asan.lib !LIBOBJS!
 if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 
+REM A failing test jumps to :test_failed. An "exit /b" inside this block lost
+REM its exit code under "cmd /c", so build-c-asan reported success.
 for /f "usebackq eol=# tokens=1,2 delims=|" %%t in ("tests.txt") do (
     echo Building %%t_asan.exe...
+    set "FAILED_TEST=%%t (build)"
     cl %CFLAGS% /I. /Fe:%%t_asan.exe %%u libengine_asan.lib
-    if errorlevel 1 exit /b 1
+    if errorlevel 1 goto :test_failed
 
     echo Running %%t under ASan...
+    set "FAILED_TEST=%%t (run)"
     .\%%t_asan.exe
-    if errorlevel 1 exit /b 1
+    if errorlevel 1 goto :test_failed
 )
 
 echo Building engine_c_asan.dll...
@@ -85,4 +89,9 @@ if %ERRORLEVEL% neq 0 (
 
 echo Done. Point the Python bindings at it with:
 echo   set PYRANTS_ENGINE_DLL=%~dp0engine_c_asan.dll
+exit /b 0
+
+:test_failed
+echo ERROR: !FAILED_TEST! failed under ASan; engine_c_asan.dll was not rebuilt.
+exit /b 1
 
