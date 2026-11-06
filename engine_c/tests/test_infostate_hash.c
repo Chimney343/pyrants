@@ -15,7 +15,7 @@
  * (tests/test_infostate_key.py) then checks hash == string classes end to end.
  */
 #include "../engine.h"
-#include "../player_view.h"
+#include "../visibility.h"
 #include "../intern.h"
 #include "../arena.h"
 #include "catalog_dir.h"

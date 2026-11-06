@@ -23,7 +23,6 @@ ops/return_unit.c
 ops/supplant_troop.c
 pending.c
 phases.c
-player_view.c
 rng.c
 rollout.c
 rules.c

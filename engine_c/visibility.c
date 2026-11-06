@@ -171,27 +171,12 @@ static const char *const PHASE_NAMES[] = {
     "setup", "draw", "main", "end_of_turn", "cleanup", "game_over",
 };
 
-/* ---- The walk ------------------------------------------------------------
+/* ---- Sinks ---------------------------------------------------------------
  *
- * One traversal produces the view. A sink consumes it: the JSON writer below
- * renders text. Ids go through sym() so a sink can work on interned ids
- * without decoding them; text() carries the few strings that are not ids. */
-typedef struct {
-    void (*obj_begin)(void *ctx);
-    void (*obj_end)(void *ctx);
-    void (*key)(void *ctx, const char *key);
-    void (*list_begin)(void *ctx, int n);
-    void (*list_end)(void *ctx);
-    void (*sym)(void *ctx, Sym id); /* an id the view shows as null when unknown */
-    void (*num)(void *ctx, long long v);
-    void (*text)(void *ctx, const char *s);
-} VisSink;
-
-typedef struct {
-    const GameState *s;
-    const VisSink *k;
-    void *ctx;
-} Walk;
+ * The walk below produces the view once; a sink consumes it. The JSON sink
+ * renders text. The hash sink folds the same values into the tree key. The
+ * walk dispatches with a predictable branch on inline helpers rather than
+ * through function pointers, because the hash runs on the IS-MCTS hot path. */
 
 /* The id's text, or NULL when the view shows it as null (SYM_NULL, an unknown
  * id, or the empty string). */
@@ -201,188 +186,9 @@ static const char *id_text(Sym id) {
     return (t && t[0]) ? t : NULL;
 }
 
-static int find_player(const GameState *s, Sym id) {
-    for (int i = 0; i < s->player_count && i < MAX_PLAYERS; i++)
-        if (s->players[i].player_id == id) return i;
-    return -1;
-}
-
-static void walk_cards(const Walk *w, const Sym *cards, int n) {
-    w->k->list_begin(w->ctx, n);
-    for (int i = 0; i < n; i++) w->k->sym(w->ctx, cards[i]);
-    w->k->list_end(w->ctx);
-}
-
-static int cmp_id_text(Sym a, Sym b) {
-    const char *ta = id_text(a), *tb = id_text(b);
-    return strcmp(ta ? ta : "", tb ? tb : "");
-}
-
-static void walk_board(const Walk *w) {
-    const GameState *s = w->s;
-    const BoardDefinition *board = &s->definition->board;
-    int n = s->node_count < 0 ? 0 : (s->node_count > MAX_NODES ? MAX_NODES : s->node_count);
-    w->k->list_begin(w->ctx, n);
-    for (int i = 0; i < n; i++) {
-        const NodeState *ns = &s->nodes[i];
-        const NodeDefinition *nd = &board->nodes[i];
-
-        /* Spies: the shown ids, sorted by text. */
-        Sym spies[MAX_SPY_SLOTS];
-        int sc = 0;
-        for (int j = 0; j < ns->spy_count && j < MAX_SPY_SLOTS; j++)
-            if (id_text(ns->spies[j])) spies[sc++] = ns->spies[j];
-        for (int a = 1; a < sc; a++) {
-            Sym key = spies[a];
-            int b = a - 1;
-            while (b >= 0 && cmp_id_text(spies[b], key) > 0) { spies[b + 1] = spies[b]; b--; }
-            spies[b + 1] = key;
-        }
-
-        int slots = ns->troop_slot_count < 0 ? 0
-                  : (ns->troop_slot_count > MAX_TROOP_SLOTS ? MAX_TROOP_SLOTS : ns->troop_slot_count);
-
-        w->k->obj_begin(w->ctx);
-        w->k->key(w->ctx, "control_vp");
-        w->k->num(w->ctx, nd->control_vp);
-        w->k->key(w->ctx, "node_id");
-        if (id_text(ns->node_id)) {
-            w->k->sym(w->ctx, ns->node_id);
-        } else {
-            char fallback[32];
-            snprintf(fallback, sizeof(fallback), "node_%d", i);
-            w->k->text(w->ctx, fallback);
-        }
-        w->k->key(w->ctx, "spies");
-        walk_cards(w, spies, sc);
-        w->k->key(w->ctx, "total_control_vp_per_turn");
-        w->k->num(w->ctx, nd->total_control_vp_per_turn);
-        w->k->key(w->ctx, "troop_slots");
-        walk_cards(w, ns->troop_slots, slots);
-        w->k->key(w->ctx, "vp_tokens");
-        w->k->num(w->ctx, ns->vp_tokens);
-        w->k->obj_end(w->ctx);
-    }
-    w->k->list_end(w->ctx);
-}
-
-static void walk_fields(const Walk *w, const Field *fields, int count,
-                        const PlayerState *ps, VisRelation rel);
-
-static void walk_summaries(const Walk *w) {
-    const GameState *s = w->s;
-    int n = s->player_count < 0 ? 0 : (s->player_count > MAX_PLAYERS ? MAX_PLAYERS : s->player_count);
-
-    /* Players in key order. */
-    int order[MAX_PLAYERS];
-    for (int i = 0; i < n; i++) order[i] = i;
-    for (int a = 1; a < n; a++) {
-        int key = order[a];
-        int b = a - 1;
-        while (b >= 0 && cmp_id_text(s->players[order[b]].player_id, s->players[key].player_id) > 0) {
-            order[b + 1] = order[b];
-            b--;
-        }
-        order[b + 1] = key;
-    }
-
-    w->k->obj_begin(w->ctx);
-    for (int i = 0; i < n; i++) {
-        const PlayerState *ps = &s->players[order[i]];
-        const char *pid = id_text(ps->player_id);
-        w->k->key(w->ctx, pid ? pid : "");
-        w->k->obj_begin(w->ctx);
-        walk_fields(w, SUMMARY_FIELDS, FIELD_COUNT(SUMMARY_FIELDS), ps, VIS_OPPONENT);
-        w->k->obj_end(w->ctx);
-    }
-    w->k->obj_end(w->ctx);
-}
-
-static void walk_fields(const Walk *w, const Field *fields, int count,
-                        const PlayerState *ps, VisRelation rel) {
-    const GameState *s = w->s;
-    for (int f = 0; f < count; f++) {
-        const Field *fd = &fields[f];
-        if (fd->kind == F_CARDS && vis_rule((VisZone)fd->arg, rel).vis != VIS_CARDS)
-            continue;
-        w->k->key(w->ctx, fd->key);
-        switch (fd->kind) {
-        case F_PLAYER_SCALAR: {
-            int v = 0;
-            switch ((PlayerScalar)fd->arg) {
-            case PS_BARRACKS:        v = ps->barracks; break;
-            case PS_SPIES_AVAILABLE: v = ps->spies_available; break;
-            case PS_VP_TOKENS:       v = ps->vp_tokens; break;
-            case PS_SCORE:           v = ps->score; break;
-            }
-            w->k->num(w->ctx, v);
-            break;
-        }
-        case F_STATE_SCALAR: {
-            int v = 0;
-            switch ((StateScalar)fd->arg) {
-            case SS_ROUND_NUMBER:       v = s->round_number; break;
-            case SS_RESOURCE_POWER:     v = s->resource_pool.power; break;
-            case SS_RESOURCE_INFLUENCE: v = s->resource_pool.influence; break;
-            }
-            w->k->num(w->ctx, v);
-            break;
-        }
-        case F_SIZE:
-            w->k->num(w->ctx, zone_size(s, ps, (VisZone)fd->arg));
-            break;
-        case F_CARDS: {
-            const Sym *cards;
-            int n = zone_cards(s, ps, (VisZone)fd->arg, &cards);
-            walk_cards(w, cards, n);
-            break;
-        }
-        case F_PUBLIC:
-            w->k->obj_begin(w->ctx);
-            walk_fields(w, PUBLIC_FIELDS, FIELD_COUNT(PUBLIC_FIELDS), NULL, VIS_OPPONENT);
-            w->k->obj_end(w->ctx);
-            break;
-        case F_BOARD:
-            walk_board(w);
-            break;
-        case F_CURRENT_PLAYER:
-            if (id_text(s->current_player_id)) w->k->sym(w->ctx, s->current_player_id);
-            else w->k->text(w->ctx, "");
-            break;
-        case F_PHASE: {
-            int ph = (int)s->phase;
-            int known = ph >= 0 && ph < (int)(sizeof(PHASE_NAMES) / sizeof(PHASE_NAMES[0]));
-            w->k->text(w->ctx, known ? PHASE_NAMES[ph] : "unknown");
-            break;
-        }
-        case F_SUMMARIES:
-            walk_summaries(w);
-            break;
-        case F_TURN_ORDER: {
-            int n = s->player_count < 0 ? 0 : (s->player_count > MAX_PLAYERS ? MAX_PLAYERS : s->player_count);
-            walk_cards(w, s->player_ids, n);
-            break;
-        }
-        }
-    }
-}
-
-/* Walk observer's view of s. Returns 0 when observer is not a player. */
-static int walk_view(const GameState *s, Sym observer, const VisSink *k, void *ctx) {
-    int me = find_player(s, observer);
-    if (me < 0) return 0;
-    Walk w = {s, k, ctx};
-    k->obj_begin(ctx);
-    walk_fields(&w, OBSERVER_FIELDS, FIELD_COUNT(OBSERVER_FIELDS), &s->players[me], VIS_SELF);
-    k->obj_end(ctx);
-    return 1;
-}
-
-/* ---- JSON sink -----------------------------------------------------------
- *
- * Renders exactly what Python's json.dumps(sort_keys=True) rendered for the
- * same view: ", " and ": " separators, ASCII-only output with \uXXXX escapes,
- * null for unknown ids. */
+/* JSON sink: renders exactly what Python's json.dumps(sort_keys=True)
+ * rendered for the same view: ", " and ": " separators, ASCII-only output
+ * with \uXXXX escapes, null for unknown ids. */
 #define JSON_MAX_DEPTH 16
 
 typedef struct {
@@ -470,13 +276,7 @@ static void jo_close(JsonOut *o, char c) {
     if (o->depth > 0) o->depth--;
 }
 
-static void json_obj_begin(void *ctx) { jo_open((JsonOut *)ctx, '{'); }
-static void json_obj_end(void *ctx) { jo_close((JsonOut *)ctx, '}'); }
-static void json_list_begin(void *ctx, int n) { (void)n; jo_open((JsonOut *)ctx, '['); }
-static void json_list_end(void *ctx) { jo_close((JsonOut *)ctx, ']'); }
-
-static void json_key(void *ctx, const char *key) {
-    JsonOut *o = (JsonOut *)ctx;
+static void jo_key(JsonOut *o, const char *key) {
     if (!o->first[o->depth]) jo_put(o, ", ", 2);
     o->first[o->depth] = 0;
     jo_string(o, key);
@@ -484,39 +284,366 @@ static void json_key(void *ctx, const char *key) {
     o->after_key = 1;
 }
 
-static void json_sym(void *ctx, Sym id) {
-    JsonOut *o = (JsonOut *)ctx;
+static void jo_sym(JsonOut *o, Sym id) {
     jo_value_prefix(o);
     const char *t = id_text(id);
     if (t) jo_string(o, t);
     else jo_put(o, "null", 4);
 }
 
-static void json_num(void *ctx, long long v) {
-    JsonOut *o = (JsonOut *)ctx;
+static void jo_num(JsonOut *o, long long v) {
     jo_value_prefix(o);
     char b[32];
     int n = snprintf(b, sizeof(b), "%lld", v);
     if (n > 0) jo_put(o, b, (size_t)n);
 }
 
-static void json_text(void *ctx, const char *s) {
-    JsonOut *o = (JsonOut *)ctx;
+static void jo_text(JsonOut *o, const char *s) {
     jo_value_prefix(o);
     jo_string(o, s);
 }
 
-static const VisSink JSON_SINK = {
-    json_obj_begin, json_obj_end, json_key, json_list_begin, json_list_end,
-    json_sym, json_num, json_text,
-};
+/* Hash sink: the IS-MCTS tree key, a 128-bit fingerprint of the same walk
+ * built from fixed-width words instead of text. Two independent 64-bit
+ * FNV-1a-style streams over one word sequence. Keys are skipped because the
+ * walk's shape is fixed for a build (it depends only on the rule table); list
+ * lengths are hashed, so lists are self-delimiting. Ids are hashed as raw
+ * interned Syms, which are stable inside one process and one-to-one with
+ * their text; the hash is only compared inside one run. So equal views give
+ * equal keys, and different views different keys (up to collisions). One
+ * corner splits without merging: an id interned as the empty string shows as
+ * null in the JSON, like SYM_NULL, but hashes as itself. Decoding every id to
+ * close that corner would double the hash's cost on the IS-MCTS hot path. */
+typedef struct {
+    uint64_t h0, h1;
+} HashOut;
+
+/* The walk's per-value helpers are tiny and run hundreds of times per hash;
+ * force them inline so each sink's branch folds away. */
+#if defined(_MSC_VER)
+#define VIS_INLINE static __forceinline
+#else
+#define VIS_INLINE static inline __attribute__((always_inline))
+#endif
+
+VIS_INLINE void ih_word(HashOut *h, uint64_t x) {
+    h->h0 ^= x;
+    h->h0 *= 0x00000100000001b3ULL; /* FNV-1a 64 prime */
+    h->h1 ^= x + 0x9e3779b97f4a7c15ULL;
+    h->h1 *= 0xff51afd7ed558ccdULL; /* murmur3 finalizer constant */
+}
+
+static uint64_t text_word(const char *s) {
+    uint64_t f = 0xcbf29ce484222325ULL;
+    for (const unsigned char *p = (const unsigned char *)s; *p; p++) {
+        f ^= *p;
+        f *= 0x00000100000001b3ULL;
+    }
+    return f;
+}
+
+/* ---- The walk ------------------------------------------------------------
+ *
+ * Exactly one of hash and json is set. Ids go through w_sym so the hash can
+ * use interned ids without decoding them; w_text carries the few strings that
+ * are not ids. */
+typedef struct {
+    const GameState *s;
+    HashOut *hash;
+    JsonOut *json;
+} Walk;
+
+VIS_INLINE void w_obj_begin(const Walk *w) { if (w->json) jo_open(w->json, '{'); }
+VIS_INLINE void w_obj_end(const Walk *w) { if (w->json) jo_close(w->json, '}'); }
+VIS_INLINE void w_key(const Walk *w, const char *key) { if (w->json) jo_key(w->json, key); }
+VIS_INLINE void w_list_end(const Walk *w) { if (w->json) jo_close(w->json, ']'); }
+
+VIS_INLINE void w_list_begin(const Walk *w, int n) {
+    if (w->hash) ih_word(w->hash, (uint64_t)(uint32_t)n);
+    else jo_open(w->json, '[');
+}
+
+VIS_INLINE void w_sym(const Walk *w, Sym id) {
+    if (w->hash) ih_word(w->hash, (uint64_t)id);
+    else jo_sym(w->json, id);
+}
+
+VIS_INLINE void w_num(const Walk *w, long long v) {
+    if (w->hash) ih_word(w->hash, (uint64_t)v);
+    else jo_num(w->json, v);
+}
+
+VIS_INLINE void w_text(const Walk *w, const char *s) {
+    if (w->hash) ih_word(w->hash, text_word(s));
+    else jo_text(w->json, s);
+}
+
+static int find_player(const GameState *s, Sym id) {
+    for (int i = 0; i < s->player_count && i < MAX_PLAYERS; i++)
+        if (s->players[i].player_id == id) return i;
+    return -1;
+}
+
+/* A card list. The hash folds the whole list in local variables, so its
+ * running state stays in registers instead of round-tripping through memory
+ * for every card. */
+VIS_INLINE void walk_cards(const Walk *w, const Sym *cards, int n) {
+    if (w->hash) {
+        HashOut h = *w->hash;
+        ih_word(&h, (uint64_t)(uint32_t)n);
+        for (int i = 0; i < n; i++) ih_word(&h, (uint64_t)cards[i]);
+        *w->hash = h;
+        return;
+    }
+    jo_open(w->json, '[');
+    for (int i = 0; i < n; i++) jo_sym(w->json, cards[i]);
+    jo_close(w->json, ']');
+}
+
+static int cmp_id_text(Sym a, Sym b) {
+    const char *ta = id_text(a), *tb = id_text(b);
+    return strcmp(ta ? ta : "", tb ? tb : "");
+}
+
+/* One board node as the view shows it. The board is about 90% of a view, so
+ * the walk gathers each node once and each sink writes it whole: the hash
+ * folds the whole board in local variables, one memory round trip in all. */
+typedef struct {
+    int index;
+    Sym node_id;
+    long long control_vp;
+    long long total_control_vp_per_turn;
+    long long vp_tokens;
+    Sym spies[MAX_SPY_SLOTS]; /* the shown ids, sorted by text */
+    int spy_count;
+    const Sym *troops;
+    int troop_count;
+} NodeRecord;
+
+VIS_INLINE void gather_node(const GameState *s, int i, NodeRecord *r) {
+    const NodeState *ns = &s->nodes[i];
+    const NodeDefinition *nd = &s->definition->board.nodes[i];
+    r->index = i;
+    r->node_id = ns->node_id;
+    r->control_vp = nd->control_vp;
+    r->total_control_vp_per_turn = nd->total_control_vp_per_turn;
+    r->vp_tokens = ns->vp_tokens;
+    r->spy_count = 0;
+    for (int j = 0; j < ns->spy_count && j < MAX_SPY_SLOTS; j++)
+        if (id_text(ns->spies[j])) r->spies[r->spy_count++] = ns->spies[j];
+    for (int a = 1; a < r->spy_count; a++) {
+        Sym key = r->spies[a];
+        int b = a - 1;
+        while (b >= 0 && cmp_id_text(r->spies[b], key) > 0) { r->spies[b + 1] = r->spies[b]; b--; }
+        r->spies[b + 1] = key;
+    }
+    r->troops = ns->troop_slots;
+    r->troop_count = ns->troop_slot_count < 0 ? 0
+                   : (ns->troop_slot_count > MAX_TROOP_SLOTS ? MAX_TROOP_SLOTS : ns->troop_slot_count);
+}
+
+/* The node's values in the JSON's key order. The node id is hashed raw, like
+ * every id the hash sees; the JSON's node_<i> fallback is positional, so it
+ * carries nothing the position does not. */
+VIS_INLINE void hash_node(HashOut *h, const NodeRecord *r) {
+    ih_word(h, (uint64_t)r->control_vp);
+    ih_word(h, (uint64_t)r->node_id);
+    ih_word(h, (uint64_t)(uint32_t)r->spy_count);
+    for (int j = 0; j < r->spy_count; j++) ih_word(h, (uint64_t)r->spies[j]);
+    ih_word(h, (uint64_t)r->total_control_vp_per_turn);
+    ih_word(h, (uint64_t)(uint32_t)r->troop_count);
+    for (int j = 0; j < r->troop_count; j++) ih_word(h, (uint64_t)r->troops[j]);
+    ih_word(h, (uint64_t)r->vp_tokens);
+}
+
+static void json_node(JsonOut *o, const NodeRecord *r) {
+    jo_open(o, '{');
+    jo_key(o, "control_vp");
+    jo_num(o, r->control_vp);
+    jo_key(o, "node_id");
+    if (id_text(r->node_id)) {
+        jo_sym(o, r->node_id);
+    } else {
+        char fallback[32];
+        snprintf(fallback, sizeof(fallback), "node_%d", r->index);
+        jo_text(o, fallback);
+    }
+    jo_key(o, "spies");
+    jo_open(o, '[');
+    for (int j = 0; j < r->spy_count; j++) jo_sym(o, r->spies[j]);
+    jo_close(o, ']');
+    jo_key(o, "total_control_vp_per_turn");
+    jo_num(o, r->total_control_vp_per_turn);
+    jo_key(o, "troop_slots");
+    jo_open(o, '[');
+    for (int j = 0; j < r->troop_count; j++) jo_sym(o, r->troops[j]);
+    jo_close(o, ']');
+    jo_key(o, "vp_tokens");
+    jo_num(o, r->vp_tokens);
+    jo_close(o, '}');
+}
+
+static void walk_board(const Walk *w) {
+    const GameState *s = w->s;
+    int n = s->node_count < 0 ? 0 : (s->node_count > MAX_NODES ? MAX_NODES : s->node_count);
+    if (w->hash) {
+        /* The whole board folds into one local accumulator. */
+        HashOut h = *w->hash;
+        ih_word(&h, (uint64_t)(uint32_t)n);
+        for (int i = 0; i < n; i++) {
+            NodeRecord r;
+            gather_node(s, i, &r);
+            hash_node(&h, &r);
+        }
+        *w->hash = h;
+        return;
+    }
+    jo_open(w->json, '[');
+    for (int i = 0; i < n; i++) {
+        NodeRecord r;
+        gather_node(s, i, &r);
+        json_node(w->json, &r);
+    }
+    jo_close(w->json, ']');
+}
+
+static void walk_fields(const Walk *w, const Field *fields, int count,
+                        const PlayerState *ps, VisRelation rel);
+
+static void walk_summaries(const Walk *w) {
+    const GameState *s = w->s;
+    int n = s->player_count < 0 ? 0 : (s->player_count > MAX_PLAYERS ? MAX_PLAYERS : s->player_count);
+
+    /* Players in key order. */
+    int order[MAX_PLAYERS];
+    for (int i = 0; i < n; i++) order[i] = i;
+    for (int a = 1; a < n; a++) {
+        int key = order[a];
+        int b = a - 1;
+        while (b >= 0 && cmp_id_text(s->players[order[b]].player_id, s->players[key].player_id) > 0) {
+            order[b + 1] = order[b];
+            b--;
+        }
+        order[b + 1] = key;
+    }
+
+    w_obj_begin(w);
+    for (int i = 0; i < n; i++) {
+        const PlayerState *ps = &s->players[order[i]];
+        if (w->json) {
+            const char *pid = id_text(ps->player_id);
+            jo_key(w->json, pid ? pid : "");
+        } else {
+            w_sym(w, ps->player_id); /* the key is data here: which player */
+        }
+        w_obj_begin(w);
+        walk_fields(w, SUMMARY_FIELDS, FIELD_COUNT(SUMMARY_FIELDS), ps, VIS_OPPONENT);
+        w_obj_end(w);
+    }
+    w_obj_end(w);
+}
+
+static void walk_fields(const Walk *w, const Field *fields, int count,
+                        const PlayerState *ps, VisRelation rel) {
+    const GameState *s = w->s;
+    for (int f = 0; f < count; f++) {
+        const Field *fd = &fields[f];
+        if (fd->kind == F_CARDS && RULES[fd->arg][rel].vis != VIS_CARDS)
+            continue;
+        w_key(w, fd->key);
+        switch (fd->kind) {
+        case F_PLAYER_SCALAR: {
+            int v = 0;
+            switch ((PlayerScalar)fd->arg) {
+            case PS_BARRACKS:        v = ps->barracks; break;
+            case PS_SPIES_AVAILABLE: v = ps->spies_available; break;
+            case PS_VP_TOKENS:       v = ps->vp_tokens; break;
+            case PS_SCORE:           v = ps->score; break;
+            }
+            w_num(w, v);
+            break;
+        }
+        case F_STATE_SCALAR: {
+            int v = 0;
+            switch ((StateScalar)fd->arg) {
+            case SS_ROUND_NUMBER:       v = s->round_number; break;
+            case SS_RESOURCE_POWER:     v = s->resource_pool.power; break;
+            case SS_RESOURCE_INFLUENCE: v = s->resource_pool.influence; break;
+            }
+            w_num(w, v);
+            break;
+        }
+        case F_SIZE:
+            w_num(w, zone_size(s, ps, (VisZone)fd->arg));
+            break;
+        case F_CARDS: {
+            const Sym *cards;
+            int n = zone_cards(s, ps, (VisZone)fd->arg, &cards);
+            walk_cards(w, cards, n);
+            break;
+        }
+        case F_PUBLIC:
+            w_obj_begin(w);
+            walk_fields(w, PUBLIC_FIELDS, FIELD_COUNT(PUBLIC_FIELDS), NULL, VIS_OPPONENT);
+            w_obj_end(w);
+            break;
+        case F_BOARD:
+            walk_board(w);
+            break;
+        case F_CURRENT_PLAYER:
+            if (id_text(s->current_player_id)) w_sym(w, s->current_player_id);
+            else w_text(w, "");
+            break;
+        case F_PHASE: {
+            int ph = (int)s->phase;
+            int known = ph >= 0 && ph < (int)(sizeof(PHASE_NAMES) / sizeof(PHASE_NAMES[0]));
+            if (w->hash) w_num(w, known ? ph : -1);
+            else w_text(w, known ? PHASE_NAMES[ph] : "unknown");
+            break;
+        }
+        case F_SUMMARIES:
+            walk_summaries(w);
+            break;
+        case F_TURN_ORDER: {
+            int n = s->player_count < 0 ? 0 : (s->player_count > MAX_PLAYERS ? MAX_PLAYERS : s->player_count);
+            walk_cards(w, s->player_ids, n);
+            break;
+        }
+        }
+    }
+}
+
+/* Walk observer's view of s. Returns 0 when observer is not a player. */
+static int walk_view(const Walk *w, Sym observer) {
+    int me = find_player(w->s, observer);
+    if (me < 0) return 0;
+    w_obj_begin(w);
+    walk_fields(w, OBSERVER_FIELDS, FIELD_COUNT(OBSERVER_FIELDS), &w->s->players[me], VIS_SELF);
+    w_obj_end(w);
+    return 1;
+}
 
 size_t engine_player_view_json(const GameState *state, Sym player_id, char *buf, size_t cap) {
     JsonOut o;
     memset(&o, 0, sizeof(o));
     o.buf = buf;
     o.cap = cap;
-    if (!state || !walk_view(state, player_id, &JSON_SINK, &o)) o.len = 0;
+    Walk w = {state, NULL, &o};
+    if (!state || !walk_view(&w, player_id)) o.len = 0;
     if (buf && cap > 0) buf[o.len < cap ? o.len : cap - 1] = '\0';
     return o.len;
+}
+
+void engine_infostate_hash(const GameState *state, Sym player_id, uint64_t out[2]) {
+    if (out == NULL) return;
+    out[0] = 0;
+    out[1] = 0;
+    if (state == NULL) return;
+    HashOut h = {0xcbf29ce484222325ULL /* FNV-1a 64 offset basis */,
+                 0x9e3779b97f4a7c15ULL /* golden-ratio seed */};
+    ih_word(&h, 0x0700); /* schema tag: the ADR-0007 walk */
+    Walk w = {state, &h, NULL};
+    if (!walk_view(&w, player_id)) return;
+    out[0] = h.h0;
+    out[1] = h.h1;
 }

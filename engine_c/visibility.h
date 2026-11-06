@@ -8,6 +8,8 @@
  *
  *   engine_player_view_json  the observer's view as JSON: the OpenSpiel
  *                            observation string and the NN's observed features.
+ *   engine_infostate_hash    the IS-MCTS tree key: a fingerprint of the same
+ *                            view, equal exactly when the views are equal.
  *
  * The view is produced by one canonical walk over the state, so every consumer
  * sees the same fields in the same order. See docs/adr/0007.
@@ -17,6 +19,7 @@
 
 #include "state.h"
 #include <stddef.h>
+#include <stdint.h>
 
 /* What an observer sees of one zone. Every zone's size is public. */
 typedef enum { VIS_COUNT = 0, VIS_CARDS = 1 } Vis;
@@ -59,5 +62,11 @@ VisRule vis_rule(VisZone zone, VisRelation rel);
  * The bytes equal json.dumps(view, sort_keys=True) of the Python view this
  * function replaced (F-013 G1 pins them). */
 size_t engine_player_view_json(const GameState *state, Sym player_id, char *buf, size_t cap);
+
+/* player_id's tree key: a 128-bit fingerprint of the same walk that renders
+ * the view, so two states share a key exactly when they share a view (up to
+ * hash collisions). Values are only comparable inside one process. Writes
+ * {0, 0} when state is NULL or player_id is not a player. */
+void engine_infostate_hash(const GameState *state, Sym player_id, uint64_t out[2]);
 
 #endif

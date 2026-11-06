@@ -17,7 +17,6 @@
  */
 #include "../engine.h"
 #include "../visibility.h"
-#include "../player_view.h"
 #include "../intern.h"
 #include "../arena.h"
 #include "catalog_dir.h"
