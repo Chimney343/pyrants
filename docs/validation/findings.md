@@ -907,7 +907,8 @@ passed.
 - Falsification test: build a state with `pending_eot` (or `pending_immediate`/`pending_ability`) set, call `CSession.save()` then `CSession.load()`, and compare legal moves plus the next mid-game reshuffle order.
 - Expected if REAL: the reloaded state has no pending decision and a different reshuffle stream.
 - Expected if FALSE POSITIVE: the pending fields and `shuffle_seed`/`shuffle_counter` survive the round trip.
-- Status: **OPEN** (deferred to the candidate-2 decision-stack migration; adding fields changes the scenario schema)
+- Status: **FIXED** (2026-11-06)
+- Resolution: candidate 2's decision-stack module (`engine_c/pending.c`, ADR-0006) owns the pending records. The scenario document is now schema v2: `schema_version: 2` at the root, `state.pending` (`kind`, `priority`, `count` and the four pending payloads) and `state.shuffle_seed`/`state.shuffle_counter`. `engine_serialize_state` no longer refuses a pending generic choice, and `engine_deserialize_state` rebuilds the game with the document's seed and restores the counter, so the RNG stream continues where the save left it. The generic frame's `current_actions` is re-derived from the catalog for the whole parent chain. A schema-v1 document (no `pending`) still loads, with no pending decision and the previous seed-42 behaviour, so every committed `data/scenarios/*.json` keeps working. Regression test: `engine_c/tests/test_saveload.c` (`test_pending_immediate_round_trip`, `test_pending_eot_round_trip`, `test_pending_ability_round_trip`, `test_pending_generic_round_trip`, `test_shuffle_stream_round_trip`, `test_schema_v1_loads_without_pending`, `test_pending_hash_and_describe`).
 
 ### F-036 `CEngine.available()` marks the engine initialized without registering effects
 - Class: ENGINE-OPENSPIEL (bindings initialization)

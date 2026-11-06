@@ -73,3 +73,16 @@ module's shape is settled, not before.
   compared `source_fragment` family. The descriptive string stays for labels;
   the runtime switches on the validated enum. The `force_discard` modes are
   the first migrated family.
+- **decision stack** - the C module `engine_c/pending.c` that owns everything
+  the engine waits on: the immediate and end-of-turn promotion stacks, the paid
+  ability and the generic choice. It owns their ordering, stack mechanics,
+  clone, hash, describe and persistence behind one interface.
+- **decision record** - the `PendingDecision` value the decision stack returns:
+  the kind of pending decision, its priority, and how many are queued. It
+  stays internal to C until candidate 8 gives Python a game handle.
+- **pending kind** - the `PendingKind` enum naming one waiting mechanism
+  (`immediate`, `end_of_turn`, `ability`, `generic`, and `chance`, which is
+  reserved for ADR-0002's postponed F-003 frame and is not built).
+- **scenario schema** - the versioned layout of a scenario document.
+  Version 2 adds `schema_version`, `state.pending` and the shuffle stream;
+  version 1 documents (no `pending`) still load, with no pending decision.
