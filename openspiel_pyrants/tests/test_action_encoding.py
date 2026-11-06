@@ -21,11 +21,14 @@ def test_num_distinct_actions() -> None:
 
 def test_legal_move_indexing_is_ordered(requires_c_engine) -> None:
     state = _state_after_chance()
-    pairs = list(enumerate(state._adapter.legal_moves()))
-    assert len(pairs) > 0
-    for index, pair in enumerate(pairs):
-        assert pair[0] == index
-        assert pair[1].move_type
+    moves = state._adapter.legal_moves()
+    assert len(moves) > 0
+    assert state.legal_actions() == list(range(len(moves)))
+    for index, move in enumerate(moves):
+        decoded = state.decode_action(index)
+        assert decoded is not None
+        assert decoded.move_type == move.move_type
+        assert decoded.to_payload() == move.to_payload()
 
 
 def test_legal_actions_roundtrip_via_decode(requires_c_engine) -> None:

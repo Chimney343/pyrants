@@ -96,6 +96,7 @@ def test_legal_moves_exclude_placeholders_during_rollout(requires_c_engine):
     """``legal_moves`` is applicable-only; the display query keeps placeholders."""
     state = _midgame_state(2, plies=40)
     rng = np.random.RandomState(7)
+    seen = False
     for _ in range(2000):
         if state.is_terminal():
             break
@@ -104,5 +105,15 @@ def test_legal_moves_exclude_placeholders_during_rollout(requires_c_engine):
             m.move_type == "resolve_generic" and m.data.get("target_id") == "unavailable"
             for m in legal
         ), "legal_moves leaked a display-only placeholder"
+        display = state._adapter.display_moves()
+        if any(
+            not applicable
+            and m.move_type == "resolve_generic"
+            and m.data.get("target_id") == "unavailable"
+            for m, applicable in display
+        ):
+            seen = True
+            break
         actions = state.legal_actions(state.current_player())
         state.apply_action(int(rng.choice(actions)))
+    assert seen, "no placeholder move observed - fixture no longer covers the defect"
