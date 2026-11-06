@@ -4,6 +4,7 @@
 #include "arena.h"
 #include "engine.h"
 #include "ops/op.h"
+#include "pending.h"
 #include "rng.h"
 #include <string.h>
 #include <stdlib.h>
@@ -463,34 +464,32 @@ GameState *auto_resolve_pending_generic(GameState *state, Sym player_id) {
             if (op_str && strcmp(op_str, "promote_card") == 0) {
                 const char *timing_str = intern_str(action->timing);
                 if (timing_str && strcmp(timing_str, "end_of_turn") == 0) {
-                    if (state->pending_eot_count < MAX_PENDING_PROMO) {
-                        PendingPromotionState *pp = &state->pending_eot[state->pending_eot_count];
-                        memset(pp, 0, sizeof(*pp));
-                        pp->source_card_id = p->source_card_id;
-                        pp->timing = intern("end_of_turn");
-                        pp->deferred_choice = 1;
-                        pp->optional = action->optional;
-                        pp->promotions_remaining = resolve_runtime_action_count(state, player_id, action);
-                        for (int j = 0; j < action->metadata_count; j++) {
-                            const char *mk = intern_str(action->metadata[j].key);
-                            const char *mv = intern_str(action->metadata[j].value);
-                            if (mk && strcmp(mk, "requires_another_played_card") == 0
-                                && mv && strcmp(mv, "true") == 0)
-                                pp->requires_another_played_card = 1;
-                            if (mk && strcmp(mk, "repeat_while_targets") == 0
-                                && mv && strcmp(mv, "true") == 0)
-                                pp->repeat_while_targets = 1;
-                            if (mk && strcmp(mk, "required_aspect") == 0 && mv)
-                                pp->required_aspect = intern(mv);
-                            if (mk && strcmp(mk, "required_secondary_aspect") == 0 && mv)
-                                pp->required_secondary_aspect = intern(mv);
-                            if (mk && strcmp(mk, "focus_aspect") == 0 && mv)
-                                pp->focus_aspect = intern(mv);
-                        }
-                        if (pp->repeat_while_targets && action->quantity_kind != QUANT_FIXED)
-                            pp->promotions_remaining = MAX_ZONE_SIZE;
-                        state->pending_eot_count++;
+                    PendingPromotionState promotion;
+                    memset(&promotion, 0, sizeof(promotion));
+                    promotion.source_card_id = p->source_card_id;
+                    promotion.timing = intern("end_of_turn");
+                    promotion.deferred_choice = 1;
+                    promotion.optional = action->optional;
+                    promotion.promotions_remaining = resolve_runtime_action_count(state, player_id, action);
+                    for (int j = 0; j < action->metadata_count; j++) {
+                        const char *mk = intern_str(action->metadata[j].key);
+                        const char *mv = intern_str(action->metadata[j].value);
+                        if (mk && strcmp(mk, "requires_another_played_card") == 0
+                            && mv && strcmp(mv, "true") == 0)
+                            promotion.requires_another_played_card = 1;
+                        if (mk && strcmp(mk, "repeat_while_targets") == 0
+                            && mv && strcmp(mv, "true") == 0)
+                            promotion.repeat_while_targets = 1;
+                        if (mk && strcmp(mk, "required_aspect") == 0 && mv)
+                            promotion.required_aspect = intern(mv);
+                        if (mk && strcmp(mk, "required_secondary_aspect") == 0 && mv)
+                            promotion.required_secondary_aspect = intern(mv);
+                        if (mk && strcmp(mk, "focus_aspect") == 0 && mv)
+                            promotion.focus_aspect = intern(mv);
                     }
+                    if (promotion.repeat_while_targets && action->quantity_kind != QUANT_FIXED)
+                        promotion.promotions_remaining = MAX_ZONE_SIZE;
+                    pending_promotion_push(state, PENDING_EOT, &promotion);
                     p->next_action_index++;
                     continue;
                 }

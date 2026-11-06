@@ -2,6 +2,7 @@
 #include "engine.h"
 #include "loader.h"
 #include "intern.h"
+#include "pending.h"
 #include "cJSON.h"
 #include <stdio.h>
 #include <string.h>
@@ -53,16 +54,35 @@ static int parse_sym_array(cJSON *arr, Sym *out, int max_count) {
     return count;
 }
 
+static void add_uint64(cJSON *obj, const char *key, uint64_t value) {
+    char buf[32];
+    snprintf(buf, sizeof(buf), "%llu", (unsigned long long)value);
+    cJSON_AddStringToObject(obj, key, buf);
+}
+
+static uint64_t read_uint64(const cJSON *obj, const char *key, uint64_t fallback) {
+    const cJSON *item = cJSON_GetObjectItem(obj, key);
+    if (!item) return fallback;
+    if (cJSON_IsString(item) && item->valuestring)
+        return strtoull(item->valuestring, NULL, 10);
+    return (uint64_t)item->valuedouble;
+}
+
+static int read_int_field(const cJSON *obj, const char *key, int fallback) {
+    const cJSON *item = cJSON_GetObjectItem(obj, key);
+    if (!item) return fallback;
+    return (int)item->valuedouble;
+}
+
 int engine_serialize_state(const GameState *state,
                            const char *catalog_path,
                            const char *board_path,
                            const char *setup_path,
                            int move_count, int is_terminal,
                            char *out_json, int out_cap) {
-    if (state->pending_generic) return 0;
-
     cJSON *root = cJSON_CreateObject();
 
+    cJSON_AddNumberToObject(root, "schema_version", 2);
     add_string(root, "scenario_id", "auto_generated");
     add_string(root, "description", "");
     cJSON_AddItemToObject(root, "tags", cJSON_CreateArray());
@@ -124,6 +144,11 @@ int engine_serialize_state(const GameState *state,
 
     add_sym_array(state_obj, "devour_pile", state->devour_pile, state->devour_pile_count);
 
+    add_uint64(state_obj, "shuffle_seed", state->shuffle_seed);
+    cJSON_AddNumberToObject(state_obj, "shuffle_counter", (double)state->shuffle_counter);
+
+    pending_save_json(state_obj, state);
+
     char *raw = cJSON_Print(root);
     cJSON_Delete(root);
     if (!raw) return 0;
@@ -184,15 +209,20 @@ GameState *engine_deserialize_state(const char *json,
         def = engine_load_definition_json(catalog_json, brd_path, stp_path, arena);
     }
 
+    uint64_t seed = read_uint64(state_obj, "shuffle_seed", 42);
+
     GameState *gs;
     if (def && def->catalog.card_count > 0) {
-        gs = engine_create_game_definition(def, player_ids_buf, player_count, 42);
+        gs = engine_create_game_definition(def, player_ids_buf, player_count, seed);
     } else {
-        gs = engine_create_game(NULL, player_ids_buf, player_count, 42);
+        gs = engine_create_game(NULL, player_ids_buf, player_count, seed);
     }
     free(player_ids_buf);
 
     if (!gs) { cJSON_Delete(root); return NULL; }
+
+    gs->shuffle_counter = read_int_field(state_obj, "shuffle_counter",
+                                         gs->shuffle_counter);
 
     cJSON *rn = cJSON_GetObjectItem(state_obj, "round_number");
     if (rn) gs->round_number = (int)rn->valuedouble;
@@ -272,6 +302,8 @@ GameState *engine_deserialize_state(const char *json,
 
     gs->devour_pile_count = parse_sym_array(
         cJSON_GetObjectItem(state_obj, "devour_pile"), gs->devour_pile, MAX_ZONE_SIZE);
+
+    pending_load_json(state_obj, gs);
 
     cJSON_Delete(root);
     return gs;

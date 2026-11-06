@@ -19,8 +19,9 @@ ops/play_card.c
 ops/promote_card.c
 ops/recruit_card.c
 ops/return_spy.c
-ops/supplant_troop.c
 ops/return_unit.c
+ops/supplant_troop.c
+pending.c
 phases.c
 player_view.c
 rng.c

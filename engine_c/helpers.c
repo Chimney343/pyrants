@@ -1,5 +1,6 @@
 #include "helpers.h"
 #include "generic_runtime.h"
+#include "pending.h"
 #include "scoring.h"
 #include <stdio.h>
 #include <string.h>
@@ -431,14 +432,13 @@ int apply_promote_instruction(GameState *state, Sym player_id, Sym card_id, Sym 
 
     if (strcmp(ts, "immediate") == 0) {
         if (optional) {
-            if (state->pending_immediate_count < MAX_PENDING_PROMO) {
-                PendingPromotionState *pp = &state->pending_immediate[state->pending_immediate_count++];
-                memset(pp, 0, sizeof(*pp));
-                pp->card_id = card_id;
-                pp->timing = timing;
-                pp->optional = 1;
-                pp->source_card_id = card_id;
-            }
+            PendingPromotionState promotion;
+            memset(&promotion, 0, sizeof(promotion));
+            promotion.card_id = card_id;
+            promotion.timing = timing;
+            promotion.optional = 1;
+            promotion.source_card_id = card_id;
+            pending_promotion_push(state, PENDING_IMMEDIATE, &promotion);
             return 0;
         }
         promote_card(state, player_id, card_id);
@@ -446,14 +446,13 @@ int apply_promote_instruction(GameState *state, Sym player_id, Sym card_id, Sym 
     }
 
     if (strcmp(ts, "end_of_turn") == 0) {
-        if (state->pending_eot_count < MAX_PENDING_PROMO) {
-            PendingPromotionState *pp = &state->pending_eot[state->pending_eot_count++];
-            memset(pp, 0, sizeof(*pp));
-            pp->card_id = card_id;
-            pp->timing = timing;
-            pp->optional = optional;
-            pp->source_card_id = card_id;
-        }
+        PendingPromotionState promotion;
+        memset(&promotion, 0, sizeof(promotion));
+        promotion.card_id = card_id;
+        promotion.timing = timing;
+        promotion.optional = optional;
+        promotion.source_card_id = card_id;
+        pending_promotion_push(state, PENDING_EOT, &promotion);
     }
     return 0;
 }

@@ -5,6 +5,7 @@
 #include "arena.h"
 #include "engine.h"
 #include "generic_runtime.h"
+#include "pending.h"
 #include <string.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -196,8 +197,10 @@ static int legal_main_phase_actions(const GameState *state, Sym player_id,
 
 static int end_main_phase_available(const GameState *state) {
     Sym cpid = state->current_player_id;
-    for (int i = 0; i < state->pending_eot_count; i++) {
-        const PendingPromotionState *pe = &state->pending_eot[i];
+    int eot_count = pending_promotion_count(state, PENDING_EOT);
+    for (int i = 0; i < eot_count; i++) {
+        const PendingPromotionState *pe = pending_promotion_at(state, PENDING_EOT, i);
+        if (!pe) continue;
         if (!(pe->requires_another_played_card && pe->deferred_choice)) continue;
         if (pe->repeat_while_targets) continue;
 
@@ -245,9 +248,11 @@ static int collect_moves(const GameState *state, Move *out, unsigned char *appli
     if (state->phase == PHASE_DRAW) return 0;
 
     if (state->phase == PHASE_MAIN) {
-        if (state->pending_immediate_count > 0) {
+        const PendingPromotionState *immediate =
+            pending_promotion_at(state, PENDING_IMMEDIATE, 0);
+        if (immediate) {
             return legal_optional_promotion_moves(
-                &state->pending_immediate[0], player_id, out, max_moves);
+                immediate, player_id, out, max_moves);
         }
         if (state->pending_generic)
             return collect_pending_generic_choice_moves(
@@ -281,8 +286,8 @@ static int collect_moves(const GameState *state, Move *out, unsigned char *appli
     }
 
     if (state->phase == PHASE_END_OF_TURN) {
-        if (state->pending_eot_count > 0) {
-            const PendingPromotionState *p = &state->pending_eot[0];
+        const PendingPromotionState *p = pending_promotion_at(state, PENDING_EOT, 0);
+        if (p) {
             if (p->deferred_choice)
                 return legal_deferred_eot_promotion_moves(state, player_id, p, out, max_moves);
             if (p->optional)
@@ -470,17 +475,15 @@ static GameState *apply_decline_card_ability(GameState *state, Sym player_id, Sy
 }
 
 static GameState *apply_promote_card_impl(GameState *state, Sym player_id, Sym card_id) {
-    if (state->pending_immediate_count > 0) {
-        const PendingPromotionState *p = &state->pending_immediate[0];
-        if (p->card_id != card_id) return NULL;
+    const PendingPromotionState *head = pending_promotion_at(state, PENDING_IMMEDIATE, 0);
+    if (head) {
+        if (head->card_id != card_id) return NULL;
         promote_card(state, player_id, card_id);
-        for (int i = 0; i < state->pending_immediate_count - 1; i++)
-            state->pending_immediate[i] = state->pending_immediate[i + 1];
-        state->pending_immediate_count--;
+        pending_promotion_pop(state, PENDING_IMMEDIATE);
         return state;
     }
-    if (state->pending_eot_count > 0) {
-        PendingPromotionState *p = &state->pending_eot[0];
+    PendingPromotionState *p = pending_promotion_mut(state, PENDING_EOT, 0);
+    if (p) {
         if (p->deferred_choice) {
             Sym targets[MAX_ZONE_SIZE];
             int tc = deferred_promotion_target_ids(state, player_id, p, targets, MAX_ZONE_SIZE);
@@ -491,43 +494,27 @@ static GameState *apply_promote_card_impl(GameState *state, Sym player_id, Sym c
             if (p->promotions_remaining > 0)
                 p->promotions_remaining--;
             if (p->promotions_remaining <= 0) {
-                for (int i = 0; i < state->pending_eot_count - 1; i++)
-                    state->pending_eot[i] = state->pending_eot[i + 1];
-                state->pending_eot_count--;
+                pending_promotion_pop(state, PENDING_EOT);
             } else {
                 Sym rem[MAX_ZONE_SIZE];
                 int rem_tc = deferred_promotion_target_ids(state, player_id, p, rem, MAX_ZONE_SIZE);
                 if (rem_tc == 0) {
-                    for (int i = 0; i < state->pending_eot_count - 1; i++)
-                        state->pending_eot[i] = state->pending_eot[i + 1];
-                    state->pending_eot_count--;
+                    pending_promotion_pop(state, PENDING_EOT);
                 }
             }
             return state;
         }
         if (p->card_id != card_id || !p->optional) return NULL;
         promote_card(state, player_id, card_id);
-        for (int i = 0; i < state->pending_eot_count - 1; i++)
-            state->pending_eot[i] = state->pending_eot[i + 1];
-        state->pending_eot_count--;
+        pending_promotion_pop(state, PENDING_EOT);
         return state;
     }
     return NULL;
 }
 
 static GameState *apply_skip_promote_impl(GameState *state) {
-    if (state->pending_immediate_count > 0) {
-        for (int i = 0; i < state->pending_immediate_count - 1; i++)
-            state->pending_immediate[i] = state->pending_immediate[i + 1];
-        state->pending_immediate_count--;
-        return state;
-    }
-    if (state->pending_eot_count > 0) {
-        for (int i = 0; i < state->pending_eot_count - 1; i++)
-            state->pending_eot[i] = state->pending_eot[i + 1];
-        state->pending_eot_count--;
-        return state;
-    }
+    if (pending_promotion_pop(state, PENDING_IMMEDIATE)) return state;
+    if (pending_promotion_pop(state, PENDING_EOT)) return state;
     return NULL;
 }
 
@@ -593,17 +580,19 @@ static void apply_end_of_turn_effects(GameState *state, int include_force_discar
 }
 
 static GameState *enter_end_of_turn(GameState *state) {
-    if (state->pending_immediate_count > 0) return NULL;
+    if (pending_promotion_count(state, PENDING_IMMEDIATE) > 0) return NULL;
 
     state->pending_ability = NULL;
 
+    PendingPromotionState kept[MAX_PENDING_PROMO];
     int kept_count = 0;
     int pi = player_index_for_id_state(state, state->current_player_id);
-    for (int i = 0; i < state->pending_eot_count; i++) {
-        PendingPromotionState *p = &state->pending_eot[i];
+    int eot_count = pending_promotion_count(state, PENDING_EOT);
+    for (int i = 0; i < eot_count; i++) {
+        const PendingPromotionState *p = pending_promotion_at(state, PENDING_EOT, i);
+        if (!p) continue;
         if (p->optional || p->deferred_choice) {
-            if (i != kept_count) state->pending_eot[kept_count] = *p;
-            kept_count++;
+            if (kept_count < MAX_PENDING_PROMO) kept[kept_count++] = *p;
         } else {
             /* D14b: only promote mandatory cards still in played_cards
              * (a prior effect may have removed the card). Mirrors Python's
@@ -619,7 +608,11 @@ static GameState *enter_end_of_turn(GameState *state) {
                 promote_card(state, state->current_player_id, p->card_id);
         }
     }
-    state->pending_eot_count = kept_count;
+    for (int i = 0; i < kept_count; i++) {
+        PendingPromotionState *dst = pending_promotion_mut(state, PENDING_EOT, i);
+        if (dst) *dst = kept[i];
+    }
+    pending_promotion_set_count(state, PENDING_EOT, kept_count);
 
     apply_end_of_turn_effects(state, 1, 0);
     advance_phase(state);
@@ -627,7 +620,7 @@ static GameState *enter_end_of_turn(GameState *state) {
 }
 
 static GameState *apply_resolve_end_of_turn(GameState *state, Sym player_id) {
-    if (state->pending_eot_count > 0) return NULL;
+    if (pending_promotion_count(state, PENDING_EOT) > 0) return NULL;
     apply_end_of_turn_effects(state, 0, 1);
     award_end_of_turn_site_vp(state, player_id);
     advance_phase(state);
