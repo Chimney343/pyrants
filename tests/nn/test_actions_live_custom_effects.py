@@ -20,7 +20,6 @@ from engine_c.bindings.c_adapter import CEngineAdapter
 from engine_c.bindings.engine_bindings import _lib
 from engine_c.bindings.pending_context import read_pending_generic_context_full
 from engine_c.bindings.session import CSession
-from openspiel_pyrants.action_encoding_c import compute_c_action_map
 from openspiel_pyrants.nn.actions import (
     ACTION_LAYOUT,
     RESOLVE_GENERIC_LAYOUT,
@@ -29,6 +28,7 @@ from openspiel_pyrants.nn.actions import (
     owner_slot,
 )
 from openspiel_pyrants.nn.index import NODE_ID_TO_INDEX
+from openspiel_pyrants.state_c import _indexed_moves
 from tests.c_engine.card_test_helpers import _make_engine, make_card_test_session
 from tests.c_engine.test_card_gibbering_mouther import (
     SCENARIO_PATH as GIBBERING_SCENARIO,
@@ -72,7 +72,7 @@ def _pending_ctx(adapter: CEngineAdapter):
 
 
 def _moves(adapter: CEngineAdapter):
-    return [move for _idx, move in compute_c_action_map(adapter)]
+    return [move for _idx, move in _indexed_moves(adapter)]
 
 
 def _start(name: str) -> int:

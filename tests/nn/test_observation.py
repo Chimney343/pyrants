@@ -443,7 +443,7 @@ def test_presence_agrees_with_engine_deploy_targets(requires_c_engine) -> None:
     from engine_c.bindings.c_adapter import CEngineAdapter
     from engine_c.bindings.ce_api import CEngine
     from interface.replay_loader import engine_seed, load_replay
-    from openspiel_pyrants.action_encoding_c import compute_c_action_map
+    from openspiel_pyrants.state_c import _indexed_moves
 
     root = ROOT / "artifacts" / "ismcts"
     dirs = [
@@ -482,7 +482,7 @@ def test_presence_agrees_with_engine_deploy_targets(requires_c_engine) -> None:
                         n["node_id"]: tuple(n.get("troop_slots", ())) for n in nodes
                     }
                     spies = {n["node_id"]: tuple(n.get("spies", ())) for n in nodes}
-                    for _idx, move in compute_c_action_map(adapter):
+                    for _idx, move in _indexed_moves(adapter):
                         payload = move.to_payload()
                         if payload.get("move_type") != "deploy":
                             continue

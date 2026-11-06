@@ -833,7 +833,7 @@ def test_every_legal_move_in_stored_replays_maps(requires_c_engine) -> None:
     from engine_c.bindings.ce_api import CEngine
     from engine_c.bindings.pending_context import read_pending_generic_context_full
     from interface.replay_loader import engine_seed, load_replay
-    from openspiel_pyrants.action_encoding_c import compute_c_action_map
+    from openspiel_pyrants.state_c import _indexed_moves
 
     full = os.environ.get("PYRANTS_NN_CENSUS") == "1"
     limit = 0 if full else 3
@@ -896,7 +896,7 @@ def test_every_legal_move_in_stored_replays_maps(requires_c_engine) -> None:
                 cp = adapter.state.current_player_id
                 pending = read_pending_generic_context_full(adapter._state._ptr)
                 ctx = action_context(adapter, cp, pending)
-                moves = [move for _idx, move in compute_c_action_map(adapter)]
+                moves = [move for _idx, move in _indexed_moves(adapter)]
                 if pending and pending.get("op"):
                     game_ops.add(pending["op"])
                     # (g) coverage: states seen per (op, effect_kind).
