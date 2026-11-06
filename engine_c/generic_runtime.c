@@ -187,7 +187,7 @@ int action_requires_selection(const CardAction *action) {
         if (timing && strcmp(timing, "end_of_turn") == 0) return 0;
         return 1;
     }
-    const CardOp *card_op = op_lookup(action->op);
+    const CardOp *card_op = card_op_for(action);
     if (card_op) return card_op->needs_selection;
     if (op && strcmp(op, "custom_effect") == 0) {
         for (int i = 0; i < action->metadata_count; i++) {
@@ -798,7 +798,7 @@ GameState *apply_resolve_generic_choice(GameState *src, const Move *move) {
                 else p->next_action_index++;
                 return auto_resolve_pending_generic(state, pid);
             }
-            const CardOp *card_op = op_lookup(action->op);
+            const CardOp *card_op = card_op_for(action);
             if (card_op && card_op->target_from_move && card_op->apply) {
                 OpTarget target;
                 if (!card_op->target_from_move(state, pid, action, move, &target)) {
@@ -1505,4 +1505,5 @@ int collect_pending_generic_choice_moves(GameState *state, Sym player_id, Move *
 
     return nc;
 }
+
 

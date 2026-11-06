@@ -558,7 +558,7 @@ int legal_generic_target_selection_moves(const GameState *state, Sym player_id,
                                           const PendingGenericChoiceState *pending,
                                           const CardDefinition *card,
                                           const CardAction *action, Move *out, int max_out) {
-    const CardOp *op = op_lookup(action->op);
+    const CardOp *op = card_op_for(action);
     if (op && op->enumerate)
         return op->enumerate(state, player_id, pending, card, action, out, max_out);
 
@@ -572,3 +572,4 @@ int legal_generic_target_selection_moves(const GameState *state, Sym player_id,
 void register_selection_handlers(void) {
     register_sel(intern("custom_effect"), sel_custom_effect);
 }
+

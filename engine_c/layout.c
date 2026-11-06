@@ -39,6 +39,7 @@ static const LayoutEntry layout_entries[] = {
     FIELD(CardAction, metadata),
     FIELD(CardAction, metadata_count),
     FIELD(CardAction, variant),
+    FIELD(CardAction, op_impl),
 
     SIZE_OF(CardOption),
     FIELD(CardOption, option_id),

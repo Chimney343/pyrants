@@ -33,6 +33,12 @@ static const CardOp *const OPS[] = {
     &OP_PROMOTE_CARD,
 };
 
+const CardOp *card_op_for(const CardAction *action) {
+    if (!action) return NULL;
+    if (action->op_impl) return action->op_impl;
+    return op_lookup(action->op);
+}
+
 const CardOp *op_lookup(Sym op) {
     const char *name = intern_str(op);
     if (!name) return NULL;

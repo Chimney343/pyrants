@@ -1,4 +1,5 @@
 #include "loader.h"
+#include "ops/op.h"
 #include "cJSON.h"
 #include "intern.h"
 #include "arena.h"
@@ -120,6 +121,7 @@ static CardAction parse_card_action(cJSON *ja) {
     memset(&a, 0, sizeof(a));
     a.action_id = json_string_sym(ja, "action_id", SYM_NULL);
     a.op = json_string_sym(ja, "op", SYM_NULL);
+    a.op_impl = op_lookup(a.op);
     a.target_scope = json_string_sym(ja, "target_scope", SYM_NULL);
     a.timing = json_string_sym(ja, "timing", intern("immediate"));
     a.optional = json_bool(ja, "optional", false);

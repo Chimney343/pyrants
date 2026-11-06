@@ -192,7 +192,7 @@ int engine_describe_move(const GameState *state, const Move *move,
                 const CardAction *act = pending_generic_active_action(state->pending_generic);
                 if (act) {
                     const char *op = intern_str(act->op);
-                    const CardOp *card_op = op_lookup(act->op);
+                    const CardOp *card_op = card_op_for(act);
                     if (card_op && card_op->describe) {
                         OpTarget target;
                         OpTarget *target_ptr = NULL;
@@ -418,7 +418,7 @@ int engine_describe_move(const GameState *state, const Move *move,
                                             if (opt->action_count == 1) {
                                                 const CardAction *a = &opt->actions[0];
                                                 const char *op = intern_str(a->op);
-                                                const CardOp *card_op = op_lookup(a->op);
+                                                const CardOp *card_op = card_op_for(a);
                                                 if (card_op && card_op->describe) {
                                                     card_op->describe(state, a, NULL, NULL, NULL, 0,
                                                                       buf, sizeof(buf));
@@ -446,7 +446,7 @@ int engine_describe_move(const GameState *state, const Move *move,
                                                     const CardAction *a = &opt->actions[ai];
                                                     const char *op = intern_str(a->op);
                                                     if (!op) continue;
-                                                    const CardOp *card_op = op_lookup(a->op);
+                                                    const CardOp *card_op = card_op_for(a);
                                                     if (card_op && card_op->describe) {
                                                         card_op->describe(state, a, NULL, NULL, NULL, 0,
                                                                           part_buf, sizeof(part_buf));
@@ -521,3 +521,4 @@ int engine_describe_move(const GameState *state, const Move *move,
     }
     return needed;
 }
+

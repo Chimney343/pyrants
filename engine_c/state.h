@@ -55,6 +55,8 @@ typedef struct {
     Sym   value;
 } MetaEntry;
 
+typedef struct CardOp CardOp;
+
 typedef enum {
     CARD_VARIANT_NONE = 0,
     CARD_VARIANT_TARGETED_DISCARD,
@@ -96,6 +98,7 @@ typedef struct {
     MetaEntry  metadata[MAX_METADATA];
     int        metadata_count;
     CardVariant variant;
+    const CardOp *op_impl;  /* cached lookup; NULL for legacy/stack-built actions */
 } CardAction;
 
 typedef struct {

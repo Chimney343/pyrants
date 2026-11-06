@@ -93,7 +93,7 @@ typedef void (*OpDescribeFn)(const GameState *state, const CardAction *action,
                              const char *const *node_ids, const char *const *node_labels,
                              int node_pair_count, char *buf, size_t cap);
 
-typedef struct {
+typedef struct CardOp {
     const char *name;
     int needs_selection;
     OpEnumerateFn enumerate;
@@ -103,6 +103,7 @@ typedef struct {
 } CardOp;
 
 const CardOp *op_lookup(Sym op);
+const CardOp *card_op_for(const CardAction *action);
 int op_table_count(void);
 const CardOp *op_table_at(int index);
 
