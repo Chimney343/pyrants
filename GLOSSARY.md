@@ -69,3 +69,7 @@ module's shape is settled, not before.
 - **timing trigger** - the loader-validated `immediate`/`end_of_turn`
   action field. End-of-turn actions are deferred to the EOT phase and applied
   once; they must not execute inline during pending-generic resolution.
+- **action variant** - the loader-mapped `CardAction.variant` enum for a
+  compared `source_fragment` family. The descriptive string stays for labels;
+  the runtime switches on the validated enum. The `force_discard` modes are
+  the first migrated family.

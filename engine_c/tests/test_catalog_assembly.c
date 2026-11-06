@@ -94,6 +94,17 @@ static void test_engine_load(void) {
         if (def->catalog.cards[i].card_id == intern("grazzt"))
             assert(def->catalog.cards[i].execution.options[1].viability
                    == intern("own_spy_anywhere"));
+        if (def->catalog.cards[i].card_id == intern("neogi")) {
+            assert(def->catalog.cards[i].action_count >= 2);
+            assert(def->catalog.cards[i].actions[1].variant
+                   == CARD_VARIANT_END_OF_TURN_MASS_DISCARD);
+        }
+        if (def->catalog.cards[i].card_id == intern("gauth")) {
+            assert(def->catalog.cards[i].execution.option_count >= 2);
+            assert(def->catalog.cards[i].execution.options[1].action_count >= 2);
+            assert(def->catalog.cards[i].execution.options[1].actions[1].variant
+                   == CARD_VARIANT_TARGETED_DISCARD);
+        }
     }
 
     /* Spot-check the engine-resolved aboleth definition against the JSON. */
@@ -250,6 +261,47 @@ static void test_invalid_timing(void) {
     printf("PASS: invalid action timing is rejected by the loader\n");
 }
 
+static void test_invalid_force_variant(void) {
+    intern_init(4096);
+    Arena *arena = arena_create(16 * 1024 * 1024);
+    assert(arena);
+
+    char *json = test_load_catalog_json_both();
+    assert(json != NULL);
+    cJSON *root = cJSON_Parse(json);
+    assert(root != NULL);
+    cJSON *cards = cJSON_GetObjectItem(root, "cards");
+    assert(cards != NULL && cJSON_IsArray(cards));
+    int n = cJSON_GetArraySize(cards);
+    for (int i = 0; i < n; i++) {
+        cJSON *card = cJSON_GetArrayItem(cards, i);
+        cJSON *cid = cJSON_GetObjectItem(card, "card_id");
+        if (!cid || !cJSON_IsString(cid)
+            || strcmp(cid->valuestring, "neogi") != 0) continue;
+        cJSON *actions = cJSON_GetObjectItem(card, "actions");
+        assert(actions != NULL && cJSON_IsArray(actions));
+        cJSON *action = cJSON_GetArrayItem(actions, 1);
+        assert(action != NULL);
+        cJSON_DeleteItemFromObject(action, "source_fragment");
+        cJSON_AddStringToObject(action, "source_fragment", "bogus_discard");
+        break;
+    }
+    char *bad = cJSON_PrintUnformatted(root);
+    assert(bad != NULL);
+
+    const char *board_path, *setup_path;
+    test_board_setup_paths(&board_path, &setup_path);
+    GameDefinition *def = engine_load_definition_json(bad, board_path, setup_path, arena);
+    assert(def == NULL);
+
+    free(bad);
+    cJSON_Delete(root);
+    free(json);
+    arena_destroy(arena);
+    intern_destroy();
+    printf("PASS: invalid force_discard variant is rejected by the loader\n");
+}
+
 int main(void) {
     test_assembled_json_contents();
     test_engine_load();
@@ -257,6 +309,7 @@ int main(void) {
     test_invalid_on_discard();
     test_invalid_viability();
     test_invalid_timing();
+    test_invalid_force_variant();
     printf("All catalog assembly tests passed.\n");
     return 0;
 }

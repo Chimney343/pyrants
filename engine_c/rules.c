@@ -552,7 +552,7 @@ static void apply_end_of_turn_effects(GameState *state, int include_force_discar
             const char *sf = intern_str(action->source_fragment);
 
             if (include_force_discard && op && strcmp(op, "force_discard") == 0
-                && sf && strcmp(sf, "end_of_turn_mass_discard") == 0) {
+                && action->variant == CARD_VARIANT_END_OF_TURN_MASS_DISCARD) {
                 for (int tp = 0; tp < state->player_count; tp++) {
                     Sym tpid = state->players[tp].player_id;
                     if (tpid == pid) continue;

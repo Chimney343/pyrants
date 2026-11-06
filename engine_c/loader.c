@@ -87,6 +87,21 @@ static Sym *json_sym_or_null_array(cJSON *obj, const char *key, int *out_count, 
     return result;
 }
 
+static CardVariant variant_from_string(Sym source_fragment) {
+    const char *s = intern_str(source_fragment);
+    if (!s) return CARD_VARIANT_NONE;
+    if (strcmp(s, "targeted_discard") == 0) return CARD_VARIANT_TARGETED_DISCARD;
+    if (strcmp(s, "conditional_owner_discard") == 0)
+        return CARD_VARIANT_CONDITIONAL_OWNER_DISCARD;
+    if (strcmp(s, "local_discard") == 0) return CARD_VARIANT_LOCAL_DISCARD;
+    if (strcmp(s, "mass_discard") == 0) return CARD_VARIANT_MASS_DISCARD;
+    if (strcmp(s, "end_of_turn_mass_discard") == 0)
+        return CARD_VARIANT_END_OF_TURN_MASS_DISCARD;
+    if (strcmp(s, "on_opponent_discard_punish") == 0)
+        return CARD_VARIANT_ON_OPPONENT_DISCARD_PUNISH;
+    return CARD_VARIANT_NONE;
+}
+
 static CardAction parse_card_action(cJSON *ja) {
     CardAction a;
     memset(&a, 0, sizeof(a));
@@ -113,6 +128,7 @@ static CardAction parse_card_action(cJSON *ja) {
     }
 
     a.source_fragment = json_string_sym(ja, "source_fragment", SYM_NULL);
+    a.variant = variant_from_string(a.source_fragment);
 
     cJSON *meta = cJSON_GetObjectItem(ja, "metadata");
     if (meta && cJSON_IsObject(meta)) {
@@ -470,6 +486,15 @@ static SetupDefinition parse_setup(const char *json_str, Arena *arena) {
     return sd;
 }
 
+static int action_variant_valid(const CardAction *action) {
+    const char *op = intern_str(action->op);
+    if (op && strcmp(op, "force_discard") == 0
+        && action->source_fragment != SYM_NULL
+        && action->variant == CARD_VARIANT_NONE)
+        return 0;
+    return 1;
+}
+
 static int action_timing_valid(const CardAction *action) {
     if (action->timing == SYM_NULL) return 1;
     const char *timing = intern_str(action->timing);
@@ -495,9 +520,9 @@ GameDefinition *engine_load_definition_json(const char *catalog_json, const char
                 if (!value || strcmp(value, "inner_circle") != 0) return NULL;
             }
             for (int ai = 0; ai < def->catalog.cards[i].action_count; ai++)
-                if (!action_timing_valid(&def->catalog.cards[i].actions[ai])) return NULL;
+                if (!action_timing_valid(&def->catalog.cards[i].actions[ai]) || !action_variant_valid(&def->catalog.cards[i].actions[ai])) return NULL;
             for (int ai = 0; ai < def->catalog.cards[i].execution.action_count; ai++)
-                if (!action_timing_valid(&def->catalog.cards[i].execution.actions[ai]))
+                if (!action_timing_valid(&def->catalog.cards[i].execution.actions[ai]) || !action_variant_valid(&def->catalog.cards[i].execution.actions[ai]))
                     return NULL;
             for (int oi = 0; oi < def->catalog.cards[i].execution.option_count; oi++) {
                 const CardOption *opt = &def->catalog.cards[i].execution.options[oi];
@@ -512,7 +537,7 @@ GameDefinition *engine_load_definition_json(const char *catalog_json, const char
                         return NULL;
                 }
                 for (int ai = 0; ai < opt->action_count; ai++)
-                    if (!action_timing_valid(&opt->actions[ai])) return NULL;
+                    if (!action_timing_valid(&opt->actions[ai]) || !action_variant_valid(&opt->actions[ai])) return NULL;
             }
         }
     }

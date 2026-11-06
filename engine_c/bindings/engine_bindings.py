@@ -148,6 +148,7 @@ class CardAction(Structure):
         ("filters", Sym * MAX_FILTERS), ("filter_count", c_int),
         ("source_fragment", Sym),
         ("metadata", MetaEntry * MAX_METADATA), ("metadata_count", c_int),
+        ("variant", c_int),
     ]
 
 class CardOption(Structure):

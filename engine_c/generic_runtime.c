@@ -172,12 +172,11 @@ int action_requires_selection(const CardAction *action) {
     if (strcmp(op, "force_discard") == 0) {
         const char *ts = intern_str(action->target_scope);
         if (ts && strcmp(ts, "opponent") == 0) {
-            const char *sf = intern_str(action->source_fragment);
-            if (sf && strcmp(sf, "local_discard") == 0) return 0;
-            if (sf && strcmp(sf, "conditional_owner_discard") == 0) return 0;
-            if (sf && strcmp(sf, "end_of_turn_mass_discard") == 0) return 0;
-            if (sf && strcmp(sf, "mass_discard") == 0) return 0;
-            if (sf && strcmp(sf, "on_opponent_discard_punish") == 0) return 0;
+            if (action->variant == CARD_VARIANT_LOCAL_DISCARD) return 0;
+            if (action->variant == CARD_VARIANT_CONDITIONAL_OWNER_DISCARD) return 0;
+            if (action->variant == CARD_VARIANT_END_OF_TURN_MASS_DISCARD) return 0;
+            if (action->variant == CARD_VARIANT_MASS_DISCARD) return 0;
+            if (action->variant == CARD_VARIANT_ON_OPPONENT_DISCARD_PUNISH) return 0;
         }
     }
     if (op && strcmp(op, "promote_card") == 0) {
@@ -519,9 +518,8 @@ GameState *auto_resolve_pending_generic(GameState *state, Sym player_id) {
             const char *op_str = intern_str(action->op);
             if (op_str && strcmp(op_str, "force_discard") == 0) {
                 const char *ts = intern_str(action->target_scope);
-                const char *sf_str = intern_str(action->source_fragment);
                 if (ts && strcmp(ts, "opponent") == 0
-                    && sf_str && strcmp(sf_str, "conditional_owner_discard") == 0) {
+                    && action->variant == CARD_VARIANT_CONDITIONAL_OWNER_DISCARD) {
                     Sym target_owner = SYM_NULL;
                     for (int i = 0; i < p->last_selection_count; i++) {
                         const char *k = intern_str(p->last_selection_keys[i]);
@@ -560,9 +558,8 @@ GameState *auto_resolve_pending_generic(GameState *state, Sym player_id) {
             const char *op_str = intern_str(action->op);
             if (op_str && strcmp(op_str, "force_discard") == 0) {
                 const char *ts = intern_str(action->target_scope);
-                const char *sf_str = intern_str(action->source_fragment);
                 if (ts && strcmp(ts, "opponent") == 0
-                    && sf_str && strcmp(sf_str, "local_discard") == 0) {
+                    && action->variant == CARD_VARIANT_LOCAL_DISCARD) {
                     Sym site_id = SYM_NULL;
                     for (int i = 0; i < p->last_selection_count; i++) {
                         const char *k = intern_str(p->last_selection_keys[i]);
@@ -602,9 +599,8 @@ GameState *auto_resolve_pending_generic(GameState *state, Sym player_id) {
             const char *op_str = intern_str(action->op);
             if (op_str && strcmp(op_str, "force_discard") == 0) {
                 const char *ts = intern_str(action->target_scope);
-                const char *sf_str = intern_str(action->source_fragment);
                 if (ts && strcmp(ts, "opponent") == 0
-                    && sf_str && strcmp(sf_str, "mass_discard") == 0) {
+                    && action->variant == CARD_VARIANT_MASS_DISCARD) {
                     for (int o = 0; o < state->player_count; o++) {
                         if (state->players[o].player_id == player_id) continue;
                         if (state->players[o].hand_count >= 3) {
@@ -1082,8 +1078,8 @@ GameState *apply_resolve_generic_choice(GameState *src, const Move *move) {
                     if (aid != SYM_NULL) { sk[sc] = intern("target_card_id"); sv[sc] = aid; sc++; }
                 } else if (strcmp(op, "force_discard") == 0) {
                     if (aid != SYM_NULL) {
-                        const char *sf2 = intern_str(action->source_fragment);
-                        if (sf2 && (strcmp(sf2, "targeted_discard") == 0 || strcmp(sf2, "conditional_owner_discard") == 0)) {
+                        if (action->variant == CARD_VARIANT_TARGETED_DISCARD
+                            || action->variant == CARD_VARIANT_CONDITIONAL_OWNER_DISCARD) {
                             sk[sc] = intern("target_player_id"); sv[sc] = aid; sc++;
                         } else {
                             sk[sc] = intern("target_card_id"); sv[sc] = aid; sc++;

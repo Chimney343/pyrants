@@ -12,8 +12,7 @@ static int op_force_discard_enumerate(const GameState *state, Sym player_id,
                                       const CardDefinition *card, const CardAction *action,
                                       Move *out, int max_out) {
     (void)pending; (void)card;
-    const char *sf = intern_str(action->source_fragment);
-    if (sf && strcmp(sf, "targeted_discard") == 0) {
+    if (action->variant == CARD_VARIANT_TARGETED_DISCARD) {
         int w = 0;
         for (int p = 0; p < state->player_count && w < max_out; p++) {
             if (state->players[p].player_id == player_id) continue;
@@ -45,12 +44,11 @@ static int op_force_discard_target(const GameState *state, Sym player_id,
     (void)state; (void)player_id;
     Sym aid = move->data.resolve_generic.action_id;
     if (aid == SYM_NULL) return 0;
-    const char *sf = intern_str(action->source_fragment);
     out->kind = OP_TARGET_FORCE_DISCARD;
     out->as.force_discard.target_player_id = SYM_NULL;
     out->as.force_discard.target_card_id = SYM_NULL;
-    if (sf && (strcmp(sf, "targeted_discard") == 0
-               || strcmp(sf, "conditional_owner_discard") == 0)) {
+    if (action->variant == CARD_VARIANT_TARGETED_DISCARD
+        || action->variant == CARD_VARIANT_CONDITIONAL_OWNER_DISCARD) {
         out->as.force_discard.target_player_id = aid;
     } else {
         out->as.force_discard.target_card_id = aid;

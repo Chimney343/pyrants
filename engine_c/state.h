@@ -55,6 +55,16 @@ typedef struct {
     Sym   value;
 } MetaEntry;
 
+typedef enum {
+    CARD_VARIANT_NONE = 0,
+    CARD_VARIANT_TARGETED_DISCARD,
+    CARD_VARIANT_CONDITIONAL_OWNER_DISCARD,
+    CARD_VARIANT_LOCAL_DISCARD,
+    CARD_VARIANT_MASS_DISCARD,
+    CARD_VARIANT_END_OF_TURN_MASS_DISCARD,
+    CARD_VARIANT_ON_OPPONENT_DISCARD_PUNISH,
+} CardVariant;
+
 typedef struct {
     Sym        action_id;
     Sym        op;
@@ -68,6 +78,7 @@ typedef struct {
     Sym        source_fragment;
     MetaEntry  metadata[MAX_METADATA];
     int        metadata_count;
+    CardVariant variant;
 } CardAction;
 
 typedef struct {

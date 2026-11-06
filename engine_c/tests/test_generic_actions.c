@@ -16,6 +16,7 @@ static void test_action_requires_selection_force_discard_local(void) {
     a.op = intern("force_discard");
     a.target_scope = intern("opponent");
     a.source_fragment = intern("local_discard");
+    a.variant = CARD_VARIANT_LOCAL_DISCARD;
 
     int r = action_requires_selection(&a);
     assert(r == 0);
@@ -30,6 +31,7 @@ static void test_action_requires_selection_force_discard_targeted(void) {
     a.op = intern("force_discard");
     a.target_scope = intern("opponent");
     a.source_fragment = intern("targeted_discard");
+    a.variant = CARD_VARIANT_TARGETED_DISCARD;
 
     int r = action_requires_selection(&a);
     assert(r == 1);
@@ -57,6 +59,7 @@ static void test_action_requires_selection_force_discard_hand_scope(void) {
     a.op = intern("force_discard");
     a.target_scope = intern("hand");   /* not "opponent" */
     a.source_fragment = intern("local_discard");
+    a.variant = CARD_VARIANT_LOCAL_DISCARD;
 
     int r = action_requires_selection(&a);
     assert(r == 1);
@@ -1181,6 +1184,7 @@ static void test_op_force_discard(void) {
     memset(&action, 0, sizeof(action));
     action.op = intern("force_discard");
     action.source_fragment = intern("targeted_discard");
+    action.variant = CARD_VARIANT_TARGETED_DISCARD;
 
     const CardOp *op = op_lookup(intern("force_discard"));
     assert(op != NULL);
