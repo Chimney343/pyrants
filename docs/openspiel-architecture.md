@@ -53,7 +53,7 @@ The `NUM_DISTINCT_ACTIONS` constant (1024) is a static upper bound, not the per-
 
 Deck shuffling is fully deterministic under seed control. The `GameState` stores two fields — `shuffle_seed` (from the chance node) and a monotonic `shuffle_counter` (`engine_c/state.h:332-333`).
 
-Every shuffle funnels through `shuffle_deck(deck, count, seed, counter, rng)` (`engine_c/state.c:19`), which derives a per-shuffle RNG seed as `(seed << 16) ^ counter` (`state.c:20`) and reseeds the RNG before shuffling. The same seed/counter path is used by the initial setup deal, the draw helper `draw_cards_state` (`state.c:29`), and `reshuffle_discard_into_deck` (`state.c:219`); each increments `shuffle_counter` after shuffling so consecutive shuffles never repeat a seed.
+Every shuffle funnels through `shuffle_deck(deck, count, seed, counter, rng)` (`engine_c/state.c:20`), which derives a per-shuffle RNG seed as `(seed << 16) ^ counter` and reseeds the RNG before shuffling. The same seed/counter path is used by the initial setup deal, the draw helper `draw_cards_state` (`state.c:30`), and `reshuffle_discard_into_deck` (`state.c:173`); each increments `shuffle_counter` after shuffling so consecutive shuffles never repeat a seed.
 
 ## Full Sequence
 
@@ -114,7 +114,7 @@ IS-MCTS (prefixed with the game history for perfect recall).
 
 Determinization is implemented by `CEngineAdapter.determinize`
 (`engine_c/bindings/c_adapter.py`), which calls the C engine's
-`engine_determinize` (`engine_c/state.c`). The `resample_from_infostate`
+`engine_determinize` (`engine_c/visibility.c`). The `resample_from_infostate`
 contract:
 1. Public view matches the original exactly.
 2. The observing player's hand and deck order are preserved.

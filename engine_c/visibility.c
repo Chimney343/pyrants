@@ -1,5 +1,7 @@
 #include "visibility.h"
+#include "engine.h"
 #include "intern.h"
+#include "rng.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -646,4 +648,66 @@ void engine_infostate_hash(const GameState *state, Sym player_id, uint64_t out[2
     if (!walk_view(&w, player_id)) return;
     out[0] = h.h0;
     out[1] = h.h1;
+}
+
+/* ---- Determinization -----------------------------------------------------
+ *
+ * A sampled world the observer cannot tell from the real one: every zone the
+ * rule marks for resampling is reshuffled, and nothing the observer sees
+ * moves. A player's resampled zones are pooled in VisZone order (hand, deck,
+ * discard, ...) and shuffled together; shared resampled zones (the market
+ * deck) shuffle alone, after the players. With the step-1 table this draws the
+ * RNG exactly as the pre-module engine_determinize did. */
+static Sym *zone_cards_mut(GameState *s, PlayerState *ps, VisZone z, int *count) {
+    const Sym *cards;
+    *count = zone_cards(s, ps, z, &cards);
+    return (Sym *)cards;
+}
+
+GameState *engine_determinize(const GameState *src, Sym observing_player_id, uint64_t seed) {
+    if (!src) return NULL;
+    GameState *clone = engine_clone(src);
+    if (!clone) return NULL;
+
+    RNG rng;
+    rng_seed(&rng, seed);
+
+    for (int i = 0; i < clone->player_count && i < MAX_PLAYERS; i++) {
+        PlayerState *ps = &clone->players[i];
+        VisRelation rel = ps->player_id == observing_player_id ? VIS_SELF : VIS_OPPONENT;
+        Sym pool[VZ_PLAYER_ZONE_COUNT * MAX_ZONE_SIZE];
+        int n = 0;
+        for (int z = 0; z < VZ_PLAYER_ZONE_COUNT; z++) {
+            if (!RULES[z][rel].resample) continue;
+            int count;
+            Sym *cards = zone_cards_mut(clone, ps, (VisZone)z, &count);
+            for (int j = 0; j < count; j++) pool[n++] = cards[j];
+        }
+        rng_shuffle(&rng, (uint32_t *)pool, n); /* draws nothing when n <= 1 */
+        n = 0;
+        for (int z = 0; z < VZ_PLAYER_ZONE_COUNT; z++) {
+            if (!RULES[z][rel].resample) continue;
+            int count;
+            Sym *cards = zone_cards_mut(clone, ps, (VisZone)z, &count);
+            for (int j = 0; j < count; j++) cards[j] = pool[n++];
+        }
+    }
+
+    for (int z = VZ_PLAYER_ZONE_COUNT; z < VZ_ZONE_COUNT; z++) {
+        if (!RULES[z][VIS_OPPONENT].resample) continue;
+        int count;
+        Sym *cards = zone_cards_mut(clone, NULL, (VisZone)z, &count);
+        rng_shuffle(&rng, (uint32_t *)cards, count);
+    }
+
+    /* F-002: decouple the shared mid-game reshuffle/forced-discard stream
+     * across sampled worlds. Every mid-game random event reseeds from
+     * shuffle_seed/shuffle_counter; rerolling them here gives each world an
+     * independent stream. Drawn after every other draw so the rerolled seed is
+     * a deterministic function of `seed` (F-010 reproducibility). See
+     * docs/validation/f002-f003-fix-plan.md Part A. */
+    clone->shuffle_seed = rng_next(&rng);
+    clone->shuffle_counter = 0;
+
+    return clone;
 }

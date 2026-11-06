@@ -414,6 +414,5 @@ void shuffle_deck(Sym *deck, int count, uint64_t seed, int counter, RNG *rng);
 void draw_cards_state(PlayerState *ps, int count, RNG *rng, uint64_t shuffle_seed, int *shuffle_counter);
 void reshuffle_discard_into_deck(GameState *state, Sym player_id);
 
-GameState *engine_determinize(const GameState *src, Sym observing_player_id, uint64_t seed);
 
 #endif

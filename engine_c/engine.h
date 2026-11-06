@@ -9,6 +9,7 @@ extern "C" {
 
 #include "state.h"
 #include "loader.h"
+#include "visibility.h"
 
 GameState *engine_create_game(const char *json_path, const char **player_ids, int player_count, uint64_t seed);
 GameState *engine_create_game_definition(const GameDefinition *def, const char **player_ids, int player_count, uint64_t seed);

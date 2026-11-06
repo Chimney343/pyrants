@@ -10,6 +10,9 @@
  *                            observation string and the NN's observed features.
  *   engine_infostate_hash    the IS-MCTS tree key: a fingerprint of the same
  *                            view, equal exactly when the views are equal.
+ *   engine_determinize       a sampled world that leaves the observer's view
+ *                            unchanged: it reshuffles exactly the zones the
+ *                            rule marks for resampling.
  *
  * The view is produced by one canonical walk over the state, so every consumer
  * sees the same fields in the same order. See docs/adr/0007.
@@ -68,5 +71,11 @@ size_t engine_player_view_json(const GameState *state, Sym player_id, char *buf,
  * hash collisions). Values are only comparable inside one process. Writes
  * {0, 0} when state is NULL or player_id is not a player. */
 void engine_infostate_hash(const GameState *state, Sym player_id, uint64_t out[2]);
+
+/* A clone of src with every zone the rule marks for resampling, as seen by
+ * observing_player_id, reshuffled from seed, and the mid-game shuffle stream
+ * rerolled. The observer's view of the result equals their view of src.
+ * Returns NULL when src is NULL or the clone fails. */
+GameState *engine_determinize(const GameState *src, Sym observing_player_id, uint64_t seed);
 
 #endif
