@@ -1,6 +1,6 @@
 # ADR-0007: One visibility module answers "what does player p know?"
 
-- **Status:** Active (step 1 done as a byte-identical refactor; step 2, the owner's visibility rule, is in progress: A1 fixed the observer's own deck, A2 is next)
+- **Status:** Active (step 1 done as a byte-identical refactor; step 2, the owner's visibility rule, done: A1 fixed the observer's own deck, A2 made opponents' discards and the devour pile visible — see ADR-0008)
 - **Date:** 2026-11-06
 - **Decision owner:** maintainers
 - **Supersedes:** -
@@ -104,7 +104,8 @@ The walk already has these fields; nothing else needs to change. Step 2 changes
 search and the view bytes, so it gets its own commit, a finding, a G1
 re-freeze, the approved changes to
 `test_observation_completeness.py:159` and `tests/nn/test_observation.py`'s
-leak test, and its own speed run.
+leak test, and its own speed run. Both halves are done: A1 below, A2 in
+"Step 2, part A2" (ADR-0008).
 
 #### Step 2, part A1: no player's search knows its own deck order
 
@@ -125,7 +126,21 @@ This part changes no view bytes, so no G1 re-freeze and no test flips were
 needed. Views, the tree key and the NN observation were already clean: none of
 them exposes deck order. Replays replay recorded moves and stayed 2,862/2,862
 (baseline records 2,846; the local artifact set has since grown). `VZ_DISCARD`
-(opponent) and `VZ_DEVOUR` remain step 2's open part (A2, F-041 part (b)).
+(opponent) and `VZ_DEVOUR` are step 2's second half (A2), done in ADR-0008.
+
+#### Step 2, part A2: opponents' discards and the devour pile are visible
+
+Done 2026-11-09 (F-041 part (b), ADR-0008). `VZ_DISCARD`, opponent, is now
+`{VIS_CARDS, 0}` and `VZ_DEVOUR` is `{VIS_CARDS, 0}` in both columns. Opponents'
+determinization pools become hand + deck; the devour pile is a shown shared zone,
+never resampled. This changes view bytes (each player summary gains `discard`,
+the public block gains `devour_pile`), so the F-013 G1 vectors were re-frozen
+(all 918 changed) and the approved flips in `test_observation_completeness.py`
+and `tests/nn/test_observation.py` were made. Search changes, so its quick check
+is not content-identical; the NN tensor stays byte-identical by user decision.
+See ADR-0008 for the rule, the tests, the open NN question and the speed run.
+
+Step 2 is now complete.
 
 Tests added:
 - `engine_c/tests/test_visibility.c::test_determinize_shuffles_the_observers_own_deck`

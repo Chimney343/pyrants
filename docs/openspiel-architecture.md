@@ -99,14 +99,15 @@ The C engine's player-view projection defines what each player can observe at an
 point in the game. Two views capture this:
 
 - **`PublicView`** — board occupancy (controller, troop/spy counts per node),
-  market row card ids, pending effect identifiers, resource totals, and
-  per-player summary counts (hand/deck/discard sizes, scores). No card
-  identities from hidden zones.
+  the devour pile's card ids, market row card ids, pending effect identifiers,
+  resource totals, and per-player summaries (every player's discard card ids
+  plus hand/deck/played/zone counts and scores). No card identities from any
+  hidden zone (no hand, no deck).
 
 - **`PrivateView`** — a `PublicView` plus the observing player's hand card ids
-  (in hand order), deck/discard/devour sizes, played cards, inner circle,
-  trophy hall, barracks, spies, VP tokens, and score. Opponent hidden-zone
-  contents are excluded.
+  (in hand order), own discard card ids, deck size, played cards, inner circle,
+  trophy hall, barracks, spies, VP tokens, and score. Every opponent's discard
+  is public (in the summary); opponent hand and deck contents are excluded.
 
 Both models are frozen and serialize to stable JSON via `model_dump_json()`.
 The serialized `PrivateView` is used as the information-state string in
@@ -116,11 +117,13 @@ Determinization is implemented by `CEngineAdapter.determinize`
 (`engine_c/bindings/c_adapter.py`), which calls the C engine's
 `engine_determinize` (`engine_c/visibility.c`). The `resample_from_infostate`
 contract:
-1. Public view matches the original exactly.
-2. The observing player's hand and deck order are preserved.
-3. Every opponent's hidden zones preserve the same multiset of cards but
-    are reshuffled using the bot's RNG, and the market deck order is
-    reshuffled too (only its size is public).
+1. The observer's whole view matches the original exactly.
+2. Every discard pile and the devour pile are visible, so they are never
+   reshuffled; the observing player's own deck is resampled too (no player sees
+   any deck).
+3. Every opponent's hidden hand+deck pool preserves the same multiset of cards
+   but is reshuffled using the bot's RNG, and the market deck order is
+   reshuffled too (only its size is public).
 
 See [determinization.md](determinization.md) for the full code-aligned walkthrough
 of the resampler and the tests that lock its invariants.

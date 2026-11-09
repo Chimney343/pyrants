@@ -291,7 +291,7 @@ passed.
 - Falsification test: Check `data/cards/*.json` for any card text that references looking at or revealing an opponent's discard pile (which would only make sense if discard piles are otherwise private), or consult the published physical rulebook / BGG rules FAQ for an explicit visibility statement.
 - Expected if REAL (discards should be public): A rule or card confirms public discard-pile visibility, meaning `information_state_string` should include opponents' discard-pile identities but currently only sends a count.
 - Expected if FALSE POSITIVE: Rules confirm discard piles are effectively private/reshuffled-away by design, or no rule ever depends on an opponent knowing discard contents mid-game.
-- Status: **REFUTED**
+- Status: **REFUTED** (as a defect: no card reads an opponent's discard). **Superseded in outcome by ADR-0008** (2026-11-09, brief A2): the owner settled the rulebook silence the other way on table convention, so every player's discard pile and the devour pile are now visible and determinization resamples only hand + deck. The refutation stands — the change is a rule decision, not a bug fix.
 - Command: `grep -rio "discard pile" data/cards/ | sort -u` ; `grep -ril "opponent.*discard|discard.*opponent" data/cards/`
 - N: all 12 cards in `data/cards/` whose text mentions a discard pile (full-corpus scan)
 - Observed:
@@ -395,7 +395,7 @@ passed.
 - Falsification test: construct state pairs that differ only in a public board fact — same move type applied to a different site, so barracks/resource bookkeeping is identical — verify the boards genuinely differ, then compare `private_view_json(p)`.
 - Expected if REAL: boards differ while the observation is byte-identical.
 - Expected if FALSE POSITIVE: the observation differs whenever the board differs.
-- Status: **CONFIRMED — FIXED** (working-tree change; not yet committed)
+- Status: **CONFIRMED — FIXED** (working-tree change; not yet committed). Gate G3 ("own-only discard") from `f011-fix-plan.md` is **superseded by ADR-0008** (2026-11-09, brief A2): the owner's rule makes every opponent's discard pile visible too, so the observation now shows all discards and the devour pile, not only the observer's own.
 - Command: `.venv/Scripts/python.exe -u docs/validation/harness/inv_b2.py` ; `.venv/Scripts/python.exe -u docs/validation/harness/obs.py`
 - Resolution: `engine_c/bindings/c_adapter.py::private_view_json` now merges `{**pub, "board_nodes": self._board_nodes_view()}` (using the existing, already-public `engine_c/bindings/view.py::build_c_board_view`, reading only the player-agnostic per-node fields — never the current-player-scoped `CBoardViewData` aggregates) and adds `discard = [_sym_str(p.discard_pile[i]) ...]` as a new `discard` key. The cheap Tier-1 path (`_build_public_dict`) is untouched. Post-fix INV-4b passes at N=403 (403/403 pairs now visible), INV-4a unchanged at 0/300, INV-5 mean distinct worlds 11.11/12 (0 singletons — the rise from 10.26 is the omniscient fingerprint now seeing own-discard reshuffles, not leakage). Tests in `openspiel_pyrants/tests/test_observation_completeness.py`. See `verdict.md` §2.
 - Cost note: the board projection costs ~388 µs/call and regresses end-to-end search wall-time 9.66× at `num_sims=200` — filed as F-013 (open, performance).
@@ -972,9 +972,9 @@ passed.
 - Expected if REAL: the bot's move changes when only its own hidden deck order changes.
 - Expected if FALSE POSITIVE: identical action and policy for every seed.
 - Observed: REAL before the fix. The C checks in `engine_c/tests/test_visibility.c` fail on the old table too: the observer's deck order never changed across seeds (0 of 24), and two states the observer could not tell apart serialized differently after determinization.
-- Status: **PARTIAL**
+- Status: **FIXED** (2026-11-09).
   - **(a) FIXED** (2026-11-09, A1): `VZ_DECK`, self, is `{VIS_COUNT, 1}`; determinization resamples the observer's deck. Each resampled pool is now sorted by card id before the shuffle (`engine_c/visibility.c:677-687,708,723`), so a world depends only on the observer's knowledge and the seed — without the sort, two indistinguishable states would still sample differently. Contract updated in `engine_c/visibility.h`.
-  - **(b) OPEN** for brief A2: `VZ_DISCARD`, opponent, must become `{VIS_CARDS, 0}` and `VZ_DEVOUR` `{VIS_CARDS, ...}`, which changes view bytes and needs the G1 re-freeze and approved test flips.
+  - **(b) FIXED** (2026-11-09, A2): `VZ_DISCARD`, opponent, is `{VIS_CARDS, 0}` and `VZ_DEVOUR` is `{VIS_CARDS, 0}`, so every discard and the devour pile are visible and determinization pools only hand + deck (`engine_c/visibility.c:26-38`). View bytes changed, so the F-013 G1 vectors were re-frozen (918, under the new rule) and the approved test flips made. See ADR-0008. F-041 is closed.
 - Boundary: `private_view_json`, `engine_infostate_hash` and the NN observation never exposed deck order (`my_deck_remainder` is a card-count vector over the deduced multiset), and the GUI's `build_c_game_view` reports only `deck_count`; the leak was determinization alone. `engine_random_rollout` (`engine_c/rollout.c:25-78`) reads whatever world it is given, so it inherited the leak through the sampled state and is clean once the table is.
 
 ## 4. Unanchored (suspicions that could not be fully anchored)

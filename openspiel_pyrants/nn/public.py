@@ -3,12 +3,16 @@
 ``public_multisets`` may read ``CState.player_hand/deck/discard`` of a
 non-acting seat and ``CState.market_deck()``. Every one of those reads is
 returned as a *multiset only*, and the multiset is invariant under
-``engine_determinize`` (G9): determinize pools each opponent's hand+deck+discard
-and reshuffles them among themselves, and reshuffles the market deck, but never
-touches the board, market row, played cards, inner circles, trophy halls or the
-observing player's own zones. An opponent's *discard* identities are therefore
-never exposed on their own (only as part of the pooled bag), which is what keeps
-the leak test in ``tests/nn/test_observation.py`` passing.
+``engine_determinize`` (G9): determinize pools each opponent's hand+deck and
+reshuffles them among themselves, leaves every discard pile alone (all discards
+are public under the owner's rule, ADR-0008) and reshuffles the market deck, but
+never touches the board, market row, played cards, inner circles, trophy halls or
+the observing player's own zones. The deduced bag is still hand+deck+discard, so
+it absorbs the now-visible discard into the same multiset; an opponent's discard
+identities are visible through the player view but are not encoded separately
+here, and the NN tensor is unchanged by the rule change (user decision). The
+leak test in ``tests/nn/test_observation.py`` pins that determinization leaves
+the tensor invariant.
 """
 
 from __future__ import annotations

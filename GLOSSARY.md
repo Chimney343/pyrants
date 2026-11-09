@@ -92,7 +92,9 @@ module's shape is settled, not before.
 - **visibility rule** - the module's table: for each card zone and each
   relation (self or opponent), whether the observer sees the cards or only a
   count, and whether determinization resamples the zone. A zone the rule shows
-  is never resampled.
+  is never resampled. Under the owner's rule (ADR-0008) a player sees every
+  discard pile and the devour pile, and no player sees any deck, its own
+  included.
 - **player view** - one player's view of a state, rendered by the visibility
   module's single walk. As JSON it is `private_view_json`, the OpenSpiel
   observation string.
@@ -105,6 +107,8 @@ module's shape is settled, not before.
   observer's information and the seed, never on the real arrangement. A deck,
   the observer's own included, is a resampled zone.
 - **deduced multiset** - what can be worked out from public history but is not
-  seen directly: an opponent's hand+deck bag, your own deck's remainder, what
-  is left in the market deck. `nn/public.py` computes these; by decision they
-  stay outside the player view.
+  seen directly: an opponent's hand+deck+discard bag, your own deck's remainder,
+  what is left in the market deck. `nn/public.py` computes these; by decision
+  they stay outside the player view. The opponent bag still folds in the now-
+  visible discard pile, so the NN tensor is unchanged by the owner's rule
+  (ADR-0008); this is a known gap between the rule and the tensor.

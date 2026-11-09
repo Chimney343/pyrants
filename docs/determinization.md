@@ -1,12 +1,12 @@
 # Determinization
 
 A determinization is one concrete, fully-visible world consistent with what an
-observing player is allowed to know. Pyrants hides opponents' hands and decks, the
-market-deck order, and every player's own deck order, so IS-MCTS cannot simulate a
-future until those zones are filled in. `engine_determinize` does that filling in:
-it clones the state and reshuffles only the zones the visibility module's rule
-table marks for resampling. The normal rules engine then evolves the world during
-search.
+observing player is allowed to know. Pyrants hides opponents' hands and decks, every
+player's own deck order, and the market-deck order; every discard pile and the
+devour pile are public. So IS-MCTS cannot simulate a future until those hidden
+zones are filled in. `engine_determinize` does that filling in: it clones the
+state and reshuffles only the zones the visibility module's rule table marks for
+resampling. The normal rules engine then evolves the world during search.
 
 The sampled world depends only on what the observer knows and on the seed: each
 pool is sorted by card id before it is shuffled, so two states the observer
@@ -23,9 +23,9 @@ anything the observer sees. For the surrounding wrapper, see
 
 | Step | Location |
 |------|----------|
-| What is resampled: the rule table | `engine_c/visibility.c:24` (`RULES`) |
-| Pool sort by card id (world depends only on p's knowledge) | `engine_c/visibility.c:677` (`sort_pool`) |
-| Resample hidden zones (the real work) | `engine_c/visibility.c:689-737` (`engine_determinize`) |
+| What is resampled: the rule table | `engine_c/visibility.c:27` (`RULES`) |
+| Pool sort by card id (world depends only on p's knowledge) | `engine_c/visibility.c:680` (`sort_pool`) |
+| Resample hidden zones (the real work) | `engine_c/visibility.c:692-739` (`engine_determinize`) |
 | Python ctypes call | `engine_c/bindings/ce_api.py:496` (`CEngine.determinize`) |
 | Adapter wrapper (returns a new adapter) | `engine_c/bindings/c_adapter.py:78` (`CEngineAdapter.determinize`) |
 | OpenSpiel entry point | `openspiel_pyrants/state_c.py:342` (`PyrantsCState.resample_from_infostate`) |
@@ -38,20 +38,21 @@ anything the observer sees. For the surrounding wrapper, see
 Given the current state and the observing player's id:
 
 1. Clone the state (`engine_clone`). The caller's state is never mutated.
-2. For each player, in seat order (`engine_c/visibility.c:697`):
+2. For each player, in seat order (`engine_c/visibility.c:700`):
    - pool every zone the rule table marks for resampling, for that player's
-     relation to the observer, in zone order (hand, deck, discard, ...);
-   - sort the pool by card id (`engine_c/visibility.c:708`);
+     relation to the observer, in zone order (hand, deck);
+   - sort the pool by card id (`engine_c/visibility.c:711`);
    - Fisher-Yates shuffle the pooled cards;
    - deal them back into the same zones, keeping the original per-zone counts.
-   Today that pools each opponent's `hand + deck + discard`, and the observer's
-   own `deck`, alone. The observer's hand and discard keep their exact identities
-   and positions.
+   Today that pools each opponent's `hand + deck`, and the observer's
+   own `deck`, alone. Every hand and deck stays hidden; every discard pile and
+   the devour pile are public, so they are never pooled or resampled.
 3. Reshuffle each shared zone marked for resampling, alone
-   (`engine_c/visibility.c:719-725`): today only the market deck. The face-up
-   market row, the unused market discard and the devour pile are left alone.
+   (`engine_c/visibility.c:722-728`): today only the market deck. The face-up
+   market row, the unused market discard, the devour pile and every player's
+   discard pile are left alone.
 4. Reroll the world's shuffle stream: `shuffle_seed = rng_next(&rng)` and
-   `shuffle_counter = 0` (`engine_c/visibility.c:733`).
+   `shuffle_counter = 0` (`engine_c/visibility.c:736`).
 
 Sorting draws nothing from the RNG, so the sampling stream for a given `seed` is
 unchanged in length; a shuffle of zero or one card likewise draws nothing.
@@ -61,9 +62,9 @@ unchanged in length; a shuffle of zero or one card likewise draws nothing.
 The shuffle is over a multiset the observer knows, but Fisher-Yates reads its
 input order. If the input arrived in the real arrangement, the sampled world would
 leak it: two states the observer cannot tell apart — different deck orders, or a
-different split of an opponent's hidden pool between hand, deck and discard —
-would sample different worlds for the same seed. Sorting first makes the world a
-function of (observer's information, seed) only. That is what makes
+different split of an opponent's hidden hand+deck pool — would sample different
+worlds for the same seed. Sorting first makes the world a function of
+(observer's information, seed) only. That is what makes
 `openspiel_pyrants/tests/test_no_own_deck_leak.py` a deterministic proof rather
 than a statistical one, and the byte-identity check in
 `engine_c/tests/test_visibility.c` possible at all.
@@ -78,7 +79,7 @@ than a statistical one, and the byte-identity check in
 - It does not simulate how decks evolve. That happens later, when search applies
   moves and the rules engine draws cards and reshuffles discard piles.
 
-## Why reshuffle the whole hand + deck + discard
+## Why reshuffle the whole hand + deck
 
 A player's information state gives them the *sizes* of an opponent's hidden zones
 and the public card pool, but not which cards sit in which zone or in what order.
@@ -86,13 +87,8 @@ Any arrangement that keeps those sizes and the known multiset is a possible worl
 The resampler samples one of them at random, so the search does not assume a single
 clairvoyant ordering. The observer's own deck is the same kind of hidden count —
 its order is not in their information state either, so it is resampled on its own.
-
-### Still open (A2)
-
-The owner's rule makes opponents' discard piles and the devour pile public. Today
-the table still pools an opponent's discard with hand and deck and shows the
-devour pile only as a count; that is F-041 part (b), a table edit in brief A2
-that changes view bytes and needs the G1 re-freeze and approved test flips.
+Every discard pile and the devour pile are shown, so they are neither pooled nor
+resampled (ADR-0008).
 
 ## Why reroll `shuffle_seed`
 
@@ -104,7 +100,7 @@ sampled world would produce the *same* future reshuffle order, and IS-MCTS could
 exploit one fixed draw order. Rerolling the seed and zeroing the counter gives each
 sampled world an independent stream of future draws. The reroll sits after every
 other RNG draw so the new seed is a deterministic function of the input `seed`
-(`engine_c/visibility.c:709`; see `docs/validation/f002-f003-fix-plan.md`).
+(`engine_c/visibility.c:736`; see `docs/validation/f002-f003-fix-plan.md`).
 
 ## Lifecycle in IS-MCTS
 
@@ -126,6 +122,8 @@ other RNG draw so the new seed is a deterministic function of the input `seed`
 | Invariant | Test |
 |-----------|------|
 | Observing player's view (including deck count) unchanged | `openspiel_pyrants/tests/test_determinize_c.py:56` |
+| Every discard pile and the devour pile are visible to all players | `engine_c/tests/test_visibility.c` (`test_opponent_discard_and_devour_are_visible`) |
+| Devour and opponent-discard identities split every observer's tree key | `engine_c/tests/test_infostate_hash.c` (`test_devour_and_discard_identity_split_everyone`) |
 | Observer's own deck order changes across seeds; cards, count and view do not | `engine_c/tests/test_visibility.c` (`test_determinize_shuffles_the_observers_own_deck`) |
 | Worlds depend only on the observer's knowledge: indistinguishable states serialize identically | `engine_c/tests/test_visibility.c` (`test_determinized_world_depends_only_on_observer_knowledge`) |
 | Bot move and policy unchanged when only the acting player's deck order changes | `openspiel_pyrants/tests/test_no_own_deck_leak.py` |
