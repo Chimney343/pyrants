@@ -140,17 +140,18 @@ Tests added:
   own-deck orders (three seeds). It failed on the step-1 engine on every seed.
 
 Speed (script `scripts/bench_determinize.py`, committed; 118 playout states,
-6,000 timed calls, 4 players, interleaved runs):
+6,000 timed calls, 4 players, three runs per build):
 
-- Parent `aa04bb0`: mean 4.58–5.16 µs, median 3.2–3.5 µs per call.
-- This change: mean 4.95–6.45 µs, median 3.9–4.1 µs per call.
-- About +0.5–1.0 µs per call, roughly +10–20 %, from sorting four small pools.
-  At 200 sims per decision that is ~0.1–0.2 ms against a decision of hundreds of
-  ms.
+- Parent `aa04bb0`: mean 3.96–4.23 µs, median 3.2–3.3 µs per call.
+- This change: mean 4.68–5.56 µs, median 3.9–4.1 µs per call.
+- About +0.7–1.3 µs per call, roughly +15–30 %, from sorting four small pools.
+  At 200 sims per decision that is ~0.15–0.25 ms against a decision of hundreds
+  of ms.
 
 Quick check (8 four-player games, 50 sims, seed 42, `--uct-c 1.4`), parent
 `aa04bb0` run `20261109T123044Z_59d40db79464` against this build run
-`20261109T123258Z_f86a57cd3aaf`:
+`20261109T123258Z_f86a57cd3aaf` (both trees at `aa04bb0`; the candidate tree had
+A1 uncommitted, so the runs differ by DLL sha256 `a7ca31cd…` vs `06518253…`):
 
 - games/h 225.8 → 222.4 (run wall); ideal 298.2 → 271.5. Per-game wall ratio
   median 0.954, mean 0.912.
