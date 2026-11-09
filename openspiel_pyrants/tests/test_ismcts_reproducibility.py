@@ -57,13 +57,27 @@ def _omniscient_fingerprint(state) -> str:
 
     The public/infostate view is identical across determinizations of one info
     set (that is the point), so an omniscient fingerprint — every player's
-    private view plus the public dict — is required to observe that two
-    determinizations landed in different worlds.
+    private view, the public dict, and every deck's *order* — is required to
+    observe that two determinizations landed in different worlds. Deck order
+    must be read directly: the view exposes a deck only as a count, so two
+    worlds that differ only in deck order would otherwise fingerprint equal.
     """
     parts = []
     for pid in state._game.get_player_ids():
         parts.append(state._adapter.private_view_json(pid))
     parts.append(json.dumps(state._adapter._build_public_dict(), sort_keys=True))
+    deck = state._adapter.state
+    for i in range(deck.player_count):
+        parts.append(
+            "#".join(
+                (
+                    "|".join(deck.player_deck(i)),
+                    "|".join(deck.player_hand(i)),
+                    "|".join(deck.player_discard(i)),
+                )
+            )
+        )
+    parts.append("|".join(deck.market_deck()))
     parts.append("|".join(str(m) for m in state._adapter.legal_moves()))
     return hashlib.sha256("\x1f".join(parts).encode()).hexdigest()
 

@@ -4,9 +4,9 @@
  * ``CEngineAdapter.private_view_json`` serialises for one observing player,
  * because the tree keys nodes by it. Two failure modes matter:
  *
- *   * false split — hashing a hidden field (deck identities, devour identity,
- *     opponents' hands) that the observation string omits. The tree stops
- *     sharing equal info sets and IS-MCTS degrades toward per-world PIMC.
+ *   * false split — hashing a hidden field (deck identities, opponents'
+ *     hands) that the observation string omits. The tree stops sharing equal
+ *     info sets and IS-MCTS degrades toward per-world PIMC.
  *   * false merge — omitting a public field (board occupancy, own hand/discard
  *     identity, market row) the string includes. Two distinct info sets share
  *     a node and the search pools visit statistics across them.
@@ -118,8 +118,10 @@ static void test_own_discard_identity_splits(void) {
     arena_destroy(arena);
 }
 
-/* Hidden deck identities and the devour pile are NOT in the observation, so
- * a same-count substitution must not split the key (false-split guard). */
+/* Hidden deck identities are NOT in the observation, so a same-count
+ * substitution must not split the key (false-split guard). The devour pile and
+ * every discard pile are visible (the owner's rule), so their content splits
+ * the key like any other shown zone. */
 static void test_hidden_deck_identity_does_not_split(void) {
     Arena *arena;
     GameState *gs = fresh_game(&arena);
@@ -249,6 +251,34 @@ static void test_counts_split(void) {
     arena_destroy(arena);
 }
 
+/* The devour pile and every player's discard pile are shown to everyone, so a
+ * same-count change inside either must split every observer's key. */
+static void test_devour_and_discard_identity_split_everyone(void) {
+    Arena *arena;
+    GameState *gs = fresh_game(&arena);
+    PlayerState *them = &gs->players[1];
+    them->discard_pile_count = 1;
+    them->discard_pile[0] = intern("noble");
+    gs->devour_pile_count = 1;
+    gs->devour_pile[0] = intern("noble");
+
+    uint64_t before_me[2], before_them[2], after_me[2], after_them[2];
+    engine_infostate_hash(gs, intern("p1"), before_me);
+    engine_infostate_hash(gs, intern("p2"), before_them);
+
+    them->discard_pile[0] = intern("bounty_hunter");
+    gs->devour_pile[0] = intern("soldier");
+
+    engine_infostate_hash(gs, intern("p1"), after_me);
+    engine_infostate_hash(gs, intern("p2"), after_them);
+
+    assert(!hashes_equal(before_me, after_me));
+    assert(!hashes_equal(before_them, after_them));
+    printf("PASS: devour and opponent discard identities split every key\n");
+    engine_destroy(gs);
+    arena_destroy(arena);
+}
+
 int main(void) {
     intern_init(65536);
 
@@ -257,6 +287,7 @@ int main(void) {
     test_own_hand_identity_splits_owner_only();
     test_own_discard_identity_splits();
     test_hidden_deck_identity_does_not_split();
+    test_devour_and_discard_identity_split_everyone();
     test_board_occupancy_splits();
     test_spy_order_does_not_split();
     test_public_fields_split();

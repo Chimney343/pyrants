@@ -69,6 +69,23 @@ static GameState *advance(GameState *gs, int steps, uint64_t *lcg) {
     return gs;
 }
 
+/* The owner's rule shows every player's discard pile and the devour pile.
+ * Seed both in every playout fixture so the view and determinize invariants
+ * below actually exercise those fields. The rules are not under test here, so
+ * the seeded cards need not balance against the other zones. */
+static void seed_public_card_zones(GameState *gs) {
+    for (int i = 0; i < gs->player_count && i < MAX_PLAYERS; i++) {
+        if (gs->players[i].discard_pile_count == 0) {
+            gs->players[i].discard_pile[0] = intern("vis_fixture_discard");
+            gs->players[i].discard_pile_count = 1;
+        }
+    }
+    if (gs->devour_pile_count == 0) {
+        gs->devour_pile[0] = intern("vis_fixture_devour");
+        gs->devour_pile_count = 1;
+    }
+}
+
 /* A spread of reachable states: fresh games and playouts of several lengths. */
 #define MAX_STATES 24
 static int playout_states(GameState **out, int players) {
@@ -78,7 +95,14 @@ static int playout_states(GameState **out, int players) {
         for (size_t d = 0; d < sizeof(depths) / sizeof(depths[0]) && n < MAX_STATES; d++) {
             GameState *gs = fresh_game(players);
             uint64_t lcg = seed * 0x9E3779B97F4A7C15ULL;
-            out[n++] = advance(gs, depths[d], &lcg);
+            gs = advance(gs, depths[d], &lcg);
+            seed_public_card_zones(gs);
+            /* The view and tree-key tests below only cover the new fields if
+             * the fixtures actually populate them. */
+            assert(gs->devour_pile_count > 0);
+            for (int i = 0; i < gs->player_count && i < MAX_PLAYERS; i++)
+                assert(gs->players[i].discard_pile_count > 0);
+            out[n++] = gs;
         }
     }
     return n;
@@ -120,9 +144,10 @@ static void test_hidden_cards_reach_only_their_owner(void) {
     char *v1 = view_of(gs, "p1");
     char *v2 = view_of(gs, "p2");
 
-    /* An opponent's hand, discard and deck are counts. */
+    /* An opponent's hand and deck are counts; their discard is shown as cards
+     * (the owner's visibility rule). */
     assert(!strstr(v1, "vis_secret_hand"));
-    assert(!strstr(v1, "vis_secret_discard"));
+    assert(strstr(v1, "vis_secret_discard"));
     assert(!strstr(v1, "vis_secret_deck"));
     /* The owner sees their hand and discard, never their deck. */
     assert(strstr(v2, "vis_secret_hand"));
@@ -136,6 +161,66 @@ static void test_hidden_cards_reach_only_their_owner(void) {
     free(v2);
     engine_destroy(gs);
     printf("PASS: hidden cards reach only their owner\n");
+}
+
+/* The owner's rule: an opponent's discard pile and the devour pile are shown
+ * as cards to every player. Hand and deck stay counts (control). */
+static void test_opponent_discard_and_devour_are_visible(void) {
+    GameState *gs = fresh_game(2);
+    PlayerState *p2 = &gs->players[1];
+
+    p2->discard_pile_count = 2;
+    p2->discard_pile[0] = intern("vis_public_discard_a");
+    p2->discard_pile[1] = intern("vis_public_discard_b");
+    gs->devour_pile_count = 2;
+    gs->devour_pile[0] = intern("vis_public_devour_a");
+    gs->devour_pile[1] = intern("vis_public_devour_b");
+
+    /* Hidden zones stay hidden for the control below. */
+    p2->hand_count = 1;
+    p2->hand[0] = intern("vis_private_hand");
+    p2->deck_count = 1;
+    p2->deck[0] = intern("vis_private_deck");
+
+    char *v1 = view_of(gs, "p1");
+    char *v2 = view_of(gs, "p2");
+
+    /* Every view shows the devour pile's cards. */
+    assert(strstr(v1, "vis_public_devour_a"));
+    assert(strstr(v1, "vis_public_devour_b"));
+    assert(strstr(v2, "vis_public_devour_a"));
+
+    /* Every player's discard cards are in every other player's view. */
+    assert(strstr(v1, "vis_public_discard_a"));
+    assert(strstr(v1, "vis_public_discard_b"));
+    assert(strstr(v2, "vis_public_discard_a"));
+
+    /* Hand and deck stay counts. */
+    assert(!strstr(v1, "vis_private_hand"));
+    assert(!strstr(v1, "vis_private_deck"));
+
+    /* The fields are where the rule says: the public block's devour_pile and
+     * each player summary's discard list. */
+    cJSON *root = cJSON_Parse(v1);
+    assert(root);
+    cJSON *pub = cJSON_GetObjectItemCaseSensitive(root, "public");
+    assert(cJSON_IsObject(pub));
+    cJSON *devour = cJSON_GetObjectItemCaseSensitive(pub, "devour_pile");
+    assert(cJSON_IsArray(devour));
+    assert(cJSON_GetArraySize(devour) == 2);
+    cJSON *summaries = cJSON_GetObjectItemCaseSensitive(pub, "public_player_summaries");
+    assert(cJSON_IsObject(summaries));
+    cJSON *p2_summary = cJSON_GetObjectItemCaseSensitive(summaries, "p2");
+    assert(cJSON_IsObject(p2_summary));
+    cJSON *discard = cJSON_GetObjectItemCaseSensitive(p2_summary, "discard");
+    assert(cJSON_IsArray(discard));
+    assert(cJSON_GetArraySize(discard) == 2);
+    cJSON_Delete(root);
+
+    free(v1);
+    free(v2);
+    engine_destroy(gs);
+    printf("PASS: opponent discards and the devour pile are visible\n");
 }
 
 static void assert_sorted_keys(const cJSON *node) {
@@ -287,9 +372,10 @@ static void test_determinize_shuffles_the_observers_own_deck(void) {
 
 /* A sampled world depends only on what the observer knows and the seed. Two
  * states the observer cannot tell apart — one differs in the observer's own
- * deck order and in which cards of an opponent's hidden pool sit in hand, deck
- * or discard (counts unchanged) — must determinize to the same world. Byte
- * identity is checked through engine_serialize_state. */
+ * deck order and in how an opponent's hidden hand+deck pool is split (counts
+ * unchanged) — must determinize to the same world. The opponent's discard pile
+ * and the devour pile are visible, so they are identical in both states here.
+ * Byte identity is checked through engine_serialize_state. */
 static void test_determinized_world_depends_only_on_observer_knowledge(void) {
     GameState *a = fresh_game(2);
     PlayerState *p1 = &a->players[0];
@@ -310,11 +396,14 @@ static void test_determinized_world_depends_only_on_observer_knowledge(void) {
     p2->deck[0] = intern("vis_hidden_c");
     p2->deck[1] = intern("vis_hidden_d");
     p2->discard_pile_count = 2;
-    p2->discard_pile[0] = intern("vis_hidden_e");
-    p2->discard_pile[1] = intern("vis_hidden_f");
+    p2->discard_pile[0] = intern("vis_public_e");
+    p2->discard_pile[1] = intern("vis_public_f");
+    a->devour_pile_count = 1;
+    a->devour_pile[0] = intern("vis_public_devour");
 
-    /* b differs only inside hidden zones: p1's deck order is reversed, and two
-     * of p2's hidden cards swap places between hand and deck. */
+    /* b differs only inside hidden zones: p1's deck order is reversed, and an
+     * opponent's hidden card swaps between hand and deck. Both states show the
+     * same opponent discard and devour pile. */
     GameState *b = engine_clone(a);
     assert(b);
     PlayerState *bp1 = &b->players[0];
@@ -432,7 +521,7 @@ static void test_tree_key_classes_match_view_classes(void) {
                 engine_destroy(det);
             }
             /* Visible and hidden single-field changes, on clones. */
-            for (int mut = 0; mut < 6; mut++) {
+            for (int mut = 0; mut < 7; mut++) {
                 GameState *c = engine_clone(states[i]);
                 PlayerState *me = &c->players[p];
                 PlayerState *them = &c->players[(p + 1) % 3];
@@ -441,8 +530,9 @@ static void test_tree_key_classes_match_view_classes(void) {
                 case 1: if (them->hand_count > 0) them->hand[0] = swap_in; break;  /* hidden */
                 case 2: if (me->hand_count > 0) me->hand[0] = swap_in; break;      /* shown */
                 case 3: if (them->played_cards_count > 0) them->played_cards[0] = swap_in; break;
-                case 4: c->devour_pile_count += 1; break;                          /* a count */
+                case 4: c->devour_pile_count += 1; break;                          /* shown: devour */
                 case 5: if (c->market.row_count > 0) c->market.row[0] = swap_in; break;
+                case 6: if (them->discard_pile_count > 0) them->discard_pile[0] = swap_in; break; /* shown */
                 }
                 check_pair(states[i], c, pid);
                 engine_destroy(c);
@@ -464,6 +554,7 @@ int main(void) {
 
     test_rule_never_resamples_a_shown_zone();
     test_hidden_cards_reach_only_their_owner();
+    test_opponent_discard_and_devour_are_visible();
     test_view_is_json_with_sorted_keys();
     test_view_reports_the_length_it_needs();
     test_determinize_shuffles_the_observers_own_deck();

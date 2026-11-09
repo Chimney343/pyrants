@@ -156,21 +156,23 @@ class TestObservationCompleteness:
         d2 = state.resample_from_infostate(p, np.random.RandomState(22))
         assert d1._adapter.private_view_json(pid) == d2._adapter.private_view_json(pid)
 
-    def test_opponent_discard_pile_still_not_leaked(self, requires_c_engine):
-        """T4 — control: another player's discard identities never enter my observation."""
+    def test_opponent_discard_pile_visible(self, requires_c_engine):
+        """T4 — the owner's rule: another player's discard identities are public.
+
+        The old rule hid them; ADR-0008 makes every discard pile visible, so the
+        marker must now appear in my view, inside that player's summary
+        ``discard`` list, while ``discard_size`` still reports the count.
+        """
         game = _load_c_game(2)
         state = _mid_game_state(game)
         marker = "zz_marker_card_9"
         _force_discard(state, "p2", [marker])
 
         p1_view = json.loads(state._adapter.private_view_json("p1"))
-        assert marker not in json.dumps(p1_view, sort_keys=True)
+        assert marker in json.dumps(p1_view, sort_keys=True)
         b_summary = p1_view["public"]["public_player_summaries"]["p2"]
         assert b_summary["discard_size"] == 1
-        # B's summary exposes only counts/aggregates, never discard identities.
-        assert not any(
-            "zz_marker" in str(v) for v in b_summary.values()
-        )
+        assert b_summary["discard"] == [marker]
 
     def test_tier1_snapshot_shape_and_cost_unaffected(self, requires_c_engine):
         """T5 — control (G4): the cheap Tier-1 dict keeps its exact key set."""

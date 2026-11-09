@@ -21,20 +21,21 @@
  * Every deck is hidden from every player, its owner included, so the owner's
  * deck is a count that determinization reshuffles. Step 1 reproduced the old
  * engine, which wrongly kept the observer's own deck in order; step 2 (A1)
- * corrects that row. The devour pile and the market discard are counts whose
- * cards never come back into play. */
+ * corrects that row. Every player's discard pile is public and the devour pile
+ * is public (step 2, A2), so neither is resampled. The market discard is a
+ * count whose cards never come back into play. */
 static const VisRule RULES[VZ_ZONE_COUNT][2] = {
     /*                      self              opponent */
     /* VZ_HAND           */ {{VIS_CARDS, 0}, {VIS_COUNT, 1}},
     /* VZ_DECK           */ {{VIS_COUNT, 1}, {VIS_COUNT, 1}},
-    /* VZ_DISCARD        */ {{VIS_CARDS, 0}, {VIS_COUNT, 1}},
+    /* VZ_DISCARD        */ {{VIS_CARDS, 0}, {VIS_CARDS, 0}},
     /* VZ_PLAYED         */ {{VIS_CARDS, 0}, {VIS_CARDS, 0}},
     /* VZ_INNER_CIRCLE   */ {{VIS_CARDS, 0}, {VIS_CARDS, 0}},
     /* VZ_TROPHY_HALL    */ {{VIS_CARDS, 0}, {VIS_CARDS, 0}},
     /* VZ_MARKET_ROW     */ {{VIS_CARDS, 0}, {VIS_CARDS, 0}},
     /* VZ_MARKET_DECK    */ {{VIS_COUNT, 1}, {VIS_COUNT, 1}},
     /* VZ_MARKET_DISCARD */ {{VIS_COUNT, 0}, {VIS_COUNT, 0}},
-    /* VZ_DEVOUR         */ {{VIS_COUNT, 0}, {VIS_COUNT, 0}},
+    /* VZ_DEVOUR         */ {{VIS_CARDS, 0}, {VIS_CARDS, 0}},
 };
 
 VisRule vis_rule(VisZone zone, VisRelation rel) {
@@ -656,17 +657,17 @@ void engine_infostate_hash(const GameState *state, Sym player_id, uint64_t out[2
  *
  * A sampled world the observer cannot tell from the real one: every zone the
  * rule marks for resampling is reshuffled, and nothing the observer sees
- * moves. A player's resampled zones are pooled in VisZone order (hand, deck,
- * discard, ...) and shuffled together; shared resampled zones (the market
- * deck) shuffle alone, after the players.
+ * moves. A player's resampled zones are pooled in VisZone order (hand, deck)
+ * and shuffled together; shared resampled zones (the market deck) shuffle
+ * alone, after the players. Visible zones — every discard pile and the devour
+ * pile — are never resampled.
  *
  * Each pool is sorted by card id before it is shuffled, so the world depends
  * only on what the observer knows and on the seed. Without the sort the
  * shuffle's input order leaks the real arrangement into the sampled world:
  * two states the observer cannot tell apart (different deck orders, or
- * different splits of an opponent's hidden pool between hand, deck and
- * discard) would sample different worlds for the same seed. Sorting draws
- * nothing from the RNG. */
+ * different splits of an opponent's hidden hand+deck pool) would sample
+ * different worlds for the same seed. Sorting draws nothing from the RNG. */
 static Sym *zone_cards_mut(GameState *s, PlayerState *ps, VisZone z, int *count) {
     const Sym *cards;
     *count = zone_cards(s, ps, z, &cards);

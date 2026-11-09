@@ -155,31 +155,50 @@ def test_seat_is_current_is_seat_zero(mid_game_adapter) -> None:
 
 
 # ── T3.9 leak test: invariant under determinize ────────────────────────────
+#
+# Under the owner's visibility rule (ADR-0008) every opponent's discard pile is
+# visible. The NN tensor deliberately stays byte-identical to the pre-rule
+# tensor (user decision): it encodes opponents as deduced hand+deck+discard
+# bags and never reads discard identities, so making them visible changes the
+# view, not the tensor. This test now pins both halves: the view inside an
+# information set is stable under determinize, and the tensor is too.
 
 
 def test_observation_invariant_under_determinize(mid_game_adapter) -> None:
     control_diff = 0
+    visible_discard = 0
     checked = 0
     for num_players in (2, 4):
         for k in range(10):
             adapter = mid_game_adapter(num_players, seed=100 + k, n_moves=30)
             pid = adapter.current_player_id()
             obs = encode_observation(adapter, pid, None)
+            view = json.loads(adapter.private_view_json(pid))
 
             det = adapter.determinize(pid, 1000 + k)
             assert det is not None
             obs_det = encode_observation(det, pid, None)
             assert np.array_equal(obs, obs_det)
+            # The observer's whole view, including any opponent discard
+            # identities it now shows, is unchanged by determinization.
+            assert adapter.private_view_json(pid) == det.private_view_json(pid)
 
             opp_idx = next(
                 i for i, p in enumerate(adapter.player_ids) if p != pid
             )
+            opp_pid = adapter.player_ids[opp_idx]
+            opp_summary = view["public"]["public_player_summaries"][opp_pid]
+            if opp_summary.get("discard"):
+                visible_discard += 1
             if list(adapter.state.player_hand(opp_idx)) != list(det.state.player_hand(opp_idx)):
                 control_diff += 1
             checked += 1
             det.destroy()
 
     assert checked == 20
+    # The opponent-discard component must be non-vacuous for at least one state,
+    # or the view-stability assertion above says nothing about the new rule.
+    assert visible_discard > 0
     # If every determinization preserved the opponent hand, the leak test
     # would be vacuous; require at least one genuinely different world.
     assert control_diff > 0
