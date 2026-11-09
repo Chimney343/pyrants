@@ -54,7 +54,10 @@ def _load_c_game_with_hetero_market(num_players: int = 2):
 )
 class TestDeterminizeC:
     def test_determinize_preserves_observing_player(self, requires_c_engine):
-        """Observing player's hand/deck/discard unchanged after determinization."""
+        """Observing player's view unchanged after determinization.
+
+        Their deck is resampled like any other hidden deck (A1), so only the
+        view — which carries the deck's count, not its order — must match."""
         game = _load_c_game(2)
         state = game.new_initial_state()
         state.apply_action(42)
