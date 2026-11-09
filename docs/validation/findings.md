@@ -58,6 +58,7 @@ All six required components exist; none had to be substituted.
 | F-032 | ENGINE-OPENSPIEL | MINOR | `read_pending_generic_context_full` returns `None` — "no generic choice pending" — when only the extended read fails, contradicting its own docstring — R-3 |
 | F-033 | VALIDATION-PROCESS | MINOR | `just test-all` aborts on the first failing tree, so with today's four tolerated `tests/` failures it never runs `openspiel_pyrants/tests/` — the very regression it was added to prevent — R-4 |
 | F-034 | VALIDATION-PROCESS | MAJOR | *(found by the review of Fix Plan 02's implementation)* commit `23196b7` bundled an unrelated rule change (`insane_outcast` not recruitable: setup + engine) with the encoder fixes, breaking the plan's premise that no run needs repeating: 46/141 stored games desynced, the 120-game corpus could not be rebuilt at v3, and one new test went red in each tree unrecorded — N-1 of `nn-training-data-fix-plan-02-review.md` |
+| F-041 | ENGINE-OPENSPIEL | MAJOR | Determinization samples worlds the owner's visibility rule forbids: the observer's own deck kept its real order (part a, fixed in A1) and opponents' discard piles are pooled with hand and deck while the devour pile shows only a count (part b, open for A2) |
 
 Baseline recorded 2026-09-10 against the working tree at `ea25b68` with Phases 0-4 of
 `nn-training-data-tdd-plan.md` applied but uncommitted: `tests/` 1001 passed / 4 failed
@@ -961,6 +962,20 @@ passed.
 - Expected if FALSE POSITIVE: a non-zero exit code.
 - Observed: exit code 0 (REAL). `just test-c` did not catch a test that failed to build either: with `engine_c/test_visibility.exe` removed it exited 0, because the missing executable left the previous `$LASTEXITCODE` in place.
 - Status: **FIXED** (2026-11-06). Both scripts now `goto :test_failed` out of the loop. That label sits at top level, prints the failing test, and runs `exit /b 1`. Re-running the falsification test exits 1 with "ERROR: test_bogus (build) failed; engine_c.dll was not rebuilt."; a clean `just build-c` exits 0. The `just test-c` recipe now fails on a missing executable ("MISSING: ...", exit 1) and still exits 0 when every test is present and passes.
+
+### F-041 Determinization samples worlds the owner's visibility rule forbids
+- Class: ENGINE-OPENSPIEL (information-set integrity)
+- Severity: MAJOR (search exploits information no player has; it inflates play strength and invalidates any claim that IS-MCTS plays the information set)
+- Origin: Found by the 2026-11-04 architecture review; fixed in candidate 5 step 2, brief A1 (2026-11-09)
+- Code: the rule table `engine_c/visibility.c:24-33` shared the deck and discard rows. Part (a): `VZ_DECK`, self, was `{VIS_COUNT, 0}`, so `engine_determinize` (`engine_c/visibility.c:689-737`) cloned the observer's deck in its real order and every sampled world carried the real next draws into `run_search` (`openspiel_pyrants/state_c.py:342`). Part (b): `VZ_DISCARD`, opponent, was `{VIS_COUNT, 1}`, so `engine_determinize` pooled an opponent's discard with hand and deck even though the rule makes it visible, and `VZ_DEVOUR` stayed a count.
+- Falsification test: `openspiel_pyrants/tests/test_no_own_deck_leak.py` builds two states that differ only in the acting player's deck order, with identical views and legal moves, and runs the production bot from `ismcts_factory` on both. Before the fix the chosen action and policy differed on all three seeds (e.g. seed 4242 chose actions 4 vs 1 at 16 sims); after it they are identical.
+- Expected if REAL: the bot's move changes when only its own hidden deck order changes.
+- Expected if FALSE POSITIVE: identical action and policy for every seed.
+- Observed: REAL before the fix. The C checks in `engine_c/tests/test_visibility.c` fail on the old table too: the observer's deck order never changed across seeds (0 of 24), and two states the observer could not tell apart serialized differently after determinization.
+- Status: **PARTIAL**
+  - **(a) FIXED** (2026-11-09, A1): `VZ_DECK`, self, is `{VIS_COUNT, 1}`; determinization resamples the observer's deck. Each resampled pool is now sorted by card id before the shuffle (`engine_c/visibility.c:677-687,708,723`), so a world depends only on the observer's knowledge and the seed — without the sort, two indistinguishable states would still sample differently. Contract updated in `engine_c/visibility.h`.
+  - **(b) OPEN** for brief A2: `VZ_DISCARD`, opponent, must become `{VIS_CARDS, 0}` and `VZ_DEVOUR` `{VIS_CARDS, ...}`, which changes view bytes and needs the G1 re-freeze and approved test flips.
+- Boundary: `private_view_json`, `engine_infostate_hash` and the NN observation never exposed deck order (`my_deck_remainder` is a card-count vector over the deduced multiset), and the GUI's `build_c_game_view` reports only `deck_count`; the leak was determinization alone. `engine_random_rollout` (`engine_c/rollout.c:25-78`) reads whatever world it is given, so it inherited the leak through the sampled state and is clean once the table is.
 
 ## 4. Unanchored (suspicions that could not be fully anchored)
 

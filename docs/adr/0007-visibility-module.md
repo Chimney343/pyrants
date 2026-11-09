@@ -1,6 +1,6 @@
 # ADR-0007: One visibility module answers "what does player p know?"
 
-- **Status:** Active (step 1 done as a byte-identical refactor; step 2, the owner's visibility rule, is next)
+- **Status:** Active (step 1 done as a byte-identical refactor; step 2, the owner's visibility rule, is in progress: A1 fixed the observer's own deck, A2 is next)
 - **Date:** 2026-11-06
 - **Decision owner:** maintainers
 - **Supersedes:** -
@@ -54,8 +54,10 @@ owner chose a rule table plus one walk. The alternatives were a filled
   but stays distinct in the hash: a split, never a merge. Hash values are not
   persisted.
 - **Determinization reads the table.** Each player's resampled zones are pooled
-  in zone order and shuffled together; shared resampled zones shuffle alone.
-  With today's table this draws the RNG exactly as the old `state.c` code did.
+  in zone order, sorted by card id, and shuffled together; shared resampled
+  zones shuffle alone. With step 1's table this drew the RNG exactly as the old
+  `state.c` code did; step 2's A1 (below) adds the observer's own deck to the
+  resampled set and sorts every pool.
 - **Python asks C.** `private_view_json` is one call to
   `engine_player_view_json`, with the per-player string cache kept. The Python
   board projection and its F-013 Part B caches are deleted.
@@ -73,8 +75,9 @@ owner chose a rule table plus one walk. The alternatives were a filled
 The table first encodes the rule the engine already had:
 
 - An opponent's hand, deck and discard are counts and resampled.
-- Your own deck is a count but is **not** resampled. This is the known gap:
-  search effectively knows its own next draws.
+- Your own deck is a count but is **not** resampled. This was the known gap:
+  search effectively knows its own next draws. Step 2's A1 closes it (see
+  "Step 2, part A1" below).
 - The devour pile and the market discard are counts whose cards never return
   to play.
 
@@ -102,6 +105,61 @@ search and the view bytes, so it gets its own commit, a finding, a G1
 re-freeze, the approved changes to
 `test_observation_completeness.py:159` and `tests/nn/test_observation.py`'s
 leak test, and its own speed run.
+
+#### Step 2, part A1: no player's search knows its own deck order
+
+Done 2026-11-09 (F-041 part (a)). The table's `VZ_DECK`, self, is now
+`{VIS_COUNT, 1}`: the observer's own deck is resampled like any other hidden
+deck. `engine_determinize` additionally sorts each resampled pool by card id
+before the shuffle, so a sampled world depends only on the observer's
+knowledge and the seed. The sort draws nothing from the RNG, so the stream
+length for a given seed is unchanged.
+
+Why the sort belongs with this change: once the observer's deck is resampled,
+the proof test must show that two states differing only in that deck's order
+produce the same decision. Without the sort they would still sample different
+worlds for one seed, and the test would be statistical rather than exact. It
+also hardens the opponents' pools against the same class of leak.
+
+This part changes no view bytes, so no G1 re-freeze and no test flips were
+needed. Views, the tree key and the NN observation were already clean: none of
+them exposes deck order. Replays replay recorded moves and stayed 2,862/2,862
+(baseline records 2,846; the local artifact set has since grown). `VZ_DISCARD`
+(opponent) and `VZ_DEVOUR` remain step 2's open part (A2, F-041 part (b)).
+
+Tests added:
+- `engine_c/tests/test_visibility.c::test_determinize_shuffles_the_observers_own_deck`
+  — across 24 seeds the deck order changes (23 did), while the cards, the count
+  and the view do not.
+- `engine_c/tests/test_visibility.c::test_determinized_world_depends_only_on_observer_knowledge`
+  — two states the observer cannot tell apart (different own-deck order, and a
+  different split of an opponent's hidden cards) produce byte-identical
+  `engine_serialize_state` output for 12 seeds.
+- `openspiel_pyrants/tests/test_no_own_deck_leak.py` — the end-to-end proof:
+  the production bot's chosen action and whole policy are identical under two
+  own-deck orders (three seeds). It failed on the step-1 engine on every seed.
+
+Speed (script `scripts/bench_determinize.py`, committed; 118 playout states,
+6,000 timed calls, 4 players, interleaved runs):
+
+- Parent `aa04bb0`: mean 4.58–5.16 µs, median 3.2–3.5 µs per call.
+- This change: mean 4.95–6.45 µs, median 3.9–4.1 µs per call.
+- About +0.5–1.0 µs per call, roughly +10–20 %, from sorting four small pools.
+  At 200 sims per decision that is ~0.1–0.2 ms against a decision of hundreds of
+  ms.
+
+Quick check (8 four-player games, 50 sims, seed 42, `--uct-c 1.4`), parent
+`aa04bb0` run `20261109T123044Z_59d40db79464` against this build run
+`20261109T123258Z_f86a57cd3aaf`:
+
+- games/h 225.8 → 222.4 (run wall); ideal 298.2 → 271.5. Per-game wall ratio
+  median 0.954, mean 0.912.
+- Decisions differ on every game, as expected: determinization now samples a
+  different world. `scripts/compare_paired_runs.py` shows field differences in
+  `policy`/`visit_counts`/`q_values` from line 0.
+
+A 32-game paired run was not requested; the quick check answers the games/h
+question for this brief.
 
 ## Consequences
 

@@ -100,7 +100,10 @@ module's shape is settled, not before.
   walk as the player view, so two states share a key exactly when they share a
   view. Only comparable inside one process.
 - **resampled zone** - a zone determinization reshuffles. A player's resampled
-  zones are pooled and shuffled together; a shared one shuffles alone.
+  zones are pooled, sorted by card id, and shuffled together; a shared one is
+  sorted and shuffled alone. The sort makes a sampled world depend only on the
+  observer's information and the seed, never on the real arrangement. A deck,
+  the observer's own included, is a resampled zone.
 - **deduced multiset** - what can be worked out from public history but is not
   seen directly: an opponent's hand+deck bag, your own deck's remainder, what
   is left in the market deck. `nn/public.py` computes these; by decision they
