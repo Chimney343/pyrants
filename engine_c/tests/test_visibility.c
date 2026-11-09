@@ -19,6 +19,7 @@
 #include "../visibility.h"
 #include "../intern.h"
 #include "../arena.h"
+#include "../saveload.h"
 #include "catalog_dir.h"
 #include <assert.h>
 #include <stdio.h>
@@ -196,6 +197,175 @@ static void test_view_reports_the_length_it_needs(void) {
 
 /* ---- determinization ----------------------------------------------------- */
 
+/* A card-id multiset: its entries, sorted. Used to check that resampling
+ * rearranges a zone without adding, dropping or changing cards. */
+static int sorted_ids(const Sym *cards, int n, Sym *out) {
+    for (int i = 0; i < n; i++) out[i] = cards[i];
+    for (int a = 1; a < n; a++) {
+        Sym key = out[a];
+        int b = a - 1;
+        while (b >= 0 && out[b] > key) { out[b + 1] = out[b]; b--; }
+        out[b + 1] = key;
+    }
+    return n;
+}
+
+static int same_multiset(const Sym *a, int na, const Sym *b, int nb) {
+    if (na != nb) return 0;
+    Sym sa[MAX_ZONE_SIZE], sb[MAX_ZONE_SIZE];
+    sorted_ids(a, na, sa);
+    sorted_ids(b, nb, sb);
+    return memcmp(sa, sb, (size_t)na * sizeof(Sym)) == 0;
+}
+
+/* The observer cannot see their own deck. Determinization must therefore
+ * reshuffle it: across seeds the order changes, while the cards, the count and
+ * the observer's view stay put. */
+static void test_determinize_shuffles_the_observers_own_deck(void) {
+    GameState *gs = fresh_game(2);
+    PlayerState *p1 = &gs->players[0];
+    PlayerState *p2 = &gs->players[1];
+
+    static const char *const deck_ids[] = {
+        "vis_deck_a", "vis_deck_b", "vis_deck_c",
+        "vis_deck_d", "vis_deck_e", "vis_deck_f",
+    };
+    int deck_count = (int)(sizeof(deck_ids) / sizeof(deck_ids[0]));
+    p1->deck_count = deck_count;
+    for (int i = 0; i < deck_count; i++) p1->deck[i] = intern(deck_ids[i]);
+    p1->hand_count = 2;
+    p1->hand[0] = intern("vis_own_hand_a");
+    p1->hand[1] = intern("vis_own_hand_b");
+
+    p2->deck_count = 3;
+    p2->deck[0] = intern("vis_opp_deck_a");
+    p2->deck[1] = intern("vis_opp_deck_b");
+    p2->deck[2] = intern("vis_opp_deck_c");
+    p2->hand_count = 2;
+    p2->hand[0] = intern("vis_opp_hand_a");
+    p2->hand[1] = intern("vis_opp_hand_b");
+    p2->discard_pile_count = 2;
+    p2->discard_pile[0] = intern("vis_opp_disc_a");
+    p2->discard_pile[1] = intern("vis_opp_disc_b");
+
+    Sym original[MAX_ZONE_SIZE];
+    for (int i = 0; i < deck_count; i++) original[i] = p1->deck[i];
+    char *view_before = view_of(gs, "p1");
+
+    Sym first_order[MAX_ZONE_SIZE];
+    int have_first = 0, order_changed = 0;
+    for (uint64_t seed = 1; seed <= 24; seed++) {
+        GameState *det = engine_determinize(gs, intern("p1"), seed * 7919ULL);
+        assert(det);
+        PlayerState *dp = &det->players[0];
+
+        /* Same cards and count. */
+        assert(dp->deck_count == deck_count);
+        assert(same_multiset(dp->deck, dp->deck_count, original, deck_count));
+
+        /* The observer's view cannot move. */
+        char *after = view_of(det, "p1");
+        assert(strcmp(view_before, after) == 0);
+        free(after);
+
+        if (!have_first) {
+            for (int i = 0; i < deck_count; i++) first_order[i] = dp->deck[i];
+            have_first = 1;
+        } else if (memcmp(first_order, dp->deck, (size_t)deck_count * sizeof(Sym)) != 0) {
+            order_changed++;
+        }
+        engine_destroy(det);
+    }
+    free(view_before);
+    engine_destroy(gs);
+
+    assert(have_first);
+    assert(order_changed > 0);
+    printf("PASS: determinize shuffles the observer's own deck (%d of 24 seeds changed order)\n",
+           order_changed);
+}
+
+/* A sampled world depends only on what the observer knows and the seed. Two
+ * states the observer cannot tell apart — one differs in the observer's own
+ * deck order and in which cards of an opponent's hidden pool sit in hand, deck
+ * or discard (counts unchanged) — must determinize to the same world. Byte
+ * identity is checked through engine_serialize_state. */
+static void test_determinized_world_depends_only_on_observer_knowledge(void) {
+    GameState *a = fresh_game(2);
+    PlayerState *p1 = &a->players[0];
+    PlayerState *p2 = &a->players[1];
+
+    p1->deck_count = 4;
+    p1->deck[0] = intern("vis_own_1");
+    p1->deck[1] = intern("vis_own_2");
+    p1->deck[2] = intern("vis_own_3");
+    p1->deck[3] = intern("vis_own_4");
+    p1->hand_count = 1;
+    p1->hand[0] = intern("vis_hand_1");
+
+    p2->hand_count = 2;
+    p2->hand[0] = intern("vis_hidden_a");
+    p2->hand[1] = intern("vis_hidden_b");
+    p2->deck_count = 2;
+    p2->deck[0] = intern("vis_hidden_c");
+    p2->deck[1] = intern("vis_hidden_d");
+    p2->discard_pile_count = 2;
+    p2->discard_pile[0] = intern("vis_hidden_e");
+    p2->discard_pile[1] = intern("vis_hidden_f");
+
+    /* b differs only inside hidden zones: p1's deck order is reversed, and two
+     * of p2's hidden cards swap places between hand and deck. */
+    GameState *b = engine_clone(a);
+    assert(b);
+    PlayerState *bp1 = &b->players[0];
+    PlayerState *bp2 = &b->players[1];
+    for (int i = 0; i < bp1->deck_count / 2; i++) {
+        Sym tmp = bp1->deck[i];
+        bp1->deck[i] = bp1->deck[bp1->deck_count - 1 - i];
+        bp1->deck[bp1->deck_count - 1 - i] = tmp;
+    }
+    Sym tmp = bp2->hand[0];
+    bp2->hand[0] = bp2->deck[0];
+    bp2->deck[0] = tmp;
+
+    /* What p1 knows is identical in both states. */
+    char *va = view_of(a, "p1");
+    char *vb = view_of(b, "p1");
+    assert(strcmp(va, vb) == 0);
+    free(va);
+    free(vb);
+
+    static const int json_cap = 256 * 1024;
+    char *ja = (char *)malloc((size_t)json_cap);
+    char *jb = (char *)malloc((size_t)json_cap);
+    assert(ja && jb);
+
+    int compared = 0;
+    for (uint64_t seed = 1; seed <= 12; seed++) {
+        GameState *da = engine_determinize(a, intern("p1"), seed * 104729ULL);
+        GameState *db = engine_determinize(b, intern("p1"), seed * 104729ULL);
+        assert(da && db);
+
+        int na = engine_serialize_state(da, "cards", "board", "setup", 0, 0, ja, json_cap);
+        int nb = engine_serialize_state(db, "cards", "board", "setup", 0, 0, jb, json_cap);
+        assert(na > 0 && na < json_cap);
+        assert(nb == na);
+        assert(memcmp(ja, jb, (size_t)na) == 0);
+
+        engine_destroy(da);
+        engine_destroy(db);
+        compared++;
+    }
+
+    free(ja);
+    free(jb);
+    engine_destroy(b);
+    engine_destroy(a);
+    assert(compared == 12);
+    printf("PASS: determinized worlds depend only on the observer's knowledge (%d seeds)\n",
+           compared);
+}
+
 static void test_determinize_keeps_the_observer_view(void) {
     GameState *states[MAX_STATES];
     int n = playout_states(states, 3);
@@ -296,6 +466,8 @@ int main(void) {
     test_hidden_cards_reach_only_their_owner();
     test_view_is_json_with_sorted_keys();
     test_view_reports_the_length_it_needs();
+    test_determinize_shuffles_the_observers_own_deck();
+    test_determinized_world_depends_only_on_observer_knowledge();
     test_determinize_keeps_the_observer_view();
     test_tree_key_classes_match_view_classes();
 

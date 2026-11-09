@@ -75,7 +75,12 @@ void engine_infostate_hash(const GameState *state, Sym player_id, uint64_t out[2
 /* A clone of src with every zone the rule marks for resampling, as seen by
  * observing_player_id, reshuffled from seed, and the mid-game shuffle stream
  * rerolled. The observer's view of the result equals their view of src.
- * Returns NULL when src is NULL or the clone fails. */
+ *
+ * The sampled world depends only on what observing_player_id knows and on
+ * seed: each resampled pool is sorted by card id before it is shuffled, so
+ * two states with the same observer view (however their hidden zones are
+ * arranged) determinize to the same world for the same seed. Sorting draws
+ * nothing from the RNG. Returns NULL when src is NULL or the clone fails. */
 GameState *engine_determinize(const GameState *src, Sym observing_player_id, uint64_t seed);
 
 #endif

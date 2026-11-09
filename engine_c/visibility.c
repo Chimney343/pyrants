@@ -12,19 +12,21 @@
  *   vis       VIS_CARDS: the observer sees which cards; VIS_COUNT: only how
  *             many.
  *   resample  engine_determinize reshuffles the zone. A player's resampled
- *             zones are pooled and shuffled together, because the observer
- *             knows what the pool holds but not how it splits; a shared zone
- *             shuffles alone. A VIS_CARDS zone is never resampled.
+ *             zones are pooled, sorted by card id, and shuffled together,
+ *             because the observer knows what the pool holds but not how it
+ *             splits; a shared zone is sorted and shuffled alone. A VIS_CARDS
+ *             zone is never resampled. The sort is what makes a sampled world
+ *             depend only on the observer's knowledge and the seed.
  *
- * This is the rule the engine had before the module existed (candidate 5
- * step 1 reproduces it byte for byte). An opponent's hand, deck and discard
- * are counts and pooled. Your own deck is a count but is not resampled, so
- * determinization keeps its order. The devour pile and the market discard are
- * counts whose cards never come back into play. */
+ * Every deck is hidden from every player, its owner included, so the owner's
+ * deck is a count that determinization reshuffles. Step 1 reproduced the old
+ * engine, which wrongly kept the observer's own deck in order; step 2 (A1)
+ * corrects that row. The devour pile and the market discard are counts whose
+ * cards never come back into play. */
 static const VisRule RULES[VZ_ZONE_COUNT][2] = {
     /*                      self              opponent */
     /* VZ_HAND           */ {{VIS_CARDS, 0}, {VIS_COUNT, 1}},
-    /* VZ_DECK           */ {{VIS_COUNT, 0}, {VIS_COUNT, 1}},
+    /* VZ_DECK           */ {{VIS_COUNT, 1}, {VIS_COUNT, 1}},
     /* VZ_DISCARD        */ {{VIS_CARDS, 0}, {VIS_COUNT, 1}},
     /* VZ_PLAYED         */ {{VIS_CARDS, 0}, {VIS_CARDS, 0}},
     /* VZ_INNER_CIRCLE   */ {{VIS_CARDS, 0}, {VIS_CARDS, 0}},
@@ -656,12 +658,34 @@ void engine_infostate_hash(const GameState *state, Sym player_id, uint64_t out[2
  * rule marks for resampling is reshuffled, and nothing the observer sees
  * moves. A player's resampled zones are pooled in VisZone order (hand, deck,
  * discard, ...) and shuffled together; shared resampled zones (the market
- * deck) shuffle alone, after the players. With the step-1 table this draws the
- * RNG exactly as the pre-module engine_determinize did. */
+ * deck) shuffle alone, after the players.
+ *
+ * Each pool is sorted by card id before it is shuffled, so the world depends
+ * only on what the observer knows and on the seed. Without the sort the
+ * shuffle's input order leaks the real arrangement into the sampled world:
+ * two states the observer cannot tell apart (different deck orders, or
+ * different splits of an opponent's hidden pool between hand, deck and
+ * discard) would sample different worlds for the same seed. Sorting draws
+ * nothing from the RNG. */
 static Sym *zone_cards_mut(GameState *s, PlayerState *ps, VisZone z, int *count) {
     const Sym *cards;
     *count = zone_cards(s, ps, z, &cards);
     return (Sym *)cards;
+}
+
+/* Insertion sort by card text, the same key the view sorts its lists by. The
+ * pool is small (at most a few dozen cards per player), so this is cheap and
+ * keeps the sort stable for equal ids, which are interchangeable anyway. */
+static void sort_pool(Sym *pool, int n) {
+    for (int a = 1; a < n; a++) {
+        Sym key = pool[a];
+        int b = a - 1;
+        while (b >= 0 && cmp_id_text(pool[b], key) > 0) {
+            pool[b + 1] = pool[b];
+            b--;
+        }
+        pool[b + 1] = key;
+    }
 }
 
 GameState *engine_determinize(const GameState *src, Sym observing_player_id, uint64_t seed) {
@@ -683,6 +707,7 @@ GameState *engine_determinize(const GameState *src, Sym observing_player_id, uin
             Sym *cards = zone_cards_mut(clone, ps, (VisZone)z, &count);
             for (int j = 0; j < count; j++) pool[n++] = cards[j];
         }
+        sort_pool(pool, n);
         rng_shuffle(&rng, (uint32_t *)pool, n); /* draws nothing when n <= 1 */
         n = 0;
         for (int z = 0; z < VZ_PLAYER_ZONE_COUNT; z++) {
@@ -697,6 +722,7 @@ GameState *engine_determinize(const GameState *src, Sym observing_player_id, uin
         if (!RULES[z][VIS_OPPONENT].resample) continue;
         int count;
         Sym *cards = zone_cards_mut(clone, NULL, (VisZone)z, &count);
+        sort_pool(cards, count);
         rng_shuffle(&rng, (uint32_t *)cards, count);
     }
 
