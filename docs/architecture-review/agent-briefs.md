@@ -78,16 +78,16 @@ step" and "Per-candidate loop". Then `GLOSSARY.md` and whatever your brief lists
   Any other ADR uses 0013 upward; name it in your report.
 
 **Gates.** Run what the handoff's "Gates for every step" lists, read every pass
-count, and add `just verify-replays` after any engine change. Baseline at
-`20c5d0c` (measured at `f9bec9b`; `20c5d0c` changed only docs):
+count, and add `just verify-replays` after any engine change. Baseline after
+brief A1 (`0b9ee96`):
 
 | Gate | Expected |
 |---|---|
 | `just build-c`, `just test-c` | 10 test executables pass |
 | `just test-c-python` | 747 passed, 2 failed (Zuggtmoy, Air Elemental) |
 | `just test-all`, `tests/` | 1111 passed, 2 failed, 11 skipped |
-| `just test-all`, `openspiel_pyrants/tests/` | 107 passed, 10 failed (the postponed F-003 Part B tests) |
-| `just verify-replays` | 2846/2846 |
+| `just test-all`, `openspiel_pyrants/tests/` | 110 passed, 10 failed (the postponed F-003 Part B tests) |
+| `just verify-replays` | all pass (2862/2862 on 2026-11-09; the count grows as runs are added) |
 | `just test-c-asan` | clean |
 | `just docs-check` | 9 errors, all pre-existing |
 | `ruff check .` | 634 errors overall; no new error in a file you changed |
