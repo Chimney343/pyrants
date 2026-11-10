@@ -9,9 +9,23 @@ from pathlib import Path
 
 import pyspiel
 
-from engine_c.bindings.ce_api import CEngine
+from engine_c.bindings.ce_api import CEngine, move_capacity
+from engine_c.bindings.engine_bindings import _lib as _c_lib
 
+# The NN action space, a frozen wire format. This is the declared capacity; the
+# engine enforces the same number and the check just below fails loudly if the
+# two ever drift (F-038). ``engine_c`` exports it so the bindings' buffers and
+# this constant have one runtime source.
 NUM_DISTINCT_ACTIONS = 1024
+
+if _c_lib is not None:
+    _engine_capacity = move_capacity()
+    if _engine_capacity != NUM_DISTINCT_ACTIONS:
+        raise RuntimeError(
+            f"engine_c capacity {_engine_capacity} disagrees with "
+            f"NUM_DISTINCT_ACTIONS {NUM_DISTINCT_ACTIONS}; the action space would "
+            "silently truncate or leave ids unused"
+        )
 
 _DATA_DIR = Path(__file__).resolve().parents[1] / "data"
 _DEFAULT_BOARD = _DATA_DIR / "boards" / "tyrants_of_the_underdark.json"

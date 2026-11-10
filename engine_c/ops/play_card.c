@@ -20,7 +20,8 @@ static int op_play_card_enumerate(const GameState *state, Sym player_id,
         for (int i = 0; i < state->player_count; i++)
             if (state->players[i].player_id == player_id) { pi = i; break; }
         if (pi < 0) return 0;
-        for (int i = 0; i < state->players[pi].inner_circle_count && w < max_out; i++) {
+        for (int i = 0; i < state->players[pi].inner_circle_count; i++) {
+            if (w >= max_out) { w++; continue; }
             out[w].type = MOVE_RESOLVE_GENERIC;
             out[w].data.resolve_generic.action_id = state->players[pi].inner_circle[i];
             out[w].player_index = 0;
@@ -35,7 +36,7 @@ static int op_play_card_enumerate(const GameState *state, Sym player_id,
             const char *v = intern_str(action->metadata[i].value);
             if (k && strcmp(k, "max_cost") == 0 && v) max_cost = atoi(v);
         }
-        for (int s = 0; s < state->market.row_count && w < max_out; s++) {
+        for (int s = 0; s < state->market.row_count; s++) {
             Sym cid = state->market.row[s];
             if (max_cost < 9999) {
                 const CardDefinition *cd = NULL;
@@ -46,9 +47,11 @@ static int op_play_card_enumerate(const GameState *state, Sym player_id,
                     }
                 if (!cd || cd->cost > max_cost) continue;
             }
-            out[w].type = MOVE_RESOLVE_GENERIC;
-            out[w].data.resolve_generic.action_id = cid;
-            out[w].player_index = 0;
+            if (w < max_out) {
+                out[w].type = MOVE_RESOLVE_GENERIC;
+                out[w].data.resolve_generic.action_id = cid;
+                out[w].player_index = 0;
+            }
             w++;
         }
         return w;

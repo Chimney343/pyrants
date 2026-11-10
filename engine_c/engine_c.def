@@ -5,6 +5,7 @@ EXPORTS
     engine_destroy
     engine_legal_moves
     engine_display_moves
+    engine_move_capacity
     engine_apply
     engine_is_terminal
     engine_winner

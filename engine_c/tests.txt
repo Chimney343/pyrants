@@ -8,3 +8,4 @@ test_infostate_hash|tests/test_infostate_hash.c
 test_visibility|tests/test_visibility.c
 test_catalog_assembly|tests/test_catalog_assembly.c
 test_dt_ched|test_dt_ched.c
+test_move_capacity|tests/test_move_capacity.c

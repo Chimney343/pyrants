@@ -91,13 +91,14 @@ static void test_rollout_seed_drives_move_selection(void) {
     Move moves[1024];
     int n = engine_legal_moves(gs, moves, 1024);
     assert(n > 1); /* need real branching for this check to mean anything */
+    int stored = n < 1024 ? n : 1024; /* clamp: n is the true total now */
 
     int first_pick = -1;
     int any_diff = 0;
     for (uint64_t seed = 1; seed <= 15; seed++) {
         RNG rng;
         rng_seed(&rng, seed);
-        int pick = (int)(rng_next(&rng) % (unsigned int)n);
+        int pick = (int)(rng_next(&rng) % (unsigned int)stored);
         if (first_pick < 0) {
             first_pick = pick;
         } else if (pick != first_pick) {

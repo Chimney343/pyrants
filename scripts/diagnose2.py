@@ -75,6 +75,7 @@ for step in range(10):
         break
     moves = (CMove * 64)()
     n = _lib.engine_legal_moves(state, moves, 64)
+    n = min(n, 64)  # query now returns the true total
     if n == 0:
         print("No legal moves")
         break
@@ -94,6 +95,7 @@ dump_player_brief(state, 0)
 # Now play soldier from hand[0]
 moves = (CMove * 128)()
 n = _lib.engine_legal_moves(state, moves, 128)
+n = min(n, 128)  # query now returns the true total
 print(f"\nLegal moves: {n}")
 
 # Find play_card at index 0

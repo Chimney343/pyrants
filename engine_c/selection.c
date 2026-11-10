@@ -19,12 +19,16 @@ static int find_ls_int(const PendingGenericChoiceState *p, const char *key, int 
     return s ? (int)strtol(s, NULL, 10) : def;
 }
 
+/* Every target is counted; only those that fit are written, so a caller can
+ * detect truncation. (Unused today, kept consistent with the query contract.) */
 static int mk_move(Move *out, int w, int max, Sym pid, const PendingGenericChoiceState *p,
                    Sym k1, Sym v1, Sym k2, Sym v2, Sym k3, Sym v3) {
-    if (w >= max) return w;
-    out[w].type = MOVE_RESOLVE_GENERIC;
-    out[w].data.resolve_generic.action_id = v1;
-    out[w].player_index = 0;
+    (void)pid; (void)p; (void)k1; (void)k2; (void)v2; (void)k3; (void)v3;
+    if (w < max) {
+        out[w].type = MOVE_RESOLVE_GENERIC;
+        out[w].data.resolve_generic.action_id = v1;
+        out[w].player_index = 0;
+    }
     return w + 1;
 }
 
@@ -65,14 +69,14 @@ int legal_assassinate_supplant_moves(const GameState *state, Sym player_id,
         requires_last = 1;
         last_site = find_ls_sym(pending, "node_id");
     }
-    for (int i = 0; i < state->node_count && w < max_out; i++) {
+    for (int i = 0; i < state->node_count; i++) {
         Sym nid = state->nodes[i].node_id;
         if (requires_last) {
             if (last_site == SYM_NULL || nid != last_site) continue;
         } else if (!ignore_presence) {
             if (!has_presence(state, player_id, nid)) continue;
         }
-        for (int s = 0; s < state->nodes[i].troop_slot_count && w < max_out; s++) {
+        for (int s = 0; s < state->nodes[i].troop_slot_count; s++) {
             Sym occ = state->nodes[i].troop_slots[s];
             if (occ == SYM_NULL || occ == player_id) continue;
             if (white_only && strcmp(intern_str(occ) ? intern_str(occ) : "", "white") != 0) continue;
@@ -80,6 +84,7 @@ int legal_assassinate_supplant_moves(const GameState *state, Sym player_id,
                 && strcmp(intern_str(occ) ? intern_str(occ) : "", "white") == 0) continue;
             char buf[16];
             snprintf(buf, sizeof(buf), "%d", s);
+            if (w >= max_out) { w++; continue; }
             out[w].type = MOVE_RESOLVE_GENERIC;
             out[w].data.resolve_generic.action_id = nid;
             out[w].data.resolve_generic.target_id = intern(buf);
@@ -116,7 +121,7 @@ static int sel_custom_effect(const GameState *state, Sym player_id,
                     break;
                 }
             }
-            for (int ni = 0; ni < state->node_count && w < max_out; ni++) {
+            for (int ni = 0; ni < state->node_count; ni++) {
                 Sym nid = state->nodes[ni].node_id;
                 const NodeDefinition *nd = NULL;
                 for (int j = 0; j < state->definition->board.node_count; j++)
@@ -134,6 +139,7 @@ static int sel_custom_effect(const GameState *state, Sym player_id,
                     }
                     if (!has_white) continue;
                 }
+                if (w >= max_out) { w++; continue; }
                 out[w].type = MOVE_RESOLVE_GENERIC;
                 out[w].data.resolve_generic.action_id = nid;
                 out[w].data.resolve_generic.target_id = SYM_NULL;
@@ -149,9 +155,10 @@ static int sel_custom_effect(const GameState *state, Sym player_id,
                 last_site = find_ls_sym(pending, "target_node_id");
                 if (last_site == SYM_NULL) continue;
             }
-            for (int p = 0; p < state->player_count && w < max_out; p++) {
+            for (int p = 0; p < state->player_count; p++) {
                 if (state->players[p].player_id == player_id) continue;
                 if (needs_presence && !has_presence(state, state->players[p].player_id, last_site)) continue;
+                if (w >= max_out) { w++; continue; }
                 out[w].type = MOVE_RESOLVE_GENERIC;
                 out[w].data.resolve_generic.action_id = state->players[p].player_id;
                 out[w].data.resolve_generic.target_id = SYM_NULL;
@@ -164,10 +171,11 @@ static int sel_custom_effect(const GameState *state, Sym player_id,
             for (int i = 0; i < state->player_count; i++)
                 if (state->players[i].player_id == player_id) { pi = i; break; }
             if (pi < 0) continue;
-            for (int h = 0; h < state->players[pi].hand_count && w < max_out; h++) {
+            for (int h = 0; h < state->players[pi].hand_count; h++) {
                 if (state->players[pi].hand[h] == pending->source_card_id) continue;
                 char idx_buf[16];
                 snprintf(idx_buf, sizeof(idx_buf), "%d", h);
+                if (w >= max_out) { w++; continue; }
                 out[w].type = MOVE_RESOLVE_GENERIC;
                 out[w].data.resolve_generic.action_id = state->players[pi].hand[h];
                 out[w].data.resolve_generic.target_id = intern(idx_buf);
@@ -185,10 +193,10 @@ static int sel_custom_effect(const GameState *state, Sym player_id,
                 if (f && strcmp(f, "allow_white_troop") == 0) allow_white = 1;
                 if (f && strcmp(f, "exclude_self") == 0) exclude_self = 1;
             }
-            for (int sp = 0; sp < state->player_count && w < max_out; sp++) {
+            for (int sp = 0; sp < state->player_count; sp++) {
                 Sym sp_id = state->players[sp].player_id;
                 if (exclude_self && sp_id == player_id) continue;
-                for (int ti = 0; ti < state->players[sp].trophy_hall_count && w < max_out; ti++) {
+                for (int ti = 0; ti < state->players[sp].trophy_hall_count; ti++) {
                     Sym occ = state->players[sp].trophy_hall[ti];
                     const char *oc = intern_str(occ);
                     int is_white = oc && strcmp(oc, "white") == 0;
@@ -196,6 +204,7 @@ static int sel_custom_effect(const GameState *state, Sym player_id,
                     if (!white_only && !allow_white && is_white) continue;
                     char idx_buf[16];
                     snprintf(idx_buf, sizeof(idx_buf), "%d", ti);
+                    if (w >= max_out) { w++; continue; }
                     out[w].type = MOVE_RESOLVE_GENERIC;
                     out[w].data.resolve_generic.action_id = sp_id;
                     out[w].data.resolve_generic.target_id = intern(idx_buf);
@@ -215,9 +224,9 @@ static int sel_custom_effect(const GameState *state, Sym player_id,
             const char *idx_str = intern_str(trophy_idx_sym);
             int trophy_idx = idx_str ? atoi(idx_str) : -1;
             if (trophy_idx < 0 || trophy_idx >= state->players[spi].trophy_hall_count) continue;
-            for (int ni = 0; ni < state->node_count && w < max_out; ni++) {
+            for (int ni = 0; ni < state->node_count; ni++) {
                 Sym nid = state->nodes[ni].node_id;
-                for (int s = 0; s < state->nodes[ni].troop_slot_count && w < max_out; s++) {
+                for (int s = 0; s < state->nodes[ni].troop_slot_count; s++) {
                     if (state->nodes[ni].troop_slots[s] != SYM_NULL) continue;
                     char buf[128];
                     const char *sp_str = intern_str(source_player);
@@ -226,6 +235,7 @@ static int sel_custom_effect(const GameState *state, Sym player_id,
                     snprintf(buf, sizeof(buf), "%.24s:%.16s:%.48s:%d",
                              sp_str ? sp_str : "", tn_str ? tn_str : "",
                              nid_str ? nid_str : "", s);
+                    if (w >= max_out) { w++; continue; }
                     out[w].type = MOVE_RESOLVE_GENERIC;
                     out[w].data.resolve_generic.action_id = nid;
                     out[w].data.resolve_generic.target_id = intern(buf);
@@ -239,15 +249,16 @@ static int sel_custom_effect(const GameState *state, Sym player_id,
             Sym trophy_idx_sym = find_ls_sym(pending, "selected_trophy_index");
             if (source_player == SYM_NULL || trophy_idx_sym == SYM_NULL) {
                 /* Step 1: choose an enemy player's white trophy. */
-                for (int sp = 0; sp < state->player_count && w < max_out; sp++) {
+                for (int sp = 0; sp < state->player_count; sp++) {
                     Sym sp_id = state->players[sp].player_id;
                     if (sp_id == player_id) continue;
-                    for (int ti = 0; ti < state->players[sp].trophy_hall_count && w < max_out; ti++) {
+                    for (int ti = 0; ti < state->players[sp].trophy_hall_count; ti++) {
                         Sym occ = state->players[sp].trophy_hall[ti];
                         const char *oc = intern_str(occ);
                         if (!oc || strcmp(oc, "white") != 0) continue;
                         char idx_buf[16];
                         snprintf(idx_buf, sizeof(idx_buf), "%d", ti);
+                        if (w >= max_out) { w++; continue; }
                         out[w].type = MOVE_RESOLVE_GENERIC;
                         out[w].data.resolve_generic.action_id = sp_id;
                         out[w].data.resolve_generic.target_id = intern(idx_buf);
@@ -266,9 +277,9 @@ static int sel_custom_effect(const GameState *state, Sym player_id,
                 const char *idx_str = intern_str(trophy_idx_sym);
                 int trophy_idx = idx_str ? atoi(idx_str) : -1;
                 if (trophy_idx < 0 || trophy_idx >= state->players[spi].trophy_hall_count) continue;
-                for (int ni = 0; ni < state->node_count && w < max_out; ni++) {
+                for (int ni = 0; ni < state->node_count; ni++) {
                     Sym nid = state->nodes[ni].node_id;
-                    for (int s = 0; s < state->nodes[ni].troop_slot_count && w < max_out; s++) {
+                    for (int s = 0; s < state->nodes[ni].troop_slot_count; s++) {
                         if (state->nodes[ni].troop_slots[s] != SYM_NULL) continue;
                         char buf[128];
                         const char *sp_str = intern_str(source_player);
@@ -277,6 +288,7 @@ static int sel_custom_effect(const GameState *state, Sym player_id,
                         snprintf(buf, sizeof(buf), "%.24s:%.16s:%.48s:%d",
                                  sp_str ? sp_str : "", tn_str ? tn_str : "",
                                  nid_str ? nid_str : "", s);
+                        if (w >= max_out) { w++; continue; }
                         out[w].type = MOVE_RESOLVE_GENERIC;
                         out[w].data.resolve_generic.action_id = nid;
                         out[w].data.resolve_generic.target_id = intern(buf);
@@ -295,7 +307,7 @@ static int sel_custom_effect(const GameState *state, Sym player_id,
             if (ni < 0) continue;
             Sym seen[4];
             int seen_count = 0;
-            for (int s = 0; s < state->nodes[ni].troop_slot_count && w < max_out; s++) {
+            for (int s = 0; s < state->nodes[ni].troop_slot_count; s++) {
                 Sym occ = state->nodes[ni].troop_slots[s];
                 if (occ == SYM_NULL || occ == player_id) continue;
                 const char *os = intern_str(occ);
@@ -305,6 +317,7 @@ static int sel_custom_effect(const GameState *state, Sym player_id,
                     if (seen[j] == occ) { already = 1; break; }
                 if (already) continue;
                 if (seen_count < 4) seen[seen_count++] = occ;
+                if (w >= max_out) { w++; continue; }
                 out[w].type = MOVE_RESOLVE_GENERIC;
                 out[w].data.resolve_generic.action_id = occ;
                 out[w].data.resolve_generic.target_id = SYM_NULL;
@@ -331,20 +344,20 @@ static int sel_custom_effect(const GameState *state, Sym player_id,
                 if (state->players[p].player_id == source_player) { spi = p; break; }
             if (spi < 0) continue;
             const PlayerState *sps = &state->players[spi];
-            for (int ti = 0; ti < sps->trophy_hall_count && w < max_out; ti++) {
+            for (int ti = 0; ti < sps->trophy_hall_count; ti++) {
                 Sym occ = sps->trophy_hall[ti];
                 const char *oc = intern_str(occ);
                 int is_white = oc && strcmp(oc, "white") == 0;
                 if (color_filter && strcmp(color_filter, "white_only") == 0 && !is_white) continue;
                 if (color_filter && strcmp(color_filter, "player_only") == 0 && is_white) continue;
-                for (int ni2 = 0; ni2 < state->node_count && w < max_out; ni2++) {
+                for (int ni2 = 0; ni2 < state->node_count; ni2++) {
                     Sym nid = state->nodes[ni2].node_id;
                     const NodeDefinition *nd = NULL;
                     for (int j = 0; j < state->definition->board.node_count; j++)
                         if (state->definition->board.nodes[j].node_id == nid)
                             { nd = &state->definition->board.nodes[j]; break; }
                     if (!nd || strcmp(intern_str(nd->kind), "site") != 0) continue;
-                    for (int s = 0; s < state->nodes[ni2].troop_slot_count && w < max_out; s++) {
+                    for (int s = 0; s < state->nodes[ni2].troop_slot_count; s++) {
                         if (state->nodes[ni2].troop_slots[s] != SYM_NULL) continue;
                         char tbuf[128];
                         const char *sp_str = intern_str(source_player);
@@ -354,6 +367,7 @@ static int sel_custom_effect(const GameState *state, Sym player_id,
                         snprintf(tbuf, sizeof(tbuf), "%.24s:%.16s:%.48s:%d",
                                  sp_str ? sp_str : "", idx_buf,
                                  nid_str ? nid_str : "", s);
+                        if (w >= max_out) { w++; continue; }
                         out[w].type = MOVE_RESOLVE_GENERIC;
                         out[w].data.resolve_generic.action_id = nid;
                         out[w].data.resolve_generic.target_id = intern(tbuf);
@@ -379,7 +393,8 @@ int legal_promote_card_moves(const GameState *state, Sym player_id,
     if (pi < 0) return 0;
     const char *sf = intern_str(action->source_fragment);
     if (sf && strcmp(sf, "promote_from_discard") == 0) {
-        for (int i = 0; i < state->players[pi].discard_pile_count && w < max_out; i++) {
+        for (int i = 0; i < state->players[pi].discard_pile_count; i++) {
+            if (w >= max_out) { w++; continue; }
             out[w].type = MOVE_RESOLVE_GENERIC;
             out[w].data.resolve_generic.action_id = state->players[pi].discard_pile[i];
             out[w].player_index = 0;
@@ -387,8 +402,9 @@ int legal_promote_card_moves(const GameState *state, Sym player_id,
         }
     } else if (sf && strcmp(sf, "single_promote_from_multiple_zones") == 0) {
         Sym src = pending->source_card_id;
-        for (int i = 0; i < state->players[pi].played_cards_count && w < max_out; i++) {
+        for (int i = 0; i < state->players[pi].played_cards_count; i++) {
             if (state->players[pi].played_cards[i] == src) {
+                if (w >= max_out) { w++; break; }
                 out[w].type = MOVE_RESOLVE_GENERIC;
                 out[w].data.resolve_generic.action_id = src;
                 out[w].data.resolve_generic.target_id = intern("played");
@@ -397,7 +413,8 @@ int legal_promote_card_moves(const GameState *state, Sym player_id,
                 break;
             }
         }
-        for (int i = 0; i < state->players[pi].hand_count && w < max_out; i++) {
+        for (int i = 0; i < state->players[pi].hand_count; i++) {
+            if (w >= max_out) { w++; continue; }
             out[w].type = MOVE_RESOLVE_GENERIC;
             char idx_buf[16];
             snprintf(idx_buf, sizeof(idx_buf), "%d", i);
@@ -406,7 +423,8 @@ int legal_promote_card_moves(const GameState *state, Sym player_id,
             out[w].player_index = 0;
             w++;
         }
-        for (int i = 0; i < state->players[pi].discard_pile_count && w < max_out; i++) {
+        for (int i = 0; i < state->players[pi].discard_pile_count; i++) {
+            if (w >= max_out) { w++; continue; }
             out[w].type = MOVE_RESOLVE_GENERIC;
             char idx_buf[16];
             snprintf(idx_buf, sizeof(idx_buf), "%d", i);
@@ -416,7 +434,8 @@ int legal_promote_card_moves(const GameState *state, Sym player_id,
             w++;
         }
     } else {
-        for (int i = 0; i < state->players[pi].played_cards_count && w < max_out; i++) {
+        for (int i = 0; i < state->players[pi].played_cards_count; i++) {
+            if (w >= max_out) { w++; continue; }
             out[w].type = MOVE_RESOLVE_GENERIC;
             out[w].data.resolve_generic.action_id = state->players[pi].played_cards[i];
             out[w].player_index = 0;
@@ -497,14 +516,17 @@ int legal_devour_moves(const GameState *state, Sym player_id,
         }
         if (slot_locked) {
             Sym prev_card = pending->last_played_card_id;
-            if (prev_card != SYM_NULL && w < max_out) {
-                out[w].type = MOVE_RESOLVE_GENERIC;
-                out[w].data.resolve_generic.action_id = prev_card;
-                out[w].player_index = 0;
+            if (prev_card != SYM_NULL) {
+                if (w < max_out) {
+                    out[w].type = MOVE_RESOLVE_GENERIC;
+                    out[w].data.resolve_generic.action_id = prev_card;
+                    out[w].player_index = 0;
+                }
                 w++;
             }
         } else {
-            for (int s = 0; s < state->market.row_count && w < max_out; s++) {
+            for (int s = 0; s < state->market.row_count; s++) {
+                if (w >= max_out) { w++; continue; }
                 out[w].type = MOVE_RESOLVE_GENERIC;
                 out[w].data.resolve_generic.action_id = state->market.row[s];
                 out[w].player_index = 0;
@@ -513,7 +535,8 @@ int legal_devour_moves(const GameState *state, Sym player_id,
         }
     } else if (z && strcmp(z, "inner_circle") == 0) {
         /* Devour from the player's inner circle. */
-        for (int ic = 0; ic < state->players[pi].inner_circle_count && w < max_out; ic++) {
+        for (int ic = 0; ic < state->players[pi].inner_circle_count; ic++) {
+            if (w >= max_out) { w++; continue; }
             out[w].type = MOVE_RESOLVE_GENERIC;
             out[w].data.resolve_generic.action_id = state->players[pi].inner_circle[ic];
             out[w].player_index = 0;
@@ -521,15 +544,18 @@ int legal_devour_moves(const GameState *state, Sym player_id,
         }
     } else if (z && strcmp(z, "played_self") == 0) {
         /* Devour the card that was just played (self-devour). */
-        if (pending->source_card_id != SYM_NULL && w < max_out) {
-            out[w].type = MOVE_RESOLVE_GENERIC;
-            out[w].data.resolve_generic.action_id = pending->source_card_id;
-            out[w].player_index = 0;
+        if (pending->source_card_id != SYM_NULL) {
+            if (w < max_out) {
+                out[w].type = MOVE_RESOLVE_GENERIC;
+                out[w].data.resolve_generic.action_id = pending->source_card_id;
+                out[w].player_index = 0;
+            }
             w++;
         }
     } else {
         /* Default: devour from the player's hand. */
-        for (int h = 0; h < state->players[pi].hand_count && w < max_out; h++) {
+        for (int h = 0; h < state->players[pi].hand_count; h++) {
+            if (w >= max_out) { w++; continue; }
             out[w].type = MOVE_RESOLVE_GENERIC;
             out[w].data.resolve_generic.action_id = state->players[pi].hand[h];
             out[w].player_index = 0;

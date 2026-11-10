@@ -4,7 +4,7 @@
 #include "rng.h"
 #include "scoring.h"
 
-#define ROLLOUT_MOVE_BUFFER   1024
+#define ROLLOUT_MOVE_BUFFER   ENGINE_MOVE_CAPACITY
 
 /* Runaway-loop guard for max_length <= 0, not a tuning knob — it should sit
  * clear of the longest rollout the game actually produces. Measured terminal
@@ -38,8 +38,12 @@ int engine_random_rollout(const GameState *state, uint64_t seed, int max_length,
 
         int n = engine_legal_moves(view, moves, ROLLOUT_MOVE_BUFFER);
         if (n <= 0) break;
+        /* The buffer is the frozen capacity. A larger count means the state
+         * cannot be represented; the sampler must not index past what was
+         * written, so clamp before drawing. */
+        int stored = n < ROLLOUT_MOVE_BUFFER ? n : ROLLOUT_MOVE_BUFFER;
 
-        int pick = (int)(rng_next(&rng) % (unsigned int)n);
+        int pick = (int)(rng_next(&rng) % (unsigned int)stored);
         GameState *next = engine_apply(view, &moves[pick]);
         if (!next) break;
 

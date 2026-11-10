@@ -27,7 +27,7 @@ static int op_move_troop_enumerate(const GameState *state, Sym player_id,
             && strcmp(v, "true") == 0)
             requires_presence = 0;
     }
-    for (int si = 0; si < state->node_count && w < max_out; si++) {
+    for (int si = 0; si < state->node_count; si++) {
         Sym src = state->nodes[si].node_id;
         if (requires_presence && !has_presence(state, player_id, src)) continue;
         for (int ss = 0; ss < state->nodes[si].troop_slot_count; ss++) {
@@ -37,13 +37,14 @@ static int op_move_troop_enumerate(const GameState *state, Sym player_id,
             int is_white = (os && strcmp(os, "white") == 0);
             if (white_only && !is_white) continue;
             if (!allow_white && is_white) continue;
-            for (int di = 0; di < state->node_count && w < max_out; di++) {
+            for (int di = 0; di < state->node_count; di++) {
                 if (di == si) continue;
-                for (int ts = 0; ts < state->nodes[di].troop_slot_count && w < max_out; ts++) {
+                for (int ts = 0; ts < state->nodes[di].troop_slot_count; ts++) {
                     if (state->nodes[di].troop_slots[ts] != SYM_NULL) continue;
                     const char *dst_str = intern_str(state->nodes[di].node_id);
                     char buf[128];
                     snprintf(buf, sizeof(buf), "%d:%s:%d", ss, dst_str ? dst_str : "?", ts);
+                    if (w >= max_out) { w++; continue; }
                     out[w].type = MOVE_RESOLVE_GENERIC;
                     out[w].data.resolve_generic.action_id = src;
                     out[w].data.resolve_generic.target_id = intern(buf);

@@ -471,6 +471,8 @@ def _setup():
 
     _lib.engine_legal_moves.argtypes = [POINTER(GameStateStruct), POINTER(Move), c_int]
     _lib.engine_legal_moves.restype = c_int
+    _lib.engine_move_capacity.argtypes = []
+    _lib.engine_move_capacity.restype = c_int
     _lib.engine_display_moves.argtypes = [
         POINTER(GameStateStruct), POINTER(Move), POINTER(ctypes.c_ubyte), c_int,
     ]
@@ -547,6 +549,10 @@ if _lib is not None:
     if not hasattr(_lib, "engine_layout_size") or not hasattr(_lib, "engine_layout_offset"):
         raise RuntimeError(
             "engine_c.dll is missing the struct layout probe; rebuild it with 'just build-c'"
+        )
+    if not hasattr(_lib, "engine_move_capacity"):
+        raise RuntimeError(
+            "engine_c.dll is missing the move-capacity export; rebuild it with 'just build-c'"
         )
     _setup()
     from .layout_probe import assert_layout

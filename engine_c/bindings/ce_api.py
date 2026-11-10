@@ -48,6 +48,36 @@ from .engine_bindings import (
 # A 4-player view is about 13 KB; a larger one is retried with the exact size.
 _VIEW_BUFFER_BYTES = 32 * 1024
 
+
+class MoveCapacityError(RuntimeError):
+    """A move query found more moves than the frozen capacity can represent.
+
+    The capacity is the NN action space, a wire format. A state that needs
+    more moves cannot be described by an OpenSpiel action id, so callers must
+    see this rather than a truncated list.
+    """
+
+    def __init__(self, query: str, needed: int, capacity: int) -> None:
+        self.query = query
+        self.needed = needed
+        self.capacity = capacity
+        super().__init__(
+            f"{query} query returned {needed} moves, above the frozen capacity "
+            f"{capacity}; the move would have been truncated silently before F-038"
+        )
+
+
+def move_capacity() -> int:
+    """The engine's legal-move capacity: one source for every buffer size.
+
+    ``engine_c`` exports it (``engine_move_capacity``) and
+    ``openspiel_pyrants.NUM_DISTINCT_ACTIONS`` derives from it, so the buffer
+    and the frozen action space cannot drift apart.
+    """
+    if _lib is None:  # pragma: no cover - import guard for DLL-less environments
+        raise RuntimeError("engine_c DLL is not available")
+    return int(_lib.engine_move_capacity())
+
 _PHASE_MAP = {
     PHASE_SETUP: "setup",
     PHASE_DRAW: "draw",
@@ -413,9 +443,18 @@ class CEngine:
         return CState(gs)
 
     def legal_moves(self, state: CState) -> list:
-        """Return applicable legal moves only."""
-        moves = (CMove * 1024)()
-        n = _lib.engine_legal_moves(state.ptr, moves, 1024)
+        """Return applicable legal moves only.
+
+        The query reports how many moves exist even when the buffer is too
+        small. The buffer is the engine's capacity, which is also the frozen
+        action space, so a larger count means the state cannot be represented
+        and this raises instead of returning a silently truncated list.
+        """
+        cap = move_capacity()
+        moves = (CMove * cap)()
+        n = _lib.engine_legal_moves(state.ptr, moves, cap)
+        if n > cap:
+            raise MoveCapacityError("legal", n, cap)
         return [CMoveWrapper(moves[i]) for i in range(n)]
 
     def display_moves(self, state: CState) -> list:
@@ -423,11 +462,14 @@ class CEngine:
 
         Includes display-only entries (a non-viable modal option, or an
         end-main-phase entry blocked by a deferred promotion) that
-        ``legal_moves`` deliberately omits.
+        ``legal_moves`` deliberately omits. Truncation raises, not hides.
         """
-        moves = (CMove * 1024)()
-        applicable = (ctypes.c_ubyte * 1024)()
-        n = _lib.engine_display_moves(state.ptr, moves, applicable, 1024)
+        cap = move_capacity()
+        moves = (CMove * cap)()
+        applicable = (ctypes.c_ubyte * cap)()
+        n = _lib.engine_display_moves(state.ptr, moves, applicable, cap)
+        if n > cap:
+            raise MoveCapacityError("display", n, cap)
         return [(CMoveWrapper(moves[i]), bool(applicable[i])) for i in range(n)]
 
     def apply(self, state: CState, move: CMoveWrapper) -> CState | None:

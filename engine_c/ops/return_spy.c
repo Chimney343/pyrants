@@ -37,22 +37,25 @@ static int op_return_spy_enumerate(const GameState *state, Sym player_id,
     bool only_self = spy_owner && strcmp(spy_owner, "self") == 0;
     bool only_enemy = spy_owner && strcmp(spy_owner, "opponent") == 0;
 
-    for (int i = 0; i < state->node_count && w < max_out; i++) {
+    for (int i = 0; i < state->node_count; i++) {
         Sym nid = state->nodes[i].node_id;
         if (requires_supplant_target && !node_has_supplantable_troop(state, player_id, nid))
             continue;
-        for (int s = 0; s < state->nodes[i].spy_count && w < max_out; s++) {
+        for (int s = 0; s < state->nodes[i].spy_count; s++) {
             Sym spy = state->nodes[i].spies[s];
             if (spy == player_id && !only_enemy) {
+                if (w >= max_out) { w++; continue; }
                 out[w].type = MOVE_RESOLVE_GENERIC;
                 out[w].data.resolve_generic.action_id = nid;
                 out[w].player_index = 0;
                 w++;
             } else if (spy != player_id && !only_self
                        && has_presence(state, player_id, nid)) {
-                out[w].type = MOVE_RESOLVE_GENERIC;
-                out[w].data.resolve_generic.action_id = nid;
-                out[w].player_index = 0;
+                if (w < max_out) {
+                    out[w].type = MOVE_RESOLVE_GENERIC;
+                    out[w].data.resolve_generic.action_id = nid;
+                    out[w].player_index = 0;
+                }
                 w++;
             }
         }

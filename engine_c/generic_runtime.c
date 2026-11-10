@@ -1315,32 +1315,30 @@ int card_play_modal_options_viable(const GameState *state, Sym player_id,
     return 0;
 }
 
+/* Returns the number of moves that exist, which can exceed max_out. Only the
+ * first max_out are written; the rest are counted, so the caller can detect
+ * truncation. */
 int collect_pending_generic_choice_moves(GameState *state, Sym player_id, Move *out,
                                          unsigned char *applicable, int max_out,
                                          int applicable_only) {
     PendingGenericChoiceState *p = state->pending_generic;
-    if (!p || max_out <= 0) return 0;
+    if (!p) return 0;
 
     if (p->awaiting_option) {
         int w = 0;
         const CardDefinition *opt_card = NULL;
         pending_generic_card_definition(state, p, &opt_card);
-        for (int i = 0; i < p->option_count && w < max_out; i++) {
+        for (int i = 0; i < p->option_count; i++) {
             Sym oid = p->option_ids[i];
-            if (!modal_option_is_viable(state, player_id, p, opt_card, oid)) {
-                if (applicable_only) continue;
+            int viable = modal_option_is_viable(state, player_id, p, opt_card, oid);
+            if (!viable && applicable_only) continue;
+            if (w < max_out) {
                 out[w].type = MOVE_RESOLVE_GENERIC;
                 out[w].data.resolve_generic.action_id = oid;
-                out[w].data.resolve_generic.target_id = intern("unavailable");
+                if (!viable) out[w].data.resolve_generic.target_id = intern("unavailable");
                 out[w].player_index = 0;
-                if (applicable) applicable[w] = 0;
-                w++;
-                continue;
+                if (applicable) applicable[w] = viable ? 1 : 0;
             }
-            out[w].type = MOVE_RESOLVE_GENERIC;
-            out[w].data.resolve_generic.action_id = oid;
-            out[w].player_index = 0;
-            if (applicable) applicable[w] = 1;
             w++;
         }
         return w;
@@ -1350,32 +1348,35 @@ int collect_pending_generic_choice_moves(GameState *state, Sym player_id, Move *
     if (!pending_generic_card_definition(state, p, &card)) return 0;
     const CardAction *action = pending_generic_active_action(p);
     if (!action) {
-        if (max_out > 0) { out[0].type = MOVE_RESOLVE_GENERIC; out[0].player_index = 0; return 1; }
-        return 0;
+        if (max_out > 0) { out[0].type = MOVE_RESOLVE_GENERIC; out[0].player_index = 0; }
+        return 1;
     }
     if (!action_focus_requirement_met(state, player_id, card, p->source_card_id, action)) {
-        if (max_out > 0) { out[0].type = MOVE_RESOLVE_GENERIC; out[0].player_index = 0; return 1; }
-        return 0;
+        if (max_out > 0) { out[0].type = MOVE_RESOLVE_GENERIC; out[0].player_index = 0; }
+        return 1;
     }
     if (!action_requires_selection(action)) {
-        if (max_out > 0) { out[0].type = MOVE_RESOLVE_GENERIC; out[0].player_index = 0; return 1; }
-        return 0;
+        if (max_out > 0) { out[0].type = MOVE_RESOLVE_GENERIC; out[0].player_index = 0; }
+        return 1;
     }
 
     int nc = legal_generic_target_selection_moves(state, player_id, p, card, action, out, max_out);
 
-    /* Optional actions: prepend a skip (resign) move so the player can decline. */
+    /* Optional actions: prepend a skip (resign) move so the player can decline.
+     * The skip goes first, so the stored prefix is the skip plus as many
+     * targets as still fit; the count includes every target either way. */
     if (action->optional) {
-        if (nc > 0 && nc < max_out) {
-            for (int i = nc - 1; i >= 0; i--)
+        if (max_out > 0) {
+            int keep = nc < max_out - 1 ? nc : max_out - 1;
+            for (int i = keep - 1; i >= 0; i--)
                 out[i + 1] = out[i];
+            out[0].type = MOVE_RESOLVE_GENERIC;
+            out[0].data.resolve_generic.action_id = SYM_NULL;  /* SYM_NULL = skip marker */
+            out[0].data.resolve_generic.target_id = SYM_NULL;
+            out[0].data.resolve_generic.selection_index = 0;
+            out[0].player_index = 0;
         }
-        out[0].type = MOVE_RESOLVE_GENERIC;
-        out[0].data.resolve_generic.action_id = SYM_NULL;  /* SYM_NULL = skip marker */
-        out[0].data.resolve_generic.target_id = SYM_NULL;
-        out[0].data.resolve_generic.selection_index = 0;
-        out[0].player_index = 0;
-        return (nc < max_out) ? nc + 1 : max_out;
+        return nc + 1;
     }
 
     return nc;

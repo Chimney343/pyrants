@@ -27,9 +27,10 @@ static int op_deploy_troops_enumerate(const GameState *state, Sym player_id,
         return 0;
     }
     int ht = player_has_any_troops_on_board(state, player_id);
-    for (int i = 0; i < state->node_count && w < max_out; i++) {
+    for (int i = 0; i < state->node_count; i++) {
         Sym nid = state->nodes[i].node_id;
         if (can_deploy_to_node(state, player_id, nid, ht)) {
+            if (w >= max_out) { w++; continue; }
             out[w].type = MOVE_RESOLVE_GENERIC;
             out[w].data.resolve_generic.action_id = nid;
             out[w].player_index = 0;

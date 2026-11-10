@@ -23,7 +23,7 @@ static int op_recruit_card_enumerate(const GameState *state, Sym player_id,
         if (mk && strcmp(mk, "max_cost") == 0 && mv) max_cost = atoi(mv);
         if (mk && strcmp(mk, "free_recruit") == 0) free_recruit = 1;
     }
-    for (int s = 0; s < state->market.row_count && w < max_out; s++) {
+    for (int s = 0; s < state->market.row_count; s++) {
         Sym cid = state->market.row[s];
         const CardDefinition *cd = NULL;
         for (int i = 0; i < state->definition->catalog.card_count; i++)
@@ -35,9 +35,11 @@ static int op_recruit_card_enumerate(const GameState *state, Sym player_id,
         if (required_aspect != SYM_NULL && cd->aspect != required_aspect) continue;
         if (max_cost >= 0 && cd->cost > max_cost) continue;
         if (!free_recruit && state->resource_pool.influence < cd->cost) continue;
-        out[w].type = MOVE_RESOLVE_GENERIC;
-        out[w].data.resolve_generic.action_id = cid;
-        out[w].player_index = 0;
+        if (w < max_out) {
+            out[w].type = MOVE_RESOLVE_GENERIC;
+            out[w].data.resolve_generic.action_id = cid;
+            out[w].player_index = 0;
+        }
         w++;
     }
     return w;

@@ -7,6 +7,8 @@ GameState *resolve_generic_execution(GameState *state, Sym player_id,
                                       const CardDefinition *card, Sym source_card_id);
 GameState *auto_resolve_pending_generic(GameState *state, Sym player_id);
 GameState *apply_resolve_generic_choice(GameState *state, const Move *move);
+/* Returns the number of moves that exist, which can exceed max_out. At most
+ * max_out are written. */
 int        collect_pending_generic_choice_moves(GameState *state, Sym player_id, Move *out,
                                                 unsigned char *applicable, int max_out,
                                                 int applicable_only);

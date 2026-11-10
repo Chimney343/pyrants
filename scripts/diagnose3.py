@@ -41,6 +41,7 @@ for _step in range(10):
         break
     moves = (CMove * 64)()
     n = _lib.engine_legal_moves(state, moves, 64)
+    n = min(n, 64)  # query now returns the true total
     if n == 0:
         break
     result = _lib.engine_apply(state, ctypes.byref(moves[0]))

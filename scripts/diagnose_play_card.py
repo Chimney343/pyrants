@@ -61,11 +61,13 @@ dump_catalog_cards(state, "initial")
 # Step 1: Apply initial placements
 moves = (CMove * 64)()
 n = _lib.engine_legal_moves(state, moves, 64)
+n = min(n, 64)  # query now returns the true total
 print(f"Legal moves in setup: {n}")
 # Apply placement for p1
 for i in range(2):
     moves = (CMove * 64)()
     n = _lib.engine_legal_moves(state, moves, 64)
+    n = min(n, 64)  # query now returns the true total
     if n == 0:
         print("No legal moves!")
         break
@@ -93,6 +95,7 @@ for step in range(20):
 
     moves = (CMove * 128)()
     n = _lib.engine_legal_moves(state, moves, 128)
+    n = min(n, 128)  # query now returns the true total
 
     if current == "main":
         dump_hand(state, f"phase={current} cp={cp}")

@@ -26,16 +26,18 @@ static int op_place_spy_enumerate(const GameState *state, Sym player_id,
 
     int has_spies = state->players[pi].spies_available > 0;
 
-    if (!has_spies && w < max_out) {
-        /* Rulebook 338: all spies placed -> may do nothing. */
-        out[w].type = MOVE_RESOLVE_GENERIC;
-        out[w].data.resolve_generic.action_id = SYM_NULL;
-        out[w].data.resolve_generic.target_id = SYM_NULL;
-        out[w].player_index = 0;
+    if (!has_spies) {
+        if (w < max_out) {
+            /* Rulebook 338: all spies placed -> may do nothing. */
+            out[w].type = MOVE_RESOLVE_GENERIC;
+            out[w].data.resolve_generic.action_id = SYM_NULL;
+            out[w].data.resolve_generic.target_id = SYM_NULL;
+            out[w].player_index = 0;
+        }
         w++;
     }
 
-    for (int i = 0; i < state->node_count && w < max_out; i++) {
+    for (int i = 0; i < state->node_count; i++) {
         Sym nid = state->nodes[i].node_id;
         const NodeDefinition *nd = NULL;
         for (int j = 0; j < state->definition->board.node_count; j++)
@@ -46,16 +48,19 @@ static int op_place_spy_enumerate(const GameState *state, Sym player_id,
         if (!nd || strcmp(intern_str(nd->kind), "site") != 0) continue;
         if (node_has_own_spy(state, player_id, i)) continue;
         if (has_spies) {
-            out[w].type = MOVE_RESOLVE_GENERIC;
-            out[w].data.resolve_generic.action_id = nid;
-            out[w].player_index = 0;
+            if (w < max_out) {
+                out[w].type = MOVE_RESOLVE_GENERIC;
+                out[w].data.resolve_generic.action_id = nid;
+                out[w].player_index = 0;
+            }
             w++;
         } else {
             /* Rulebook 338: all spies placed -> may return one of your spies
              * and place it. Emit (source, destination) pairs. */
-            for (int s = 0; s < state->node_count && w < max_out; s++) {
+            for (int s = 0; s < state->node_count; s++) {
                 if (state->nodes[s].node_id == nid) continue;
                 if (!node_has_own_spy(state, player_id, s)) continue;
+                if (w >= max_out) { w++; continue; }
                 out[w].type = MOVE_RESOLVE_GENERIC;
                 out[w].data.resolve_generic.action_id = nid;
                 out[w].data.resolve_generic.target_id = state->nodes[s].node_id;

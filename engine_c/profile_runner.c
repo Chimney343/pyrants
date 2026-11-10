@@ -34,8 +34,10 @@ static void run_rollout(const GameDefinition *def, uint64_t seed, RNG *pick_rng)
 
         int n = engine_legal_moves(state, moves, MAX_MOVES);
         if (n <= 0) break;
+        /* Clamp to what was written: the query reports the true total now. */
+        int stored = n < MAX_MOVES ? n : MAX_MOVES;
 
-        int pick = (int)(rng_next(pick_rng) % (unsigned int)n);
+        int pick = (int)(rng_next(pick_rng) % (unsigned int)stored);
 
         GameState *next = engine_apply(state, &moves[pick]);
         if (!next) break;

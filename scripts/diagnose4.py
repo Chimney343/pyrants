@@ -37,6 +37,7 @@ def advance_to_main(state):
             return state
         moves = (CMove * 64)()
         n = _lib.engine_legal_moves(state, moves, 64)
+        n = min(n, 64)  # query now returns the true total
         if n == 0:
             break
         result = _lib.engine_apply(state, ctypes.byref(moves[0]))
@@ -61,6 +62,7 @@ show_hand(state, "Before play")
 
 moves = (CMove * 128)()
 n = _lib.engine_legal_moves(state, moves, 128)
+n = min(n, 128)  # query now returns the true total
 print(f"  Legal: {n} moves")
 
 # Find all play_card moves and show their card_id and hand_index

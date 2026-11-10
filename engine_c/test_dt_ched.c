@@ -30,6 +30,7 @@ int main(void) {
     Move legal[256]; int n; GameState *tmp;
     for (int i = 0; i < 200; i++) {
         n = engine_legal_moves(gs, legal, 256);
+        if (n > 256) n = 256; /* clamp: n is the true total now */
         if (n == 0) break;
         tmp = engine_apply(gs, &legal[0]); engine_destroy(gs); gs = tmp;
         if (gs->phase != PHASE_SETUP) break;
@@ -39,6 +40,7 @@ int main(void) {
     /* Force to p4's turn */
     while (strcmp(intern_str(gs->current_player_id), "p4") != 0 || gs->phase != PHASE_MAIN) {
         n = engine_legal_moves(gs, legal, 256);
+        if (n > 256) n = 256; /* clamp: n is the true total now */
         int used = 0;
         for (int i = 0; i < n; i++) {
             if (legal[i].type == MOVE_END_MAIN_PHASE && strcmp(intern_str(gs->current_player_id), "p4") != 0) {
@@ -105,6 +107,7 @@ int main(void) {
 
     /* Find and apply site selection */
     n = engine_legal_moves(gs, legal, 256);
+    if (n > 256) n = 256; /* clamp: n is the true total now */
     printf("  Legal after play: %d\n", n);
     int applied = 0;
     for (int i = 0; i < n; i++) {
@@ -140,6 +143,7 @@ int main(void) {
 
     /* Get assassinate moves */
     n = engine_legal_moves(gs, legal, 256);
+    if (n > 256) n = 256; /* clamp: n is the true total now */
     printf("  Assassinate moves: %d\n", n);
     for (int i = 0; i < n; i++) {
         if (legal[i].type == MOVE_RESOLVE_GENERIC) {
@@ -179,6 +183,7 @@ int main(void) {
     /* Skip remaining */
     while (gs->pending_generic) {
         n = engine_legal_moves(gs, legal, 256);
+        if (n > 256) n = 256; /* clamp: n is the true total now */
         int skipped = 0;
         for (int i = 0; i < n; i++) {
             if (legal[i].type == MOVE_RESOLVE_GENERIC

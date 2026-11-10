@@ -25,6 +25,12 @@ extern "C" {
 #define MAX_ABILITY_DISCARD 8
 #define MAX_SPECIAL_STACKS  3
 
+/* One legal-move capacity, frozen with the NN action space. A buffer holds at
+ * most this many moves; engine_legal_moves()/engine_display_moves() report how
+ * many moves exist regardless, so a caller can tell truncation from a full
+ * list. See engine_move_capacity() in engine.h. */
+#define ENGINE_MOVE_CAPACITY 1024
+
 typedef enum { NODE_SITE = 0, NODE_ROUTE = 1 } NodeKind;
 
 typedef enum {

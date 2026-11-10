@@ -31,10 +31,10 @@ static int op_return_unit_enumerate(const GameState *state, Sym player_id,
         if (k && strcmp(k, "requires_presence") == 0 && v && strcmp(v, "true") == 0)
             requires_presence = 1;
     }
-    for (int i = 0; i < state->node_count && w < max_out; i++) {
+    for (int i = 0; i < state->node_count; i++) {
         Sym nid = state->nodes[i].node_id;
         if (requires_presence && !has_presence(state, player_id, nid)) continue;
-        for (int s = 0; s < state->nodes[i].troop_slot_count && w < max_out; s++) {
+        for (int s = 0; s < state->nodes[i].troop_slot_count; s++) {
             Sym occ = state->nodes[i].troop_slots[s];
             if (occ == SYM_NULL) continue;
             int is_own = (occ == player_id);
@@ -44,6 +44,7 @@ static int op_return_unit_enumerate(const GameState *state, Sym player_id,
             if (!include) continue;
             char buf[32];
             snprintf(buf, sizeof(buf), "troop:%d", s);
+            if (w >= max_out) { w++; continue; }
             out[w].type = MOVE_RESOLVE_GENERIC;
             out[w].data.resolve_generic.action_id = nid;
             out[w].data.resolve_generic.target_id = intern(buf);
@@ -51,7 +52,7 @@ static int op_return_unit_enumerate(const GameState *state, Sym player_id,
             out[w].player_index = 0;
             w++;
         }
-        for (int s = 0; s < state->nodes[i].spy_count && w < max_out; s++) {
+        for (int s = 0; s < state->nodes[i].spy_count; s++) {
             Sym spy = state->nodes[i].spies[s];
             int is_own = (spy == player_id);
             int is_opponent = (!is_own);
@@ -60,11 +61,13 @@ static int op_return_unit_enumerate(const GameState *state, Sym player_id,
             char buf[32];
             const char *pid_str = intern_str(spy);
             snprintf(buf, sizeof(buf), "spy:%s", pid_str ? pid_str : "?");
-            out[w].type = MOVE_RESOLVE_GENERIC;
-            out[w].data.resolve_generic.action_id = nid;
-            out[w].data.resolve_generic.target_id = intern(buf);
-            out[w].data.resolve_generic.selection_index = 0;
-            out[w].player_index = 0;
+            if (w < max_out) {
+                out[w].type = MOVE_RESOLVE_GENERIC;
+                out[w].data.resolve_generic.action_id = nid;
+                out[w].data.resolve_generic.target_id = intern(buf);
+                out[w].data.resolve_generic.selection_index = 0;
+                out[w].player_index = 0;
+            }
             w++;
         }
     }

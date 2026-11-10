@@ -62,15 +62,21 @@ static GameState *apply_effect_with_wrappers(GameState *state, Sym player_id,
     return result;
 }
 
+/* Two moves always exist. Each store is guarded, and the return is 2 even when
+ * only one or neither fits, so a caller can see that it lost a move. */
 static int legal_optional_promotion_moves(const PendingPromotionState *pending,
                                            Sym player_id, Move *out, int max_out) {
-    if (max_out < 2) return 0;
-    out[0].type = MOVE_PROMOTE_CARD;
-    out[0].data.promote_card.card_id = pending->card_id;
-    out[0].player_index = 0;
-    out[1].type = MOVE_SKIP_PROMOTE;
-    out[1].data.skip_promote.source_card_id = pending->source_card_id;
-    out[1].player_index = 0;
+    (void)player_id;
+    if (max_out > 0) {
+        out[0].type = MOVE_PROMOTE_CARD;
+        out[0].data.promote_card.card_id = pending->card_id;
+        out[0].player_index = 0;
+    }
+    if (max_out > 1) {
+        out[1].type = MOVE_SKIP_PROMOTE;
+        out[1].data.skip_promote.source_card_id = pending->source_card_id;
+        out[1].player_index = 0;
+    }
     return 2;
 }
 
@@ -80,21 +86,27 @@ static int legal_deferred_eot_promotion_moves(const GameState *state, Sym player
     Sym targets[MAX_ZONE_SIZE];
     int tc = deferred_promotion_target_ids(state, player_id, pending, targets, MAX_ZONE_SIZE);
     int written = 0;
-    for (int i = 0; i < tc && written < max_out; i++) {
-        out[written].type = MOVE_PROMOTE_CARD;
-        out[written].data.promote_card.card_id = targets[i];
-        out[written].player_index = 0;
+    for (int i = 0; i < tc; i++) {
+        if (written < max_out) {
+            out[written].type = MOVE_PROMOTE_CARD;
+            out[written].data.promote_card.card_id = targets[i];
+            out[written].player_index = 0;
+        }
         written++;
     }
-    if (pending->optional && written < max_out) {
-        out[written].type = MOVE_SKIP_PROMOTE;
-        out[written].data.skip_promote.source_card_id = pending->source_card_id;
-        out[written].player_index = 0;
+    if (pending->optional) {
+        if (written < max_out) {
+            out[written].type = MOVE_SKIP_PROMOTE;
+            out[written].data.skip_promote.source_card_id = pending->source_card_id;
+            out[written].player_index = 0;
+        }
         written++;
-    } else if (tc == 0 && written < max_out) {
-        out[written].type = MOVE_SKIP_PROMOTE;
-        out[written].data.skip_promote.source_card_id = pending->source_card_id;
-        out[written].player_index = 0;
+    } else if (tc == 0) {
+        if (written < max_out) {
+            out[written].type = MOVE_SKIP_PROMOTE;
+            out[written].data.skip_promote.source_card_id = pending->source_card_id;
+            out[written].player_index = 0;
+        }
         written++;
     }
     return written;
@@ -109,8 +121,8 @@ static int legal_pending_ability_moves(const GameState *state, Sym player_id,
         out[w].data.decline_ability.card_id = state->pending_ability->card_id;
         out[w].data.decline_ability.ability_key = state->pending_ability->ability_key;
         out[w].player_index = 0;
-        w++;
     }
+    w++;
     if (can_activate_pending_ability(state, player_id,
             state->pending_ability->card_id, state->pending_ability->ability_key)) {
         if (w < max_out) {
@@ -119,12 +131,14 @@ static int legal_pending_ability_moves(const GameState *state, Sym player_id,
             out[w].data.activate_ability.ability_key = state->pending_ability->ability_key;
             out[w].data.activate_ability.discard_hand_count = 0;
             out[w].player_index = 0;
-            w++;
         }
+        w++;
     }
     return w;
 }
 
+/* Every branch returns the number of moves that exist. Stores past max_out are
+ * skipped but still counted, so the caller learns the true total. */
 static int legal_main_phase_actions(const GameState *state, Sym player_id,
                                      Move *out, int max_out) {
     int w = 0;
@@ -135,61 +149,69 @@ static int legal_main_phase_actions(const GameState *state, Sym player_id,
                 out[w].type = MOVE_DEPLOY;
                 out[w].data.deploy.node_id = SYM_NULL;
                 out[w].data.deploy.slot_index = 0;
-                w++;
             }
+            w++;
         } else {
             int ht = player_has_any_troops_on_board(state, player_id);
-            for (int i = 0; i < state->node_count && w < max_out; i++) {
+            for (int i = 0; i < state->node_count; i++) {
                 Sym nid = state->nodes[i].node_id;
-                if (can_deploy_to_node(state, player_id, nid, ht)) {
+                if (!can_deploy_to_node(state, player_id, nid, ht)) continue;
+                if (w < max_out) {
                     out[w].type = MOVE_DEPLOY;
                     out[w].data.deploy.node_id = nid;
                     out[w].data.deploy.slot_index = 0;
-                    w++;
                 }
+                w++;
             }
         }
     }
     if (state->resource_pool.power >= 3) {
-        for (int i = 0; i < state->node_count && w < max_out; i++) {
+        for (int i = 0; i < state->node_count; i++) {
             Sym nid = state->nodes[i].node_id;
             if (!has_presence(state, player_id, nid)) continue;
-            for (int s = 0; s < state->nodes[i].troop_slot_count && w < max_out; s++) {
+            for (int s = 0; s < state->nodes[i].troop_slot_count; s++) {
                 Sym occ = state->nodes[i].troop_slots[s];
                 if (occ == SYM_NULL || occ == player_id) continue;
-                out[w].type = MOVE_ASSASSINATE;
-                out[w].data.assassinate.target_node_id = nid;
-                out[w].data.assassinate.troop_owner_id = occ;
-                out[w].data.assassinate.slot_index = s;
+                if (w < max_out) {
+                    out[w].type = MOVE_ASSASSINATE;
+                    out[w].data.assassinate.target_node_id = nid;
+                    out[w].data.assassinate.troop_owner_id = occ;
+                    out[w].data.assassinate.slot_index = s;
+                }
                 w++;
             }
-            for (int s = 0; s < state->nodes[i].spy_count && w < max_out; s++) {
+            for (int s = 0; s < state->nodes[i].spy_count; s++) {
                 Sym spy = state->nodes[i].spies[s];
                 if (spy == player_id) continue;
-                out[w].type = MOVE_RETURN_SPY;
-                out[w].data.return_spy.node_id = nid;
-                out[w].data.return_spy.spy_owner_id = spy;
+                if (w < max_out) {
+                    out[w].type = MOVE_RETURN_SPY;
+                    out[w].data.return_spy.node_id = nid;
+                    out[w].data.return_spy.spy_owner_id = spy;
+                }
                 w++;
             }
         }
     }
-    for (int slot = 0; slot < state->market.row_count && w < max_out; slot++) {
+    for (int slot = 0; slot < state->market.row_count; slot++) {
         Sym cid = state->market.row[slot];
         const CardDefinition *cd = card_by_id_state(state, cid);
-        if (cd && state->resource_pool.influence >= cd->cost) {
+        if (!cd || state->resource_pool.influence < cd->cost) continue;
+        if (w < max_out) {
             out[w].type = MOVE_RECRUIT;
             out[w].data.recruit.card_id = cid;
-            w++;
         }
+        w++;
     }
-    for (int si = 0; si < state->definition->setup.special_stack_count && w < max_out; si++) {
+    for (int si = 0; si < state->definition->setup.special_stack_count; si++) {
         if (!state->definition->setup.special_stacks[si].recruitable) continue;
         Sym cid = state->definition->setup.special_stacks[si].card_id;
         if (remaining_special_stack_count(state, cid) <= 0) continue;
         const CardDefinition *cd = card_by_id_state(state, cid);
         if (!cd || state->resource_pool.influence < cd->cost) continue;
-        out[w].type = MOVE_RECRUIT;
-        out[w].data.recruit.card_id = cid;
+        if (w < max_out) {
+            out[w].type = MOVE_RECRUIT;
+            out[w].data.recruit.card_id = cid;
+        }
         w++;
     }
     return w;
@@ -221,10 +243,15 @@ static int end_main_phase_available(const GameState *state) {
     return 1;
 }
 
+/* Returns the number of moves that exist for the current player, which can
+ * exceed max_moves. Only the first max_moves are written; the rest are counted,
+ * so a caller can size its buffer and detect truncation. max_moves = 0 is a
+ * pure size query that writes nothing. This matches engine_player_view_json. */
 static int collect_moves(const GameState *state, Move *out, unsigned char *applicable,
                          int max_moves, int applicable_only) {
     if (applicable && max_moves > 0) memset(applicable, 1, (size_t)max_moves);
-    if (state->phase == PHASE_GAME_OVER || max_moves <= 0) return 0;
+    if (!state) return 0;
+    if (state->phase == PHASE_GAME_OVER) return 0;
 
     Sym player_id = state->current_player_id;
 
@@ -235,14 +262,14 @@ static int collect_moves(const GameState *state, Move *out, unsigned char *appli
         if (found) return 0;
         Sym nodes[MAX_NODES];
         int nc = legal_initial_placement_node_ids(state, nodes, MAX_NODES);
-        int w = 0;
-        for (int i = 0; i < nc && w < max_moves; i++) {
-            out[w].type = MOVE_INITIAL_PLACEMENT;
-            out[w].data.initial_placement.node_id = nodes[i];
-            out[w].player_index = 0;
-            w++;
+        for (int i = 0; i < nc; i++) {
+            if (i < max_moves) {
+                out[i].type = MOVE_INITIAL_PLACEMENT;
+                out[i].data.initial_placement.node_id = nodes[i];
+                out[i].player_index = 0;
+            }
         }
-        return w;
+        return nc;
     }
 
     if (state->phase == PHASE_DRAW) return 0;
@@ -262,26 +289,30 @@ static int collect_moves(const GameState *state, Move *out, unsigned char *appli
         if (state->pending_ability == NULL) {
             int pi = player_index_for_id_state(state, player_id);
             if (pi >= 0) {
-                for (int i = 0; i < state->players[pi].hand_count && w < max_moves; i++) {
+                for (int i = 0; i < state->players[pi].hand_count; i++) {
                     const CardDefinition *cd = card_by_id_state(state, state->players[pi].hand[i]);
                     if (cd && (!card_play_devour_costs_payable(state, player_id, cd, i)
                                || !card_play_modal_options_viable(state, player_id, cd)))
                         continue;
-                    out[w].type = MOVE_PLAY_CARD;
-                    out[w].data.play_card.card_id = state->players[pi].hand[i];
-                    out[w].data.play_card.hand_index = i;
-                    out[w].player_index = 0;
+                    if (w < max_moves) {
+                        out[w].type = MOVE_PLAY_CARD;
+                        out[w].data.play_card.card_id = state->players[pi].hand[i];
+                        out[w].data.play_card.hand_index = i;
+                        out[w].player_index = 0;
+                    }
                     w++;
                 }
             }
         }
-        w += legal_main_phase_actions(state, player_id, out + w, max_moves - w);
+        int stored = w < max_moves ? w : max_moves;
+        int room = max_moves - stored;
+        w += legal_main_phase_actions(state, player_id, out + stored, room < 0 ? 0 : room);
         if (w < max_moves) {
             out[w].type = MOVE_END_MAIN_PHASE;
             out[w].player_index = 0;
             if (applicable) applicable[w] = end_main_phase_available(state) ? 1 : 0;
-            w++;
         }
+        w++;
         return w;
     }
 
@@ -296,24 +327,26 @@ static int collect_moves(const GameState *state, Move *out, unsigned char *appli
         if (max_moves > 0) {
             out[0].type = MOVE_RESOLVE_END_OF_TURN;
             out[0].player_index = 0;
-            return 1;
         }
-        return 0;
+        return 1;
     }
 
     if (state->phase == PHASE_CLEANUP) {
         if (max_moves > 0) {
             out[0].type = MOVE_RESOLVE_CLEANUP;
             out[0].player_index = 0;
-            return 1;
         }
-        return 0;
+        return 1;
     }
     return 0;
 }
 
 int engine_legal_moves(const GameState *state, Move *out, int max_moves) {
     return collect_moves(state, out, NULL, max_moves, 1);
+}
+
+int engine_move_capacity(void) {
+    return ENGINE_MOVE_CAPACITY;
 }
 
 int engine_display_moves(const GameState *state, Move *out, unsigned char *applicable,

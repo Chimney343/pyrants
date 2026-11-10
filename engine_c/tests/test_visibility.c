@@ -59,8 +59,9 @@ static GameState *advance(GameState *gs, int steps, uint64_t *lcg) {
     for (int s = 0; s < steps && !engine_is_terminal(gs); s++) {
         int n = engine_legal_moves(gs, moves, 1024);
         if (n <= 0) break;
+        int stored = n < 1024 ? n : 1024; /* clamp: n is the true total now */
         *lcg = *lcg * 6364136223846793005ULL + 1442695040888963407ULL;
-        int pick = (int)((*lcg >> 33) % (uint64_t)n);
+        int pick = (int)((*lcg >> 33) % (uint64_t)stored);
         GameState *next = engine_apply(gs, &moves[pick]);
         if (!next) break;
         engine_destroy(gs);

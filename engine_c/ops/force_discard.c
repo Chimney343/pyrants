@@ -14,9 +14,10 @@ static int op_force_discard_enumerate(const GameState *state, Sym player_id,
     (void)pending; (void)card;
     if (action->variant == CARD_VARIANT_TARGETED_DISCARD) {
         int w = 0;
-        for (int p = 0; p < state->player_count && w < max_out; p++) {
+        for (int p = 0; p < state->player_count; p++) {
             if (state->players[p].player_id == player_id) continue;
             if (state->players[p].hand_count >= 3) {
+                if (w >= max_out) { w++; continue; }
                 out[w].type = MOVE_RESOLVE_GENERIC;
                 out[w].data.resolve_generic.action_id = state->players[p].player_id;
                 out[w].player_index = 0;
@@ -26,9 +27,10 @@ static int op_force_discard_enumerate(const GameState *state, Sym player_id,
         return w;
     }
     int w = 0;
-    for (int p = 0; p < state->player_count && w < max_out; p++) {
+    for (int p = 0; p < state->player_count; p++) {
         if (state->players[p].player_id == player_id) continue;
-        for (int h = 0; h < state->players[p].hand_count && w < max_out; h++) {
+        for (int h = 0; h < state->players[p].hand_count; h++) {
+            if (w >= max_out) { w++; continue; }
             out[w].type = MOVE_RESOLVE_GENERIC;
             out[w].data.resolve_generic.action_id = state->players[p].hand[h];
             out[w].player_index = 0;
