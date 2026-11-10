@@ -91,6 +91,20 @@ catalog display name to op describe callbacks. The colon parser and
 `find_sel`/`atoi` code now remain only for the deferred `custom_effect`
 dispatcher; candidate 4 owns its decomposition.
 
+`f3aa4db` (brief B2) deleted the last copy of the per-op payload decoding that
+sat after the op-table return, in `apply_resolve_generic_choice`
+(`engine_c/generic_runtime.c`). Those branches converted the frozen
+`action_id`/`target_id` pair into the legacy `sk`/`sv` keys for the thirteen
+migrated ops, but every one of those ops returns earlier through `card_op_for`
+on the line above, so the chain was unreachable. A temporary abort probe in the
+deleted range fired zero times across `just test-c`, `just test-c-python`,
+`just test-all` and a quick-check game run, and the quick check is
+content-identical to the parent commit. What remains going into the
+`custom_effect` branch is that dispatcher's own decoding plus the two general
+fallbacks for an unrecognised effect kind and for a selection-requiring op that
+is in neither the op table nor `custom_effect`; those are not op duplicates and
+stay.
+
 The op describe now owns both the modal option label and the generic
 move-target label for migrated ops; `engine_node_label` is the shared
 node-label helper.
@@ -160,3 +174,11 @@ HEAD against `a985208` directly (`f355e4f`, run
 F-015 fix (`2163a45`, ADR-0005) changed the rules, so the games differ and HEAD
 plays 2.5% more decisions (38,550 against 37,596). Per decision, HEAD's summed
 game wall is 466.5 ms against 461.7 ms, about 1% higher, which is within noise.
+
+Brief B2's deletion (`f3aa4db`) has its own quick check in
+`speed-records.md`: parent `76dc1d4` → `f3aa4db`, runs
+`20261110T201057Z_d19383e1047a` → `20261110T201336Z_9045b5ad3a86`. Decisions
+and final decks are identical on 8/8 games; only `replay_context` differs, from
+the baseline worktree path. Run-wall games/h 191.3 → 191.7, per-game median
+0.993. Removing dead code should not move the clock, and within noise it does
+not.

@@ -47,6 +47,8 @@ dirty" is `engine_git_dirty`; "repo dirty" is `repo_git_dirty`.
 | `20261109T123258Z_f86a57cd3aaf`² | `aa04bb03e51f` | True | True | `065182538c6a` | 2026-11-09T12:32:59Z | 8g/50s/8w/uct1.4/seed42 |
 | `20261109T145355Z_c0d69d87c9c2` | `f68fb8801c2e` | False | True | `5e6ecfb53d19` | 2026-11-09T14:53:55Z | 8g/50s/8w/uct1.4/seed42 |
 | `20261109T145118Z_524e06781560` | `f68fb8801c2e` | True | True | `3ac2087ab621` | 2026-11-09T14:51:18Z | 8g/50s/8w/uct1.4/seed42 |
+| `20261110T201057Z_d19383e1047a`³ | `76dc1d44a4f1` | False | False | `d26c8d89246f` | 2026-11-10T20:10:57Z | 8g/50s/8w/uct1.4/seed42 |
+| `20261110T201336Z_9045b5ad3a86`³ | `76dc1d44a4f1` | True | True | `9ad79f459a64` | 2026-11-10T20:13:36Z | 8g/50s/8w/uct1.4/seed42 |
 
 ¹ The baseline `7bd2f09610e6` is **outside the repo**, under
 `%TEMP%\kilo\a985208_runs\`; its manifest is schema v2 and has no
@@ -56,6 +58,12 @@ is indicative only.
 ² The A1 quick-check pair lives **outside the repo**, under
 `%TEMP%\kilo\a1\runs\`. The numbers are transcribed here because the directory
 is not durable.
+
+³ The B2 baseline ran from the `C:\Users\mkkom\pyrants-b2-base` worktree at the
+parent commit, so its `replay_context` differs from the candidate's; both
+manifests record engine sha `76dc1d44a4f1` (the candidate's tree is dirty only
+by the B2 edit itself). The run directories are under
+`artifacts/ismcts/b2_quickcheck/`.
 
 ## ADR-0004: 13 op migrations (`a985208` → `a03768f`)
 
@@ -225,6 +233,34 @@ timed calls, three runs per build): `engine_player_view_json` mean
 43.3–45.3 µs → 42.5–46.2 µs (median 38.8–39.0 → 39.6–40.2); `engine_infostate_hash`
 mean 1.91–2.26 µs → 2.02–2.16 µs (median 1.9 → 1.9–2.0). **Reported, not
 re-run.**
+
+## ADR-0004 B2: delete the unreachable per-op branches
+
+Claim: content-identical on 8/8 games. Deleting dead code must not change
+behaviour.
+
+| | parent `76dc1d4` | B2 `f3aa4db` |
+|---|---|---|
+| run id | `20261110T201057Z_d19383e1047a` | `20261110T201336Z_9045b5ad3a86` |
+| tree dirty | engine False / repo False | engine True / repo True |
+| DLL sha256 | `d26c8d89246f…` | `9ad79f459a64…` |
+| run wall | 150.5 s | 150.2 s |
+| games/h (run wall) | 191.3 | 191.7 |
+| games/h (ideal) | 236.8 | 234.1 |
+
+- 8 games at 50 sims, 8 workers, `--uct-c 1.4`, seed 42; 9,900 decisions.
+- `decisions.jsonl` identical on 8/8 once `run_id` and `wall_time_ms` are
+  ignored; `final_decks.json` byte-identical on 8/8; `replay.json` differs on
+  8/8 only in `replay_context`, because the baseline ran from the
+  `C:\Users\mkkom\pyrants-b2-base` worktree. Per-game wall ratio median 0.993,
+  mean 0.988, range 0.97–0.999.
+- Unreachability was proven first: a temporary `abort()` probe for all thirteen
+  migrated op names inside the deleted range fired zero times across
+  `just test-c`, `just test-c-python` (747 passed, 2 failed), `just test-all`
+  (1111 passed, 2 failed, 11 skipped; openspiel 110 passed, 10 failed) and a
+  9,900-move 8-game quick-check run. The probe introduced no decision change
+  either: the probe run is content-identical to B2.
+- **Verdict: the ADR claim holds.**
 
 ## Audit run table, re-checked
 
