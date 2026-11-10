@@ -72,7 +72,8 @@ step" and "Per-candidate loop". Then `GLOSSARY.md` and whatever your brief lists
 **Records.**
 - Update the ADRs, findings, `GLOSSARY.md` and docs your brief names.
 - Don't edit the handoff's Progress or Next; the coordinator does.
-- Reserved finding numbers: F-041 (A1, A2), F-042 (B1). Any other new finding
+- Reserved finding numbers: F-041 (A1, A2). F-042 was reserved for B1, which
+  did not need it; it is free. Any other new finding
   takes the next free number; name it in your report.
 - Reserved ADR numbers: 0008 (A2), 0009 (D0), 0010 (E0), 0011 (F0), 0012 (G0).
   Any other ADR uses 0013 upward; name it in your report.
@@ -85,7 +86,7 @@ brief A1 (`0b9ee96`):
 |---|---|
 | `just build-c`, `just test-c` | 10 test executables pass |
 | `just test-c-python` | 747 passed, 2 failed (Zuggtmoy, Air Elemental) |
-| `just test-all`, `tests/` | 1111 passed, 2 failed, 11 skipped |
+| `just test-all`, `tests/` | 1111 passed, 2 failed, 11 skipped in the main checkout. A new worktree has no `artifacts/`, so 8 more tests skip there: 1103 passed, 2 failed, 19 skipped |
 | `just test-all`, `openspiel_pyrants/tests/` | 110 passed, 10 failed (the postponed F-003 Part B tests) |
 | `just verify-replays` | all pass (2862/2862 on 2026-11-09; the count grows as runs are added) |
 | `just test-c-asan` | clean |
@@ -400,7 +401,17 @@ B1 in one line: check the claims in the untracked 2026-11-07 audit against the r
 
 ### B2: delete the unreachable per-op branches
 
-**Depends on** B1's verdict that the branches are unreachable.
+**Depends on** B1, which is done. Its verdict, in the correction note at the
+top of `docs/architecture-review/audit-2026-11-07.md`:
+- `engine_c/generic_runtime.c` lines 1030-1153 are unreachable. They sit
+  inside `if (action_requires_selection(...))`, and every op that needs a
+  selection returns earlier through the op table (lines 800-1021).
+- Lines 1267-1275 stay. 1267-1269 is `custom_effect`'s fall-through for an
+  unrecognised `effect_kind`. 1270-1275 is the general fallback for any op that
+  needs a selection but is in neither the op table nor `custom_effect`. No
+  catalog card reaches it today, but it is not a copy of a migrated op.
+
+Line numbers are as of `b4c4c24`; re-find them before you edit.
 
 **Why.** ADR-0004 says the colon parser survives only for `custom_effect`, but
 `engine_c/generic_runtime.c` still has a branch per migrated op after the op
@@ -408,13 +419,14 @@ table returns. Two implementations of each op's payload decoding mean the
 op-table module is not yet the only path.
 
 **Steps.**
-1. *Prove unreachability.* Temporarily make each branch abort, then run:
+1. *Prove unreachability.* Temporarily make each per-op branch in lines
+   1030-1153 abort, then run:
    - `just test-c`, `just test-c-python` and `just test-all`;
    - a quick-check game run.
 
    Nothing may hit them. Revert the probe.
-2. *Delete* the branches, folding the fall-through into the `custom_effect`
-   branch.
+2. *Delete* lines 1030-1153, so the `if (op)` chain starts at the
+   `custom_effect` branch. Leave both fallbacks (1267-1275) as they are.
 3. *Gates*, all of them, including asan and verify-replays.
 4. *Quick check: content-identical* against the parent commit.
 5. *Records.* ADR-0004's sentence about the colon parser is now true; add the
@@ -435,9 +447,10 @@ B2 in one line: prove the old per-op branches in generic_runtime.c are unreachab
 1. *Unused move constructors.*
    - Delete the 12 `make_*_move` constructors from `engine_c/moves.c` and
      `moves.h`, and their exports, if any.
-   - Their callers are C tests (`engine_c/tests/test_describe.c`,
-     `engine_c/test_dt_ched.c`). Change how those tests build a move, not what
-     they assert.
+   - Their only callers are C tests: `engine_c/tests/test_describe.c`,
+     `engine_c/test_dt_ched.c` and `engine_c/test_engine.c` (the coordinator
+     checked; no Python code or export uses them). Change how those tests build
+     a move, not what they assert.
 2. *Duplicate helper.* `_humanize_action` is defined twice in
    `engine_c/bindings/label_enrich.py` (lines 194 and 201). The second
    definition wins at import, so delete the first; behaviour is unchanged.
@@ -462,10 +475,12 @@ B3 in one line: delete the unused move constructors and the duplicate _humanize_
 
 ## Lane C: open findings
 
-### C1: restore the engine purity guard (F-039)
+### C1: add an engine purity guard (F-039)
 
-**Why.** AGENTS.md and ADR-0001 say engine library sources do no I/O. The test
-that enforced it was deleted in `956f603`. `engine_c/loader.c` calls `fopen`.
+**Why.** AGENTS.md and ADR-0001 say engine library sources do no I/O, but
+nothing checks it. B1 found that the purity test deleted in `956f603` only ever
+scanned the legacy Python `engine/*.py`, so `engine_c/` has never had a guard.
+`engine_c/loader.c` calls `fopen`.
 
 **Steps.**
 1. *Ask the user:* allowlist `loader.c`, or refactor it so the caller passes the
@@ -479,15 +494,17 @@ that enforced it was deleted in `956f603`. `engine_c/loader.c` calls `fopen`.
 
    Watch it fail on a temporary violation.
 3. *Records.*
-   - Point AGENTS.md and ADR-0001 at the new test.
-   - Set F-039 to FIXED and say it was a regression.
+   - Point AGENTS.md's "Engine purity" bullet and ADR-0001's Compliance
+     section at the new test.
+   - Set F-039 to FIXED. B1 already corrected its text: a gap that was never
+     filled, not a regression.
 
 **Message to paste:**
 
 ```
 You are one of several agents working through the pyrants architecture plan (repo C:\Users\mkkom\pyrants, branch develop). Your task is brief C1 in docs/architecture-review/agent-briefs.md. Read that file's "Rules for every agent" section and brief C1 before anything else; they tell you what else to read. Do brief C1 only. Stop and ask me wherever the rules or the brief say to. End with the report in the format the rules give.
 
-C1 in one line: restore an automated check that engine_c library sources do no I/O (F-039), after asking me how to treat loader.c's fopen.
+C1 in one line: add the first automated check that engine_c library sources do no I/O (F-039), after asking me how to treat loader.c's fopen.
 ```
 
 ### C2: one legal-move capacity, visible truncation (F-038)
