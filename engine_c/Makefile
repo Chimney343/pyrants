@@ -33,12 +33,12 @@ $(LIB): $(OBJS)
 	$(CC) $(CFLAGS) -I. -c $< -o $@
 
 clean:
-	rm -f $(OBJS) $(LIB) *.obj *.lib \
-	  test_engine test_engine.exe test_view test_view.exe \
-	  test_describe test_describe.exe test_generic_actions test_generic_actions.exe \
-	  test_saveload test_saveload.exe test_rollout test_rollout.exe \
-	  test_infostate_hash test_infostate_hash.exe test_catalog_assembly test_catalog_assembly.exe \
-	  test_dt_ched test_dt_ched.exe
+	rm -f $(OBJS) $(LIB) *.obj *.lib
+	@while IFS='|' read -r exe sources; do \
+	  case "$$exe" in ''|\#*) continue;; esac; \
+	  exe=$$(printf '%s' "$$exe" | tr -d '\r' | tr -d ' '); \
+	  rm -f "$$exe" "$$exe.exe"; \
+	done < tests.txt
 
 test: $(LIB)
 	@while IFS='|' read -r exe sources; do \
