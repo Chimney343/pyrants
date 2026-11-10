@@ -20,7 +20,7 @@ returns the chunk list that becomes the next briefs.
 |---|---|---|---|---|
 | 1 | **A1** | engine | - | No player's search may know the order of its own deck. **Top priority.** |
 | 1 | B1 | side | - | Check the 2026-11-07 audit's claims; fix the untrue docs and `make clean` |
-| 1 | C1 | side | - | Restore the engine purity guard (F-039) |
+| 1 | C1 | side | - | Add the first engine purity guard (F-039) |
 | 1 | D0 | design | - | Design the rest of candidate 4: `custom_effect`'s effect kinds and the op-selection variants |
 | 1 | F0 | design | - | Design candidate 8's game handle |
 | 2 | **A2** | engine | A1 | Opponents' discard piles and the devour pile become visible |
