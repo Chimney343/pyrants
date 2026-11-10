@@ -223,3 +223,10 @@ Micro-benchmarks on 118 playout states:
   branches and folding card lists and the board in local variables brought the
   first version's 3.3 µs down to that.
 - **Cold view:** about 57 µs, against 107 µs for the Python projection.
+
+Every run id, dirty flag, DLL hash and per-game number in this section is
+transcribed in `docs/architecture-review/speed-records.md`, which is the
+durable record because `artifacts/` is gitignored. The step-1 micro-benchmarks
+are reported there but were not re-run: the hand-written hash and the Python
+projection they were compared against no longer exist. The A1 quick check and
+`bench_determinize.py` figures are also recorded there.

@@ -126,6 +126,10 @@ Measured after the fact, on 2026-11-06, with paired 32-game runs: 200 sims,
 `scripts/compare_paired_runs.py`. The `--uct-c 1.4` flag is required: the
 default is now 5.0, and the earlier baselines used 1.4.
 
+Full run ids, dirty flags, DLL hashes and per-game numbers are in
+`docs/architecture-review/speed-records.md`; `artifacts/` is gitignored, so
+that file, not the run directories, is the record.
+
 | Change | Baseline → candidate | Runs | Content | Run-wall games/h | Per-game median |
 |---|---|---|---|---|---|
 | 13 op migrations | `a985208` → `a03768f` | `20261106T193628Z_ca5eea69c707` → `20261106T195809Z_5513a9602b65` | identical decisions on all 32 games | 88.6 → 89.5 | ×1.031 |
@@ -134,15 +138,25 @@ default is now 5.0, and the earlier baselines used 1.4.
 Both runs of the op-migration pair were built in separate git worktrees, so
 each `replay.json` records a different absolute data path in
 `replay_context`. That is the only field that differs. `decisions.jsonl` and
-`final_decks.json` match on every game.
+`final_decks.json` match on every game. The op-cache pair ran from one tree, so
+even `replay_context` matches there.
+
+Both cache runs are from a dirty tree at `53cf800`; the cache was the
+uncommitted change later committed as `57e0883`. Their identity is the DLL
+hash, `cc7e66c611c9…` against `59a163d27084…`. An earlier audit paired each of
+them against a third baseline (`7bd2f09`, now outside the repo) and read the
+resulting search differences as a contradiction of this section; that compares
+different builds and is not this pair.
 
 Neither step is a regression, and both gains are within the noise between
-repeat runs of one build, which is up to about 6% in run-wall games/h. A
-committed `57e0883` rerun (`20261106T164410Z_f5f647468a20`) measured 83.7.
+repeat runs of one build, which is up to about 6% in run-wall games/h
+(two runs of one DLL, `20261105T095031Z_2cce3444a48a` →
+`20261105T112058Z_2951188cc189`, measured 77.6 → 82.4). A committed `57e0883`
+rerun (`20261106T164410Z_f5f647468a20`) measured 83.7.
 
 HEAD against `a985208` directly (`f355e4f`, run
 `20261106T191411Z_bda107c0eaf4`) measures 88.6 → 86.8 games/h, per-game median
 ×0.979. It is not a measurement of this candidate. Between the two commits the
 F-015 fix (`2163a45`, ADR-0005) changed the rules, so the games differ and HEAD
 plays 2.5% more decisions (38,550 against 37,596). Per decision, HEAD's summed
-game wall is about 1% higher, which is within noise.
+game wall is 466.5 ms against 461.7 ms, about 1% higher, which is within noise.

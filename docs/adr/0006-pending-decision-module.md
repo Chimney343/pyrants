@@ -89,3 +89,8 @@ run `20261106T191411Z_bda107c0eaf4`:
 
 That is no regression, and the gain is within the noise between repeat runs of
 one build, which is up to about 6% in run-wall games/h.
+
+Dirty flags, DLL hashes and per-game numbers for this pair are in
+`docs/architecture-review/speed-records.md`, which is the durable record:
+`artifacts/` is gitignored. Both trees were dirty here; baseline DLL
+`1899a19f2ca3…`, candidate `69e80052d0fb…`.

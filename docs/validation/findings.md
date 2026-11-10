@@ -946,7 +946,8 @@ passed.
 - Class: ARCHITECTURE-PROCESS (engine purity)
 - Severity: MINOR (the contract is documented but unenforced; `loader.c`'s `fopen` is the known exception)
 - Origin: Found by the 2026-11-04 architecture review (Phase 0.1)
-- Code: `tests/test_engine_purity.py` is absent; `git show 956f603` shows `tests/legacy_engine/test_engine_purity.py` deleted; `AGENTS.md:107-108` and `docs/adr/0001-c-engine-as-source-of-truth.md:69-72,117-119,132` still cite it. `engine_c/loader.c:11` calls `fopen` (plus `fread`/`fclose`); `actions.c`, `describe.c` and `saveload.c` include `<stdio.h>` only for `snprintf`; `cJSON.c` is vendored.
+- Code: `tests/test_engine_purity.py` is absent; `git show 956f603` shows `tests/legacy_engine/test_engine_purity.py` deleted; `docs/adr/0001-c-engine-as-source-of-truth.md:71-73,117-120,132` still cites it. `engine_c/loader.c:12` calls `fopen` (plus `fread`/`fclose`); `actions.c`, `describe.c` and `saveload.c` include `<stdio.h>` only for `snprintf`; `cJSON.c` is vendored.
+- Correction (B1, 2026-11-09): the deleted test never guarded `engine_c/`. At every revision it existed (`300eb33`, `a1154ce`, `956f603^`) `ENGINE_DIR` resolved to the legacy Python `engine/` package and it globbed `*.py`. So no C-side enforcement was ever lost; this is a gap that was never filled, not a regression. Only ADR-0001:71-73 claimed otherwise. AGENTS.md does not cite the test.
 - Falsification test: add `fopen` to a non-test library source; no test fails.
 - Expected if REAL: the new I/O compiles and the suite stays green.
 - Expected if FALSE POSITIVE: a guard rejects it.

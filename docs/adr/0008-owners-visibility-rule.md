@@ -150,3 +150,8 @@ Quick check (8 four-player games, 50 sims, seed 42, `--uct-c 1.4`), parent
 
 A 32-game paired run was not requested; the quick check answers the games/h
 question for this brief.
+
+Run ids, dirty flags, DLL hashes and per-game numbers for both the benchmarks
+and the quick check are transcribed in
+`docs/architecture-review/speed-records.md`, which is the durable record
+because `artifacts/` is gitignored.

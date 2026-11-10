@@ -68,9 +68,11 @@ The Python surface that callers depend on is provided by the bindings layer in
   (C tests in `engine_c/tests/` plus Python-side C-binding tests in
   `tests/test_engine_c.py`). Stops the test effort from being split across
   two engines.
-- **Engine purity stays enforceable.** `tests/test_engine_purity.py` already
-  forbids I/O and `interface.*` imports in both `engine/` and `engine_c/`;
-  this decision keeps that contract intact on the canonical side.
+- **Engine purity stays enforceable.** `engine_c/loader.c` is the only library
+  source that touches a file (`fopen`/`fread`/`fclose`); everything else takes
+  its data as arguments. The `tests/test_engine_purity.py` that once checked
+  this only ever scanned the legacy Python `engine/`, so `engine_c/` has never
+  had an automated purity guard and the contract rests on review. See F-039.
 - **Churn consolidation.** Repowise hotspots currently split across
   `engine/rules.py`, `engine/state.py`, `engine/helpers.py` consolidate onto
   the C side, where the bindings layer can be hardened in one place.
@@ -113,13 +115,12 @@ The Python surface that callers depend on is provided by the bindings layer in
 ## Compliance
 
 - `AGENTS.md` already encodes this convention under "CRITICAL: Engine
-  Language" and "Pull Request Guidelines" (engine changes must keep
-  `tests/test_engine_purity.py` green; do not extend `engine/` in a PR unless
-  scoped). This ADR is the referenced rationale.
-- `tests/test_engine_purity.py` enforces engine purity on both sides; no
-  additional guard test is required for this decision, but a follow-up could
-  add a lint/AST guard failing if `engine/` files are modified outside a
-  scoped migration.
+  Language" and "Pull Request Guidelines". This ADR is the referenced
+  rationale.
+- No automated purity guard exists for `engine_c/`: the deleted
+  `tests/test_engine_purity.py` only scanned the legacy Python `engine/` (see
+  F-039). Until one is added, `engine_c/` purity is a review obligation, not an
+  enforced check.
 - Repowise should treat `engine/` findings as accepted legacy debt rather
   than active maintenance targets.
 
@@ -129,7 +130,8 @@ The Python surface that callers depend on is provided by the bindings layer in
 - `docs/engine-status.md` — current engine surface and backlog (note: still
   references `engine/` paths; a follow-up should re-point these at
   `engine_c/`).
-- `tests/test_engine_purity.py` — enforced purity contract.
+- `docs/validation/findings.md` F-039 — the engine purity contract has no
+  automated guard.
 - Repowise health dashboard (2026-06-24 index): `engine` module 4.33/10,
   `engine_c` module 6.49/10; critical untested hotspots in both `engine/`
   and `engine_c/bindings/`.
