@@ -100,10 +100,9 @@ on the line above, so the chain was unreachable. A temporary abort probe in the
 deleted range fired zero times across `just test-c`, `just test-c-python`,
 `just test-all` and a quick-check game run, and the quick check is
 content-identical to the parent commit. What remains going into the
-`custom_effect` branch is that dispatcher's own decoding plus the two general
-fallbacks for an unrecognised effect kind and for a selection-requiring op that
-is in neither the op table nor `custom_effect`; those are not op duplicates and
-stay.
+`custom_effect` branch is that dispatcher's own decoding plus the general
+fallbacks (an unrecognised effect kind, an op in neither the op table nor
+`custom_effect`, and a NULL op); those are not op duplicates and stay.
 
 The op describe now owns both the modal option label and the generic
 move-target label for migrated ops; `engine_node_label` is the shared
