@@ -45,6 +45,17 @@ module's shape is settled, not before.
 - **move display query** - the C `engine_display_moves` and its Python
   `display_moves()` adapters. The legal-move query compacts the applicable
   entries; the display query keeps the viewer's full ordered list.
+- **move capacity** - the frozen number of moves a buffer can hold,
+  `ENGINE_MOVE_CAPACITY` (1024) in `engine_c/state.h`, exported as
+  `engine_move_capacity()`. It is the single source for the C rollout buffer,
+  the Python binding buffers, and `NUM_DISTINCT_ACTIONS`. Both move queries
+  return how many moves *exist*, which can exceed it; a caller that asks for
+  more than the capacity gets an error (`MoveCapacityError` in Python) instead
+  of a silently short list.
+- **enumeration probe** - `legal_generic_target_selection_probe()`, the
+  existence-only variant of target enumeration. The engine's own "is this list
+  empty?" checks use it so they stop at the first target instead of counting
+  the whole space; public move queries count.
 - **op** - one card action verb (`return_spy`, `place_spy`, ...). An op module
   owns its needs-selection rule, target enumeration, typed target, apply and
   describe.

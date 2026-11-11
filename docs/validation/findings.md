@@ -940,7 +940,30 @@ passed.
 - Falsification test: assert the binding buffer equals `NUM_DISTINCT_ACTIONS`; a state with exactly `max_moves` moves cannot be distinguished from one with more.
 - Expected if REAL: the two constants can drift and truncation is unobservable.
 - Expected if FALSE POSITIVE: one constant feeds the other and overflow is detected.
-- Status: **OPEN**. It was meant to be folded into candidate 3, but candidate 3 (`d815205`) landed without it, and the second 1024 buffer now also sizes the display query (`ce_api.py:425-427`).
+- Status: **FIXED** (brief C2, 2026-11-11; commit `462b414` plus the probe fix).
+  - One source: `ENGINE_MOVE_CAPACITY` in `engine_c/state.h`, exported as
+    `engine_move_capacity()` (`engine.h`, `engine_c.def`). `ce_api.move_capacity()`
+    reads it (cached once, because a per-decision ctypes round trip cost 6%
+    games/h), both `legal_moves()`/`display_moves()` size their buffers from it,
+    and `game_c.py` raises at import if it disagrees with `NUM_DISTINCT_ACTIONS`.
+    The freeze is unchanged at 1024.
+  - Visible truncation: `engine_legal_moves`/`engine_display_moves` now return
+    how many moves exist, as `engine_player_view_json` does, writing at most
+    `max_moves`. `ce_api` raises `MoveCapacityError` above the capacity, and C
+    callers (rollout, profile_runner, tests, `scripts/diagnose*`) clamp before
+    indexing. `max_out = 0` is a size query.
+  - Reachable, not hypothetical: a 4-player main-phase worst case is 1143 moves
+    (81 nodes × 8 troop slots for assassinate, × 4 spy slots for return-spy,
+    plus deploys, 80 hand plays, 6 market and 3 special stacks), above 1024.
+    Random play over 36 games peaked at 24, so today's states stay far below it.
+  - Cost found and removed: the internal "does any target exist?" checks
+    (`generic_runtime.c:437`, `:1251`) used a tiny buffer and relied on the old
+    stop-at-cap. Under the counting contract they walked the whole target space
+    (place_spy can enumerate every node pair), measuring 151 → 133 games/h. They
+    now call `legal_generic_target_selection_probe()`, which stops at the first
+    target; a paired A/B restored 149 vs 149 games/h.
+  - Content-identical quick check: `final_decks.json` equal on all 8 games and
+    the only differing decision field is `replay_context` (worktree paths).
 
 ### F-039 Engine purity has no automated guard, and `loader.c` already violates the stated contract
 - Class: ARCHITECTURE-PROCESS (engine purity)

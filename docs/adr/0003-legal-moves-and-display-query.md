@@ -56,6 +56,25 @@ the applicable list is the same sequence the old filter produced. Candidate 4
 can move card-specific legality metadata into the catalog without changing
 this interface.
 
+### Amendment (brief C2, 2026-11-11): the count is truthful, the capacity has one source
+
+F-038 changed what the return value means, so it is recorded here even though
+it does not touch the applicable/display split above.
+
+- `engine_legal_moves` and `engine_display_moves` return **how many moves
+  exist**, not how many fit. They write at most `max_moves` and never touch
+  memory past it, so the stored prefix is exactly what the old query wrote.
+  `max_out = 0` is a size query, matching `engine_player_view_json`.
+- `engine_move_capacity()` exports `ENGINE_MOVE_CAPACITY` (1024, frozen with
+  the NN action space). The Python bindings size their buffers from it, and
+  `game_c.py` raises at import if it disagrees with `NUM_DISTINCT_ACTIONS`.
+- A Python caller that asks for more moves than the capacity holds gets
+  `MoveCapacityError` rather than a short list. C callers clamp before indexing
+  (rollout, profile_runner, tests, `scripts/diagnose*`).
+- The internal `legal_generic_target_selection_probe()` exists because the
+  engine's own "is this list empty?" checks only need existence: counting the
+  whole target space there cost 151 → 133 games/h. Public queries still count.
+
 IS-MCTS is stochastic: removing a dead branch can change visit order, so a
 paired run may choose different moves. The invariant is the applicable move
 set (same payloads and order) and the same card execution, not identical
