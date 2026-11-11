@@ -1,6 +1,6 @@
 # ADR-0006: One module owns the pending decision stack
 
-- **Status:** Active (candidate 2 complete for the promotion stacks; `pending_ability` and `pending_generic` storage move later)
+- **Status:** Active (candidate 2 complete for the promotion stacks; `pending_ability` and `pending_generic` storage deferred — retargeted by ADR-0011 to an engine brief after lane D)
 - **Date:** 2026-11-06
 - **Decision owner:** maintainers
 - **Supersedes:** -
@@ -29,8 +29,8 @@ must keep reading the committed schema-v1 documents.
   operations (`pending_promotion_count/at/mut/push/pop/set_count`), clone,
   hash, describe, and JSON save/load.
 - `PendingKind` and `PendingDecision` stay internal to C. No mirrored ctypes
-  struct is added: candidate 8's game handle owns the Python-facing decision
-  record.
+  struct is added: ADR-0011's game handle owns the Python-facing decision
+  record, which C renders as one JSON document (`engine_pending_decision_json`).
 - `PENDING_CHANCE` is reserved for ADR-0002's postponed F-003 frame and is not
   built.
 - The scenario document gains `schema_version: 2` at the root and, under
@@ -68,7 +68,12 @@ the four pending record shapes back into `rules.c`, `helpers.c`,
 limits are deliberate: `pending_ability` and `pending_generic` still live in
 `GameState` and are reached directly outside the module, so the module owns
 their clone, hash, describe and persistence but not yet their storage. That
-migration is candidate 8's work, alongside the Python decision record.
+migration was deferred to candidate 8; ADR-0011 retargets it to a separate
+engine brief after lane D. Once the Python side reads the handle's JSON decision
+record, no Python code reads pending storage at all, so where it lives stops
+touching the Python interface: it becomes a C-internal refactor, and lane D's
+`custom_effect` split will first remove many of its reach-ins (42 of about 95
+outside `pending.c` are in `generic_runtime.c`).
 
 The scenario schema changed, so a scenario written by this engine and read by
 an older build loses the pending state; the frozen artifacts (`decisions.jsonl`,

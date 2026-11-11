@@ -88,9 +88,27 @@ module's shape is settled, not before.
   the engine waits on: the immediate and end-of-turn promotion stacks, the paid
   ability and the generic choice. It owns their ordering, stack mechanics,
   clone, hash, describe and persistence behind one interface.
-- **decision record** - the `PendingDecision` value the decision stack returns:
-  the kind of pending decision, its priority, and how many are queued. It
-  stays internal to C until candidate 8 gives Python a game handle.
+- **decision record** - what the decision stack answers about a waiting
+  decision: the kind, its priority, and how many are queued. ADR-0006 kept it
+  internal to C; ADR-0011 has C render it as one JSON record
+  (`engine_pending_decision_json`, same size-query contract as the player view)
+  that the game handle decodes, so no Python code reads pending storage.
+- **game handle** - the module `engine_c/bindings/handle.py` that owns one game
+  for every Python caller: setup from a seed or files, apply, clone,
+  determinize, legal and display moves, the decision record, views, the tree
+  key, the rollout, and replay from an in-memory log. Its interface carries no
+  ctypes type, raw pointer or `CState`, so a C-side implementation could later
+  take over its body without moving a caller (ADR-0011, Proposed). `PyrantsCState`
+  and `CSession` are its two adapters.
+- **handle failure family** - `EngineError(RuntimeError)` and its subclasses
+  `EngineApplyRejected`, `EngineCloneFailed`, `EngineDeterminizeFailed` and
+  `MoveCapacityError`. The base is not for catching, so an adapter that keeps
+  its old failure contract catches only the one subclass it means.
+- **run artifact** - the on-disk format of one IS-MCTS game: `manifest.json`,
+  `replay.json`, `summary.json` and `decisions.jsonl`. The `run_artifacts/`
+  package owns reading it today and the writer side once candidate 9's recorder
+  lands. The game handle replays from an in-memory log and knows nothing about
+  these files.
 - **pending kind** - the `PendingKind` enum naming one waiting mechanism
   (`immediate`, `end_of_turn`, `ability`, `generic`, and `chance`, which is
   reserved for ADR-0002's postponed F-003 frame and is not built).

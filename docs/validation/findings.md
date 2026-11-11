@@ -59,6 +59,7 @@ All six required components exist; none had to be substituted.
 | F-033 | VALIDATION-PROCESS | MINOR | `just test-all` aborts on the first failing tree, so with today's four tolerated `tests/` failures it never runs `openspiel_pyrants/tests/` — the very regression it was added to prevent — R-4 |
 | F-034 | VALIDATION-PROCESS | MAJOR | *(found by the review of Fix Plan 02's implementation)* commit `23196b7` bundled an unrelated rule change (`insane_outcast` not recruitable: setup + engine) with the encoder fixes, breaking the plan's premise that no run needs repeating: 46/141 stored games desynced, the 120-game corpus could not be rebuilt at v3, and one new test went red in each tree unrecorded — N-1 of `nn-training-data-fix-plan-02-review.md` |
 | F-041 | ENGINE-OPENSPIEL | MAJOR | Determinization samples worlds the owner's visibility rule forbids: the observer's own deck kept its real order (part a, fixed in A1) and opponents' discard piles are pooled with hand and deck while the devour pile shows only a count (part b, open for A2) |
+| F-042 | ENGINE-OPENSPIEL | MAJOR | `CEngineAdapter.__deepcopy__` returns `self` when the C clone fails, so the "copy" aliases the original and an IS-MCTS simulation mutates the root state |
 
 Baseline recorded 2026-09-10 against the working tree at `ea25b68` with Phases 0-4 of
 `nn-training-data-tdd-plan.md` applied but uncommitted: `tests/` 1001 passed / 4 failed
@@ -1000,6 +1001,17 @@ passed.
   - **(a) FIXED** (2026-11-09, A1): `VZ_DECK`, self, is `{VIS_COUNT, 1}`; determinization resamples the observer's deck. Each resampled pool is now sorted by card id before the shuffle (`engine_c/visibility.c:677-687,708,723`), so a world depends only on the observer's knowledge and the seed — without the sort, two indistinguishable states would still sample differently. Contract updated in `engine_c/visibility.h`.
   - **(b) FIXED** (2026-11-09, A2): `VZ_DISCARD`, opponent, is `{VIS_CARDS, 0}` and `VZ_DEVOUR` is `{VIS_CARDS, 0}`, so every discard and the devour pile are visible and determinization pools only hand + deck (`engine_c/visibility.c:26-38`). View bytes changed, so the F-013 G1 vectors were re-frozen (918, under the new rule) and the approved test flips made. See ADR-0008. F-041 is closed.
 - Boundary: `private_view_json`, `engine_infostate_hash` and the NN observation never exposed deck order (`my_deck_remainder` is a card-count vector over the deduced multiset), and the GUI's `build_c_game_view` reports only `deck_count`; the leak was determinization alone. `engine_random_rollout` (`engine_c/rollout.c:25-78`) reads whatever world it is given, so it inherited the leak through the sampled state and is clean once the table is.
+
+### F-042 `CEngineAdapter.__deepcopy__` returns `self` when the C clone fails
+- Class: ENGINE-OPENSPIEL (state aliasing)
+- Severity: MAJOR (a failed clone silently aliases the original; the search then advances the shared C state, which corrupts the root and can produce decisions in a game that has moved)
+- Origin: Found 2026-11-11 while re-verifying candidate 8's evidence (brief F0); recorded at the owner's direction
+- Code: `engine_c/bindings/c_adapter.py:52-60`. `cloned_ptr = _lib.engine_clone(self._state._ptr)` (`:53`); when it is NULL (`:54`) the method `return self` (`:55`) instead of raising or returning `None`. The failure reaches `openspiel_pyrants/state_c.py:127` (`clone_via_replay`) and `state_c.py:273-317` (`clone`), which can then hand the same adapter to two simulation branches.
+- Falsification test: monkeypatch `engine_clone` to return NULL, `copy.deepcopy` an adapter, then apply a move to the copy and assert the original's state is unchanged; today the two are the same object and the original moves.
+- Expected if REAL: the copy is the original object (`copy is original`).
+- Expected if FALSE POSITIVE: the copy raises, or is a distinct handle whose state is unchanged.
+- Status: **OPEN** (fixed by brief F0's F2 chunk: clone routes through the game handle and raises `EngineCloneFailed`).
+- Boundary: the fast path at `openspiel_pyrants/state_c.py:294-301` has its own NULL check and falls back to replay-based `copy.deepcopy`, so it lands in the same aliasing branch. `CEngineAdapter.clone_via_replay` (`c_adapter.py:89-95`) is unaffected: it rebuilds from the seed instead of cloning.
 
 ## 4. Unanchored (suspicions that could not be fully anchored)
 
