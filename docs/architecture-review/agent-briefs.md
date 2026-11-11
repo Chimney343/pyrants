@@ -80,15 +80,15 @@ step" and "Per-candidate loop". Then `GLOSSARY.md` and whatever your brief lists
 
 **Gates.** Run what the handoff's "Gates for every step" lists, read every pass
 count, and add `just verify-replays` after any engine change. Baseline after
-brief A1 (`0b9ee96`):
+brief C2 (`b5a4497`):
 
 | Gate | Expected |
 |---|---|
-| `just build-c`, `just test-c` | 10 test executables pass |
-| `just test-c-python` | 747 passed, 2 failed (Zuggtmoy, Air Elemental) |
-| `just test-all`, `tests/` | 1111 passed, 2 failed, 11 skipped in the main checkout. A new worktree has no `artifacts/`, so 8 more tests skip there: 1103 passed, 2 failed, 19 skipped |
+| `just build-c`, `just test-c` | 11 test executables pass |
+| `just test-c-python` | 753 passed, 2 failed (Zuggtmoy, Air Elemental) |
+| `just test-all`, `tests/` | 1117 passed, 2 failed, 11 skipped in the main checkout. A new worktree has no `artifacts/`, so 8 more tests skip there: 1109 passed, 2 failed, 19 skipped |
 | `just test-all`, `openspiel_pyrants/tests/` | 110 passed, 10 failed (the postponed F-003 Part B tests) |
-| `just verify-replays` | all pass (2862/2862 on 2026-11-09; the count grows as runs are added) |
+| `just verify-replays` | all pass (2886/2886 on 2026-11-11; the count grows as runs are added) |
 | `just test-c-asan` | clean |
 | `just docs-check` | 9 errors, all pre-existing |
 | `ruff check .` | 634 errors overall; no new error in a file you changed |
@@ -462,7 +462,25 @@ B2 in one line: prove the old per-op branches in generic_runtime.c are unreachab
 4. *`engine_git_dirty`.* Every run from the main checkout records
    `engine_git_dirty: true`, because `engine_c/graphify-out/` is untracked. Ask
    the user whether to add it to `.gitignore`; it is the user's graphify output.
-5. *Gates* after each commit. For item 1, also run the quick check:
+5. *C2 leftovers* (the coordinator found these reviewing C2):
+   - `engine_c/ops/op.h` declares `extern int g_enum_probe;` under a second
+     copy of the probe comment. Nothing defines or uses it; the live flag is
+     `g_op_enum_probe`, defined in `engine_c/selection.c`. Delete the
+     declaration and its comment.
+   - `tests/c_engine/test_move_capacity_binding.py::test_python_buffers_are_sized_from_the_engine_capacity`
+     can't fail. Its fake library reports 1024, which is the real capacity,
+     and `ce_api.move_capacity()` caches the first value it reads in
+     `ce_api._MOVE_CAPACITY`. A hard-coded `CMove * 1024` would pass. Make the
+     fake report another capacity (for example 7), monkeypatch
+     `ce_api._MOVE_CAPACITY` to `None`, and assert that both buffers follow the
+     fake. Watch it fail against a temporary hard-coded 1024. **Approved:**
+     this changes what the test asserts so that it tests what its docstring
+     says. C2 wrote it, and no behaviour assertion changes.
+   - The `engine_move_capacity()` comment in `engine_c/engine.h` and the
+     `move_capacity()` docstring in `engine_c/bindings/ce_api.py` say
+     `NUM_DISTINCT_ACTIONS` "derives from" the export. It doesn't: `game_c.py`
+     declares it and checks it against the export at import. Fix the wording.
+6. *Gates* after each commit. For item 1, also run the quick check:
    content-identical.
 
 **Message to paste:**
@@ -570,6 +588,16 @@ C3 in one line: if I agree to the machine time, measure candidate 3's speed with
   candidate 1 its 14th op.
 - the op-selection variants `play`, `promote`, `devour` and `return_unit`.
 
+**Since C2**, every target enumerator has two modes. Public move queries count
+every target. Under `legal_generic_target_selection_probe()`, the global
+`g_op_enum_probe` is set, and an enumerator returns as soon as its buffer is
+full (`engine_c/ops/op.h`, ADR-0003's amendment). A new op that ignores the
+flag is still correct, so no test fails, but the engine's internal "any
+target?" checks then walk its whole target space. C2 measured that cost at
+about 10% games/h. Each design must say how a new op gets this right: keep the
+flag and add a probe check to the op-completeness test, or make probing an
+explicit argument of the enumerate function.
+
 **Steps.**
 1. *Inventory every effect kind and selection variant*: the cards that use it,
    how it is targeted, applied and described, the tests covering it, and its
@@ -647,6 +675,10 @@ E0 in one line: design how card tests build and inspect scenarios without reachi
 - F-037: `_init_attrs` drops `setup_data_json`.
 - ADR-0006 deferred moving `pending_ability`/`pending_generic` storage out of
   `GameState` to here.
+- Since C2 (F-038), both move queries return how many moves exist, and
+  `ce_api` raises `MoveCapacityError` when that is more than the capacity
+  (1024, also the NN action space). The handle's failure semantics must cover
+  this error as well as `None`-versus-raise.
 
 **Steps.**
 1. *Re-verify* each item with file:line.

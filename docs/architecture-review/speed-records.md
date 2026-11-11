@@ -49,6 +49,9 @@ dirty" is `engine_git_dirty`; "repo dirty" is `repo_git_dirty`.
 | `20261109T145118Z_524e06781560` | `f68fb8801c2e` | True | True | `3ac2087ab621` | 2026-11-09T14:51:18Z | 8g/50s/8w/uct1.4/seed42 |
 | `20261110T201057Z_d19383e1047a`³ | `76dc1d44a4f1` | False | False | `d26c8d89246f` | 2026-11-10T20:10:57Z | 8g/50s/8w/uct1.4/seed42 |
 | `20261110T201336Z_9045b5ad3a86`³ | `76dc1d44a4f1` | True | True | `9ad79f459a64` | 2026-11-10T20:13:36Z | 8g/50s/8w/uct1.4/seed42 |
+| `20261111T001505Z_c0d3ac0180ef`⁴ | `92c2600cb39e` | False | True | `d05e708fa7f8` | 2026-11-11T00:15:05Z | 8g/50s/8w/uct1.4/seed42 |
+| `20261111T033230Z_06fd82c86c70`⁴ | `462b4148cefa` | True | True | `1ccd9560115f` | 2026-11-11T03:32:30Z | 8g/50s/8w/uct1.4/seed42 |
+| `20261111T095313Z_7443ad594efc`⁴ | `b5a449734d47` | True | True | `84b1502ba30d` | 2026-11-11T09:53:14Z | 8g/50s/8w/uct1.4/seed42 |
 
 ¹ The baseline `7bd2f09610e6` is **outside the repo**, under
 `%TEMP%\kilo\a985208_runs\`; its manifest is schema v2 and has no
@@ -64,6 +67,12 @@ parent commit, so its `replay_context` differs from the candidate's; both
 manifests record engine sha `76dc1d44a4f1` (the candidate's tree is dirty only
 by the B2 edit itself). The run directories are under
 `artifacts/ismcts/b2_quickcheck/`.
+
+⁴ The C2 runs live **outside the repo**, under `%TEMP%\kilo\c2runs\`. The
+coordinator's recheck is under the coordinating session's scratchpad. Neither
+is durable, so the numbers in the C2 section are the record. `06fd82c86c70`
+was a pre-commit tree on `462b414` (the probe fix before it became
+`8ad7992`); `7443ad594efc` is the committed build.
 
 ## ADR-0004: 13 op migrations (`a985208` → `a03768f`)
 
@@ -261,6 +270,50 @@ behaviour.
   9,900-move 8-game quick-check run. The probe introduced no decision change
   either: the probe run is content-identical to B2.
 - **Verdict: the ADR claim holds.**
+
+## ADR-0003 amendment, C2: the true move count (F-038)
+
+Claim: content-identical, no slowdown once the internal existence checks use
+`legal_generic_target_selection_probe()`; the naive counting version cost
+151 → 133 games/h.
+
+Quick check (8 games, 50 sims, 8 workers, `--uct-c 1.4`, seed 42, 9,900
+decisions):
+
+| | parent `92c2600` | C2 pre-commit tree | committed `b5a4497` (coordinator) |
+|---|---|---|---|
+| run id | `20261111T001505Z_c0d3ac0180ef` | `20261111T033230Z_06fd82c86c70` | `20261111T095313Z_7443ad594efc` |
+| DLL sha256 | `d05e708fa7f8…` | `1ccd9560115f…` | `84b1502ba30d…` |
+| run wall | 149.8 s | 149.9 s | 139.4 s |
+| games/h (run wall) | 192.3 | 192.1 | 206.6 |
+
+- Both candidates against the parent: `decisions.jsonl` identical on 8/8 once
+  `run_id` and `wall_time_ms` are ignored, and `final_decks.json` identical on
+  8/8. `replay.json` differs only in `replay_context`.
+- Pre-commit tree against the parent: per-game wall ratio median 1.005 (range
+  0.998–1.016).
+- The committed build was measured in another session, on a machine that was
+  not idle. Its games/h is not a speed comparison. It proves only that the
+  committed code makes the same games.
+- The naive version (`462b414` alone, DLL `e88bb0353302…`) in three
+  same-session 8-game pairs: 184.6 → 168.1, 189.6 → 169.3 and
+  192.3 → 169.5 games/h.
+
+The ADR's 151 → 133 comes from the agent's alternating A/B runs: 6 games, 6
+workers, the same seed and sims, with DLLs swapped into one `92c2600` tree.
+Every pair is content-identical.
+
+| pair | baseline DLL | candidate DLL | games/h (run wall) | median wall ratio |
+|---|---|---|---|---|
+| naive 1 | `d05e708fa7f8…` | `e0e556b8ae37…` | 150.8 → 133.5 | 0.912 |
+| naive 2 | `d05e708fa7f8…` | `e0e556b8ae37…` | 150.1 → 134.1 | 0.912 |
+| naive 3 | `d05e708fa7f8…` | `e0e556b8ae37…` | 149.9 → 133.6 | 0.921 |
+| probe 1 | `4908a09d745e…` | `1ccd9560115f…` | 148.5 → 149.7 | 1.004 |
+| probe 2 | `4908a09d745e…` | `1ccd9560115f…` | 150.0 → 149.3 | 0.997 |
+
+- **Verdict: the ADR claim holds.** Counting cost about 11% games/h until the
+  probe was added, and with the probe the difference is within run-to-run
+  noise.
 
 ## Audit run table, re-checked
 
