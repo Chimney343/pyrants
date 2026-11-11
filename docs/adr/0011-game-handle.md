@@ -16,7 +16,7 @@ interface, and five other shortcuts have grown around them. Re-verified on
 
 | Claim | Verdict | Evidence |
 |---|---|---|
-| `CSession` returns `None`; `CEngineAdapter` raises | Confirmed | `engine_c/bindings/session.py:128-135` returns `None`; `engine_c/bindings/c_adapter.py:103-120` raises `RuntimeError`. `CEngineAdapter.__deepcopy__` (`c_adapter.py:52-60`) returns **`self`** when the clone fails, so a "copy" aliases the original and a search simulation mutates the root (F-042). |
+| `CSession` returns `None`; `CEngineAdapter` raises | Confirmed | `engine_c/bindings/session.py:128-135` returns `None`; `engine_c/bindings/c_adapter.py:103-120` raises `RuntimeError`. `CEngineAdapter.__deepcopy__` (`c_adapter.py:52-60`) returns **`self`** when the clone fails, so a "copy" aliases the original (F-042). Latent: no production code deep-copies an adapter, and the search's clone fallback goes through `clone_via_replay` instead (coordinator's check, 2026-11-11). |
 | Replay is implemented three times | Confirmed | `openspiel_pyrants/state_c.py:127` (`clone_via_replay`); `scripts/_nn_dataset.py:243-350` (its own apply loop, `find_matching_move` at `:333`); `interface/replay_player.py:91-137` (rebuild/seek). |
 | The seed mixer is copied | Confirmed | `interface/replay_loader.py:53-59` and `openspiel_pyrants/state_c.py:15-21`; only `tests/test_replay_loader.py:24-28` keeps them equal. |
 | The NN pipeline imports the GUI package | Confirmed | `scripts/_nn_dataset.py:20-21` imports `interface.replay_loader` and `interface.replay_player`. |
@@ -104,6 +104,13 @@ RuntimeError` call sites keep working:
 - `MoveCapacityError(EngineError)` — moved here from `ce_api.py:52-67`, not
   duplicated. `tests/c_engine/test_move_capacity_binding.py` keeps importing it
   from the bindings package.
+
+The family lives in its own leaf module under `engine_c/bindings/` that imports
+nothing from the package. `ce_api` raises `MoveCapacityError` and the handle
+imports `ce_api`, so putting the family in the handle module would make an
+import cycle. `ce_api` imports the name from the leaf module, so
+`from engine_c.bindings.ce_api import MoveCapacityError` keeps working and no
+test's import line changes (coordinator's amendment, 2026-11-11).
 
 `CSession.submit_move` catches **only** `EngineApplyRejected` and returns
 `None`, which is its current contract and the GUI's; a capacity or determinant
@@ -230,6 +237,29 @@ does not touch the adapters. The table lists the chunks by id. Each chunk is one
 | **F6** | `engine_pending_decision_json` in C, `pending_context.py` reduced to projections of it, `view.py:236-271`'s promotion head read through it, and the byte-identity test for the decision log's `pending_context` line and the NN encoder's inputs. | Full gates; asan; every `tests/c_engine/test_pending_context*.py`; content-identical quick check. |
 
 **Dropped:** former F7 (pending storage). Retargeted per ADR-0006 above.
+
+**Coordinator's amendments (2026-11-11).** As first written, F2 removed
+`PyrantsCState._adapter` while F5 moved its readers, so F2 could not leave the
+gates green: the quick check itself runs `scripts/run_ismcts.py`, which reads
+`state._adapter` at `:567`, `:777`, `:781`, `:798` and `:800`, and so does the
+rollout evaluator at `c_rollout_evaluator.py:30`. Fifteen test files read
+`._adapter` too. The chunks therefore split the work this way:
+
+- **F2** keeps `_adapter` as a private compatibility property that still answers
+  every read listed in F5, with no extra ctypes crossing. How it does that is
+  F2's choice; one way is for the handle to keep `CEngineAdapter` as its private
+  body until F5.
+- **F5** moves every reader (production, the bench scripts, the harness files
+  production imports, and the fifteen test files) to the handle's public
+  surface. Then it deletes `_adapter` and `engine_c/bindings/c_adapter.py`.
+  Eight production modules name `CEngineAdapter` today: `c_adapter.py`,
+  `c_rollout_evaluator.py`, `nn/actions.py`, `state_c.py`,
+  `bench_determinize.py`, `run_ismcts.py`, `_nn_dataset.py` and
+  `_state_snapshot.py`. Twelve test files name it as well. The test files change
+  how they reach the engine, never what they assert.
+- **F3** keeps `CSession.state` returning a `CState`, because the GUI reads it.
+  The adapter reaches the handle's private state for it until E-final moves
+  those reads to handle queries.
 
 ## Speed
 

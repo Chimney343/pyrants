@@ -30,7 +30,12 @@ returns the chunk list that becomes the next briefs.
 | 3 | A3 | side | A2 | Regenerate the teacher corpus under the new rule (needs the user's go) |
 | 3 | C2 | engine | - | One legal-move capacity, and truncation you can see (F-038) |
 | 3 | D1..Dn | engine | D0, B2 | Migrate effect kinds, per D0's chunk list |
-| 4 | F1..Fn | mixed | F0, C2 | Build the game handle, per F0's chunk list |
+| 4 | F1 | side | F0 | The game handle, its interface tests and the import guard |
+| 4 | F6 | engine | F1 | The decision record as one JSON document from C |
+| 4 | F2 | side | F1 | `PyrantsCState` delegates to the handle (F-037, F-042) |
+| 4 | F3 | side | F2 | `CSession` delegates to the handle |
+| 4 | F5 | side | F3 | Callers stop reaching into `state._adapter`; `c_adapter.py` goes |
+| 4 | F4 | side | F5 | One replay and one seed mixer; `run_artifacts/`; the NN stops importing `interface` |
 | 4 | E1..En | side | E0 | Move card tests onto the fixtures, per E0's chunk list |
 | 5 | G0, G1..Gn | design, then mixed | F done | Candidate 9: pull the self-play step out of `scripts/run_ismcts.py` |
 | 5 | E-final | side | F done | Candidate 7 stage 3: the remaining private reach-ins move to handle queries |
@@ -72,9 +77,8 @@ step" and "Per-candidate loop". Then `GLOSSARY.md` and whatever your brief lists
 **Records.**
 - Update the ADRs, findings, `GLOSSARY.md` and docs your brief names.
 - Don't edit the handoff's Progress or Next; the coordinator does.
-- Reserved finding numbers: F-041 (A1, A2). F-042 was reserved for B1, which
-  did not need it; it is free. Any other new finding
-  takes the next free number; name it in your report.
+- Finding numbers: F-041 belongs to A1 and A2, and F-042 to F0. Any new
+  finding takes the next free number, from F-043; name it in your report.
 - Reserved ADR numbers: 0008 (A2), 0009 (D0), 0010 (E0), 0011 (F0), 0012 (G0).
   Any other ADR uses 0013 upward; name it in your report.
 
@@ -90,7 +94,7 @@ brief C2 (`b5a4497`):
 | `just test-all`, `openspiel_pyrants/tests/` | 110 passed, 10 failed (the postponed F-003 Part B tests) |
 | `just verify-replays` | all pass (2886/2886 on 2026-11-11; the count grows as runs are added) |
 | `just test-c-asan` | clean |
-| `just docs-check` | 9 errors, all pre-existing |
+| `just docs-check` | 9 errors, all pre-existing, in the main checkout. A new worktree has no `artifacts/`, so it reports 24; compare against the same worktree's base |
 | `ruff check .` | 634 errors overall; no new error in a file you changed |
 
 Any other failure is new: stop and report it.
@@ -664,6 +668,9 @@ E0 in one line: design how card tests build and inspect scenarios without reachi
 
 ### F0 (design): the game handle
 
+**Done** 2026-11-11 (`b52de63`): ADR-0011, F-042. The chunk briefs F1-F6 follow
+this one.
+
 **Evidence to re-verify** (handoff, "2.2"):
 - `CSession` returns `None` on failure; `CEngineAdapter` raises.
 - Replay is implemented three times (`state_c`, `_nn_dataset`,
@@ -711,6 +718,288 @@ No code.
 You are one of several agents working through the pyrants architecture plan (repo C:\Users\mkkom\pyrants, branch develop). Your task is brief F0 in docs/architecture-review/agent-briefs.md. Read that file's "Rules for every agent" section and brief F0 before anything else; they tell you what else to read. Do brief F0 only. Stop and ask me wherever the rules or the brief say to. End with the report in the format the rules give.
 
 F0 in one line: re-verify candidate 8's evidence, sketch 2-3 designs for one pyspiel-free game handle for me to choose from, write ADR-0011 and return a chunk list. No code.
+```
+
+### Rules for every F chunk (F1-F6)
+
+- **Read `docs/adr/0011-game-handle.md` in full first**, including its
+  "Coordinator's amendments". It is the design; this brief only cuts it up.
+- **The interface is settled** (owner, 2026-11-11). Ask the user before you
+  change a name or signature that ADR-0011 gives, and record any change there.
+- **Frozen**: move payloads, `decisions.jsonl`, NN action ids. No RNG may be
+  drawn differently; `just verify-replays` stays green in every chunk that
+  touches clone, determinize, apply or replay.
+- **"Within noise"**: the quick check's games/h within 3% of the parent's, in
+  the same session. If it is further off, run C2's alternating method before
+  you report: 6 games and 6 workers, baseline and candidate alternating, three
+  pairs (`speed-records.md`, section "ADR-0003 amendment, C2"). A regression
+  beyond noise needs the user's sign-off.
+- **Tests** may change how they reach the engine (imports, attribute paths)
+  only where a chunk lists it as approved; what they assert changes only with
+  the user's approval.
+- **Where**: F6 is engine lane, on `develop`, one at a time with D1..Dn. The
+  others are side chunks in worktree `brief/F<n>`. Each starts from `develop`'s
+  tip after the coordinator has merged the chunk it depends on.
+
+### F1: the game handle and its interface tests
+
+**Depends on** F0. Side, worktree `brief/F1`.
+
+**Build** (ADR-0011, "The interface" and "Failure semantics"):
+- `engine_c/bindings/handle.py` with `GameHandle`: setup (`new`, and
+  `from_files` with `setup_data_json`), apply, clone, determinize, legal and
+  display moves, views, `infostate_key`, the phase/round/player/terminal/score
+  queries, rollout, scenario load and save, and the context manager. Leave out
+  `decision_record` (F6) and the replay operations (F4).
+- The failure family in its own leaf module; `ce_api` imports
+  `MoveCapacityError` from it (ADR-0011, "Failure semantics").
+- The `Move` value. `legal_moves` is on the search's hot path, so don't create
+  a second Python object per move: today's `CMoveWrapper` already has public
+  `move_type`, `data` and `to_payload`. The ctypes struct
+  `engine_bindings.Move` already uses the name `Move`; decide how to resolve
+  that and record it in ADR-0011.
+- Nothing delegates to the handle yet, and no caller changes.
+
+**Tests first**, at the handle's interface:
+- Every operation, and every failure: a rejected apply; a clone that fails
+  (monkeypatch `engine_clone` to return NULL) raises `EngineCloneFailed`; a
+  failed determinize; `MoveCapacityError` through a fake library, as
+  `tests/c_engine/test_move_capacity_binding.py` does. Every class is a
+  `RuntimeError`, and `ce_api.MoveCapacityError` is the same object.
+- Clone independence: advancing a clone leaves the original's legal moves,
+  view and infostate key unchanged.
+- Lifetime: leaving the `with` block destroys the state; destroying twice is
+  safe.
+- **A parity test, which guards F2.** For several seeds, drive a handle and a
+  `CEngineAdapter` through the same random move sequence. At every step compare
+  the legal and display moves (as payloads), the phase, round and current
+  player, every player's view and infostate key, the scores, and a rollout from
+  the same seed.
+- The import guard: an AST scan, function-level imports included, that no
+  module under `engine_c/bindings/` imports `interface`, `openspiel_pyrants`,
+  `pyspiel`, `scripts` or `run_artifacts`. Watch it fail on a temporary
+  violation.
+
+**Gates.** All, except asan and verify-replays (no C change). No speed run: no
+caller moved.
+
+**Records.** ADR-0011 (F1 done, and the `Move` naming decision).
+
+**Overlap.** B3 also edits `ce_api.py` (the `move_capacity()` docstring) and
+`test_move_capacity_binding.py`. If both are open, the coordinator merges B3
+first.
+
+**Message to paste:**
+
+```
+You are one of several agents working through the pyrants architecture plan (repo C:\Users\mkkom\pyrants, branch develop). Your task is brief F1 in docs/architecture-review/agent-briefs.md. Read that file's "Rules for every agent" section, its "Rules for every F chunk" and brief F1 before anything else; they tell you what else to read. Do brief F1 only. Stop and ask me wherever the rules or the brief say to. End with the report in the format the rules give.
+
+F1 in one line: build the game handle from ADR-0011 with tests at its interface, a parity test against CEngineAdapter and the bindings import guard; nothing delegates to it yet.
+```
+
+### F6: the decision record as one JSON document from C
+
+**Depends on** F1 merged. Engine lane, on `develop`, one at a time with
+D1..Dn. Don't touch `engine_c/generic_runtime.c`; lane D is rewriting it.
+
+**Build** (ADR-0011, "The decision record"):
+- C: `engine_pending_decision_json(state, buf, cap)`. Copy the size-query
+  contract of `engine_player_view_json` (`engine_c/visibility.h`) exactly,
+  including what a too-small buffer gets. Cover every `PendingKind`. Export it
+  and bind it in `engine_bindings.py`.
+- `pending_context.py`: `read_pending_generic_context` and
+  `read_pending_generic_context_full` become projections of the record, with
+  **unchanged signatures**. Their callers (`view.py:224`,
+  `run_ismcts.py:395,777`, `_nn_dataset.py:289`) stay as they are; F5 moves
+  them.
+- `view.py:236-271` reads the promotion head from the record.
+- `GameHandle.decision_record()`.
+
+**Tests first.**
+- A C test of the size contract, and of 0 when nothing is pending.
+- An oracle test. Copy today's raw-memory readers (`pending_context.py`'s two,
+  and `view.py`'s promotion head) into the test as the oracle. Compare them
+  with the new readers at every decision of seeded random games, plus scenarios
+  from `data/scenarios/` for any pending kind that random play does not reach.
+  Assert that every kind was seen. This is the NN-encoder half of ADR-0011's
+  byte-identity test. The quick check covers the decision-log half, because
+  `decisions.jsonl` carries `pending_context`.
+
+**Gates.** All, plus asan and verify-replays; every
+`tests/c_engine/test_pending_context*.py`; quick check content-identical.
+
+**Records.** ADR-0011; ADR-0006 (the decision record now reaches Python);
+`GLOSSARY.md`; `speed-records.md`.
+
+**Message to paste:**
+
+```
+You are one of several agents working through the pyrants architecture plan (repo C:\Users\mkkom\pyrants, branch develop). Your task is brief F6 in docs/architecture-review/agent-briefs.md. Read that file's "Rules for every agent" section, its "Rules for every F chunk" and brief F6 before anything else; they tell you what else to read. Do brief F6 only. Stop and ask me wherever the rules or the brief say to. End with the report in the format the rules give.
+
+F6 in one line: C renders the pending decision as one JSON document; pending_context.py and view.py's promotion head read it instead of raw memory, proven identical against an oracle of today's readers.
+```
+
+### F2: `PyrantsCState` delegates to the handle (F-037, F-042)
+
+**Depends on** F1 merged (not F6). Side, worktree `brief/F2`.
+
+**Build** (ADR-0011, chunk F2 and the coordinator's amendments):
+- `PyrantsCState` holds a `GameHandle`, which `game_c.py` gives it. `clone()`
+  goes through `handle.clone()`.
+- `_adapter` stays as a private compatibility property that still answers
+  every read F5 lists.
+- Every other observable behaviour stays the same. That includes
+  `__deepcopy__` rebuilding by replay (F4 owns replay) and `_engine`'s
+  `_EngineShim` (G4 deletes it).
+- **One intended change:** when `engine_clone` fails, `clone()` raises
+  `EngineCloneFailed` instead of falling back to a replay. That happens only
+  when an arena allocation fails. Record it in ADR-0011.
+- **F-042:** `CEngineAdapter.__deepcopy__` raises `EngineCloneFailed` instead of
+  returning `self`. The falsification test in `findings.md` goes red before your
+  change and green after.
+- **F-037:** `_init_attrs` passes `setup_data_json`. Test first: build a game
+  with a non-empty `setup_data_json` once through `cls.__new__` plus
+  `_init_attrs` and once through `__init__`; the two set up the same.
+
+**Speed** (ADR-0011, condition 2).
+- No extra ctypes crossing on clone, apply or `legal_moves`. Prove it with a
+  test that wraps `_lib` in a call-counting proxy and checks the counts per
+  operation against today's.
+- Then the quick check: content-identical, and games/h within noise.
+
+**Gates.** All, plus verify-replays and the quick check; asan only if you
+change C.
+
+**Records.** F-037 and F-042 FIXED; ADR-0011; `speed-records.md`.
+
+**Message to paste:**
+
+```
+You are one of several agents working through the pyrants architecture plan (repo C:\Users\mkkom\pyrants, branch develop). Your task is brief F2 in docs/architecture-review/agent-briefs.md. Read that file's "Rules for every agent" section, its "Rules for every F chunk" and brief F2 before anything else; they tell you what else to read. Do brief F2 only. Stop and ask me wherever the rules or the brief say to. End with the report in the format the rules give.
+
+F2 in one line: PyrantsCState delegates to the game handle with no extra ctypes crossing and no speed loss, keeping _adapter as a compatibility property; fix F-037 and F-042 on the way.
+```
+
+### F3: `CSession` delegates to the handle
+
+**Depends on** F2 merged. Side, worktree `brief/F3`.
+
+**Build.**
+- `CSession` holds a `GameHandle`. Its public surface stays the same: `state`,
+  `move_count`, `legal_moves`, `display_moves`, `submit_move`, `snapshot`,
+  `save`/`load` and `from_files`. `state` still returns a `CState`, because the
+  GUI reads it (`game_viewer.py:1179`, `:2109`; `replay_viewer.py:417`).
+- `submit_move` returns `None` only for `EngineApplyRejected`; any other
+  `EngineError` propagates.
+- The three `CEngine` setup sites in `session.py` (`:60`, `:196`, `:229`) go
+  through the handle's setup. `_session_protocol.SessionLike` does not change.
+
+**Tests first.** The existing tests for a rejected move returning `None` stay.
+Add one: a capacity error from a fake library propagates out of `submit_move`.
+
+**Gates.** All, including the GUI tests and `tests/c_engine`; verify-replays
+(`ReplayPlayer` runs on `CSession`); quick check content-identical.
+
+**Records.** ADR-0011.
+
+**Message to paste:**
+
+```
+You are one of several agents working through the pyrants architecture plan (repo C:\Users\mkkom\pyrants, branch develop). Your task is brief F3 in docs/architecture-review/agent-briefs.md. Read that file's "Rules for every agent" section, its "Rules for every F chunk" and brief F3 before anything else; they tell you what else to read. Do brief F3 only. Stop and ask me wherever the rules or the brief say to. End with the report in the format the rules give.
+
+F3 in one line: CSession delegates to the game handle, keeping its public surface, and returns None only for a rejected apply.
+```
+
+### F5: callers stop reaching into `state._adapter`
+
+**Depends on** F3 merged. Side, worktree `brief/F5`.
+
+**Build.**
+- Move every reader of `state._adapter`, and every module that names
+  `CEngineAdapter`, onto the handle's public surface:
+  - production: `c_rollout_evaluator.py:30`;
+    `run_ismcts.py:395,428,567,777,781,798,800`; `_replay_payload.py:20-34`;
+    `_state_snapshot.py`; `nn/actions.py`; `_nn_dataset.py`;
+  - the bench scripts `bench_determinize.py` and `bench_view_hash.py`;
+  - `docs/validation/harness/`. No gate runs these investigation scripts. Port
+    the ones whose change is mechanical, list the rest in your report, and
+    delete none.
+- If F6 has landed, the `pending_context` callers read the handle's
+  `decision_record()`. Otherwise they keep the pointer form.
+- Callers and tests read `move_type`, not the `_move_type` shim.
+- Then delete `_adapter`, and `engine_c/bindings/c_adapter.py` once nothing
+  imports it. Deleting the file needs the user's approval: ask, unless this
+  line says Approved.
+- `_EngineShim` stays, fed from the handle; G4 deletes it.
+
+**Approved test changes.** The 15 test files that read `._adapter`, the 12 that
+name `CEngineAdapter`, and the ~50 that read `._move_type` change how they reach
+the engine. What they assert does not change.
+
+**Speed.** Quick check content-identical, games/h within noise; `just
+ismcts-perf` before and after, because the rollout evaluator is on the hot
+path.
+
+**Gates.** All, plus verify-replays.
+
+**Records.** ADR-0011; `speed-records.md`.
+
+**Message to paste:**
+
+```
+You are one of several agents working through the pyrants architecture plan (repo C:\Users\mkkom\pyrants, branch develop). Your task is brief F5 in docs/architecture-review/agent-briefs.md. Read that file's "Rules for every agent" section, its "Rules for every F chunk" and brief F5 before anything else; they tell you what else to read. Do brief F5 only. Stop and ask me wherever the rules or the brief say to. End with the report in the format the rules give.
+
+F5 in one line: move every reader of state._adapter and CEngineAdapter onto the game handle's public surface, then delete _adapter and c_adapter.py.
+```
+
+### F4: one replay, one seed mixer, `run_artifacts/`
+
+**Depends on** F5 merged. Side, worktree `brief/F4`.
+
+**Build** (ADR-0011, "Where the code lives, and the import rules"):
+- The handle gains `from_log`, `advance`, `seek`, `engine_seed`,
+  `find_matching_move` and `ReplayDesyncError`. Replay takes an in-memory log,
+  never a path.
+- The three replay loops become that one: `PyrantsCState.__deepcopy__`,
+  `_nn_dataset.py:243-350` and `ReplayPlayer`.
+- A new top-level package, `run_artifacts/`, holds `load_replay`,
+  `discover_replays`, `ReplayBundle`/`ReplayMeta`, `is_complete_game`, and the
+  manifest, summary and decision-log parsing. It must not import `interface`.
+- `interface/replay_loader.py` and `interface/replay_player.py` leave
+  `interface/`. **Approved** (the owner's answer to F0's question 6): only
+  `replay_viewer.py` stays. Their callers move with them: `_nn_dataset.py`,
+  `card_playstats/extract.py`, `card_playstats/discovery.py`,
+  `verify_replays.py`, `replay_viewer.py` and the tests.
+- The seed-mixer copy in `state_c.py` goes.
+- The import guards: `engine_c/bindings/` must not import `run_artifacts`
+  (already in F1's list), and `run_artifacts/` must not import `interface`.
+  Watch both fail on a temporary violation.
+
+**Tests.**
+- `tests/test_replay_loader.py` and `tests/test_replay_player.py` change their
+  imports only. **Approved.**
+- `test_replay_loader.py::test_engine_seed_matches_openspiel` compares the two
+  mixer copies, so with one copy left its assertion must change. That needs the
+  user's approval: ask, unless this line says Approved.
+
+**Proof.**
+- Quick check content-identical.
+- verify-replays, which is the main proof here.
+- NN dataset parity: build a small dataset from 4 stored games with the parent
+  and with your commit, and compare the tensors byte for byte. Commit the script
+  you use.
+
+**Gates.** All.
+
+**Records.** ADR-0011 (all chunks done; the coordinator sets it Accepted);
+`GLOSSARY.md` ("run artifact").
+
+**Message to paste:**
+
+```
+You are one of several agents working through the pyrants architecture plan (repo C:\Users\mkkom\pyrants, branch develop). Your task is brief F4 in docs/architecture-review/agent-briefs.md. Read that file's "Rules for every agent" section, its "Rules for every F chunk" and brief F4 before anything else; they tell you what else to read. Do brief F4 only. Stop and ask me wherever the rules or the brief say to. End with the report in the format the rules give.
+
+F4 in one line: one replay-from-log in the game handle, the run-artifact reader in a new run_artifacts/ package, and the NN pipeline stops importing interface.
 ```
 
 ## Lane G: candidate 9, the self-play step
