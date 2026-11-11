@@ -30,7 +30,7 @@ static int op_deploy_troops_enumerate(const GameState *state, Sym player_id,
     for (int i = 0; i < state->node_count; i++) {
         Sym nid = state->nodes[i].node_id;
         if (can_deploy_to_node(state, player_id, nid, ht)) {
-            if (w >= max_out) { w++; continue; }
+            if (w >= max_out) { w++; if (g_op_enum_probe) return w; continue; }
             out[w].type = MOVE_RESOLVE_GENERIC;
             out[w].data.resolve_generic.action_id = nid;
             out[w].player_index = 0;

@@ -44,7 +44,7 @@ static int op_move_troop_enumerate(const GameState *state, Sym player_id,
                     const char *dst_str = intern_str(state->nodes[di].node_id);
                     char buf[128];
                     snprintf(buf, sizeof(buf), "%d:%s:%d", ss, dst_str ? dst_str : "?", ts);
-                    if (w >= max_out) { w++; continue; }
+                    if (w >= max_out) { w++; if (g_op_enum_probe) return w; continue; }
                     out[w].type = MOVE_RESOLVE_GENERIC;
                     out[w].data.resolve_generic.action_id = src;
                     out[w].data.resolve_generic.target_id = intern(buf);

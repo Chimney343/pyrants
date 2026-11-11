@@ -434,7 +434,7 @@ GameState *auto_resolve_pending_generic(GameState *state, Sym player_id) {
 
         if (action_requires_selection(action)) {
             Move sel[64];
-            int nc = legal_generic_target_selection_moves(state, player_id, p, card, action, sel, 64);
+            int nc = legal_generic_target_selection_probe(state, player_id, p, card, action, sel, 64);
             if (nc == 0) {
                 /* An optional action with no legal targets is normally skipped
                  * (e.g. Death Tyrant's "up to 3" assassinates). Cards that want
@@ -1248,7 +1248,7 @@ static int modal_option_is_viable(GameState *state, Sym player_id,
                 }
                 if (depends_on_prior) continue;
                 Move dummy[1];
-                int nc = legal_generic_target_selection_moves(
+                int nc = legal_generic_target_selection_probe(
                     state, player_id, pending, opt_card, act, dummy, 1);
                 if (nc == 0) {
                     /* Some options keep an unconditional sibling action;

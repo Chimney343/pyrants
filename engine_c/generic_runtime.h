@@ -42,6 +42,14 @@ int legal_generic_target_selection_moves(const GameState *state, Sym player_id,
                                           const PendingGenericChoiceState *pending,
                                           const CardDefinition *card,
                                           const CardAction *action, Move *out, int max_out);
+/* Existence probe: returns non-zero once any target exists, without counting the
+ * rest. Use when only "is this list empty?" matters; the engine's internal
+ * viability checks do. Public move queries use the counting variant above. */
+int legal_generic_target_selection_probe(const GameState *state, Sym player_id,
+                                          const PendingGenericChoiceState *pending,
+                                          const CardDefinition *card,
+                                          const CardAction *action, Move *scratch,
+                                          int scratch_cap);
 
 void register_generic_actions(void);
 void register_selection_handlers(void);

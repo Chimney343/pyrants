@@ -27,6 +27,7 @@ static int op_place_spy_enumerate(const GameState *state, Sym player_id,
     int has_spies = state->players[pi].spies_available > 0;
 
     if (!has_spies) {
+        if (w >= max_out && g_op_enum_probe) { w++; return w; }
         if (w < max_out) {
             /* Rulebook 338: all spies placed -> may do nothing. */
             out[w].type = MOVE_RESOLVE_GENERIC;
@@ -48,6 +49,7 @@ static int op_place_spy_enumerate(const GameState *state, Sym player_id,
         if (!nd || strcmp(intern_str(nd->kind), "site") != 0) continue;
         if (node_has_own_spy(state, player_id, i)) continue;
         if (has_spies) {
+            if (w >= max_out && g_op_enum_probe) { w++; return w; }
             if (w < max_out) {
                 out[w].type = MOVE_RESOLVE_GENERIC;
                 out[w].data.resolve_generic.action_id = nid;
@@ -60,7 +62,7 @@ static int op_place_spy_enumerate(const GameState *state, Sym player_id,
             for (int s = 0; s < state->node_count; s++) {
                 if (state->nodes[s].node_id == nid) continue;
                 if (!node_has_own_spy(state, player_id, s)) continue;
-                if (w >= max_out) { w++; continue; }
+                if (w >= max_out) { w++; if (g_op_enum_probe) return w; continue; }
                 out[w].type = MOVE_RESOLVE_GENERIC;
                 out[w].data.resolve_generic.action_id = nid;
                 out[w].data.resolve_generic.target_id = state->nodes[s].node_id;

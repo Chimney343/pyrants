@@ -35,6 +35,7 @@ static int op_recruit_card_enumerate(const GameState *state, Sym player_id,
         if (required_aspect != SYM_NULL && cd->aspect != required_aspect) continue;
         if (max_cost >= 0 && cd->cost > max_cost) continue;
         if (!free_recruit && state->resource_pool.influence < cd->cost) continue;
+        if (w >= max_out && g_op_enum_probe) { w++; return w; }
         if (w < max_out) {
             out[w].type = MOVE_RESOLVE_GENERIC;
             out[w].data.resolve_generic.action_id = cid;

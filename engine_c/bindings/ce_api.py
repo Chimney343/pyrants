@@ -67,16 +67,27 @@ class MoveCapacityError(RuntimeError):
         )
 
 
+_MOVE_CAPACITY: int | None = None
+
+
 def move_capacity() -> int:
     """The engine's legal-move capacity: one source for every buffer size.
 
     ``engine_c`` exports it (``engine_move_capacity``) and
     ``openspiel_pyrants.NUM_DISTINCT_ACTIONS`` derives from it, so the buffer
     and the frozen action space cannot drift apart.
+
+    Read once and cached: the frozen constant cannot change under a loaded
+    DLL, and the queries call this on the hottest path in IS-MCTS. The cache
+    keeps one export as the source without adding a ctypes round trip per
+    decision, which measured as a 6% games/h regression.
     """
-    if _lib is None:  # pragma: no cover - import guard for DLL-less environments
-        raise RuntimeError("engine_c DLL is not available")
-    return int(_lib.engine_move_capacity())
+    global _MOVE_CAPACITY
+    if _MOVE_CAPACITY is None:
+        if _lib is None:  # pragma: no cover - import guard for DLL-less environments
+            raise RuntimeError("engine_c DLL is not available")
+        _MOVE_CAPACITY = int(_lib.engine_move_capacity())
+    return _MOVE_CAPACITY
 
 _PHASE_MAP = {
     PHASE_SETUP: "setup",

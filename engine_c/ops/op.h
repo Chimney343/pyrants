@@ -102,6 +102,24 @@ typedef struct CardOp {
     OpDescribeFn describe;
 } CardOp;
 
+/* Set only while an internal existence probe runs (see
+ * legal_generic_target_selection_probe). A probe asks "is there any target?",
+ * so an enumerator may return as soon as its buffer is full instead of walking
+ * the rest of the target space — which for place_spy can be every node pair.
+ * Public move queries leave it 0 and report the true count. The engine is
+ * single-threaded within a process (IS-MCTS workers are separate processes),
+ * so a plain flag is enough. */
+extern int g_op_enum_probe;
+
+/* Set while an internal existence probe runs. A probe only asks "is there any
+ * target?", so an enumerator may stop at the first one instead of walking the
+ * whole target space to report a count nobody reads. Public move queries leave
+ * this 0 and report the true count. The engine is single-threaded within a
+ * process (IS-MCTS parallelism is separate processes), so a plain flag is
+ * enough; probe scope is a matched set/clear in
+ * legal_generic_target_selection_probe(). */
+extern int g_enum_probe;
+
 const CardOp *op_lookup(Sym op);
 const CardOp *card_op_for(const CardAction *action);
 int op_table_count(void);

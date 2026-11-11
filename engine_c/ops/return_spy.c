@@ -44,13 +44,14 @@ static int op_return_spy_enumerate(const GameState *state, Sym player_id,
         for (int s = 0; s < state->nodes[i].spy_count; s++) {
             Sym spy = state->nodes[i].spies[s];
             if (spy == player_id && !only_enemy) {
-                if (w >= max_out) { w++; continue; }
+                if (w >= max_out) { w++; if (g_op_enum_probe) return w; continue; }
                 out[w].type = MOVE_RESOLVE_GENERIC;
                 out[w].data.resolve_generic.action_id = nid;
                 out[w].player_index = 0;
                 w++;
             } else if (spy != player_id && !only_self
                        && has_presence(state, player_id, nid)) {
+                if (w >= max_out && g_op_enum_probe) { w++; return w; }
                 if (w < max_out) {
                     out[w].type = MOVE_RESOLVE_GENERIC;
                     out[w].data.resolve_generic.action_id = nid;

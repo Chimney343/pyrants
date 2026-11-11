@@ -44,7 +44,7 @@ static int op_return_unit_enumerate(const GameState *state, Sym player_id,
             if (!include) continue;
             char buf[32];
             snprintf(buf, sizeof(buf), "troop:%d", s);
-            if (w >= max_out) { w++; continue; }
+            if (w >= max_out) { w++; if (g_op_enum_probe) return w; continue; }
             out[w].type = MOVE_RESOLVE_GENERIC;
             out[w].data.resolve_generic.action_id = nid;
             out[w].data.resolve_generic.target_id = intern(buf);
@@ -61,6 +61,7 @@ static int op_return_unit_enumerate(const GameState *state, Sym player_id,
             char buf[32];
             const char *pid_str = intern_str(spy);
             snprintf(buf, sizeof(buf), "spy:%s", pid_str ? pid_str : "?");
+            if (w >= max_out && g_op_enum_probe) { w++; return w; }
             if (w < max_out) {
                 out[w].type = MOVE_RESOLVE_GENERIC;
                 out[w].data.resolve_generic.action_id = nid;

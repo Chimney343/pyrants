@@ -21,7 +21,7 @@ static int op_play_card_enumerate(const GameState *state, Sym player_id,
             if (state->players[i].player_id == player_id) { pi = i; break; }
         if (pi < 0) return 0;
         for (int i = 0; i < state->players[pi].inner_circle_count; i++) {
-            if (w >= max_out) { w++; continue; }
+            if (w >= max_out) { w++; if (g_op_enum_probe) return w; continue; }
             out[w].type = MOVE_RESOLVE_GENERIC;
             out[w].data.resolve_generic.action_id = state->players[pi].inner_circle[i];
             out[w].player_index = 0;
@@ -47,6 +47,7 @@ static int op_play_card_enumerate(const GameState *state, Sym player_id,
                     }
                 if (!cd || cd->cost > max_cost) continue;
             }
+            if (w >= max_out && g_op_enum_probe) { w++; return w; }
             if (w < max_out) {
                 out[w].type = MOVE_RESOLVE_GENERIC;
                 out[w].data.resolve_generic.action_id = cid;
