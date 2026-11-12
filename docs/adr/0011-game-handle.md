@@ -1,6 +1,6 @@
 # ADR-0011: One pyspiel-free game handle for every Python caller
 
-- **Status:** Accepted
+- **Status:** Proposed (design chosen 2026-11-11; F1 built, F2-F6 remain; the coordinator owns the status flip)
 - **Date:** 2026-11-11
 - **Decision owner:** the project owner (design chosen 2026-11-11, with the conditions recorded below)
 - **Supersedes:** -
