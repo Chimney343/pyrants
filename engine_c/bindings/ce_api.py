@@ -44,28 +44,22 @@ from .engine_bindings import (
 from .engine_bindings import (
     Move as CMove,
 )
+from .errors import MoveCapacityError
 
 # A 4-player view is about 13 KB; a larger one is retried with the exact size.
 _VIEW_BUFFER_BYTES = 32 * 1024
 
-
-class MoveCapacityError(RuntimeError):
-    """A move query found more moves than the frozen capacity can represent.
-
-    The capacity is the NN action space, a wire format. A state that needs
-    more moves cannot be described by an OpenSpiel action id, so callers must
-    see this rather than a truncated list.
-    """
-
-    def __init__(self, query: str, needed: int, capacity: int) -> None:
-        self.query = query
-        self.needed = needed
-        self.capacity = capacity
-        super().__init__(
-            f"{query} query returned {needed} moves, above the frozen capacity "
-            f"{capacity}; the move would have been truncated silently before F-038"
-        )
-
+# ``MoveCapacityError`` moved to ``errors`` in F1 so the handle can raise it
+# without importing this module (ADR-0011, "Failure semantics"). Re-exported
+# here, so ``from engine_c.bindings.ce_api import MoveCapacityError`` and every
+# existing test's import line keep working, and the object is the same one.
+__all__ = [
+    "CEngine",
+    "CMoveWrapper",
+    "CState",
+    "MoveCapacityError",
+    "move_capacity",
+]
 
 _MOVE_CAPACITY: int | None = None
 
