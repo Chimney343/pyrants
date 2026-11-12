@@ -239,6 +239,11 @@ class GameHandle:
                 f"move rejected in phase {state.phase}, round {state.round_number}, "
                 f"player {state.current_player_id}: {move}"
             )
+        # ``engine_apply`` clones internally and returns the successor, so the
+        # predecessor is ours to free. ``CSession.submit_move`` and
+        # ``CEngineAdapter.apply`` do the same; skipping it leaks one arena per
+        # move, which is the whole reason PyRantsCState grew a __del__.
+        self._engine.destroy(state)
         self._state = new_state
 
     # -- clone and determinize -------------------------------------------
