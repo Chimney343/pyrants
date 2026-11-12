@@ -146,7 +146,15 @@ def default_definition() -> Definition:
 class GameHandle:
     """One game, driven entirely through Python values (ADR-0011)."""
 
-    __slots__ = ("_definition", "_engine", "_state", "_player_ids", "_seed", "_destroyed")
+    __slots__ = (
+        "_definition",
+        "_engine",
+        "_state",
+        "_player_ids",
+        "_seed",
+        "_move_count",
+        "_destroyed",
+    )
 
     def __init__(
         self,
@@ -154,12 +162,15 @@ class GameHandle:
         state: CState,
         player_ids: Sequence[str],
         seed: int,
+        *,
+        move_count: int = 0,
     ) -> None:
         self._definition = definition
         self._engine = definition._engine
         self._state: CState | None = state
         self._player_ids = tuple(player_ids)
         self._seed = seed
+        self._move_count = move_count
         self._destroyed = False
 
     # -- setup ------------------------------------------------------------
@@ -258,6 +269,7 @@ class GameHandle:
         # move, which is the whole reason PyRantsCState grew a __del__.
         self._engine.destroy(state)
         self._state = new_state
+        self._move_count += 1
 
     # -- clone and determinize -------------------------------------------
 
@@ -268,7 +280,11 @@ class GameHandle:
         if not cloned_ptr:
             raise EngineCloneFailed("engine_clone returned NULL")
         return GameHandle(
-            self._definition, CState(cloned_ptr), self._player_ids, self._seed
+            self._definition,
+            CState(cloned_ptr),
+            self._player_ids,
+            self._seed,
+            move_count=self._move_count,
         )
 
     def determinize(self, observing_player_id: str, seed: int) -> GameHandle:
@@ -279,7 +295,13 @@ class GameHandle:
             raise EngineDeterminizeFailed(
                 f"engine_determinize returned NULL for {observing_player_id!r}"
             )
-        return GameHandle(self._definition, world, self._player_ids, self._seed)
+        return GameHandle(
+            self._definition,
+            world,
+            self._player_ids,
+            self._seed,
+            move_count=self._move_count,
+        )
 
     # -- moves ------------------------------------------------------------
 
@@ -369,7 +391,9 @@ class GameHandle:
         state = CState(state_ptr)
         player_ids = tuple(state.player_ids)
         game_seed = seed if seed is not None else int(state._s.shuffle_seed)
-        return cls(definition, state, player_ids, game_seed)
+        return cls(
+            definition, state, player_ids, game_seed, move_count=move_count.value
+        )
 
     def _serialize(self, state: CState) -> str:
         engine = self._engine
@@ -384,7 +408,7 @@ class GameHandle:
                 catalog_path.encode(),
                 board_path.encode(),
                 setup_path.encode(),
-                0,
+                self._move_count,
                 1 if engine.is_terminal(state) else 0,
                 buf,
                 cap,

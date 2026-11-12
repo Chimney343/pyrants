@@ -352,6 +352,19 @@ def test_scenario_round_trip(tmp_path):
 
 
 @_requires_dll
+def test_a_saved_scenario_records_the_moves_played(tmp_path):
+    handle = _new_handle(["p1", "p2"], seed=9)
+    try:
+        for _ in range(2):
+            handle.apply(handle.legal_moves()[0])
+        path = tmp_path / "scenario.json"
+        handle.save_scenario(path)
+        assert json.loads(path.read_text(encoding="utf-8"))["move_count"] == 2
+    finally:
+        handle.destroy()
+
+
+@_requires_dll
 def test_loading_a_broken_scenario_raises_engine_setup_failed(tmp_path):
     path = tmp_path / "broken.json"
     path.write_text("{not json", encoding="utf-8")
