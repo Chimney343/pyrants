@@ -94,16 +94,33 @@ module's shape is settled, not before.
   (`engine_pending_decision_json`, same size-query contract as the player view)
   that the game handle decodes, so no Python code reads pending storage.
 - **game handle** - the module `engine_c/bindings/handle.py` that owns one game
-  for every Python caller: setup from a seed or files, apply, clone,
-  determinize, legal and display moves, the decision record, views, the tree
-  key, the rollout, and replay from an in-memory log. Its interface carries no
-  ctypes type, raw pointer or `CState`, so a C-side implementation could later
-  take over its body without moving a caller (ADR-0011, Proposed). `PyrantsCState`
-  and `CSession` are its two adapters.
+  for every Python caller: setup from a seed, files or a shared `Definition`,
+  apply, clone, determinize, legal and display moves, the decision record,
+  views, the tree key, the rollout, and replay from an in-memory log. Its
+  interface carries no ctypes type, raw pointer or `CState`, so a C-side
+  implementation could later take over its body without moving a caller
+  (ADR-0011). `PyrantsCState` and `CSession` are its two adapters. Built in F1;
+  nothing delegates to it yet.
+- **definition** - `handle.Definition`, a loaded catalog, board and setup plus
+  the arena that owns them. One definition starts many games, so the ten
+  `CEngine` setup sites can collapse onto it. It is a value the handle takes,
+  not the `CEngine` itself, so no ctypes type reaches the interface.
 - **handle failure family** - `EngineError(RuntimeError)` and its subclasses
-  `EngineApplyRejected`, `EngineCloneFailed`, `EngineDeterminizeFailed` and
-  `MoveCapacityError`. The base is not for catching, so an adapter that keeps
-  its old failure contract catches only the one subclass it means.
+  `EngineApplyRejected`, `EngineCloneFailed`, `EngineDeterminizeFailed`,
+  `EngineSetupFailed`, `EngineDestroyedError` and `MoveCapacityError`, all in
+  the leaf module `engine_c/bindings/errors.py`. The base is not for catching,
+  so an adapter that keeps its old failure contract catches only the one
+  subclass it means.
+- **handle `Move`** - `handle.Move` *is* `ce_api.CMoveWrapper`, aliased rather
+  than wrapped: `legal_moves` is on the search's hot path, and one allocation
+  per move would be paid per decision. The public values are `move_type`,
+  `data` and `to_payload()`; the ctypes struct keeps the name
+  `engine_bindings.Move` and never crosses the interface (ADR-0011).
+- **bindings import guard** - the AST scan in
+  `engine_c/bindings/import_guard.py`, enforced by
+  `tests/c_engine/test_bindings_import_guard.py`: no module under
+  `engine_c/bindings/` may import `interface`, `openspiel_pyrants`, `pyspiel`,
+  `scripts` or `run_artifacts`, function-level imports included.
 - **run artifact** - the on-disk format of one IS-MCTS game: `manifest.json`,
   `replay.json`, `summary.json` and `decisions.jsonl`. The `run_artifacts/`
   package owns reading it today and the writer side once candidate 9's recorder
