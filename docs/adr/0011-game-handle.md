@@ -95,6 +95,12 @@ object; nothing is a ctypes type.
   `seek(n)` are the cursor that `ReplayPlayer` needs. `load_scenario(path)` /
   `save_scenario(path)` cover the engine's own scenario document
   (`saveload.c`), which is a data format, not a run artifact.
+- **Lifetime.** A context manager, so `destroy()` cannot be forgotten and the
+  three existing teardown sites (`session.py:137-140`, `c_adapter.py:240-246`,
+  `state_c.py:88-101`) collapse into one. The handle has no `__del__` of its
+  own: its `CState` frees the C state when collected (`ce_api.py:331-334`), so
+  a handle that is never destroyed is freed late, not leaked. `destroy()` and
+  `with` make the free deterministic (coordinator's note on F1, 2026-11-12).
 
 ### The `Move` name
 
@@ -111,9 +117,6 @@ what ADR requires: `move_type`, `data`, `to_payload()`, all of which
 crosses the interface; `CMoveWrapper._c_move` stays private and no handle caller
 reads it. A test pins the alias (`test_game_handle.py::test_the_move_value_is_todays_wrapper_not_a_second_object`),
 so a future wrapper has to be a deliberate, tested change.
-- **Lifetime.** A context manager, so `destroy()` cannot be forgotten and the
-  three existing teardown sites (`session.py:137-140`, `c_adapter.py:240-246`,
-  `state_c.py:88-101`) collapse into one.
 
 ### Failure semantics
 
@@ -247,8 +250,12 @@ caller. It would be an engine-lane brief with asan, replay and speed gates.
   as thin implementations of their own contracts, which is what they are for.
 - **F1 also found F-043.** `engine_apply_setup_json` returns success for setup
   JSON that cJSON cannot parse, leaving a 0-card deck behind, so the handle
-  parses `setup_data_json` itself before handing it to C. The C-side fix is a
-  separate engine brief; F1 only stops the silent bad game at its own seam.
+  parses `setup_data_json` itself before handing it to C. The coordinator found
+  the same silence one level down: `engine_load_definition_json` skips a board
+  or setup file it cannot read or parse, so `from_files` with a missing board
+  path starts a game with no legal moves, and with a missing setup path a game
+  with a 0-card deck, both without an error. The handle's `EngineSetupFailed`
+  cannot see either until C reports them. Brief C4 owns the C-side fix.
 - **F-042** is logged (OPEN) for `c_adapter.__deepcopy__` returning `self` on a
   clone failure; the `PyrantsCState` chunk fixes it by routing clone through the
   handle's `EngineCloneFailed`.

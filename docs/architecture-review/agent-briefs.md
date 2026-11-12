@@ -30,7 +30,8 @@ returns the chunk list that becomes the next briefs.
 | 3 | A3 | side | A2 | Regenerate the teacher corpus under the new rule (needs the user's go) |
 | 3 | C2 | engine | - | One legal-move capacity, and truncation you can see (F-038) |
 | 3 | D1..Dn | engine | D0, B2 | Migrate effect kinds, per D0's chunk list |
-| 4 | F1 | side | F0 | The game handle, its interface tests and the import guard |
+| 4 | F1 | side | F0 | The game handle, its interface tests and the import guard (**done**) |
+| 4 | C4 | engine | - (after C1 if C1 refactors `loader.c`) | The loader fails on input it cannot read or parse (F-043) |
 | 4 | F6 | engine | F1 | The decision record as one JSON document from C |
 | 4 | F2 | side | F1 | `PyrantsCState` delegates to the handle (F-037, F-042) |
 | 4 | F3 | side | F2 | `CSession` delegates to the handle |
@@ -84,13 +85,13 @@ step" and "Per-candidate loop". Then `GLOSSARY.md` and whatever your brief lists
 
 **Gates.** Run what the handoff's "Gates for every step" lists, read every pass
 count, and add `just verify-replays` after any engine change. Baseline after
-brief C2 (`b5a4497`):
+brief F1 (`f198321`, rechecked by the coordinator in the main checkout):
 
 | Gate | Expected |
 |---|---|
 | `just build-c`, `just test-c` | 11 test executables pass |
-| `just test-c-python` | 753 passed, 2 failed (Zuggtmoy, Air Elemental) |
-| `just test-all`, `tests/` | 1117 passed, 2 failed, 11 skipped in the main checkout. A new worktree has no `artifacts/`, so 8 more tests skip there: 1109 passed, 2 failed, 19 skipped |
+| `just test-c-python` | 796 passed, 2 failed (Zuggtmoy, Air Elemental) |
+| `just test-all`, `tests/` | 1160 passed, 2 failed, 11 skipped in the main checkout. A new worktree has no `artifacts/`, so 8 more tests skip there: 1152 passed, 2 failed, 19 skipped |
 | `just test-all`, `openspiel_pyrants/tests/` | 110 passed, 10 failed (the postponed F-003 Part B tests) |
 | `just verify-replays` | all pass (2886/2886 on 2026-11-11; the count grows as runs are added) |
 | `just test-c-asan` | clean |
@@ -463,6 +464,11 @@ B2 in one line: prove the old per-op branches in generic_runtime.c are unreachab
      paths (`data/scenarios/test_card_generation/_ae_opt1_test.json`,
      `_we_focus_test.json`). Make it write to `tmp_path`.
    - Ask the user whether to delete the two tracked files.
+   - `tests/c_engine/test_bindings_import_guard.py` (F1) writes its probe,
+     `_tmp_import_guard_probe.py`, into `engine_c/bindings/` and deletes it in
+     `finally`. An interrupted run leaves a file with forbidden imports in the
+     package. `find_forbidden_imports` takes any path, so write the probe to
+     `tmp_path`; the assertions stay as they are.
 4. *`engine_git_dirty`.* Every run from the main checkout records
    `engine_git_dirty: true`, because `engine_c/graphify-out/` is untracked. Ask
    the user whether to add it to `.gitignore`; it is the user's graphify output.
@@ -581,6 +587,63 @@ sees.
 You are one of several agents working through the pyrants architecture plan (repo C:\Users\mkkom\pyrants, branch develop). Your task is brief C3 in docs/architecture-review/agent-briefs.md. Read that file's "Rules for every agent" section and brief C3 before anything else; they tell you what else to read. Do brief C3 only. Stop and ask me wherever the rules or the brief say to. End with the report in the format the rules give.
 
 C3 in one line: if I agree to the machine time, measure candidate 3's speed with a same-session paired run and record it.
+```
+
+### C4: the loader fails on input it cannot read or parse (F-043)
+
+**Engine lane**, on `develop`, one at a time with F6 and D1..Dn. If C1 chose to
+refactor `loader.c` so callers pass the bytes in, run C4 after C1 and fix the
+new shape.
+
+**Why.** F-043, as widened by the coordinator after F1:
+- `engine_apply_setup_json` (`engine_c/loader.c:591-595`) returns 0 for setup
+  JSON that cJSON cannot parse.
+- `engine_load_definition_json` (`:572-582`) skips a board or setup file that
+  `read_file` cannot read.
+- `parse_board` and `parse_setup` return a zeroed struct when `cJSON_Parse`
+  fails.
+
+Each of these starts a game with a 0-card deck, or with no board and so no
+legal moves, and raises nothing. F1's handle catches only the first, in Python
+(`Definition.load` parses the text before C sees it).
+
+**Steps.**
+1. *Tests first.* Each of these must fail to load:
+   - unparsable `setup_data_json`;
+   - a missing board file, and one that does not parse;
+   - a missing setup file, and one that does not parse.
+
+   Test each in C where `engine_c/tests/` can reach it, and through the handle
+   as `EngineSetupFailed` (new tests in `tests/c_engine/test_game_handle.py`).
+   Watch them fail before the fix.
+2. *Fix in C.* `engine_apply_setup_json` returns non-zero and leaves
+   `def->setup` as it was. `engine_load_definition_json` returns NULL when the
+   board or setup file is missing or does not parse. A file that parses must
+   load exactly as it does today.
+3. *Ask the user* before treating `{}` as an error. It parses but has no
+   starter deck, and F-043 records it as a separate case.
+4. *Remove `Definition.load`'s Python pre-parse* once C reports the failure,
+   so the rule lives in one place.
+   `test_from_files_rejects_unparsable_setup_data_json` must stay green
+   unchanged.
+5. *Search tests and scripts for a board or setup path that does not exist.*
+   If a test relied on the silent path, ask the user before changing what it
+   asserts.
+
+**Gates.** All, plus asan and verify-replays. No quick check is needed: the
+definition loads once per process, off the search path, and a valid file
+loads as before. If you change a `parse_*` helper in a way that could alter
+what a valid file produces, run the quick check (content-identical).
+
+**Records.** F-043 FIXED; ADR-0011 (the handle no longer pre-parses);
+`docs/validation/findings.md`.
+
+**Message to paste:**
+
+```
+You are one of several agents working through the pyrants architecture plan (repo C:\Users\mkkom\pyrants, branch develop). Your task is brief C4 in docs/architecture-review/agent-briefs.md. Read that file's "Rules for every agent" section and brief C4 before anything else; they tell you what else to read. Do brief C4 only. Stop and ask me wherever the rules or the brief say to. End with the report in the format the rules give.
+
+C4 in one line: make the C loader fail on setup JSON, board files and setup files it cannot read or parse (F-043), then drop the handle's Python pre-parse.
 ```
 
 ## Lane D: finish candidate 4 (and candidate 1's 14th op)
@@ -742,6 +805,19 @@ F0 in one line: re-verify candidate 8's evidence, sketch 2-3 designs for one pys
   tip after the coordinator has merged the chunk it depends on.
 
 ### F1: the game handle and its interface tests
+
+**Done** 2026-11-12, merged fast-forward as `7665bb2`..`f198321`: `handle.py`
+(`GameHandle`, `Definition`), `errors.py`, `import_guard.py` and 43 tests in
+three new files; `handle.Move is CMoveWrapper`. Logged F-043, which brief C4
+fixes. What later chunks inherit:
+- The handle has no `__del__`. Its `CState` frees the C state when collected,
+  so `destroy()`/`with` only make the free deterministic.
+- `GameHandle.new(..., definition=)` lets one `Definition` start many games, so
+  `game_c.py` (F2) and `session.py` (F3) can share one load instead of building
+  a `CEngine` per game.
+- `test_game_handle_parity.py` drives a handle and a `CEngineAdapter` side by
+  side. It is F2's guard: keep it green, and keep it until F5 deletes
+  `CEngineAdapter`.
 
 **Depends on** F0. Side, worktree `brief/F1`.
 
