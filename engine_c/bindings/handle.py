@@ -264,9 +264,10 @@ class GameHandle:
                 f"player {state.current_player_id}: {move}"
             )
         # ``engine_apply`` clones internally and returns the successor, so the
-        # predecessor is ours to free. ``CSession.submit_move`` and
-        # ``CEngineAdapter.apply`` do the same; skipping it leaks one arena per
-        # move, which is the whole reason PyRantsCState grew a __del__.
+        # predecessor is ours to free. ``CState.__del__`` would free it when
+        # its last reference drops; destroying it here makes the free
+        # deterministic, as ``CSession.submit_move`` and
+        # ``CEngineAdapter.apply`` do.
         self._engine.destroy(state)
         self._state = new_state
         self._move_count += 1
