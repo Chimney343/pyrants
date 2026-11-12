@@ -60,6 +60,7 @@ All six required components exist; none had to be substituted.
 | F-034 | VALIDATION-PROCESS | MAJOR | *(found by the review of Fix Plan 02's implementation)* commit `23196b7` bundled an unrelated rule change (`insane_outcast` not recruitable: setup + engine) with the encoder fixes, breaking the plan's premise that no run needs repeating: 46/141 stored games desynced, the 120-game corpus could not be rebuilt at v3, and one new test went red in each tree unrecorded — N-1 of `nn-training-data-fix-plan-02-review.md` |
 | F-041 | ENGINE-OPENSPIEL | MAJOR | Determinization samples worlds the owner's visibility rule forbids: the observer's own deck kept its real order (part a, fixed in A1) and opponents' discard piles are pooled with hand and deck while the devour pile shows only a count (part b, open for A2) |
 | F-042 | ENGINE-OPENSPIEL | MINOR | `CEngineAdapter.__deepcopy__` returns `self` when the C clone fails, so the "copy" aliases the original. Latent: no production code deep-copies an adapter, and the clone fails only when its arena allocation does |
+| F-043 | ENGINE | MINOR | `engine_apply_setup_json` returns 0 (success) for `setup_data_json` text cJSON cannot parse, leaving an empty setup behind (a 0-card starter deck) instead of failing; `CEngine.initialize` trusts the return code, so a caller's bad setup silently produces an unplayable-looking game |
 
 Baseline recorded 2026-09-10 against the working tree at `ea25b68` with Phases 0-4 of
 `nn-training-data-tdd-plan.md` applied but uncommitted: `tests/` 1001 passed / 4 failed
@@ -1012,6 +1013,18 @@ passed.
 - Expected if FALSE POSITIVE: the copy raises, or is a distinct handle whose state is unchanged.
 - Status: **OPEN** (fixed by brief F0's F2 chunk: clone routes through the game handle and raises `EngineCloneFailed`).
 - Boundary: the search's clone paths do not reach the aliasing branch. `PyrantsCState.clone`'s fast path (`openspiel_pyrants/state_c.py:294-298`) checks NULL itself and falls back to `copy.deepcopy(self)` on the **state**, whose `__deepcopy__` (`:117-130`) calls `CEngineAdapter.clone_via_replay` (`c_adapter.py:89-95`), which rebuilds from the seed and never clones. F0's first draft said the fallback lands in the aliasing branch; it does not.
+
+### F-043 `engine_apply_setup_json` reports success on unparsable setup JSON
+
+- Class: ENGINE (silent bad input)
+- Severity: MINOR. A malformed `setup_data_json` produces a game whose starter deck is empty, so every later observation is nonsense; no crash and no error message
+- Origin: Found 2026-11-11 while writing brief F1's setup tests
+- Code: `engine_c/loader.c:591-595`. `parse_setup` (`:437-441`) returns a zeroed `SetupDefinition` when `cJSON_Parse` fails, and `engine_apply_setup_json` returns 0 unconditionally after assigning it. `CEngine.initialize` (`engine_c/bindings/ce_api.py:419-429`) raises only on a non-zero return, so the failure never surfaces.
+- Reproduction: `GameHandle.from_files(..., setup_data_json="{not json", ...)` then read `deck_size` from the player view: today it is 0. With the parse-check F1 added to `Definition.load`, it raises `EngineSetupFailed`. An empty `{}` setup also loads and yields a 0-card deck; F1 does not reject that, because a setup with no entries is a different (still silent) case and rejecting it is the C loader's call.
+- Expected if REAL: a non-zero return, or a NULL definition, for input that does not parse.
+- Expected if FALSE POSITIVE: the return code reflects the parse, or the definition is rejected for an empty starter deck.
+- Status: **OPEN**. F1 works around it in Python (`Definition.load` parses the text first); the C side still lies, and the fix belongs in `engine_apply_setup_json`/`parse_setup`.
+- Boundary: the packaged `data/decks/base_setup.json` and the scenario documents F1's tests use all parse, so nothing in production reaches the silent path today.
 
 ## 4. Unanchored (suspicions that could not be fully anchored)
 

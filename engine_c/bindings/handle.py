@@ -15,6 +15,7 @@ Nothing delegates to the handle yet: brief F1 builds it and its tests only.
 from __future__ import annotations
 
 import ctypes
+import json
 from collections.abc import Sequence
 from pathlib import Path
 
@@ -89,6 +90,18 @@ class Definition:
         setup_data_json: str = "",
     ) -> Definition:
         """Load a definition, or raise :class:`EngineSetupFailed`."""
+        if setup_data_json:
+            # ``engine_apply_setup_json`` returns 0 for text cJSON cannot parse
+            # and leaves an empty setup behind (a 0-card deck), so its return
+            # value cannot be trusted. Parse it here, where failure is cheap to
+            # report; finding F-043 tracks the C-side lie.
+            try:
+                json.loads(setup_data_json)
+            except json.JSONDecodeError as exc:
+                raise EngineSetupFailed(
+                    f"setup_data_json is not valid JSON: {exc}"
+                ) from exc
+
         engine = CEngine()
         try:
             engine.initialize(
@@ -386,8 +399,6 @@ class GameHandle:
 
 def _definition_block(document: str) -> dict[str, str]:
     """The ``definition`` block of a scenario document, validated."""
-    import json
-
     try:
         parsed = json.loads(document)
     except json.JSONDecodeError as exc:

@@ -147,6 +147,16 @@ def test_from_files_honours_setup_data_json():
 
 
 @_requires_dll
+def test_from_files_rejects_unparsable_setup_data_json():
+    """C accepts malformed setup JSON and leaves an empty deck behind (F-043)."""
+    with pytest.raises(handle_errors.EngineSetupFailed):
+        GameHandle.from_files(
+            board_path=BOARD, card_path=CARDS, setup_path=SETUP,
+            setup_data_json="{not json", player_ids=["p1", "p2"],
+        )
+
+
+@_requires_dll
 def test_new_accepts_a_shared_definition():
     definition = Definition.load(board_path=BOARD, card_path=CARDS, setup_path=SETUP)
     first = GameHandle.new(["p1", "p2"], 3, definition=definition)

@@ -5,7 +5,7 @@
 - **Decision owner:** the project owner (design chosen 2026-11-11, with the conditions recorded below)
 - **Supersedes:** -
 - **Superseded by:** -
-- **Related:** ADR-0006 (its pending-storage deferral is retargeted, not closed), F-037, F-038, F-042
+- **Related:** ADR-0006 (its pending-storage deferral is retargeted, not closed), F-037, F-038, F-042, F-043
 
 ## Context
 
@@ -245,6 +245,10 @@ caller. It would be an engine-lane brief with asan, replay and speed gates.
   policies, six raw-memory pending readers and ten `CEngine` setup sites back
   where they are today, so the module earns its keep. The two adapters survive
   as thin implementations of their own contracts, which is what they are for.
+- **F1 also found F-043.** `engine_apply_setup_json` returns success for setup
+  JSON that cJSON cannot parse, leaving a 0-card deck behind, so the handle
+  parses `setup_data_json` itself before handing it to C. The C-side fix is a
+  separate engine brief; F1 only stops the silent bad game at its own seam.
 - **F-042** is logged (OPEN) for `c_adapter.__deepcopy__` returning `self` on a
   clone failure; the `PyrantsCState` chunk fixes it by routing clone through the
   handle's `EngineCloneFailed`.
